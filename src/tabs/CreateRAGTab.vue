@@ -24,10 +24,18 @@ const API_BASE = 'http://127.0.0.1:8000';
 const uploadedZipFile = ref(null);
 const zipFileName = ref('');
 
-/** ZIP 上傳 API：第二層資料夾清單、載入中、錯誤訊息 */
+/** ZIP 上傳 API：第二層資料夾清單、完整回傳 JSON、載入中、錯誤訊息 */
 const zipSecondFolders = ref([]);
+const zipResponseJson = ref(null);
 const zipLoading = ref(false);
 const zipError = ref('');
+
+/** Pack Folders：上傳後取得的 file_id、使用者輸入的 tasks、完整回傳、載入中、錯誤 */
+const zipFileId = ref('');
+const packTasks = ref('');
+const packResponseJson = ref(null);
+const packLoading = ref(false);
+const packError = ref('');
 
 function onZipChange(e) {
   const file = e.target.files?.[0];
@@ -36,17 +44,22 @@ function onZipChange(e) {
       uploadedZipFile.value = null;
       zipFileName.value = '';
       zipSecondFolders.value = [];
+      zipResponseJson.value = null;
+      zipFileId.value = '';
       zipError.value = '請選擇 .zip 檔案';
       return;
     }
     uploadedZipFile.value = file;
     zipFileName.value = file.name;
     zipSecondFolders.value = [];
+    zipResponseJson.value = null;
     zipError.value = '';
   } else {
     uploadedZipFile.value = null;
     zipFileName.value = '';
     zipSecondFolders.value = [];
+    zipResponseJson.value = null;
+    zipFileId.value = '';
     zipError.value = '';
   }
 }
@@ -57,9 +70,11 @@ async function confirmUploadZip() {
     zipError.value = '請先選擇 ZIP 檔案';
     return;
   }
-  zipLoading.value = true;
+    zipLoading.value = true;
   zipError.value = '';
   zipSecondFolders.value = [];
+  zipResponseJson.value = null;
+  zipFileId.value = '';
   try {
     const formData = new FormData();
     formData.append('file', uploadedZipFile.value);
@@ -73,7 +88,9 @@ async function confirmUploadZip() {
       throw new Error(msg);
     }
     const data = await res.json();
-    // 後端回傳 { filename, second_folders: [...] }
+    // 後端回傳 { file_id?, filename?, second_folders: [...] }
+    zipResponseJson.value = data;
+    if (data?.file_id != null) zipFileId.value = String(data.file_id);
     zipSecondFolders.value = Array.isArray(data?.second_folders)
       ? data.second_folders
       : Array.isArray(data)
@@ -82,8 +99,54 @@ async function confirmUploadZip() {
   } catch (err) {
     zipError.value = err.message || '上傳失敗';
     zipSecondFolders.value = [];
+    zipResponseJson.value = null;
   } finally {
     zipLoading.value = false;
+  }
+}
+
+/** 呼叫 /zip/pack：依 file_id 與 tasks 壓縮指定資料夾，回傳新 file_id、filename 等 */
+async function confirmPack() {
+  const fileId = zipFileId.value?.trim();
+  const tasks = packTasks.value?.trim();
+  if (!fileId) {
+    packError.value = '請輸入 file_id（或先上傳 ZIP 取得）';
+    return;
+  }
+  if (!tasks) {
+    packError.value = '請輸入 tasks（例：220222+220301 或 220222,220301+220302）';
+    return;
+  }
+  packLoading.value = true;
+  packError.value = '';
+  packResponseJson.value = null;
+  try {
+    const res = await fetch(`${API_BASE}/zip/pack`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_id: fileId, tasks }),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const errBody = JSON.parse(text);
+        msg = errBody.detail ? JSON.stringify(errBody.detail) : msg;
+      } catch (_) {
+        if (text) msg = text;
+      }
+      throw new Error(msg);
+    }
+    try {
+      packResponseJson.value = text ? JSON.parse(text) : null;
+    } catch (_) {
+      packResponseJson.value = text;
+    }
+  } catch (err) {
+    packError.value = err.message || '壓縮失敗';
+    packResponseJson.value = null;
+  } finally {
+    packLoading.value = false;
   }
 }
 
@@ -177,6 +240,51 @@ function rewriteAnswer(item) {
               {{ name }}
             </li>
           </ul>
+        </div>
+        <div v-if="zipResponseJson !== null" class="mt-3">
+          <div class="my-title-xs-gray mb-2">API 完整回傳 JSON：</div>
+          <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 320px;">{{ JSON.stringify(zipResponseJson, null, 2) }}</pre>
+        </div>
+        <div class="mt-4 pt-3 border-top">
+          <div class="my-title-xs-gray mb-2">壓縮資料夾 (Pack Folders)</div>
+          <p class="form-text text-muted small mb-2">
+            依先前上傳的 file_id 與 tasks 抽出指定 6 位數資料夾重新壓成 ZIP。tasks 格式：逗號分隔多個輸出檔，加號為同一檔內多個資料夾。例：<code>220222+220301</code> → 一個 ZIP；<code>220222,220301+220302</code> → 兩個 ZIP。
+          </p>
+          <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
+            <div style="min-width: 200px;">
+              <label class="form-label my-title-xs-gray mb-1">file_id</label>
+              <input
+                v-model="zipFileId"
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="上傳成功後自動帶入或手動輸入"
+              >
+            </div>
+            <div class="flex-grow-1" style="min-width: 240px;">
+              <label class="form-label my-title-xs-gray mb-1">tasks</label>
+              <input
+                v-model="packTasks"
+                type="text"
+                class="form-control form-control-sm"
+                placeholder="例：220222+220301"
+              >
+            </div>
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              :disabled="packLoading"
+              @click="confirmPack"
+            >
+              {{ packLoading ? '處理中...' : '壓縮' }}
+            </button>
+          </div>
+          <div v-if="packError" class="alert alert-danger py-2 small mb-2">
+            {{ packError }}
+          </div>
+          <div v-if="packResponseJson !== null" class="mt-2">
+            <div class="my-title-xs-gray mb-1">Pack API 回傳結果：</div>
+            <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 240px;">{{ typeof packResponseJson === 'string' ? packResponseJson : JSON.stringify(packResponseJson, null, 2) }}</pre>
+          </div>
         </div>
         <div class="d-flex align-items-center gap-3 flex-wrap mt-3">
           <div>
