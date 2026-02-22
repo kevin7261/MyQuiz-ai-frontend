@@ -1,6 +1,6 @@
 <script setup>
 /** 建立 RAG 分頁。每個分頁有唯一 tabId，card 列表含題目、提示、回答與唯一 id。 */
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -30,12 +30,59 @@ const zipResponseJson = ref(null);
 const zipLoading = ref(false);
 const zipError = ref('');
 
-/** Pack Folders：上傳後取得的 file_id、使用者輸入的 tasks、完整回傳、載入中、錯誤 */
+/** Pack Folders：上傳後取得的 file_id、tasks、是否一併產生 RAG、OpenAI API key、完整回傳、載入中、錯誤 */
 const zipFileId = ref('');
 const packTasks = ref('');
+const withRag = ref(true);
+const openaiApiKey = ref(process.env.VUE_APP_OPENAI_API_KEY || '');
 const packResponseJson = ref(null);
 const packLoading = ref(false);
 const packError = ref('');
+
+/** Pack 回傳的 outputs 陣列，供表格顯示每個 ZIP 的壓縮檔與 RAG 下載連結 */
+const packOutputs = computed(() => {
+  const data = packResponseJson.value;
+  if (!data || typeof data !== 'object') return [];
+  return Array.isArray(data.outputs) ? data.outputs : [];
+});
+
+/** 產生題目：選擇單元 = 壓縮檔名下拉（來自 Pack 的 outputs，顯示 filename 如 220222.zip，非 RAG 名） */
+const generateQuestionUnits = computed(() => {
+  const data = packResponseJson.value;
+  const out = packOutputs.value;
+  const singleFileId = data && typeof data === 'object' && data.file_id != null ? data.file_id : null;
+  const withId = out.filter((o) => o && (o.file_id != null || o.rag_file_id != null));
+  if (withId.length) {
+    return withId.map((o) => ({
+      file_id: String(o.rag_file_id ?? o.file_id),
+      filename: o.filename || o.rag_filename || 'RAG',
+    }));
+  }
+  if (singleFileId && out.length) {
+    return out.map((o) => ({
+      file_id: String(singleFileId),
+      filename: o.filename || o.rag_filename || 'RAG',
+    }));
+  }
+  return [];
+});
+const generateQuestionFileId = ref('');
+const generateQuestionLoading = ref(false);
+const generateQuestionError = ref('');
+
+watch(generateQuestionUnits, (units) => {
+  if (units.length && !generateQuestionFileId.value) {
+    generateQuestionFileId.value = units[0].file_id;
+  }
+}, { immediate: true });
+
+/** 若後端回傳相對路徑，補上 API_BASE 成為可點擊的下載連結 */
+function getDownloadUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  const base = API_BASE.replace(/\/$/, '');
+  return url.startsWith('/') ? `${base}${url}` : `${base}/${url}`;
+}
 
 function onZipChange(e) {
   const file = e.target.files?.[0];
@@ -124,7 +171,12 @@ async function confirmPack() {
     const res = await fetch(`${API_BASE}/zip/pack`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file_id: fileId, tasks }),
+      body: JSON.stringify({
+        file_id: fileId,
+        tasks,
+        with_rag: withRag.value,
+        openai_api_key: openaiApiKey.value?.trim() || undefined,
+      }),
     });
     const text = await res.text();
     if (!res.ok) {
@@ -154,32 +206,79 @@ async function confirmPack() {
 const chunkSize = ref(1000);
 const chunkOverlap = ref(200);
 
-/** 選項：選擇單元、主題、難度、題型 */
-const filterUnit = ref('全部');
-const filterTopic = ref('全部');
+/** 難度、題型（用於 RAG 產生題目 API） */
 const filterDifficulty = ref('入門');
 const filterQuestionType = ref('簡答題');
 
-const unitOptions = ['全部'];
-const topicOptions = ['全部'];
 const difficultyOptions = ['入門', '進階', '困難'];
 const questionTypeOptions = ['簡答題', '申論題', '選擇題'];
 
-function addCard() {
-  const question = cardList.value.length > 0 ? cardList.value[0].question : defaultQuestion;
-  const hint = cardList.value.length > 0 ? cardList.value[0].hint : defaultHint;
+function addCard(question = null, hint = null, sourceFilename = null) {
+  const q = question ?? (cardList.value.length > 0 ? cardList.value[0].question : defaultQuestion);
+  const h = hint ?? (cardList.value.length > 0 ? cardList.value[0].hint : defaultHint);
   cardList.value = [
     ...cardList.value,
     {
       id: nextCardId(),
-      question,
-      hint,
+      question: q,
+      hint: h,
+      sourceFilename: sourceFilename ?? null,
       answer: '',
       hintVisible: false,
       confirmed: false,
       gradingResult: '',
     },
   ];
+}
+
+/** 呼叫 /zip/generate-question：依 RAG file_id 產生題目，使用同一 OpenAI API Key */
+async function generateQuestion() {
+  const fileId = generateQuestionFileId.value?.trim();
+  const key = openaiApiKey.value?.trim();
+  if (!fileId) {
+    generateQuestionError.value = '請先選擇單元（需先執行 Pack 取得 RAG 壓縮檔）';
+    return;
+  }
+  if (!key) {
+    generateQuestionError.value = '請輸入 OpenAI API Key';
+    return;
+  }
+  generateQuestionLoading.value = true;
+  generateQuestionError.value = '';
+  try {
+    const res = await fetch(`${API_BASE}/zip/generate-question`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_id: fileId,
+        openai_api_key: key,
+        qtype: filterQuestionType.value,
+        level: filterDifficulty.value,
+      }),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = res.statusText;
+      try {
+        const errBody = JSON.parse(text);
+        msg = errBody.detail ? JSON.stringify(errBody.detail) : msg;
+      } catch (_) {
+        if (text) msg = text;
+      }
+      throw new Error(msg);
+    }
+    const data = text ? JSON.parse(text) : {};
+    const questionContent = data.question_content ?? data.question ?? '';
+    const hintText = data.hint ?? '';
+    const selectedUnit = generateQuestionUnits.value.find((u) => u.file_id === fileId);
+    const zipName = selectedUnit?.filename ?? '';
+    if (questionContent) addCard(questionContent, hintText, zipName);
+    else addCard(null, null, zipName);
+  } catch (err) {
+    generateQuestionError.value = err.message || '產生題目失敗';
+  } finally {
+    generateQuestionLoading.value = false;
+  }
 }
 
 function toggleHint(item) {
@@ -246,9 +345,9 @@ function rewriteAnswer(item) {
           <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 320px;">{{ JSON.stringify(zipResponseJson, null, 2) }}</pre>
         </div>
         <div class="mt-4 pt-3 border-top">
-          <div class="my-title-xs-gray mb-2">壓縮資料夾 (Pack Folders)</div>
+          <div class="my-title-xs-gray mb-2">壓縮資料夾 (Pack) 與 RAG</div>
           <p class="form-text text-muted small mb-2">
-            依先前上傳的 file_id 與 tasks 抽出指定 6 位數資料夾重新壓成 ZIP。tasks 格式：逗號分隔多個輸出檔，加號為同一檔內多個資料夾。例：<code>220222+220301</code> → 一個 ZIP；<code>220222,220301+220302</code> → 兩個 ZIP。
+            依 file_id 與 tasks 抽出指定資料夾壓成 ZIP；勾選「一併產生 RAG」時，每個 ZIP 會再產生 FAISS 向量庫 ZIP 並提供下載連結。tasks 格式：逗號分隔多個輸出，加號為同一檔內多個資料夾。例：<code>220222+220301</code> → 一個 ZIP；<code>220222,220301+220302</code> → 兩個 ZIP。
           </p>
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div style="min-width: 200px;">
@@ -269,20 +368,70 @@ function rewriteAnswer(item) {
                 placeholder="例：220222+220301"
               >
             </div>
+            <div class="d-flex align-items-center">
+              <input
+                id="with-rag-check"
+                v-model="withRag"
+                type="checkbox"
+                class="form-check-input me-2"
+              >
+              <label for="with-rag-check" class="form-check-label my-title-xs-gray mb-0">一併產生 RAG</label>
+            </div>
+            <div style="min-width: 280px;">
+              <label class="form-label my-title-xs-gray mb-1">OpenAI API Key</label>
+              <input
+                v-model="openaiApiKey"
+                type="password"
+                class="form-control form-control-sm"
+                placeholder="用於 RAG 嵌入的 OpenAI API Key"
+                autocomplete="off"
+              >
+            </div>
             <button
               type="button"
               class="btn btn-sm btn-primary"
               :disabled="packLoading"
               @click="confirmPack"
             >
-              {{ packLoading ? '處理中...' : '壓縮' }}
+              {{ packLoading ? '處理中...' : '執行 Pack' }}
             </button>
           </div>
           <div v-if="packError" class="alert alert-danger py-2 small mb-2">
             {{ packError }}
           </div>
+          <!-- 每個 output：壓縮檔下載 + RAG 下載連結 -->
+          <div v-if="packOutputs.length > 0" class="mt-3">
+            <div class="my-title-xs-gray mb-2">下載連結（每個 ZIP 對應一組壓縮檔 + RAG 檔）</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered small">
+                <thead class="table-light">
+                  <tr>
+                    <th>壓縮檔</th>
+                    <th>壓縮檔下載</th>
+                    <th>RAG 檔</th>
+                    <th>RAG 下載</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(out, idx) in packOutputs" :key="idx">
+                    <td>{{ out.filename }}</td>
+                    <td>
+                      <a v-if="out.download_url" :href="getDownloadUrl(out.download_url)" target="_blank" rel="noopener">下載</a>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                    <td>{{ out.rag_filename || '—' }}</td>
+                    <td>
+                      <a v-if="out.rag_download_url" :href="getDownloadUrl(out.rag_download_url)" target="_blank" rel="noopener">下載</a>
+                      <span v-else-if="out.rag_error" class="text-danger" :title="out.rag_error">失敗</span>
+                      <span v-else class="text-muted">—</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
           <div v-if="packResponseJson !== null" class="mt-2">
-            <div class="my-title-xs-gray mb-1">Pack API 回傳結果：</div>
+            <div class="my-title-xs-gray mb-1">Pack API 完整回傳：</div>
             <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 240px;">{{ typeof packResponseJson === 'string' ? packResponseJson : JSON.stringify(packResponseJson, null, 2) }}</pre>
           </div>
         </div>
@@ -310,31 +459,47 @@ function rewriteAnswer(item) {
         </div>
       </div>
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
+        <div class="my-title-xs-gray mb-2">RAG 產生題目</div>
+        <p class="form-text text-muted small mb-2">
+          使用上方輸入的 OpenAI API Key。選擇單元 = 壓縮檔名（來自 Pack 結果），選難度與題型後按「產生題目」。
+        </p>
         <div class="d-flex flex-wrap align-items-end gap-3">
           <div>
-            <label class="form-label my-title-xs-gray mb-1">選擇單元</label>
-            <select v-model="filterUnit" class="form-select form-select-sm" :disabled="cardList.length > 0">
-              <option v-for="opt in unitOptions" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label my-title-xs-gray mb-1">主題</label>
-            <select v-model="filterTopic" class="form-select form-select-sm" :disabled="cardList.length > 0">
-              <option v-for="opt in topicOptions" :key="opt" :value="opt">{{ opt }}</option>
+            <label class="form-label my-title-xs-gray mb-1">選擇單元（壓縮檔名）</label>
+            <select v-model="generateQuestionFileId" class="form-select form-select-sm">
+              <option value="">— 請先執行 Pack —</option>
+              <option
+                v-for="(opt, idx) in generateQuestionUnits"
+                :key="idx"
+                :value="opt.file_id"
+              >
+                {{ opt.filename }}
+              </option>
             </select>
           </div>
           <div>
             <label class="form-label my-title-xs-gray mb-1">難度</label>
-            <select v-model="filterDifficulty" class="form-select form-select-sm" :disabled="cardList.length > 0">
+            <select v-model="filterDifficulty" class="form-select form-select-sm">
               <option v-for="opt in difficultyOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
           <div>
             <label class="form-label my-title-xs-gray mb-1">題型</label>
-            <select v-model="filterQuestionType" class="form-select form-select-sm" :disabled="cardList.length > 0">
+            <select v-model="filterQuestionType" class="form-select form-select-sm">
               <option v-for="opt in questionTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            :disabled="generateQuestionLoading || !generateQuestionFileId"
+            @click="generateQuestion"
+          >
+            {{ generateQuestionLoading ? '產生中...' : '產生題目' }}
+          </button>
+        </div>
+        <div v-if="generateQuestionError" class="alert alert-danger mt-2 mb-0 py-2 small">
+          {{ generateQuestionError }}
         </div>
       </div>
       <template v-if="cardList.length === 0">
@@ -351,7 +516,9 @@ function rewriteAnswer(item) {
           <div class="card-body text-start">
             <div class="mb-3">
               <div class="my-title-xs-gray mb-1">題目</div>
-              <div class="my-content-sm-black">{{ item.question }}</div>
+              <div class="my-content-sm-black">
+                <span v-if="item.sourceFilename" class="text-muted">[{{ item.sourceFilename }}] </span>{{ item.question }}
+              </div>
             </div>
             <div class="mb-3">
               <button
