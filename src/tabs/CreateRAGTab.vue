@@ -1,11 +1,23 @@
 <script setup>
 /** 建立 RAG 分頁。每個分頁有唯一 tabId，card 列表含題目、提示、回答與唯一 id。 */
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 
 defineProps({
   tabId: { type: String, required: true },
 });
+
+/** 每個分頁建立時生成唯一 file_id，規格與後端一致：str(uuid.uuid4()) */
+function generateTabFileId() {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // 無 crypto.randomUUID 時模擬 UUID v4 格式：xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  const hex = () => Math.floor(Math.random() * 16).toString(16);
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) =>
+    (c === 'x' ? hex() : (parseInt(hex(), 16) & 0x3) | 0x8).toString(16)
+  );
+}
 
 let cardIdSeq = 0;
 function nextCardId() {
@@ -21,6 +33,7 @@ const cardList = ref([]);
 
 /** 後端網址 */
 const API_BASE = 'http://127.0.0.1:8000';
+const authStore = useAuthStore();
 
 /** 上傳的 zip 檔案 */
 const uploadedZipFile = ref(null);
@@ -32,8 +45,14 @@ const zipResponseJson = ref(null);
 const zipLoading = ref(false);
 const zipError = ref('');
 
+/** 本分頁建立時生成的 file_id，固定顯示在最上方（上傳 ZIP 後 API 回傳的 file_id 寫入 zipFileId，供 Pack／LLM Key 等使用） */
+const tabFileId = ref('');
 /** Pack Folders：上傳後取得的 file_id、tasks、是否一併產生 RAG、OpenAI API key、完整回傳、載入中、錯誤 */
 const zipFileId = ref('');
+
+onMounted(() => {
+  tabFileId.value = generateTabFileId();
+});
 const packTasks = ref('');
 const withRag = ref(true);
 const openaiApiKey = ref('');
@@ -118,13 +137,13 @@ function onZipChange(e) {
   }
 }
 
-/** 按下確定：上傳 ZIP 並取得第二層資料夾清單 */
+/** 按下確定：上傳 ZIP（/zip/upload-zip）並取得 file_id、第二層資料夾清單 */
 async function confirmUploadZip() {
   if (!uploadedZipFile.value) {
     zipError.value = '請先選擇 ZIP 檔案';
     return;
   }
-    zipLoading.value = true;
+  zipLoading.value = true;
   zipError.value = '';
   zipSecondFolders.value = [];
   zipResponseJson.value = null;
@@ -132,8 +151,13 @@ async function confirmUploadZip() {
   try {
     const formData = new FormData();
     formData.append('file', uploadedZipFile.value);
-    const res = await fetch(`${API_BASE}/zip/second-folders`, {
+    const personId = authStore.user?.person_id;
+    if (personId != null) formData.append('person_id', String(personId));
+    const headers = {};
+    if (personId != null) headers['X-Person-Id'] = String(personId);
+    const res = await fetch(`${API_BASE}/zip/upload-zip`, {
       method: 'POST',
+      headers,
       body: formData,
     });
     if (!res.ok) {
@@ -517,6 +541,11 @@ function rewriteAnswer(item) {
 <template>
   <div class="d-flex flex-column my-bgcolor-gray-200 h-100">
     <div class="flex-grow-1 overflow-auto my-bgcolor-white p-4">
+      <!-- 本分頁 file_id：每個分頁建立時生成，顯示最上方 -->
+      <div class="my-bgcolor-gray-100 rounded text-start p-3 mb-3">
+        <span class="my-title-xs-gray">file_id：</span>
+        <code class="my-content-sm-black">{{ tabFileId }}</code>
+      </div>
       <!-- 上傳 ZIP 檔：置頂 -->
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
         <div class="my-title-xs-gray mb-2">上傳 ZIP 檔</div>
