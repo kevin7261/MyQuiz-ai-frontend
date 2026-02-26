@@ -11,7 +11,14 @@ export const useAuthStore = defineStore(
     const user = ref(null);
 
     function setUser(userData) {
-      user.value = userData ? { ...userData } : null;
+      if (!userData) {
+        user.value = null;
+        return;
+      }
+      const u = { ...userData };
+      // 後端可能回傳 id 而非 user_id，統一設為 user_id 供前端與 API 使用
+      if (u.user_id == null && u.id != null) u.user_id = u.id;
+      user.value = u;
     }
 
     function logout() {
