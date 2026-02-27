@@ -71,6 +71,7 @@ function getTabState(id) {
       generateQuestionFileId: '',
       generateQuestionLoading: false,
       generateQuestionError: '',
+      generateQuestionResponseJson: null,
       cardList: [],
     });
   }
@@ -87,7 +88,8 @@ const currentState = computed(() => {
 });
 
 /** 全畫面共用 */
-const openaiApiKey = ref('');
+/** 從環境變數 VITE_OPENAI_API_KEY 讀取，或由使用者在畫面上方輸入 */
+const openaiApiKey = ref(import.meta.env.VITE_OPENAI_API_KEY ?? '');
 
 /** Pack 回傳的 outputs 陣列（依當前 tab 的 packResponseJson） */
 const packOutputs = computed(() => {
@@ -96,7 +98,18 @@ const packOutputs = computed(() => {
   return Array.isArray(data.outputs) ? data.outputs : [];
 });
 
-/** 產生題目：選擇單元 = 壓縮檔名下拉 */
+/** 從 output 推得 rag_name（後端 rag_file_id = {rag_name}_rag） */
+function deriveRagName(o) {
+  if (o && typeof o.rag_name === 'string' && o.rag_name) return o.rag_name;
+  const id = o?.rag_file_id ?? o?.file_id ?? '';
+  const s = String(id);
+  if (s.endsWith('_rag')) return s.slice(0, -4);
+  const fn = o?.filename ?? o?.rag_filename ?? '';
+  const f = String(fn).replace(/_rag\.zip?$/i, '').replace(/\.zip$/i, '').replace(/_rag$/, '');
+  return f || s || '';
+}
+
+/** 產生題目：選擇單元 = 壓縮檔名下拉（含 rag_name 供 API；Pack 無資料時從 /rags 推導） */
 const generateQuestionUnits = computed(() => {
   const data = currentState.value.packResponseJson;
   const out = packOutputs.value;
@@ -106,15 +119,18 @@ const generateQuestionUnits = computed(() => {
     return withId.map((o) => ({
       file_id: String(o.rag_file_id ?? o.file_id),
       filename: o.filename || o.rag_filename || 'RAG',
+      rag_name: deriveRagName(o),
     }));
   }
   if (singleFileId && out.length) {
     return out.map((o) => ({
       file_id: String(singleFileId),
       filename: o.filename || o.rag_filename || 'RAG',
+      rag_name: deriveRagName(o),
     }));
   }
-  return [];
+  // fallback：Pack 尚未執行，從 /rags 的 rag_list 推導
+  return generateQuestionUnitsFromRag.value;
 });
 
 /** 難度、題型、chunk 參數（共用） */
@@ -122,13 +138,6 @@ const filterDifficulty = ref('入門');
 const filterQuestionType = ref('簡答題');
 const chunkSize = ref(1000);
 const chunkOverlap = ref(200);
-
-watch(generateQuestionUnits, (units) => {
-  const state = currentState.value;
-  if (units.length && !state.generateQuestionFileId) {
-    state.generateQuestionFileId = units[0].file_id;
-  }
-}, { immediate: true });
 
 /** 當前 tab 對應的 RAG 項目（來自 GET /rag/rags），僅在非「新增」tab 時有值 */
 const currentRagItem = computed(() => {
@@ -148,6 +157,43 @@ const fileMetadataToShow = computed(() => {
   if (rag.file_metadata != null && typeof rag.file_metadata === 'object') return rag.file_metadata;
   return rag;
 });
+
+/** 從 /rags 的 rag_list 字串推導出 generateQuestionUnits（Pack 尚未執行時的 fallback） */
+const generateQuestionUnitsFromRag = computed(() => {
+  const rag = currentRagItem.value;
+  if (!rag || typeof rag !== 'object') return [];
+  const ragListStr = rag.rag_list ?? '';
+  if (!ragListStr) return [];
+  const sourceFileId = String(rag.file_id ?? '');
+  return String(ragListStr)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((group) => {
+      const ragName = group.replace(/\+/g, '_');
+      return {
+        file_id: sourceFileId || `${ragName}_rag`,
+        filename: `${ragName}_rag.zip`,
+        rag_name: ragName,
+      };
+    });
+});
+
+/** 當切換到既有 tab 時，從 /rags 資料初始化 packTasks、chunkSize、chunkOverlap */
+watch(currentRagItem, (rag) => {
+  if (!rag || typeof rag !== 'object') return;
+  const state = currentState.value;
+  if (!state.packTasks && rag.rag_list) state.packTasks = String(rag.rag_list);
+  if (rag.chunk_size != null) chunkSize.value = Number(rag.chunk_size);
+  if (rag.chunk_overlap != null) chunkOverlap.value = Number(rag.chunk_overlap);
+}, { immediate: true });
+
+watch(generateQuestionUnits, (units) => {
+  const state = currentState.value;
+  if (units.length && !state.generateQuestionFileId) {
+    state.generateQuestionFileId = units[0].file_id;
+  }
+}, { immediate: true });
 
 /** 有 RAG 資料時預設選第一個 tab */
 watch(ragList, (list) => {
@@ -295,18 +341,18 @@ async function confirmUploadZip() {
   }
 }
 
-/** 呼叫 /rag/create-rag，body: file_id, person_id, tasks, openai_api_key, chunk_size, chunk_overlap */
+/** 呼叫 /rag/create-rag，body: file_id, person_id, rag_list, openai_api_key, chunk_size, chunk_overlap */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipFileId ?? '').trim();
-  const tasks = state.packTasks?.trim();
+  const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 file_id（見上方 file_metadata）';
     return;
   }
-  if (!tasks) {
-    state.packError = '請輸入 tasks（例：220222+220301 或 220222,220301+220302）';
+  if (!ragList) {
+    state.packError = '請輸入 rag_list（例：220222+220301 或 220222,220301+220302）';
     return;
   }
   state.packLoading = true;
@@ -319,7 +365,7 @@ async function confirmPack() {
       body: JSON.stringify({
         file_id: fileId,
         person_id: personId != null ? String(personId) : undefined,
-        tasks,
+        rag_list: ragList,
         openai_api_key: openaiApiKey.value?.trim() || undefined,
         chunk_size: Number(chunkSize.value) || 1000,
         chunk_overlap: Number(chunkOverlap.value) || 200,
@@ -352,12 +398,13 @@ async function confirmPack() {
 const difficultyOptions = ['入門', '進階', '困難'];
 const questionTypeOptions = ['簡答題', '申論題', '選擇題'];
 
-function addCard(question = null, hint = null, sourceFilename = null, referenceAnswer = null) {
+function addCard(question = null, hint = null, sourceFilename = null, referenceAnswer = null, ragName = null) {
   const state = currentState.value;
   const list = state.cardList;
   const q = question ?? (list.length > 0 ? list[0].question : defaultQuestion);
   const h = hint ?? (list.length > 0 ? list[0].hint : defaultHint);
   const refAns = referenceAnswer ?? (list.length > 0 ? list[0].referenceAnswer : '');
+  const rn = ragName ?? (list.length > 0 ? list[0].ragName : null);
   state.cardList = [
     ...list,
     {
@@ -366,6 +413,7 @@ function addCard(question = null, hint = null, sourceFilename = null, referenceA
       hint: h,
       referenceAnswer: refAns,
       sourceFilename: sourceFilename ?? null,
+      ragName: rn,
       answer: '',
       hintVisible: false,
       confirmed: false,
@@ -374,12 +422,18 @@ function addCard(question = null, hint = null, sourceFilename = null, referenceA
   ];
 }
 
-/** 呼叫 /rag/generate-question */
+/** 呼叫 /rag/generate-question（body: file_id, rag_name, openai_api_key, qtype, level） */
 async function generateQuestion() {
   const state = currentState.value;
-  const fileId = state.generateQuestionFileId?.trim();
   const key = openaiApiKey.value?.trim();
-  if (!fileId) {
+  const sourceFileId = String(state.zipFileId ?? '').trim();
+  const selectedUnit = generateQuestionUnits.value.find((u) => u.file_id === state.generateQuestionFileId);
+  const ragName = selectedUnit?.rag_name?.trim();
+  if (!sourceFileId) {
+    state.generateQuestionError = '請先上傳 ZIP 取得 file_id';
+    return;
+  }
+  if (!ragName) {
     state.generateQuestionError = '請先選擇單元（需先執行 Pack 取得 RAG 壓縮檔）';
     return;
   }
@@ -389,12 +443,14 @@ async function generateQuestion() {
   }
   state.generateQuestionLoading = true;
   state.generateQuestionError = '';
+  state.generateQuestionResponseJson = null;
   try {
     const res = await fetch(`${API_BASE}/rag/generate-question`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        file_id: fileId,
+        file_id: sourceFileId,
+        rag_name: ragName,
         openai_api_key: key,
         qtype: filterQuestionType.value,
         level: filterDifficulty.value,
@@ -412,13 +468,13 @@ async function generateQuestion() {
       throw new Error(msg);
     }
     const data = text ? JSON.parse(text) : {};
+    state.generateQuestionResponseJson = data;
     const questionContent = data.question_content ?? data.question ?? '';
     const hintText = data.hint ?? '';
+    const targetFilename = data.target_filename ?? selectedUnit?.filename ?? '';
     const answerText = data.answer ?? '';
-    const selectedUnit = generateQuestionUnits.value.find((u) => u.file_id === fileId);
-    const zipName = selectedUnit?.filename ?? '';
-    if (questionContent) addCard(questionContent, hintText, zipName, answerText);
-    else addCard(null, null, zipName, answerText);
+    if (questionContent) addCard(questionContent, hintText, targetFilename, answerText, ragName);
+    else addCard(null, null, targetFilename, answerText, ragName);
   } catch (err) {
     state.generateQuestionError = err.message || '產生題目失敗';
   } finally {
@@ -438,27 +494,32 @@ async function confirmAnswer(item) {
     item.gradingResult = '請先在畫面上方輸入 OpenAI API Key 後再進行評分。';
     return;
   }
-  const gradeZip = currentState.value.uploadedZipFile;
-  if (!gradeZip) {
+  const sourceFileId = String(currentState.value.zipFileId ?? '').trim();
+  if (!sourceFileId) {
     item.confirmed = true;
-    item.gradingResult = '評分需要參考講義：請先在「上傳 ZIP 檔」區塊上傳 RAG/講義 ZIP 後再進行評分。（或於伺服器放置 rag_db.zip）';
+    item.gradingResult = '評分需要 file_id：請先在「上傳 ZIP 檔」區塊上傳 RAG/講義 ZIP 取得 file_id 後再進行評分。';
     return;
   }
   item.confirmed = true;
   item.gradingResult = '批改中...';
   try {
-    const authStore = useAuthStore();
-    const userId = authStore.user?.user_id ?? authStore.user?.id;
-    const form = new FormData();
-    form.append('file', gradeZip);
-    form.append('question_text', item.question);
-    form.append('student_answer', item.answer.trim());
-    form.append('qtype', filterQuestionType.value);
-    form.append('openai_api_key', key);
-    if (userId != null && userId !== '') form.append('user_id', String(userId));
-    const res = await fetch(`${API_BASE}/api/grade_submission`, {
+    const ragName = item.ragName?.trim() ?? generateQuestionUnits.value[0]?.rag_name?.trim();
+    if (!ragName) {
+      item.gradingResult = '評分失敗：此題目未關聯 RAG 單元（rag_name），請由「產生題目」產生題目後再評分。';
+      return;
+    }
+    const body = new URLSearchParams({
+      file_id: sourceFileId,
+      rag_name: ragName,
+      openai_api_key: key,
+      question_text: item.question,
+      student_answer: item.answer.trim(),
+      qtype: filterQuestionType.value,
+    });
+    const res = await fetch(`${API_BASE}/rag/grade_submission`, {
       method: 'POST',
-      body: form,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
     });
     const text = await res.text();
     if (!res.ok) {
@@ -502,7 +563,7 @@ async function confirmAnswer(item) {
         for (let r = 0; r <= maxRetries; r++) {
           if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
           try {
-            pollRes = await fetch(`${API_BASE}/api/grade_result/${jobId}`);
+            pollRes = await fetch(`${API_BASE}/rag/grade_result/${jobId}`);
             pollText = await pollRes.text();
             if (pollRes.status !== 502 && pollRes.status !== 504) break;
           } catch (_) {
@@ -732,10 +793,10 @@ function rewriteAnswer(item) {
       <!-- 壓縮資料夾 (Pack) 與 RAG -->
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
         <div class="my-title-xs-gray mb-2">壓縮資料夾 (Pack) 與 RAG</div>
-          <p class="form-text text-muted small mb-2">依上方 file_metadata 的當前 RAG 與 tasks 壓縮指定資料夾，可一併產生 RAG。tasks：逗號=多個 ZIP，加號=同檔內多資料夾，例 <code>220222+220301</code>、<code>220222,220301+220302</code>。</p>
+          <p class="form-text text-muted small mb-2">依上方 file_metadata 的當前 RAG 與 rag_list 壓縮指定資料夾，可一併產生 RAG。rag_list：逗號=多個 ZIP，加號=同檔內多資料夾，例 <code>220222+220301</code>、<code>220222,220301+220302</code>。</p>
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div class="flex-grow-1" style="min-width: 240px;">
-              <label class="form-label my-title-xs-gray mb-1">tasks</label>
+              <label class="form-label my-title-xs-gray mb-1">rag_list</label>
               <input
                 v-model="currentState.packTasks"
                 type="text"
@@ -829,6 +890,10 @@ function rewriteAnswer(item) {
         </div>
         <div v-if="currentState.generateQuestionError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.generateQuestionError }}
+        </div>
+        <div v-if="currentState.generateQuestionResponseJson !== null" class="mt-2">
+          <div class="my-title-xs-gray mb-1">產生題目 API 回傳 JSON：</div>
+          <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 240px;">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
         </div>
       </div>
       <template v-if="currentState.cardList.length === 0">
