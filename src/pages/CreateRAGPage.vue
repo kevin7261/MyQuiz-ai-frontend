@@ -88,8 +88,8 @@ const currentState = computed(() => {
 });
 
 /** 全畫面共用 */
-/** 從環境變數 VITE_OPENAI_API_KEY 讀取，或由使用者在畫面上方輸入 */
-const openaiApiKey = ref(import.meta.env.VITE_OPENAI_API_KEY ?? '');
+/** 由使用者在畫面上方輸入，不儲存於專案 */
+const openaiApiKey = ref('');
 
 /** Pack 回傳的 outputs 陣列（依當前 tab 的 packResponseJson） */
 const packOutputs = computed(() => {
