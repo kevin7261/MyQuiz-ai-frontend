@@ -1,8 +1,7 @@
 <script setup>
 /** 使用者管理頁面：呼叫 GET /user/users 取得使用者列表並以表格顯示。 */
 import { ref, onMounted } from 'vue';
-
-const API_BASE = 'https://aiquiz-backend-z4mo.onrender.com';
+import { API_BASE } from '../constants/api.js';
 
 const users = ref([]);
 const count = ref(0);

@@ -5,8 +5,7 @@
   import { ref } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
-
-  const API_BASE = 'https://aiquiz-backend-z4mo.onrender.com';
+  import { API_BASE } from '../constants/api.js';
 
   export default {
     name: 'LoginView',
