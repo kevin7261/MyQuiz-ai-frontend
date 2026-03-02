@@ -223,6 +223,48 @@ onMounted(() => {
   fetchRagList();
 });
 
+/** 刪除 RAG：呼叫 POST /rag/delete/{file_id}（軟刪 + 刪資料夾），成功後重抓 /rag/rags。Header 必帶 X-Person-Id。 */
+async function deleteRag(rag, e) {
+  if (e) e.stopPropagation();
+  const fileId = rag?.file_id ?? rag?.id ?? rag;
+  if (fileId == null || fileId === '') return;
+  const personId = authStore.user?.person_id;
+  if (personId == null) {
+    alert('請先登入');
+    return;
+  }
+  if (!confirm(`確定要刪除「${getRagTabLabel(rag)}」嗎？`)) return;
+  try {
+    const res = await fetch(`${API_BASE}/rag/delete/${encodeURIComponent(String(fileId))}`, {
+      method: 'POST',
+      headers: { 'X-Person-Id': String(personId) },
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      let msg = res.statusText;
+      try {
+        const err = JSON.parse(text);
+        msg = err.detail ?? err.error ?? msg;
+      } catch (_) {
+        if (text) msg = text;
+      }
+      throw new Error(msg);
+    }
+    await fetchRagList();
+    if (activeTabId.value === (rag?.file_id ?? rag?.id ?? String(fileId))) {
+      if (ragList.value.length > 0) {
+        activeTabId.value = ragList.value[0].file_id ?? ragList.value[0].id ?? ragList.value[0];
+      } else if (newTabIds.value.length > 0) {
+        activeTabId.value = newTabIds.value[0];
+      } else {
+        addNewTab();
+      }
+    }
+  } catch (err) {
+    alert('刪除失敗：' + (err.message || String(err)));
+  }
+}
+
 /** upload-zip 成功回傳的 created_at，用於 tab 標籤（key = rag_id） */
 const ragCreatedAtMap = ref({});
 
@@ -676,14 +718,23 @@ function rewriteAnswer(item) {
         </template>
         <template v-else>
           <ul class="nav nav-tabs mb-0">
-            <li v-for="rag in ragList" :key="'rag-' + (rag.file_id ?? rag.id ?? rag)" class="nav-item">
+            <li v-for="rag in ragList" :key="'rag-' + (rag.file_id ?? rag.id ?? rag)" class="nav-item d-flex align-items-center">
               <button
                 type="button"
-                class="nav-link"
+                class="nav-link border-0 rounded-0"
                 :class="{ active: activeTabId === (rag.file_id ?? rag.id ?? rag) }"
                 @click="activeTabId = (rag.file_id ?? rag.id ?? String(rag))"
               >
                 {{ getRagTabLabel(rag) }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none"
+                style="min-width: 1.5rem;"
+                aria-label="刪除此 RAG"
+                @click="deleteRag(rag, $event)"
+              >
+                ×
               </button>
             </li>
             <li v-for="(tid, idx) in newTabIds" :key="'new-' + tid" class="nav-item">
@@ -851,7 +902,7 @@ function rewriteAnswer(item) {
       </div>
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
         <div class="my-title-xs-gray mb-2">RAG 產生題目</div>
-        <p class="form-text text-muted small mb-2">選單元（Pack 結果）、難度、題型後按「產生題目」。</p>
+        <p class="form-text text-muted small mb-2">選單元（Pack 結果）、難度、題型後，到最下方按「產生題目」。</p>
         <div class="d-flex flex-wrap align-items-end gap-3">
           <div>
             <label class="form-label my-title-xs-gray mb-1">選擇單元（壓縮檔名）</label>
@@ -878,14 +929,6 @@ function rewriteAnswer(item) {
               <option v-for="opt in questionTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
             </select>
           </div>
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
-            :disabled="currentState.generateQuestionLoading || !currentState.generateQuestionFileId"
-            @click="generateQuestion"
-          >
-            {{ currentState.generateQuestionLoading ? '產生中...' : '產生題目' }}
-          </button>
         </div>
         <div v-if="currentState.generateQuestionError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.generateQuestionError }}
@@ -973,7 +1016,14 @@ function rewriteAnswer(item) {
           </div>
         </div>
       </template>
-      <div class="button" role="button" tabindex="0" @click="addCard">產生題目</div>
+      <button
+        type="button"
+        class="btn btn-sm btn-primary"
+        :disabled="currentState.generateQuestionLoading || !currentState.generateQuestionFileId"
+        @click="generateQuestion"
+      >
+        {{ currentState.generateQuestionLoading ? '產生中...' : '產生題目' }}
+      </button>
       </template>
     </div>
   </div>
