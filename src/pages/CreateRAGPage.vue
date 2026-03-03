@@ -77,6 +77,8 @@ function getTabState(id) {
       generateQuestionError: '',
       generateQuestionResponseJson: null,
       cardList: [],
+      /** 是否已點「新增題目」而顯示題目生成子區塊 */
+      showQuestionGeneratorBlock: false,
       updateNameLoading: false,
       updateNameError: '',
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
@@ -1110,35 +1112,7 @@ function addRagListGroup() {
         </div>
         <div v-if="fileMetadataToShow != null" class="mt-3">
           <div class="my-title-xs-gray mb-2">file_metadata</div>
-          <table class="table table-sm table-bordered small mb-0">
-            <tbody>
-              <tr v-if="fileMetadataToShow.rag_id != null">
-                <th class="my-bgcolor-gray-100" style="width: 140px;">rag_id</th>
-                <td><code>{{ fileMetadataToShow.rag_id }}</code></td>
-              </tr>
-              <tr v-if="fileMetadataToShow.file_id != null">
-                <th class="my-bgcolor-gray-100">file_id</th>
-                <td><code>{{ fileMetadataToShow.file_id }}</code></td>
-              </tr>
-              <tr v-if="fileMetadataToShow.created_at != null">
-                <th class="my-bgcolor-gray-100">created_at</th>
-                <td>{{ fileMetadataToShow.created_at }}</td>
-              </tr>
-              <tr v-if="fileMetadataToShow.filename != null">
-                <th class="my-bgcolor-gray-100">filename</th>
-                <td>{{ fileMetadataToShow.filename }}</td>
-              </tr>
-              <tr v-if="fileMetadataToShow.second_folders != null">
-                <th class="my-bgcolor-gray-100">second_folders</th>
-                <td>
-                  <span v-if="!fileMetadataToShow.second_folders.length" class="text-muted">（無）</span>
-                  <ul v-else class="list-unstyled mb-0">
-                    <li v-for="(name, i) in fileMetadataToShow.second_folders" :key="i">{{ name }}</li>
-                  </ul>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <pre class="my-readonly-block mb-0 font-monospace small"><code>{{ JSON.stringify(fileMetadataToShow, null, 2) }}</code></pre>
         </div>
       </div>
       <!-- 壓縮資料夾 (Pack) 與 RAG：未輸入 API key 或未上傳 ZIP 時 disable -->
@@ -1232,7 +1206,7 @@ function addRagListGroup() {
               <input
                 :value="currentState.packTasks"
                 type="text"
-                class="form-control form-control-sm"
+                class="form-control form-control-sm my-readonly-block"
                 placeholder="例：220222+220301"
                 readonly
               >
@@ -1272,24 +1246,104 @@ function addRagListGroup() {
             <label class="form-label my-title-xs-gray mb-1">rag_metadata（Pack API 回傳）</label>
             <textarea
               v-model="currentState.ragMetadata"
-              class="form-control form-control-sm font-monospace small"
+              class="form-control form-control-sm font-monospace small my-readonly-block"
               rows="6"
               placeholder="執行 Pack 後由 API 回傳顯示"
               readonly
-              style="resize: vertical; background-color: var(--bs-secondary-bg, #e9ecef); max-height: 280px;"
+              style="resize: vertical; max-height: 280px;"
             />
           </div>
           <div v-if="currentState.packError" class="alert alert-danger py-2 small mb-2">
             {{ currentState.packError }}
           </div>
       </div>
-      <!-- RAG 產生題目與題目與作答：第一個區塊可產生第一題，每題下方再一個相同區塊可繼續產生下一題 -->
-      <div class="text-start mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
+      <!-- RAG 產生題目與題目與作答：一個區塊，點「新增題目」後才出現題目生成子區塊 -->
+      <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
         <div class="my-title-xs-gray mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
-        <p class="form-text text-muted small mb-3">選單元（Pack 結果）、難度、system_prompt_instruction 後按「產生題目」。產生一題後，下方會出現空的相同區塊，可繼續產生下一題。</p>
+        <p class="form-text text-muted small mb-3">點「新增題目」後會出現題目生成子區塊（選擇單元、難度、system_prompt_instruction、產生題目）。產生一題後，下方會再出現相同子區塊，可繼續產生下一題。</p>
 
-        <!-- 第一個產生題目區塊 -->
-        <div class="my-bgcolor-gray-100 rounded p-4 mb-3">
+        <div v-if="!currentState.showQuestionGeneratorBlock" class="mb-3">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            @click="currentState.showQuestionGeneratorBlock = true"
+          >
+            新增題目
+          </button>
+        </div>
+
+        <!-- 題目生成子區塊：點「新增題目」後才顯示，整塊為一個區塊；第一題在區塊最上面 -->
+        <template v-if="currentState.showQuestionGeneratorBlock">
+        <div class="my-bgcolor-gray-50 rounded p-4 mb-3">
+          <!-- 第一題：區塊最上面 -->
+          <template v-if="currentState.cardList.length > 0">
+            <div class="card mb-3">
+              <div class="card-header py-2">
+                <span class="my-title-sm-black mb-0">第 1 題</span>
+              </div>
+              <div class="card-body text-start">
+                <div class="mb-3">
+                  <div class="my-title-xs-gray mb-1">題目</div>
+                  <div class="my-content-sm-black">
+                    <span v-if="currentState.cardList[0].sourceFilename" class="text-muted">[{{ currentState.cardList[0].sourceFilename }}] </span>{{ currentState.cardList[0].question }}
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary py-0"
+                    @click="toggleHint(currentState.cardList[0])"
+                  >
+                    {{ currentState.cardList[0].hintVisible ? '隱藏提示' : '顯示提示' }}
+                  </button>
+                  <div v-show="currentState.cardList[0].hintVisible" class="rounded my-bgcolor-gray-100 my-title-xs-gray mt-2 p-2">
+                    {{ currentState.cardList[0].hint }}
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label :for="`answer-${currentState.cardList[0].id}`" class="form-label my-title-xs-gray mb-1">回答</label>
+                  <template v-if="!currentState.cardList[0].confirmed">
+                    <textarea
+                      :id="`answer-${currentState.cardList[0].id}`"
+                      v-model="currentState.cardList[0].answer"
+                      class="form-control"
+                      rows="4"
+                      placeholder="請輸入您的回答..."
+                      maxlength="2000"
+                    />
+                    <div class="form-text">{{ currentState.cardList[0].answer.length }} / 2000</div>
+                    <div class="d-flex gap-2 mt-2">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(currentState.cardList[0])">
+                        重寫
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-primary"
+                        :disabled="!currentState.cardList[0].answer.trim()"
+                        @click="confirmAnswer(currentState.cardList[0])"
+                      >
+                        確定
+                      </button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div class="rounded my-bgcolor-gray-100 my-content-sm-black mb-2 p-2">{{ currentState.cardList[0].answer }}</div>
+                    <div class="d-flex gap-2 mb-3">
+                      <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(currentState.cardList[0])">
+                        重寫
+                      </button>
+                    </div>
+                  </template>
+                </div>
+                <div class="border rounded my-bgcolor-gray-50 p-3">
+                  <div class="my-title-xs-gray mb-1">批改結果</div>
+                  <div class="my-content-sm-black" style="white-space: pre-wrap;">{{ currentState.cardList[0].gradingResult || '尚未批改' }}</div>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- 產生題目控制列（選擇單元、難度、產生題目、system_prompt_instruction） -->
           <div class="d-flex flex-wrap align-items-end gap-3">
             <div>
               <label class="form-label my-title-xs-gray mb-1">選擇單元（壓縮檔名）</label>
@@ -1335,15 +1389,14 @@ function addRagListGroup() {
           </div>
           <div v-if="currentState.generateQuestionResponseJson !== null" class="mt-2">
             <div class="my-title-xs-gray mb-1">產生題目 API 回傳 JSON：</div>
-            <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 240px;">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
+            <pre class="rounded p-3 small text-start overflow-auto mb-0 bg-white" style="max-height: 240px;">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
           </div>
-        </div>
 
-        <!-- 每題下方一個相同的產生題目區塊：題目與作答卡片 + 空區塊 -->
-        <template v-for="(item, idx) in currentState.cardList" :key="item.id">
-          <div class="card mb-3">
+          <!-- 第 2 題起：題目與作答卡片 + 下一組產生題目控制列 -->
+          <template v-for="(item, idx) in currentState.cardList.slice(1)" :key="item.id">
+          <div class="card mb-3 mt-4">
             <div class="card-header py-2">
-              <span class="my-title-sm-black mb-0">第 {{ idx + 1 }} 題</span>
+              <span class="my-title-sm-black mb-0">第 {{ idx + 2 }} 題</span>
             </div>
             <div class="card-body text-start">
               <div class="mb-3">
@@ -1405,8 +1458,8 @@ function addRagListGroup() {
               </div>
             </div>
           </div>
-          <!-- 此題下方：空的相同區塊，可產生下一題 -->
-          <div class="my-bgcolor-gray-100 rounded p-4 mb-3">
+          <!-- 此題下方：同一區塊內，下一組產生題目控制列 -->
+          <div class="mt-4 pt-3 border-top">
             <div class="d-flex flex-wrap align-items-end gap-3">
               <div>
                 <label class="form-label my-title-xs-gray mb-1">選擇單元（壓縮檔名）</label>
@@ -1452,9 +1505,11 @@ function addRagListGroup() {
             </div>
             <div v-if="currentState.generateQuestionResponseJson !== null" class="mt-2">
               <div class="my-title-xs-gray mb-1">產生題目 API 回傳 JSON：</div>
-              <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 240px;">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
+              <pre class="rounded p-3 small text-start overflow-auto mb-0 bg-white" style="max-height: 240px;">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
             </div>
           </div>
+          </template>
+        </div>
         </template>
       </div>
       </template>
@@ -1463,6 +1518,17 @@ function addRagListGroup() {
 </template>
 
 <style scoped>
+/* 不能編輯的 input 與 metadata 區塊共用：背景、邊框、圓角一致 */
+.my-readonly-block {
+  background-color: var(--bs-secondary-bg, #e9ecef) !important;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius, 0.375rem);
+}
+pre.my-readonly-block {
+  padding: 0.375rem 0.75rem;
+  max-height: 20rem;
+  overflow: auto;
+}
 .rag-list-drop-zone.rag-list-drop-active {
   background: var(--bs-info-bg-subtle, rgba(13, 202, 240, 0.2)) !important;
   border-color: var(--bs-info, #0dcaf0) !important;
