@@ -955,6 +955,14 @@ function removeFromRagList(groupIdx, tagIdx) {
   state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
 }
 
+/** 刪除整個虛擬資料夾群組 */
+function removeRagListGroup(groupIdx) {
+  const state = currentState.value;
+  const list = [...(state.packTasksList || [])];
+  list.splice(groupIdx, 1);
+  state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
+}
+
 /** 新增一個空的虛擬資料夾群組 */
 function addRagListGroup() {
   const state = currentState.value;
@@ -1028,8 +1036,9 @@ function addRagListGroup() {
 
       <!-- 無資料時不顯示表單，點「新增」後才顯示；有資料時一律顯示 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
-      <!-- rag_id、file_id、name 獨立區塊；未上傳顯示「未上傳」；name 在此編輯（上傳時帶入） -->
+      <!-- 基本資訊、OpenAI API Key、ZIP 上傳與 file_metadata 合併為一區塊 -->
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
+        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">基本資訊、API 與 ZIP 上傳</div>
         <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
           <span class="my-title-xs-gray">rag_id：</span>
           <span class="my-content-sm-black">{{ currentRagIdAndFileId.rag_id }}</span>
@@ -1069,12 +1078,9 @@ function addRagListGroup() {
         <div v-if="currentState.updateNameError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.updateNameError }}
         </div>
-      </div>
-      <!-- OpenAI API Key 本頁共用，Pack、產生題目、評分等會自動使用 -->
-      <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
-        <div class="my-title-xs-gray mb-2">OpenAI API Key</div>
+        <div class="my-title-xs-gray mb-2 mt-4">OpenAI API Key</div>
         <p class="form-text text-muted small mb-2">本頁共用，Pack、產生題目、評分等會自動使用。</p>
-        <div style="max-width: 400px;">
+        <div style="max-width: 400px;" class="mb-3">
           <input
             v-model="openaiApiKey"
             type="password"
@@ -1083,9 +1089,6 @@ function addRagListGroup() {
             autocomplete="off"
           >
         </div>
-      </div>
-      <!-- 僅在「新增」tab 顯示上傳欄位；讀了 GET /rag/rags 後若有 file_metadata 或該筆 RAG 資料則顯示 file_metadata，否則顯示上傳後回傳的 metadata -->
-      <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
         <div v-if="isNewTabId(activeTabId)" class="mb-3">
           <div class="my-title-xs-gray mb-2">上傳 ZIP 檔</div>
           <p class="form-text text-muted small mb-2">支援 .pdf、.docx、.rmd／.r、.html／.htm</p>
@@ -1147,7 +1150,7 @@ function addRagListGroup() {
       </div>
       <!-- 壓縮資料夾 (Pack) 與 RAG：未輸入 API key 或未上傳 ZIP 時 disable -->
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
-        <div class="my-title-xs-gray mb-2">壓縮資料夾 (Pack) 與 RAG</div>
+        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
           <p class="form-text text-muted small mb-2">依上方 file_metadata 的當前 RAG 與 rag_list 壓縮指定資料夾，可一併產生 RAG。rag_list：逗號=多個 ZIP，加號=同檔內多資料夾，例 <code>220222+220301</code>、<code>220222,220301+220302</code>。</p>
 
           <!-- second_folders 標籤區：可拖曳至 rag_list -->
@@ -1174,29 +1177,41 @@ function addRagListGroup() {
             <div class="d-flex flex-wrap align-items-start gap-2">
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
                 <div
-                  class="border rounded p-2 d-flex flex-wrap align-items-center gap-1 rag-list-drop-zone"
+                  class="border rounded p-2 d-flex align-items-center gap-1 rag-list-drop-zone position-relative"
                   style="min-width: 120px; min-height: 2.5rem; background: var(--bs-secondary-bg, #e9ecef);"
                   @dragover="onDragOver"
                   @dragleave="onDragLeave"
                   @drop="onDropRagList($event, gi)"
                 >
-                  <span
-                    v-for="(tag, ti) in group"
-                    :key="'t-' + gi + '-' + ti"
-                    class="badge bg-primary px-2 py-1 d-inline-flex align-items-center gap-1"
-                    style="cursor: grab;"
-                    draggable="true"
-                    @dragstart="onDragStartTag($event, tag, true, gi, ti)"
-                  >
-                    {{ tag }}
+                  <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1">
                     <span
-                      class="ms-1 opacity-75"
-                      style="cursor: pointer;"
-                      aria-label="移除"
-                      @click.stop="removeFromRagList(gi, ti)"
-                    >×</span>
-                  </span>
-                  <span v-if="!group.length" class="text-muted small">拖入此處</span>
+                      v-for="(tag, ti) in group"
+                      :key="'t-' + gi + '-' + ti"
+                      class="badge bg-primary px-2 py-1 d-inline-flex align-items-center gap-1"
+                      style="cursor: grab;"
+                      draggable="true"
+                      @dragstart="onDragStartTag($event, tag, true, gi, ti)"
+                    >
+                      {{ tag }}
+                      <span
+                        class="ms-1 opacity-75"
+                        style="cursor: pointer;"
+                        aria-label="移除標籤"
+                        @click.stop="removeFromRagList(gi, ti)"
+                      >×</span>
+                    </span>
+                    <span v-if="!group.length" class="text-muted small">拖入此處</span>
+                  </div>
+                  <button
+                    v-if="(currentState.packTasksList || []).length > 0"
+                    type="button"
+                    class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
+                    style="min-width: 1.5rem;"
+                    aria-label="刪除此虛擬資料夾"
+                    @click.stop="removeRagListGroup(gi)"
+                  >
+                    ×
+                  </button>
                 </div>
               </template>
               <div
@@ -1221,13 +1236,13 @@ function addRagListGroup() {
 
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div class="flex-grow-1" style="min-width: 240px;">
-              <label class="form-label my-title-xs-gray mb-1">rag_list（可手動編輯）</label>
+              <label class="form-label my-title-xs-gray mb-1">rag_list（純顯示）</label>
               <input
-                v-model="currentState.packTasks"
+                :value="currentState.packTasks"
                 type="text"
                 class="form-control form-control-sm"
                 placeholder="例：220222+220301"
-                :disabled="packAndGenerateDisabled"
+                readonly
               >
             </div>
             <div style="width: 100px;">
@@ -1289,7 +1304,7 @@ function addRagListGroup() {
       </div>
       <!-- RAG 產生題目：未輸入 API key、未上傳 ZIP 或未執行 Pack 時 disable -->
       <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
-        <div class="my-title-xs-gray mb-2">RAG 產生題目</div>
+        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">RAG 產生題目</div>
         <p class="form-text text-muted small mb-2">選單元（Pack 結果）、難度、題型後，到最下方按「產生題目」。</p>
         <div class="d-flex flex-wrap align-items-end gap-3">
           <div>
@@ -1326,6 +1341,9 @@ function addRagListGroup() {
           <pre class="my-bgcolor-gray-50 rounded p-3 small text-start overflow-auto mb-0" style="max-height: 240px;">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
         </div>
       </div>
+      <!-- 題目與作答區塊 -->
+      <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
+        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">題目與作答</div>
       <template v-if="currentState.cardList.length === 0">
       </template>
       <template v-else>
@@ -1406,6 +1424,7 @@ function addRagListGroup() {
       >
         {{ currentState.generateQuestionLoading ? '產生中...' : '產生題目' }}
       </button>
+      </div>
       </template>
     </div>
   </div>
