@@ -6,7 +6,7 @@
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
-import { API_BASE, API_GENERATE_QUIZ, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_REQUEST_QUIZ_TEXT } from '../constants/api.js';
+import { API_BASE, API_GENERATE_QUIZ, API_GRADE_SUBMISSION, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -88,6 +88,8 @@ function getTabState(id) {
       quizSlotsCount: 0,
       updateNameLoading: false,
       updateNameError: '',
+      updateLlmKeyLoading: false,
+      updateLlmKeyError: '',
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
       saveSystemPromptLoading: false,
       saveSystemPromptError: '',
@@ -118,10 +120,9 @@ const hasRagListOrMetadata = computed(() => {
   return hasList || hasMeta;
 });
 
-/** 未輸入 API key 或當前 tab 未上傳 ZIP 時，Pack、RAG 產生 quiz、產生 quiz 按鈕皆 disable；若有 rag_list 或 rag_metadata 則不 disable */
+/** 當前 tab 未上傳 ZIP 時，Pack、RAG 產生 quiz、產生 quiz 按鈕 disable；若有 rag_list 或 rag_metadata 則不 disable。Pack 仍會在送出時檢查 API key。 */
 const packAndGenerateDisabled = computed(() => {
   if (hasRagListOrMetadata.value) return false;
-  if (!openaiApiKey.value?.trim()) return true;
   const id = activeTabId.value;
   if (!id) return true;
   if (isNewTabId(id)) {
@@ -269,10 +270,15 @@ const generateQuizUnitsFromRag = computed(() => {
     });
 });
 
-/** 當切換到既有 tab 時，從同一筆 Rag 資料填入：rag_list、rag_metadata、chunk_size、chunk_overlap、name、system_prompt_instruction */
+/** 當切換到既有 tab 時，從同一筆 Rag 資料填入：llm_api_key（OpenAI API Key 欄位）、rag_list、rag_metadata、chunk_size、chunk_overlap、name、system_prompt_instruction */
 watch(currentRagItem, (rag) => {
   if (!rag || typeof rag !== 'object') return;
   const state = currentState.value;
+  if (rag.llm_api_key != null && String(rag.llm_api_key).trim() !== '') {
+    openaiApiKey.value = String(rag.llm_api_key).trim();
+  } else {
+    openaiApiKey.value = '';
+  }
   if (rag.rag_list != null && String(rag.rag_list).trim() !== '') {
     state.packTasks = String(rag.rag_list).trim();
     state.packTasksList = parsePackTasksList(state.packTasks);
@@ -344,12 +350,15 @@ watch(ragList, (list) => {
   }
 }, { immediate: true });
 
-/** 載入 RAG 列表：GET /rag/rags 列出 Rag 表全部內容（與 GET /user/users 一樣回傳全部資料），每一筆一個 tab。 */
+/** 載入 RAG 列表：GET /rag/rags 列出 Rag 表全部內容（與 GET /user/users 一樣回傳全部資料），每一筆一個 tab。可選帶 Header X-API-Key。 */
 async function fetchRagList() {
   ragListLoading.value = true;
   ragListError.value = '';
   try {
-    const res = await fetch(`${API_BASE}/rag/rags`, { method: 'GET' });
+    const headers = {};
+    const llmKey = openaiApiKey.value?.trim();
+    if (llmKey) headers['X-LLM-Api-Key'] = llmKey;
+    const res = await fetch(`${API_BASE}/rag/rags`, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
     ragList.value = Array.isArray(data) ? data : (data?.rags ?? data?.items ?? []);
@@ -408,6 +417,49 @@ async function updateRagName() {
     state.updateNameError = err.message || String(err);
   } finally {
     state.updateNameLoading = false;
+  }
+}
+
+/** 更新 RAG 的 LLM API Key：PATCH /rag/llm_api_key/{file_id}，body { llm_api_key }，Header X-Person-Id。 */
+async function updateRagLlmApiKey() {
+  const rag = currentRagItem.value;
+  if (!rag || isNewTabId(activeTabId.value)) return;
+  const fileId = rag.file_id ?? rag.id ?? rag;
+  if (fileId == null || fileId === '') return;
+  const personId = authStore.user?.person_id;
+  if (personId == null) {
+    alert('請先登入');
+    return;
+  }
+  const llmKey = (openaiApiKey.value ?? '').trim();
+  const state = getTabState(activeTabId.value);
+  state.updateLlmKeyLoading = true;
+  state.updateLlmKeyError = '';
+  try {
+    const res = await fetch(`${API_BASE}/rag/llm_api_key/${encodeURIComponent(String(fileId))}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Person-Id': String(personId),
+      },
+      body: JSON.stringify({ llm_api_key: llmKey || null }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      let msg = res.statusText;
+      try {
+        const err = JSON.parse(text);
+        msg = err.detail ?? err.error ?? msg;
+      } catch (_) {
+        if (text) msg = text;
+      }
+      throw new Error(msg);
+    }
+    state.updateLlmKeyError = '';
+  } catch (err) {
+    state.updateLlmKeyError = err.message || String(err);
+  } finally {
+    state.updateLlmKeyLoading = false;
   }
 }
 
@@ -752,11 +804,10 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫產生 quiz API；傳入 slotIndex 使用該 slot 的表單狀態 */
+/** 呼叫產生 quiz API；傳入 slotIndex 使用該 slot 的表單狀態（不傳 openai_api_key，後端使用 Rag 表儲存的 key） */
 async function generateQuiz(slotIndex) {
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
-  const key = openaiApiKey.value?.trim();
   const sourceFileId = String(state.zipFileId ?? '').trim();
   const selectedUnit = generateQuizUnits.value.find((u) => u.file_id === slotState.generateQuizFileId);
   const ragName = selectedUnit?.rag_name?.trim();
@@ -766,10 +817,6 @@ async function generateQuiz(slotIndex) {
   }
   if (!ragName) {
     slotState.error = '請先選擇單元（需先執行 Pack 取得 RAG 壓縮檔）';
-    return;
-  }
-  if (!key) {
-    slotState.error = '請輸入 OpenAI API Key';
     return;
   }
   slotState.loading = true;
@@ -784,7 +831,6 @@ async function generateQuiz(slotIndex) {
       body: JSON.stringify({
         file_id: sourceFileId,
         rag_name: ragName,
-        openai_api_key: key,
         level: filterDifficulty.value,
         system_prompt_instruction: systemInstruction,
         ...(courseName ? { course_name: courseName } : {}),
@@ -821,12 +867,6 @@ function toggleHint(item) {
 
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
-  const key = openaiApiKey.value?.trim();
-  if (!key) {
-    item.confirmed = true;
-    item.gradingResult = '請先在畫面上方輸入 OpenAI API Key 後再進行評分。';
-    return;
-  }
   const sourceFileId = String(currentState.value.zipFileId ?? '').trim();
   if (!sourceFileId) {
     item.confirmed = true;
@@ -841,18 +881,17 @@ async function confirmAnswer(item) {
       item.gradingResult = '評分失敗：此 quiz 未關聯 RAG 單元（rag_name），請由「產生 quiz」產生後再評分。';
       return;
     }
-    const courseName = courseNameFromFileMetadata.value;
-    const res = await fetch(`${API_BASE}/rag/grade_submission`, {
+    const params = new URLSearchParams({
+      file_id: sourceFileId,
+      rag_name: ragName,
+      question_text: item.quiz ?? '',
+      student_answer: item.answer.trim(),
+      qtype: 'short_answer',
+    });
+    const res = await fetch(`${API_BASE}${API_GRADE_SUBMISSION}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        file_id: sourceFileId,
-        rag_name: ragName,
-        openai_api_key: key,
-        [API_REQUEST_QUIZ_TEXT]: item.quiz,
-        student_answer: item.answer.trim(),
-        course_name: courseName,
-      }),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: params.toString(),
     });
     const text = await res.text();
     if (!res.ok) {
@@ -1182,16 +1221,30 @@ function addAllSecondFoldersAsGroups() {
         <div v-if="currentState.updateNameError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.updateNameError }}
         </div>
-        <div class="form-label text-muted mb-2 mt-4">OpenAI API Key</div>
-        <p class="form-text text-muted small mb-2">本頁共用，Pack、產生 quiz、評分等會自動使用。</p>
-        <div style="max-width: 400px;" class="mb-3">
-          <input
-            v-model="openaiApiKey"
-            type="password"
-            class="form-control form-control-sm"
-            placeholder="請輸入 OpenAI API Key"
-            autocomplete="off"
-          >
+        <div class="mb-3">
+          <div class="form-label text-muted mb-2 mt-4">OpenAI API Key</div>
+          <p class="form-text text-muted small mb-2">本頁共用，Pack、產生 quiz 等會自動使用；上傳 ZIP 時可寫入 Rag 表，亦可在此修改已儲存的 key。</p>
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+            <input
+              v-model="openaiApiKey"
+              type="password"
+              class="form-control form-control-sm"
+              style="max-width: 400px;"
+              placeholder="請輸入 OpenAI API Key"
+              autocomplete="off"
+            >
+            <button
+              v-if="!isNewTabId(activeTabId) && currentRagItem"
+              type="button"
+              class="btn btn-sm btn-primary"
+              @click="updateRagLlmApiKey"
+            >
+              {{ currentState.updateLlmKeyLoading ? '修改中...' : '確定修改' }}
+            </button>
+          </div>
+          <div v-if="currentState.updateLlmKeyError" class="alert alert-danger mb-0 py-2 small">
+            {{ currentState.updateLlmKeyError }}
+          </div>
         </div>
         <div v-if="isNewTabId(activeTabId) || fileMetadataToShow != null" class="mb-3">
           <div class="form-label text-muted mb-2">上傳 ZIP 檔</div>
