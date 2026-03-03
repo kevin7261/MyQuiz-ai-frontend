@@ -80,6 +80,8 @@ function getTabState(id) {
       generateQuestionError: '',
       generateQuestionResponseJson: null,
       cardList: [],
+      /** 每一題產生題目表單獨立狀態（key = slotIndex 1,2,3...） */
+      slotFormState: {},
       /** 是否已點「新增題目」而顯示題目生成子區塊 */
       showQuestionGeneratorBlock: false,
       /** 已展開的題目區塊數（每按一次「新增題目」+1，每個區塊對應一題） */
@@ -322,10 +324,14 @@ const ragListDisplayGroups = computed(() => {
   return [];
 });
 
+/** 選擇單元（rag_name）預設一定要第一筆 */
 watch(generateQuestionUnits, (units) => {
   const state = currentState.value;
-  if (units.length && !state.generateQuestionFileId) {
-    state.generateQuestionFileId = units[0].file_id;
+  if (units.length === 0) return;
+  const firstFileId = units[0].file_id;
+  const currentInList = units.some((u) => u.file_id === state.generateQuestionFileId);
+  if (!state.generateQuestionFileId || !currentInList) {
+    state.generateQuestionFileId = firstFileId;
   }
 }, { immediate: true });
 
@@ -636,63 +642,80 @@ async function confirmPack() {
 
 const difficultyOptions = ['入門', '進階', '困難'];
 
-/** 點「新增題目」：展開一個新的題目區塊（第 n 題） */
+/** 取得第 slotIndex 題的產生題目表單狀態（獨立、不連動） */
+function getSlotFormState(slotIndex) {
+  const state = currentState.value;
+  if (!state.slotFormState[slotIndex]) {
+    const units = generateQuestionUnits.value;
+    const first = units.length ? units[0].file_id : '';
+    state.slotFormState[slotIndex] = reactive({
+      generateQuestionFileId: first,
+      loading: false,
+      error: '',
+      responseJson: null,
+    });
+  }
+  return state.slotFormState[slotIndex];
+}
+
+/** 點「新增題目」：展開一個新的題目區塊（第 n 題）；cardList 與 slot 對齊 */
 function openNextQuestionSlot() {
   const state = currentState.value;
   state.showQuestionGeneratorBlock = true;
   state.questionSlotsCount = (state.questionSlotsCount || 0) + 1;
+  while (state.cardList.length < state.questionSlotsCount) {
+    state.cardList.push(null);
+  }
 }
 
-function addCard(question = null, hint = null, sourceFilename = null, referenceAnswer = null, ragName = null, generateQuestionResponseJson = null, generateLevel = null, systemInstructionUsed = null) {
+/** 將第 slotIndex 題設為指定卡片（每題獨立，不連動） */
+function setCardAtSlot(slotIndex, question, hint, sourceFilename, referenceAnswer, ragName, generateQuestionResponseJson, generateLevel, systemInstructionUsed) {
   const state = currentState.value;
-  const list = state.cardList;
-  const q = question ?? (list.length > 0 ? list[0].question : '');
-  const h = hint ?? (list.length > 0 ? list[0].hint : '');
-  const refAns = referenceAnswer ?? (list.length > 0 ? list[0].answer : '');
-  const rn = ragName ?? (list.length > 0 ? list[0].ragName : null);
-  state.cardList = [
-    ...list,
-    {
-      id: nextCardId(),
-      question: q,
-      hint: h,
-      referenceAnswer: '',
-      sourceFilename: sourceFilename ?? null,
-      ragName: rn,
-      answer: refAns,
-      hintVisible: false,
-      confirmed: false,
-      gradingResult: '',
-      gradingResponseJson: null,
-      generateQuestionResponseJson: generateQuestionResponseJson ?? null,
-      generateLevel: generateLevel ?? null,
-      systemInstructionUsed: systemInstructionUsed ?? null,
-    },
-  ];
+  while (state.cardList.length < slotIndex) {
+    state.cardList.push(null);
+  }
+  const card = {
+    id: nextCardId(),
+    question: question ?? '',
+    hint: hint ?? '',
+    referenceAnswer: '',
+    sourceFilename: sourceFilename ?? null,
+    ragName: ragName ?? null,
+    answer: referenceAnswer ?? '',
+    hintVisible: false,
+    confirmed: false,
+    gradingResult: '',
+    gradingResponseJson: null,
+    generateQuestionResponseJson: generateQuestionResponseJson ?? null,
+    generateLevel: generateLevel ?? null,
+    systemInstructionUsed: systemInstructionUsed ?? null,
+  };
+  state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫 /rag/generate-question（body: file_id, rag_name, openai_api_key, level, system_prompt_instruction, course_name） */
-async function generateQuestion() {
+/** 呼叫 /rag/generate-question；每題獨立，傳入 slotIndex 使用該題的表單狀態 */
+async function generateQuestion(slotIndex) {
   const state = currentState.value;
+  const slotState = getSlotFormState(slotIndex);
   const key = openaiApiKey.value?.trim();
   const sourceFileId = String(state.zipFileId ?? '').trim();
-  const selectedUnit = generateQuestionUnits.value.find((u) => u.file_id === state.generateQuestionFileId);
+  const selectedUnit = generateQuestionUnits.value.find((u) => u.file_id === slotState.generateQuestionFileId);
   const ragName = selectedUnit?.rag_name?.trim();
   if (!sourceFileId) {
-    state.generateQuestionError = '請先上傳 ZIP 取得 file_id';
+    slotState.error = '請先上傳 ZIP 取得 file_id';
     return;
   }
   if (!ragName) {
-    state.generateQuestionError = '請先選擇單元（需先執行 Pack 取得 RAG 壓縮檔）';
+    slotState.error = '請先選擇單元（需先執行 Pack 取得 RAG 壓縮檔）';
     return;
   }
   if (!key) {
-    state.generateQuestionError = '請輸入 OpenAI API Key';
+    slotState.error = '請輸入 OpenAI API Key';
     return;
   }
-  state.generateQuestionLoading = true;
-  state.generateQuestionError = '';
-  state.generateQuestionResponseJson = null;
+  slotState.loading = true;
+  slotState.error = '';
+  slotState.responseJson = null;
   const systemInstruction = (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION;
   const courseName = courseNameFromFileMetadata.value;
   try {
@@ -720,17 +743,16 @@ async function generateQuestion() {
       throw new Error(msg);
     }
     const data = text ? JSON.parse(text) : {};
-    state.generateQuestionResponseJson = data;
+    slotState.responseJson = data;
     const questionContent = data.question_content ?? data.question ?? '';
     const hintText = data.hint ?? '';
     const targetFilename = data.target_filename ?? selectedUnit?.filename ?? '';
     const answerText = data.answer ?? '';
-    if (questionContent) addCard(questionContent, hintText, targetFilename, answerText, ragName, data, filterDifficulty.value, systemInstruction);
-    else addCard(null, null, targetFilename, answerText, ragName, data, filterDifficulty.value, systemInstruction);
+    setCardAtSlot(slotIndex, questionContent, hintText, targetFilename, answerText, ragName, data, filterDifficulty.value, systemInstruction);
   } catch (err) {
-    state.generateQuestionError = err.message || '產生題目失敗';
+    slotState.error = err.message || '產生題目失敗';
   } finally {
-    state.generateQuestionLoading = false;
+    slotState.loading = false;
   }
 }
 
@@ -1365,7 +1387,7 @@ function addAllSecondFoldersAsGroups() {
               </div>
             </template>
             <template v-else>
-              <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題） -->
+              <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
               <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                 <div class="card-header py-2">
                   <span class="my-title-sm-black mb-0">第 {{ slotIndex }} 題</span>
@@ -1374,7 +1396,7 @@ function addAllSecondFoldersAsGroups() {
                   <div class="d-flex flex-wrap align-items-end gap-3">
                     <div>
                       <label class="form-label my-title-xs-gray mb-1">選擇單元（rag_name）</label>
-                      <select v-model="currentState.generateQuestionFileId" class="form-select form-select-sm">
+                      <select v-model="getSlotFormState(slotIndex).generateQuestionFileId" class="form-select form-select-sm">
                         <option value="">— 請先執行 Pack —</option>
                         <option v-for="(opt, i) in generateQuestionUnits" :key="i" :value="opt.file_id">{{ opt.rag_name }}</option>
                       </select>
@@ -1388,9 +1410,10 @@ function addAllSecondFoldersAsGroups() {
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      @click="generateQuestion"
+                      :disabled="getSlotFormState(slotIndex).loading"
+                      @click="generateQuestion(slotIndex)"
                     >
-                      {{ currentState.generateQuestionLoading ? '產生中...' : '產生題目' }}
+                      {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}
                     </button>
                   </div>
                   <div class="mt-3">
@@ -1403,12 +1426,12 @@ function addAllSecondFoldersAsGroups() {
                       style="max-width: 100%;"
                     />
                   </div>
-                  <div v-if="currentState.generateQuestionError" class="alert alert-danger mt-2 mb-0 py-2 small">
-                    {{ currentState.generateQuestionError }}
+                  <div v-if="getSlotFormState(slotIndex).error" class="alert alert-danger mt-2 mb-0 py-2 small">
+                    {{ getSlotFormState(slotIndex).error }}
                   </div>
-                  <div v-if="currentState.generateQuestionResponseJson !== null" class="mt-2">
+                  <div v-if="getSlotFormState(slotIndex).responseJson !== null" class="mt-2">
                     <div class="my-title-xs-gray mb-1">產生題目 API 回傳 JSON：</div>
-                    <pre class="my-readonly-block font-monospace small mb-0">{{ JSON.stringify(currentState.generateQuestionResponseJson, null, 2) }}</pre>
+                    <pre class="my-readonly-block font-monospace small mb-0">{{ JSON.stringify(getSlotFormState(slotIndex).responseJson, null, 2) }}</pre>
                   </div>
                 </div>
               </div>
