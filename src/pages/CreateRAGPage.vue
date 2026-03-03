@@ -803,7 +803,7 @@ async function generateQuiz(slotIndex) {
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? '';
     const hintText = data.hint ?? '';
-    const targetFilename = data.target_filename ?? selectedUnit?.filename ?? '';
+    const targetFilename = data.unit_filename ?? data.target_filename ?? selectedUnit?.filename ?? '';
     const referenceAnswerText = data.reference_answer ?? data.answer ?? '';
     setCardAtSlot(slotIndex, quizContent, hintText, targetFilename, referenceAnswerText, ragName, data, filterDifficulty.value, systemInstruction);
   } catch (err) {
