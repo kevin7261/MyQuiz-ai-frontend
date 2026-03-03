@@ -6,7 +6,7 @@
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
-import { API_BASE } from '../constants/api.js';
+import { API_BASE, API_GENERATE_QUIZ, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_REQUEST_QUIZ_TEXT } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -28,11 +28,11 @@ function nextCardId() {
   return `card-${++cardIdSeq}`;
 }
 
-/** 預設題目／提示（產生第一題時使用） */
+/** 預設 quiz／提示（產生第一個 quiz 時使用） */
 const authStore = useAuthStore();
 
-/** generate-question API 的 system_instruction 預設內容 */
-const DEFAULT_SYSTEM_INSTRUCTION = '題目字數不超過50字';
+/** 產生 quiz 的 API 的 system_instruction 預設內容 */
+const DEFAULT_SYSTEM_INSTRUCTION = 'quiz 字數不超過50字';
 
 /** RAG 列表（GET /rag/rags）、載入中、錯誤 */
 const ragList = ref([]);
@@ -75,17 +75,17 @@ function getTabState(id) {
       packResponseJson: null,
       packLoading: false,
       packError: '',
-      generateQuestionFileId: '',
-      generateQuestionLoading: false,
-      generateQuestionError: '',
-      generateQuestionResponseJson: null,
+      generateQuizFileId: '',
+      generateQuizLoading: false,
+      generateQuizError: '',
+      generateQuizResponseJson: null,
       cardList: [],
-      /** 每一題產生題目表單獨立狀態（key = slotIndex 1,2,3...） */
+      /** 每個 quiz 表單獨立狀態（key = slotIndex 1,2,3...） */
       slotFormState: {},
-      /** 是否已點「新增題目」而顯示題目生成子區塊 */
-      showQuestionGeneratorBlock: false,
-      /** 已展開的題目區塊數（每按一次「新增題目」+1，每個區塊對應一題） */
-      questionSlotsCount: 0,
+      /** 是否已點「新增 quiz」而顯示 quiz 生成子區塊 */
+      showQuizGeneratorBlock: false,
+      /** 已展開的 quiz 區塊數（每按一次「新增 quiz」+1） */
+      quizSlotsCount: 0,
       updateNameLoading: false,
       updateNameError: '',
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
@@ -118,7 +118,7 @@ const hasRagListOrMetadata = computed(() => {
   return hasList || hasMeta;
 });
 
-/** 未輸入 API key 或當前 tab 未上傳 ZIP 時，Pack、RAG 產生題目、產生題目按鈕皆 disable；若有 rag_list 或 rag_metadata 則不 disable */
+/** 未輸入 API key 或當前 tab 未上傳 ZIP 時，Pack、RAG 產生 quiz、產生 quiz 按鈕皆 disable；若有 rag_list 或 rag_metadata 則不 disable */
 const packAndGenerateDisabled = computed(() => {
   if (hasRagListOrMetadata.value) return false;
   if (!openaiApiKey.value?.trim()) return true;
@@ -131,14 +131,14 @@ const packAndGenerateDisabled = computed(() => {
   return false;
 });
 
-/** 當前 RAG 是否有 rag_metadata；有則 RAG 產生題目區塊 enable */
+/** 當前 RAG 是否有 rag_metadata；有則 RAG 產生 quiz 區塊 enable */
 const hasRagMetadata = computed(() => {
   const r = currentRagItem.value;
   if (!r || typeof r !== 'object') return false;
   return r.rag_metadata != null && (typeof r.rag_metadata === 'string' ? String(r.rag_metadata).trim() !== '' : true);
 });
 
-/** 未執行 Pack 時，RAG 產生題目區塊與產生題目按鈕 disable（需有 packResponseJson）；若有 rag_metadata 則 enable */
+/** 未執行 Pack 時，RAG 產生 quiz 區塊與產生 quiz 按鈕 disable（需有 packResponseJson）；若有 rag_metadata 則 enable */
 const ragGenerateDisabled = computed(() => {
   if (hasRagMetadata.value) return false;
   return packAndGenerateDisabled.value || currentState.value.packResponseJson == null;
@@ -162,8 +162,8 @@ function deriveRagName(o) {
   return f || s || '';
 }
 
-/** 產生題目：選擇單元 = rag_name 下拉（供 API；Pack 無資料時從 /rags 推導） */
-const generateQuestionUnits = computed(() => {
+/** 產生 quiz：選擇單元 = rag_name 下拉（供 API；Pack 無資料時從 /rags 推導） */
+const generateQuizUnits = computed(() => {
   const data = currentState.value.packResponseJson;
   const out = packOutputs.value;
   const singleFileId = data && typeof data === 'object' && data.file_id != null ? data.file_id : null;
@@ -183,7 +183,7 @@ const generateQuestionUnits = computed(() => {
     }));
   }
   // fallback：Pack 尚未執行，從 /rags 的 rag_list 推導
-  return generateQuestionUnitsFromRag.value;
+  return generateQuizUnitsFromRag.value;
 });
 
 /** 難度、chunk 參數（共用） */
@@ -227,7 +227,7 @@ const fileMetadataToShow = computed(() => {
   return rag;
 });
 
-/** 從 file_metadata 取得 course_name（供產生題目、評分 API 使用） */
+/** 從 file_metadata 取得 course_name（供產生 quiz、評分 API 使用） */
 const courseNameFromFileMetadata = computed(() => {
   const meta = fileMetadataToShow.value;
   if (meta == null || typeof meta !== 'object') return '';
@@ -248,8 +248,8 @@ function serializePackTasksList(list) {
   return list.map((g) => (Array.isArray(g) ? g.filter(Boolean).join('+') : '')).filter(Boolean).join(',');
 }
 
-/** 從 /rags 的 rag_list 字串推導出 generateQuestionUnits（Pack 尚未執行時的 fallback） */
-const generateQuestionUnitsFromRag = computed(() => {
+/** 從 /rags 的 rag_list 字串推導出 generateQuizUnits（Pack 尚未執行時的 fallback） */
+const generateQuizUnitsFromRag = computed(() => {
   const rag = currentRagItem.value;
   if (!rag || typeof rag !== 'object') return [];
   const ragListStr = rag.rag_list ?? '';
@@ -327,13 +327,13 @@ const ragListDisplayGroups = computed(() => {
 });
 
 /** 選擇單元（rag_name）預設一定要第一筆 */
-watch(generateQuestionUnits, (units) => {
+watch(generateQuizUnits, (units) => {
   const state = currentState.value;
   if (units.length === 0) return;
   const firstFileId = units[0].file_id;
-  const currentInList = units.some((u) => u.file_id === state.generateQuestionFileId);
-  if (!state.generateQuestionFileId || !currentInList) {
-    state.generateQuestionFileId = firstFileId;
+  const currentInList = units.some((u) => u.file_id === state.generateQuizFileId);
+  if (!state.generateQuizFileId || !currentInList) {
+    state.generateQuizFileId = firstFileId;
   }
 }, { immediate: true });
 
@@ -637,12 +637,21 @@ async function confirmPack() {
   const fileId = String(state.zipFileId ?? '').trim();
   const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
+  const apiKey = openaiApiKey.value?.trim() ?? '';
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 file_id（見上方 file_metadata）';
     return;
   }
+  if (personId == null || String(personId).trim() === '') {
+    state.packError = '請先登入以取得 person_id';
+    return;
+  }
   if (!ragList) {
     state.packError = '請輸入 rag_list（例：220222+220301 或 220222,220301+220302）';
+    return;
+  }
+  if (!apiKey) {
+    state.packError = '請輸入 OpenAI API Key';
     return;
   }
   state.packLoading = true;
@@ -654,9 +663,9 @@ async function confirmPack() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         file_id: fileId,
-        person_id: personId != null ? String(personId) : undefined,
+        person_id: String(personId),
         rag_list: ragList,
-        openai_api_key: openaiApiKey.value?.trim() || undefined,
+        openai_api_key: apiKey,
         chunk_size: Number(chunkSize.value) || 1000,
         chunk_overlap: Number(chunkOverlap.value) || 200,
       }),
@@ -690,14 +699,14 @@ async function confirmPack() {
 
 const difficultyOptions = ['入門', '進階', '困難'];
 
-/** 取得第 slotIndex 題的產生題目表單狀態（獨立、不連動） */
+/** 取得第 slotIndex 個 quiz 的表單狀態（獨立、不連動） */
 function getSlotFormState(slotIndex) {
   const state = currentState.value;
   if (!state.slotFormState[slotIndex]) {
-    const units = generateQuestionUnits.value;
+    const units = generateQuizUnits.value;
     const first = units.length ? units[0].file_id : '';
     state.slotFormState[slotIndex] = reactive({
-      generateQuestionFileId: first,
+      generateQuizFileId: first,
       loading: false,
       error: '',
       responseJson: null,
@@ -706,48 +715,48 @@ function getSlotFormState(slotIndex) {
   return state.slotFormState[slotIndex];
 }
 
-/** 點「新增題目」：展開一個新的題目區塊（第 n 題）；cardList 與 slot 對齊 */
-function openNextQuestionSlot() {
+/** 點「新增 quiz」：展開一個新的 quiz 區塊；cardList 與 slot 對齊 */
+function openNextQuizSlot() {
   const state = currentState.value;
-  state.showQuestionGeneratorBlock = true;
-  state.questionSlotsCount = (state.questionSlotsCount || 0) + 1;
-  while (state.cardList.length < state.questionSlotsCount) {
+  state.showQuizGeneratorBlock = true;
+  state.quizSlotsCount = (state.quizSlotsCount || 0) + 1;
+  while (state.cardList.length < state.quizSlotsCount) {
     state.cardList.push(null);
   }
 }
 
-/** 將第 slotIndex 題設為指定卡片（每題獨立，不連動） */
-function setCardAtSlot(slotIndex, question, hint, sourceFilename, referenceAnswer, ragName, generateQuestionResponseJson, generateLevel, systemInstructionUsed) {
+/** 將第 slotIndex 個 quiz 設為指定卡片（每個獨立，不連動） */
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed) {
   const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
   }
   const card = {
     id: nextCardId(),
-    question: question ?? '',
+    quiz: quizContent ?? '',
     hint: hint ?? '',
-    referenceAnswer: '',
+    referenceAnswer: referenceAnswer ?? '',
     sourceFilename: sourceFilename ?? null,
     ragName: ragName ?? null,
-    answer: referenceAnswer ?? '',
+    answer: '',
     hintVisible: false,
     confirmed: false,
     gradingResult: '',
     gradingResponseJson: null,
-    generateQuestionResponseJson: generateQuestionResponseJson ?? null,
+    generateQuizResponseJson: generateQuizResponseJson ?? null,
     generateLevel: generateLevel ?? null,
     systemInstructionUsed: systemInstructionUsed ?? null,
   };
   state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫 /rag/generate-question；每題獨立，傳入 slotIndex 使用該題的表單狀態 */
-async function generateQuestion(slotIndex) {
+/** 呼叫產生 quiz API；傳入 slotIndex 使用該 slot 的表單狀態 */
+async function generateQuiz(slotIndex) {
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
   const key = openaiApiKey.value?.trim();
   const sourceFileId = String(state.zipFileId ?? '').trim();
-  const selectedUnit = generateQuestionUnits.value.find((u) => u.file_id === slotState.generateQuestionFileId);
+  const selectedUnit = generateQuizUnits.value.find((u) => u.file_id === slotState.generateQuizFileId);
   const ragName = selectedUnit?.rag_name?.trim();
   if (!sourceFileId) {
     slotState.error = '請先上傳 ZIP 取得 file_id';
@@ -767,7 +776,7 @@ async function generateQuestion(slotIndex) {
   const systemInstruction = (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION;
   const courseName = courseNameFromFileMetadata.value;
   try {
-    const res = await fetch(`${API_BASE}/rag/generate-question`, {
+    const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -792,13 +801,13 @@ async function generateQuestion(slotIndex) {
     }
     const data = text ? JSON.parse(text) : {};
     slotState.responseJson = data;
-    const questionContent = data.question_content ?? data.question ?? '';
+    const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? '';
     const hintText = data.hint ?? '';
     const targetFilename = data.target_filename ?? selectedUnit?.filename ?? '';
-    const answerText = data.answer ?? '';
-    setCardAtSlot(slotIndex, questionContent, hintText, targetFilename, answerText, ragName, data, filterDifficulty.value, systemInstruction);
+    const referenceAnswerText = data.reference_answer ?? data.answer ?? '';
+    setCardAtSlot(slotIndex, quizContent, hintText, targetFilename, referenceAnswerText, ragName, data, filterDifficulty.value, systemInstruction);
   } catch (err) {
-    slotState.error = err.message || '產生題目失敗';
+    slotState.error = err.message || '產生 quiz 失敗';
   } finally {
     slotState.loading = false;
   }
@@ -825,9 +834,9 @@ async function confirmAnswer(item) {
   item.confirmed = true;
   item.gradingResult = '批改中...';
   try {
-    const ragName = item.ragName?.trim() ?? generateQuestionUnits.value[0]?.rag_name?.trim();
+    const ragName = item.ragName?.trim() ?? generateQuizUnits.value[0]?.rag_name?.trim();
     if (!ragName) {
-      item.gradingResult = '評分失敗：此題目未關聯 RAG 單元（rag_name），請由「產生題目」產生題目後再評分。';
+      item.gradingResult = '評分失敗：此 quiz 未關聯 RAG 單元（rag_name），請由「產生 quiz」產生後再評分。';
       return;
     }
     const courseName = courseNameFromFileMetadata.value;
@@ -838,7 +847,7 @@ async function confirmAnswer(item) {
         file_id: sourceFileId,
         rag_name: ragName,
         openai_api_key: key,
-        question_text: item.question,
+        [API_REQUEST_QUIZ_TEXT]: item.quiz,
         student_answer: item.answer.trim(),
         course_name: courseName,
       }),
@@ -1000,17 +1009,17 @@ function onDragStartTag(e, folderName, fromRagList, groupIdx, tagIdx) {
 function onDragOver(e) {
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
-  e.currentTarget?.classList?.add('rag-list-drop-active');
+  e.currentTarget?.classList?.add('bg-info-subtle', 'border-info');
 }
 
 function onDragLeave(e) {
-  e.currentTarget?.classList?.remove('rag-list-drop-active');
+  e.currentTarget?.classList?.remove('bg-info-subtle', 'border-info');
 }
 
 /** 放置到 rag_list 虛擬資料夾 */
 function onDropRagList(e, targetGroupIdx) {
   e.preventDefault();
-  e.currentTarget?.classList?.remove('rag-list-drop-active');
+  e.currentTarget?.classList?.remove('bg-info-subtle', 'border-info');
   if (packAndGenerateDisabled.value) return;
   let data;
   try {
@@ -1077,8 +1086,8 @@ function addAllSecondFoldersAsGroups() {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-200 h-100">
-    <div class="flex-grow-1 overflow-auto my-bgcolor-white p-4">
+  <div class="d-flex flex-column bg-body-secondary h-100">
+    <div class="flex-grow-1 overflow-auto bg-white p-4">
       <!-- 每個 tab = 一筆 /rag/rags 資料；「新增」= 只加新 tab，在該 tab 內上傳 ZIP 時呼叫 /rag/upload-zip 產生 RAG -->
       <div class="d-flex align-items-center gap-2 mb-3">
         <template v-if="ragListLoading">
@@ -1143,16 +1152,16 @@ function addAllSecondFoldersAsGroups() {
       <!-- 無資料時不顯示表單，點「新增」後才顯示；有資料時一律顯示 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
       <!-- 基本資訊、OpenAI API Key、ZIP 上傳與 file_metadata 合併為一區塊 -->
-      <div class="my-bgcolor-gray-100 rounded text-start p-4 mb-3">
-        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">基本資訊、API 與 ZIP 上傳</div>
+      <div class="bg-body-tertiary rounded text-start p-4 mb-3">
+        <div class="small text-muted mb-3 pb-2 border-bottom">基本資訊、API 與 ZIP 上傳</div>
         <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
-          <span class="my-title-xs-gray">rag_id：</span>
-          <span class="my-content-sm-black">{{ currentRagIdAndFileId.rag_id }}</span>
-          <span class="my-title-xs-gray">file_id：</span>
-          <span class="my-content-sm-black">{{ currentRagIdAndFileId.file_id }}</span>
+          <span class="text-muted">rag_id：</span>
+          <span class="small">{{ currentRagIdAndFileId.rag_id }}</span>
+          <span class="text-muted">file_id：</span>
+          <span class="small">{{ currentRagIdAndFileId.file_id }}</span>
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
-          <span class="my-title-xs-gray">name</span>
+          <span class="text-muted">name</span>
           <input
             v-model="currentState.zipUploadName"
             type="text"
@@ -1171,8 +1180,8 @@ function addAllSecondFoldersAsGroups() {
         <div v-if="currentState.updateNameError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.updateNameError }}
         </div>
-        <div class="my-title-xs-gray mb-2 mt-4">OpenAI API Key</div>
-        <p class="form-text text-muted small mb-2">本頁共用，Pack、產生題目、評分等會自動使用。</p>
+        <div class="form-label text-muted mb-2 mt-4">OpenAI API Key</div>
+        <p class="form-text text-muted small mb-2">本頁共用，Pack、產生 quiz、評分等會自動使用。</p>
         <div style="max-width: 400px;" class="mb-3">
           <input
             v-model="openaiApiKey"
@@ -1183,7 +1192,7 @@ function addAllSecondFoldersAsGroups() {
           >
         </div>
         <div v-if="isNewTabId(activeTabId) || fileMetadataToShow != null" class="mb-3">
-          <div class="my-title-xs-gray mb-2">上傳 ZIP 檔</div>
+          <div class="form-label text-muted mb-2">上傳 ZIP 檔</div>
           <p class="form-text text-muted small mb-2">支援 .pdf、.docx、.rmd／.r、.html／.htm</p>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input
@@ -1194,7 +1203,7 @@ function addAllSecondFoldersAsGroups() {
               :disabled="fileMetadataToShow != null"
               @change="onZipChange"
             >
-            <span v-if="currentState.zipFileName" class="my-content-sm-black">{{ currentState.zipFileName }}</span>
+            <span v-if="currentState.zipFileName" class="small">{{ currentState.zipFileName }}</span>
             <button
               type="button"
               class="btn btn-sm btn-primary"
@@ -1209,24 +1218,24 @@ function addAllSecondFoldersAsGroups() {
           {{ currentState.zipError }}
         </div>
         <div v-if="fileMetadataToShow != null" class="mt-3">
-          <div class="my-title-xs-gray mb-2">file_metadata</div>
-          <pre class="my-readonly-block mb-0 font-monospace small"><code>{{ JSON.stringify(fileMetadataToShow, null, 2) }}</code></pre>
+          <div class="form-label text-muted mb-2">file_metadata</div>
+          <pre class="bg-body-secondary border rounded p-2 mb-0 font-monospace small overflow-auto" style="max-height: 20rem;"><code>{{ JSON.stringify(fileMetadataToShow, null, 2) }}</code></pre>
         </div>
       </div>
       <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未輸入 API key 或未上傳 ZIP 時 disable -->
-      <div v-if="fileMetadataToShow != null" class="my-bgcolor-gray-100 rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
-        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
+      <div v-if="fileMetadataToShow != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
+        <div class="small text-muted mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
           <p class="form-text text-muted small mb-2">依上方 file_metadata 的當前 RAG 與 rag_list 壓縮指定資料夾，可一併產生 RAG。rag_list：逗號=多個 ZIP，加號=同檔內多資料夾，例 <code>220222+220301</code>、<code>220222,220301+220302</code>。</p>
 
           <!-- second_folders 標籤區：可拖曳至 rag_list；完整顯示不因拖入 rag_list 而移除 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
-            <label class="form-label my-title-xs-gray mb-1">second_folders（可拖曳至下方 rag_list）</label>
-            <div class="d-flex flex-wrap gap-2 p-2 rounded border" style="min-height: 2.5rem; background: var(--bs-body-bg, #fff);">
+            <label class="form-label text-muted mb-1">second_folders（可拖曳至下方 rag_list）</label>
+            <div class="d-flex flex-wrap gap-2 p-2 rounded border bg-body">
               <span
                 v-for="(name, i) in secondFoldersFull"
                 :key="'sf-' + i"
-                class="badge bg-info text-dark px-2 py-1"
-                style="cursor: grab; user-select: none;"
+                class="badge bg-info text-dark px-2 py-1 user-select-none"
+                style="cursor: grab;"
                 draggable="true"
                 @dragstart="onDragStartTag($event, name, false, -1, -1)"
               >
@@ -1238,7 +1247,7 @@ function addAllSecondFoldersAsGroups() {
           <!-- rag_list 虛擬資料夾區：可放置 second_folders 標籤 -->
           <div class="mb-2">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-              <label class="form-label my-title-xs-gray mb-0">rag_list（虛擬資料夾，將上方標籤拖入）</label>
+              <label class="form-label text-muted mb-0">rag_list（虛擬資料夾，將上方標籤拖入）</label>
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
@@ -1251,8 +1260,8 @@ function addAllSecondFoldersAsGroups() {
             <div class="d-flex flex-wrap align-items-start gap-2">
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
                 <div
-                  class="border rounded p-2 d-flex align-items-center gap-1 rag-list-drop-zone position-relative"
-                  style="min-width: 120px; min-height: 2.5rem; background: var(--bs-secondary-bg, #e9ecef);"
+                  class="border rounded p-2 d-flex align-items-center gap-1 position-relative bg-body-secondary"
+                  style="min-width: 120px; min-height: 2.5rem;"
                   @dragover="onDragOver"
                   @dragleave="onDragLeave"
                   @drop="onDropRagList($event, gi)"
@@ -1289,7 +1298,7 @@ function addAllSecondFoldersAsGroups() {
                 </div>
               </template>
               <div
-                class="border border-dashed rounded p-2 rag-list-drop-zone d-flex align-items-center justify-content-center"
+                class="border border-dashed rounded p-2 d-flex align-items-center justify-content-center"
                 style="min-width: 140px; min-height: 2.5rem;"
                 :class="{ 'opacity-50': packAndGenerateDisabled }"
                 @dragover="onDragOver($event)"
@@ -1309,7 +1318,7 @@ function addAllSecondFoldersAsGroups() {
 
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div style="width: 100px;">
-              <label class="form-label my-title-xs-gray mb-1">chunk_size</label>
+              <label class="form-label text-muted mb-1">chunk_size</label>
               <input
                 v-model.number="chunkSize"
                 type="number"
@@ -1319,7 +1328,7 @@ function addAllSecondFoldersAsGroups() {
               >
             </div>
             <div style="width: 100px;">
-              <label class="form-label my-title-xs-gray mb-1">chunk_overlap</label>
+              <label class="form-label text-muted mb-1">chunk_overlap</label>
               <input
                 v-model.number="chunkOverlap"
                 type="number"
@@ -1337,10 +1346,10 @@ function addAllSecondFoldersAsGroups() {
             </button>
           </div>
           <div class="mt-3">
-            <label class="form-label my-title-xs-gray mb-1">rag_metadata（Pack API 回傳）</label>
+            <label class="form-label text-muted mb-1">rag_metadata（Pack API 回傳）</label>
             <textarea
               v-model="currentState.ragMetadata"
-              class="form-control form-control-sm font-monospace small my-readonly-block"
+              class="form-control form-control-sm font-monospace small bg-body-secondary border"
               rows="6"
               placeholder="執行 Pack 後由 API 回傳顯示"
               readonly
@@ -1351,52 +1360,56 @@ function addAllSecondFoldersAsGroups() {
             {{ currentState.packError }}
           </div>
       </div>
-      <!-- RAG 產生題目與題目與作答：要有 rag_metadata 才顯示；點「新增題目」後才出現題目生成子區塊 -->
-      <div v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''" class="my-bgcolor-gray-100 rounded text-start p-4 mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
-        <div class="my-title-xs-gray mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
-        <p class="form-text text-muted small mb-3">點「新增題目」後會出現一題的區塊（選擇單元、難度、產生題目等）；每按一次「新增題目」才會多一個題目區塊。「新增題目」按鈕固定在最下面。</p>
+      <!-- RAG 產生 quiz 與作答：要有 rag_metadata 才顯示；點「新增 quiz」後才出現 quiz 生成子區塊 -->
+      <div v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
+        <div class="small text-muted mb-3 pb-2 border-bottom">RAG 產生 quiz 與作答</div>
+        <p class="form-text text-muted small mb-3">點「新增 quiz」後會出現一個 quiz 區塊（選擇單元、難度、產生 quiz 等）；每按一次「新增 quiz」才會多一個 quiz 區塊。「新增 quiz」按鈕固定在最下面。</p>
 
-        <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
-        <div class="my-bgcolor-gray-50 rounded p-4 mb-3">
-          <template v-for="(slotIndex) in currentState.questionSlotsCount" :key="slotIndex">
-            <!-- 第 slotIndex 題：若已有該題卡片則顯示卡片，否則顯示產生題目表單 -->
+        <!-- quiz 區塊：每按一次「新增 quiz」才多一個「第 n 個 quiz」；按鈕固定在最下面 -->
+        <div class="bg-light rounded p-4 mb-3">
+          <template v-for="(slotIndex) in currentState.quizSlotsCount" :key="slotIndex">
+            <!-- 第 slotIndex 個 quiz：若已有該卡片則顯示卡片，否則顯示產生 quiz 表單 -->
             <template v-if="currentState.cardList[slotIndex - 1]">
-              <!-- 已有卡片：顯示完整題目區塊 -->
+              <!-- 已有卡片：顯示完整 quiz 區塊 -->
               <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                 <div class="card-header py-2">
-                  <span class="my-title-sm-black mb-0">第 {{ slotIndex }} 題</span>
+                  <span class="fw-semibold small mb-0">第 {{ slotIndex }} 個 quiz</span>
                 </div>
                 <div class="card-body text-start">
                   <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
                     <div>
-                      <label class="form-label my-title-xs-gray mb-1">選擇單元（rag_name）</label>
-                      <div class="form-control form-control-sm my-readonly-block" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].ragName || '—' }}</div>
+                      <label class="form-label text-muted mb-1">選擇單元（rag_name）</label>
+                      <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].ragName || '—' }}</div>
                     </div>
                     <div>
-                      <label class="form-label my-title-xs-gray mb-1">難度</label>
-                      <div class="form-control form-control-sm my-readonly-block" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].generateLevel || '—' }}</div>
+                      <label class="form-label text-muted mb-1">難度</label>
+                      <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].generateLevel || '—' }}</div>
                     </div>
                   </div>
                   <div class="mb-3">
-                    <label class="form-label my-title-xs-gray mb-1">system_prompt_instruction（出題規範，傳給 GPT）</label>
-                    <div class="my-readonly-block font-monospace small p-2" style="min-height: 80px; white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].systemInstructionUsed || '—' }}</div>
+                    <label class="form-label text-muted mb-1">system_prompt_instruction（quiz 規範，傳給 GPT）</label>
+                    <div class="bg-body-secondary border rounded p-2 font-monospace small" style="min-height: 80px; white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].systemInstructionUsed || '—' }}</div>
                   </div>
                   <div class="mb-3">
-                    <div class="my-title-xs-gray mb-1">題目</div>
-                    <div class="my-readonly-block p-2">
-                      <span v-if="currentState.cardList[slotIndex - 1].sourceFilename" class="text-muted">[{{ currentState.cardList[slotIndex - 1].sourceFilename }}] </span>{{ currentState.cardList[slotIndex - 1].question }}
+                    <div class="form-label text-muted mb-1">quiz</div>
+                    <div class="bg-body-secondary border rounded p-2">
+                      {{ currentState.cardList[slotIndex - 1].quiz }}
                     </div>
                   </div>
                   <div class="mb-3">
                     <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
                       {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                     </button>
-                    <div v-show="currentState.cardList[slotIndex - 1].hintVisible" class="rounded my-bgcolor-gray-100 my-title-xs-gray mt-2 p-2">
+                    <div v-show="currentState.cardList[slotIndex - 1].hintVisible" class="rounded bg-body-tertiary text-muted mt-2 p-2">
                       {{ currentState.cardList[slotIndex - 1].hint }}
                     </div>
                   </div>
+                  <div v-if="currentState.cardList[slotIndex - 1].referenceAnswer" class="mb-3">
+                    <div class="form-label text-muted mb-1">參考答案</div>
+                    <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
+                  </div>
                   <div class="mb-3">
-                    <label :for="`answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label my-title-xs-gray mb-1">回答</label>
+                    <label :for="`answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label text-muted mb-1">回答</label>
                     <template v-if="!currentState.cardList[slotIndex - 1].confirmed">
                       <textarea
                         :id="`answer-${currentState.cardList[slotIndex - 1].id}`"
@@ -1413,44 +1426,44 @@ function addAllSecondFoldersAsGroups() {
                       </div>
                     </template>
                     <template v-else>
-                      <div class="rounded my-bgcolor-gray-100 my-content-sm-black mb-2 p-2">{{ currentState.cardList[slotIndex - 1].answer }}</div>
+                      <div class="rounded bg-body-tertiary small mb-2 p-2">{{ currentState.cardList[slotIndex - 1].answer }}</div>
                       <div class="d-flex gap-2 mb-3">
                         <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(currentState.cardList[slotIndex - 1])">重寫</button>
                       </div>
                     </template>
                   </div>
-                  <div class="border rounded my-bgcolor-gray-50 p-3 mb-3">
-                    <div class="my-title-xs-gray mb-1">批改結果</div>
-                    <div class="my-content-sm-black" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
+                  <div class="border rounded bg-light p-3 mb-3">
+                    <div class="form-label text-muted mb-1">批改結果</div>
+                    <div class="small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
                   </div>
-                  <div v-if="currentState.cardList[slotIndex - 1].generateQuestionResponseJson != null" class="mb-3">
-                    <div class="my-title-xs-gray mb-1">產生題目 API 回傳 JSON：</div>
-                    <pre class="my-readonly-block font-monospace small mb-0">{{ JSON.stringify(currentState.cardList[slotIndex - 1].generateQuestionResponseJson, null, 2) }}</pre>
+                  <div v-if="currentState.cardList[slotIndex - 1].generateQuizResponseJson != null" class="mb-3">
+                    <div class="form-label text-muted mb-1">產生 quiz API 回傳 JSON：</div>
+                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].generateQuizResponseJson, null, 2) }}</pre>
                   </div>
                   <div v-if="currentState.cardList[slotIndex - 1].gradingResponseJson != null">
-                    <div class="my-title-xs-gray mb-1">批改結果 API 回傳 JSON：</div>
-                    <pre class="my-readonly-block font-monospace small mb-0">{{ JSON.stringify(currentState.cardList[slotIndex - 1].gradingResponseJson, null, 2) }}</pre>
+                    <div class="form-label text-muted mb-1">批改結果 API 回傳 JSON：</div>
+                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].gradingResponseJson, null, 2) }}</pre>
                   </div>
                 </div>
               </div>
             </template>
             <template v-else>
-              <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
+              <!-- 尚未產生：顯示產生 quiz 表單（第 slotIndex 個 quiz，每個獨立不連動） -->
               <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                 <div class="card-header py-2">
-                  <span class="my-title-sm-black mb-0">第 {{ slotIndex }} 題</span>
+                  <span class="fw-semibold small mb-0">第 {{ slotIndex }} 個 quiz</span>
                 </div>
                 <div class="card-body text-start pt-3">
                   <div class="d-flex flex-wrap align-items-end gap-3">
                     <div>
-                      <label class="form-label my-title-xs-gray mb-1">選擇單元（rag_name）</label>
-                      <select v-model="getSlotFormState(slotIndex).generateQuestionFileId" class="form-select form-select-sm">
+                      <label class="form-label text-muted mb-1">選擇單元（rag_name）</label>
+                      <select v-model="getSlotFormState(slotIndex).generateQuizFileId" class="form-select form-select-sm">
                         <option value="">— 請先執行 Pack —</option>
-                        <option v-for="(opt, i) in generateQuestionUnits" :key="i" :value="opt.file_id">{{ opt.rag_name }}</option>
+                        <option v-for="(opt, i) in generateQuizUnits" :key="i" :value="opt.file_id">{{ opt.rag_name }}</option>
                       </select>
                     </div>
                     <div>
-                      <label class="form-label my-title-xs-gray mb-1">難度</label>
+                      <label class="form-label text-muted mb-1">難度</label>
                       <select v-model="filterDifficulty" class="form-select form-select-sm">
                         <option v-for="opt in difficultyOptions" :key="opt" :value="opt">{{ opt }}</option>
                       </select>
@@ -1459,13 +1472,13 @@ function addAllSecondFoldersAsGroups() {
                       type="button"
                       class="btn btn-sm btn-primary"
                       :disabled="getSlotFormState(slotIndex).loading || !openaiApiKey?.trim()"
-                      @click="generateQuestion(slotIndex)"
+                      @click="generateQuiz(slotIndex)"
                     >
-                      {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}
+                      {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生 quiz' }}
                     </button>
                   </div>
                   <div class="mt-3">
-                    <label class="form-label my-title-xs-gray mb-1">system_prompt_instruction（出題規範，傳給 GPT）</label>
+                    <label class="form-label text-muted mb-1">system_prompt_instruction（quiz 規範，傳給 GPT）</label>
                     <div class="d-flex flex-wrap align-items-start gap-2">
                       <textarea
                         v-model="currentState.systemInstruction"
@@ -1491,22 +1504,22 @@ function addAllSecondFoldersAsGroups() {
                     {{ getSlotFormState(slotIndex).error }}
                   </div>
                   <div v-if="getSlotFormState(slotIndex).responseJson !== null" class="mt-2">
-                    <div class="my-title-xs-gray mb-1">產生題目 API 回傳 JSON：</div>
-                    <pre class="my-readonly-block font-monospace small mb-0">{{ JSON.stringify(getSlotFormState(slotIndex).responseJson, null, 2) }}</pre>
+                    <div class="form-label text-muted mb-1">產生 quiz API 回傳 JSON：</div>
+                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(getSlotFormState(slotIndex).responseJson, null, 2) }}</pre>
                   </div>
                 </div>
               </div>
             </template>
           </template>
 
-          <!-- 新增題目按鈕：固定在最下面，每按一次多一個「第 n 題」區塊 -->
+          <!-- 新增 quiz 按鈕：固定在最下面，每按一次多一個「第 n 個 quiz」區塊 -->
           <div class="mb-0 pt-2">
             <button
               type="button"
               class="btn btn-sm btn-primary"
-              @click="openNextQuestionSlot"
+              @click="openNextQuizSlot"
             >
-              新增題目
+              新增 quiz
             </button>
           </div>
         </div>
@@ -1516,20 +1529,3 @@ function addAllSecondFoldersAsGroups() {
   </div>
 </template>
 
-<style scoped>
-/* 不能編輯的 input 與 metadata 區塊共用：背景、邊框、圓角一致 */
-.my-readonly-block {
-  background-color: var(--bs-secondary-bg, #e9ecef) !important;
-  border: 1px solid var(--bs-border-color);
-  border-radius: var(--bs-border-radius, 0.375rem);
-}
-pre.my-readonly-block {
-  padding: 0.375rem 0.75rem;
-  max-height: 20rem;
-  overflow: auto;
-}
-.rag-list-drop-zone.rag-list-drop-active {
-  background: var(--bs-info-bg-subtle, rgba(13, 202, 240, 0.2)) !important;
-  border-color: var(--bs-info, #0dcaf0) !important;
-}
-</style>
