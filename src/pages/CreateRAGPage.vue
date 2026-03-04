@@ -6,7 +6,7 @@
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
-import { API_BASE, API_GENERATE_QUIZ, API_GRADE_SUBMISSION, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY } from '../constants/api.js';
+import { API_BASE, API_GENERATE_QUIZ, API_GRADE_SUBMISSION, API_GRADE_RESULT, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -103,6 +103,12 @@ const currentState = computed(() => {
   const firstNew = newTabIds.value[0];
   const firstRag = ragList.value[0];
   return getTabState(firstNew || (firstRag && (firstRag.file_id ?? firstRag.id ?? firstRag)) || 'new');
+});
+
+/** 當前 tab 每張 card 的批改解析結果（對應 slotIndex - 1），供模板避免重複 parse */
+const parsedGradingsBySlot = computed(() => {
+  const list = currentState.value?.cardList ?? [];
+  return list.map((card) => parseGradingResult(card));
 });
 
 /** 全畫面共用 */
@@ -268,7 +274,25 @@ const generateQuizUnitsFromRag = computed(() => {
     });
 });
 
-/** 當切換到既有 tab 時，從同一筆 Rag 資料填入：llm_api_key（OpenAI API Key 欄位）、rag_list、rag_metadata、chunk_size、chunk_overlap、name、system_prompt_instruction */
+/** 從 GET /rag/rags 的 answer 物件取出批改結果顯示文字（支援 answer_metadata、answer_feedback_metadata、grading_result 等） */
+function getGradingResultFromAnswer(answer) {
+  if (!answer || typeof answer !== 'object') return '';
+  const raw =
+    answer.answer_metadata ??
+    answer.answer_feedback_metadata ??
+    answer.grading_result ??
+    answer.result ??
+    answer.grade_result ??
+    answer.grading_feedback ??
+    answer.feedback ??
+    '';
+  if (raw == null || raw === '') return '';
+  if (typeof raw === 'string') return raw;
+  if (typeof raw === 'object') return JSON.stringify(raw);
+  return String(raw);
+}
+
+/** 當切換到既有 tab 時，從同一筆 Rag 資料填入：llm_api_key、rag_list、rag_metadata、chunk_size、chunk_overlap、name、system_prompt_instruction；若 API 有回傳 quizzes/answers 則填入 cardList。 */
 watch(currentRagItem, (rag) => {
   if (!rag || typeof rag !== 'object') return;
   const state = currentState.value;
@@ -290,6 +314,39 @@ watch(currentRagItem, (rag) => {
   if (rag.filename != null && String(rag.filename).trim() !== '') state.zipFileName = String(rag.filename).trim();
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
     state.systemInstruction = String(rag.system_prompt_instruction).trim();
+  }
+  // 從 GET /rag/rags 回傳的 quizzes、answers 初始化 cardList
+  const quizzes = Array.isArray(rag.quizzes) ? rag.quizzes : [];
+  const answers = Array.isArray(rag.answers) ? rag.answers : [];
+  if (quizzes.length > 0) {
+    state.cardList = quizzes.map((q, i) => {
+      const answerByQuizId = q.quiz_id != null ? answers.find((a) => a.quiz_id === q.quiz_id) : null;
+      const answerByIndex = answerByQuizId ?? answers[i] ?? null;
+      const studentAnswer = answerByIndex?.student_answer ?? '';
+      const gradingObj = answerByIndex?.answer_metadata ?? answerByIndex?.grading_response ?? answerByIndex?.result ?? null;
+      const gradingResultStr = gradingObj != null && typeof gradingObj === 'object'
+        ? JSON.stringify(gradingObj)
+        : getGradingResultFromAnswer(answerByIndex);
+      return {
+        id: nextCardId(),
+        quiz: q.quiz_content ?? q.quiz ?? '',
+        quiz_hint: q.quiz_hint ?? q.hint ?? '',
+        referenceAnswer: q.reference_answer ?? q.answer ?? '',
+        sourceFilename: q.unit_filename ?? q.target_filename ?? null,
+        ragName: q.rag_name ?? null,
+        answer: typeof studentAnswer === 'string' ? studentAnswer : '',
+        quizHintVisible: false,
+        confirmed: !!studentAnswer,
+        gradingResult: gradingResultStr,
+        gradingResponseJson: gradingObj,
+        generateQuizResponseJson: q,
+        quiz_id: q.quiz_id ?? null,
+        quiz_level: q.quiz_level ?? null,
+        systemInstructionUsed: q.system_instruction ?? null,
+      };
+    });
+    state.quizSlotsCount = state.cardList.length;
+    state.showQuizGeneratorBlock = state.cardList.length > 0;
   }
 }, { immediate: true });
 
@@ -348,7 +405,7 @@ watch(ragList, (list) => {
   }
 }, { immediate: true });
 
-/** 載入 RAG 列表：GET /rag/rags 列出 Rag 表全部內容（與 GET /user/users 一樣回傳全部資料），每一筆一個 tab。可選帶 Header X-API-Key。 */
+/** 載入 RAG 列表：GET /rag/rags 回傳 { rags: [...], count? }，每筆可有 quizzes、answers。每一筆一個 tab。可選帶 Header X-API-Key。 */
 async function fetchRagList() {
   ragListLoading.value = true;
   ragListError.value = '';
@@ -359,6 +416,7 @@ async function fetchRagList() {
     const res = await fetch(`${API_BASE}/rag/rags`, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
+    console.log('GET /rag/rags', data);
     ragList.value = Array.isArray(data) ? data : (data?.rags ?? data?.items ?? []);
   } catch (err) {
     ragListError.value = err.message || '無法載入 RAG 列表';
@@ -893,7 +951,7 @@ async function confirmAnswer(item) {
         for (let r = 0; r <= maxRetries; r++) {
           if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
           try {
-            pollRes = await fetch(`${API_BASE}/rag/grade_result/${jobId}`);
+            pollRes = await fetch(`${API_BASE}${API_GRADE_RESULT}/${jobId}`);
             pollText = await pollRes.text();
             if (pollRes.status !== 502 && pollRes.status !== 504) break;
           } catch (_) {
@@ -918,7 +976,7 @@ async function confirmAnswer(item) {
         }
         if (pollData.status === 'ready') {
           item.gradingResponseJson = pollData.result;
-          item.gradingResult = formatGradingResult(JSON.stringify(pollData.result)) || '（無批改內容）';
+          item.gradingResult = typeof pollData.result === 'string' ? pollData.result : (pollData.result != null ? JSON.stringify(pollData.result) : '');
           return;
         }
         if (pollData.status === 'error') {
@@ -938,51 +996,29 @@ async function confirmAnswer(item) {
     let parsed = null;
     try { parsed = text ? JSON.parse(text) : null; } catch { /* ignore parse error */ }
     item.gradingResponseJson = parsed;
-    item.gradingResult = formatGradingResult(text) || '（無批改內容）';
+    item.gradingResult = text || '';
   } catch (err) {
     item.gradingResult = '評分失敗：後端逾時或服務喚醒中，請稍後再試。';
   }
 }
 
-/** 將評分 API 回傳的 JSON 轉成易讀文字 */
-function formatGradingResult(text) {
-  if (!text || typeof text !== 'string') return text;
-  const t = text.trim();
-  if (!t.startsWith('{')) return text;
-  try {
-    const data = JSON.parse(text);
-    const lines = [];
-    if (data.score != null) lines.push(`總分：${data.score} / 10`);
-    if (data.quiz_level != null || data.level != null) lines.push(`等級：${data.quiz_level ?? data.level}`);
-    if (lines.length) lines.push('');
-
-    const rubric = data.rubric;
-    if (Array.isArray(rubric) && rubric.length > 0) {
-      lines.push('【評分項目】');
-      rubric.forEach((r) => {
-        const criteria = r.criteria ?? '';
-        const score = r.score != null ? ` (${r.score}分)` : '';
-        const comment = r.comment ? `\n  ${r.comment}` : '';
-        lines.push(`• ${criteria}${score}${comment}`);
-      });
-      lines.push('');
-    }
-
-    const section = (title, arr) => {
-      if (!Array.isArray(arr) || arr.length === 0) return;
-      lines.push(`【${title}】`);
-      arr.forEach((s) => lines.push(`• ${s}`));
-      lines.push('');
-    };
-    section('優點', data.strengths);
-    section('待改進', data.weaknesses);
-    section('遺漏項目', data.missing_items);
-    section('建議後續', data.action_items);
-
-    return lines.join('\n').trim() || text;
-  } catch (_) {
-    return text;
+/** 解析批改結果（gradingResponseJson 或 gradingResult 字串），回傳 { parsed, raw } 供模板顯示 */
+function parseGradingResult(card) {
+  if (!card) return { parsed: null, raw: '' };
+  let obj = card.gradingResponseJson;
+  if (obj != null && typeof obj === 'object') {
+    return { parsed: obj, raw: JSON.stringify(obj, null, 2) };
   }
+  const str = card.gradingResult;
+  if (typeof str === 'string' && str.trim().startsWith('{')) {
+    try {
+      obj = JSON.parse(str);
+      return { parsed: obj, raw: JSON.stringify(obj, null, 2) };
+    } catch (_) {
+      return { parsed: null, raw: str };
+    }
+  }
+  return { parsed: null, raw: str || '' };
 }
 
 function rewriteAnswer(item) {
@@ -1455,15 +1491,58 @@ function addAllSecondFoldersAsGroups() {
                   </div>
                   <div class="border rounded bg-light p-3 mb-3">
                     <div class="form-label text-muted small mb-1">批改結果</div>
-                    <div class="small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
+                    <template v-if="(parsedGradingsBySlot[slotIndex - 1] || {}).parsed">
+                      <div class="small">
+                        <div v-if="(parsedGradingsBySlot[slotIndex - 1].parsed.score != null)" class="mb-2">
+                          <span class="fw-semibold">總分：</span>{{ parsedGradingsBySlot[slotIndex - 1].parsed.score }} / 10
+                        </div>
+                        <div v-if="parsedGradingsBySlot[slotIndex - 1].parsed.level" class="mb-2">
+                          <span class="fw-semibold">等級：</span>{{ parsedGradingsBySlot[slotIndex - 1].parsed.level }}
+                        </div>
+                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.rubric) && parsedGradingsBySlot[slotIndex - 1].parsed.rubric.length" class="mb-2">
+                          <div class="fw-semibold mb-1">評分項目</div>
+                          <div v-for="(r, ri) in parsedGradingsBySlot[slotIndex - 1].parsed.rubric" :key="ri" class="mb-2 ps-2 border-start border-2">
+                            <div class="text-secondary">{{ r.criterion || r.criteria || '項目' }}{{ r.score != null ? `（${r.score} 分）` : '' }}</div>
+                            <div v-if="r.description" class="mt-1">{{ r.description }}</div>
+                            <div v-else-if="r.comments" class="mt-1">{{ r.comments }}</div>
+                            <div v-else-if="r.comment" class="mt-1">{{ r.comment }}</div>
+                          </div>
+                        </div>
+                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.strengths) && parsedGradingsBySlot[slotIndex - 1].parsed.strengths.length" class="mb-2">
+                          <div class="fw-semibold mb-1">優點</div>
+                          <ul class="mb-0 ps-3 small">
+                            <li v-for="(s, si) in parsedGradingsBySlot[slotIndex - 1].parsed.strengths" :key="si">{{ s }}</li>
+                          </ul>
+                        </div>
+                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.weaknesses) && parsedGradingsBySlot[slotIndex - 1].parsed.weaknesses.length" class="mb-2">
+                          <div class="fw-semibold mb-1">待改進</div>
+                          <ul class="mb-0 ps-3 small">
+                            <li v-for="(w, wi) in parsedGradingsBySlot[slotIndex - 1].parsed.weaknesses" :key="wi">{{ w }}</li>
+                          </ul>
+                        </div>
+                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.missing_items) && parsedGradingsBySlot[slotIndex - 1].parsed.missing_items.length" class="mb-2">
+                          <div class="fw-semibold mb-1">遺漏項目</div>
+                          <ul class="mb-0 ps-3 small">
+                            <li v-for="(m, mi) in parsedGradingsBySlot[slotIndex - 1].parsed.missing_items" :key="mi">{{ m }}</li>
+                          </ul>
+                        </div>
+                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.action_items) && parsedGradingsBySlot[slotIndex - 1].parsed.action_items.length">
+                          <div class="fw-semibold mb-1">建議後續</div>
+                          <ul class="mb-0 ps-3 small">
+                            <li v-for="(a, ai) in parsedGradingsBySlot[slotIndex - 1].parsed.action_items" :key="ai">{{ a }}</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </template>
+                    <div v-else class="small" style="white-space: pre-wrap;">{{ (parsedGradingsBySlot[slotIndex - 1] || {}).raw || '尚未批改' }}</div>
+                  </div>
+                  <div v-if="(parsedGradingsBySlot[slotIndex - 1] || {}).raw" class="mb-3">
+                    <div class="form-label text-muted small mb-1">批改結果原始 JSON</div>
+                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ (parsedGradingsBySlot[slotIndex - 1] || {}).raw }}</pre>
                   </div>
                   <div v-if="currentState.cardList[slotIndex - 1].generateQuizResponseJson != null" class="mb-3">
                     <div class="form-label text-muted small mb-1">產生 quiz API 回傳 JSON：</div>
                     <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].generateQuizResponseJson, null, 2) }}</pre>
-                  </div>
-                  <div v-if="currentState.cardList[slotIndex - 1].gradingResponseJson != null">
-                    <div class="form-label text-muted small mb-1">批改結果 API 回傳 JSON：</div>
-                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].gradingResponseJson, null, 2) }}</pre>
                   </div>
                 </div>
               </div>

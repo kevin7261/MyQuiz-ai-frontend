@@ -9,5 +9,6 @@ export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';
 export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
 export const API_REQUEST_QUIZ_TEXT = 'quiz_text';
 
-/** 評分：POST /rag/grade_submission 回傳 202 + job_id，再以 GET /rag/grade_result/{job_id} 輪詢 */
-export const API_GRADE_SUBMISSION = '/rag/grade_submission';
+/** 評分：POST /rag/quiz-grade 回傳 202 + job_id，再以 GET /rag/quiz-grade-result/{job_id} 輪詢 */
+export const API_GRADE_SUBMISSION = '/rag/quiz-grade';
+export const API_GRADE_RESULT = '/rag/quiz-grade-result';
