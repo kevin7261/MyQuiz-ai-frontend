@@ -6,7 +6,7 @@
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
-import { API_BASE, API_GENERATE_QUIZ, API_GRADE_SUBMISSION, API_GRADE_RESULT, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_RAG_APPLIED } from '../constants/api.js';
+import { API_BASE, API_GENERATE_QUIZ, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_GRADE_SUBMISSION, API_GRADE_RESULT } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -28,11 +28,11 @@ function nextCardId() {
   return `card-${++cardIdSeq}`;
 }
 
-/** 預設 quiz／提示（產生第一個 quiz 時使用） */
+/** 預設題目／提示（產生第一題時使用） */
 const authStore = useAuthStore();
 
-/** 產生 quiz 的 API 的 system_instruction 預設內容 */
-const DEFAULT_SYSTEM_INSTRUCTION = 'quiz 字數不超過50字';
+/** generate-quiz API 的 system_instruction 預設內容（由 Rag 表取得，此處僅為 UI 預設） */
+const DEFAULT_SYSTEM_INSTRUCTION = '題目字數不超過50字';
 
 /** RAG 列表（GET /rag/rags）、載入中、錯誤 */
 const ragList = ref([]);
@@ -80,21 +80,15 @@ function getTabState(id) {
       generateQuizError: '',
       generateQuizResponseJson: null,
       cardList: [],
-      /** 每個 quiz 表單獨立狀態（key = slotIndex 1,2,3...） */
+      /** 每一題產生題目表單獨立狀態（key = slotIndex 1,2,3...） */
       slotFormState: {},
-      /** 是否已點「新增 quiz」而顯示 quiz 生成子區塊 */
+      /** 是否已點「新增題目」而顯示題目生成子區塊 */
       showQuizGeneratorBlock: false,
-      /** 已展開的 quiz 區塊數（每按一次「新增 quiz」+1） */
+      /** 已展開的題目區塊數（每按一次「新增題目」+1，每個區塊對應一題） */
       quizSlotsCount: 0,
       updateNameLoading: false,
       updateNameError: '',
-      updateLlmKeyLoading: false,
-      updateLlmKeyError: '',
-      setAppliedLoading: false,
-      setAppliedError: '',
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
-      /** 本 tab 專用 API Key，與其他 tab 互不干擾 */
-      openaiApiKey: '',
     });
   }
   return tabStateMap[id];
@@ -109,13 +103,9 @@ const currentState = computed(() => {
   return getTabState(firstNew || (firstRag && (firstRag.file_id ?? firstRag.id ?? firstRag)) || 'new');
 });
 
-/** 當前 tab 每張 card 的批改解析結果（對應 slotIndex - 1），供模板避免重複 parse */
-const parsedGradingsBySlot = computed(() => {
-  const list = currentState.value?.cardList ?? [];
-  return list.map((card) => parseGradingResult(card));
-});
-
-/** API Key 已改為每個 tab 獨立儲存於 currentState.openaiApiKey，不跨 tab 共用 */
+/** 全畫面共用 */
+/** 僅由使用者於頁面輸入，不從環境變數或任何儲存讀取 */
+const openaiApiKey = ref('');
 
 /** 當前 RAG（來自 /rag/rags）是否有 rag_list 或 rag_metadata；有則壓縮資料夾 (Pack) 與 RAG 不 disable */
 const hasRagListOrMetadata = computed(() => {
@@ -126,9 +116,10 @@ const hasRagListOrMetadata = computed(() => {
   return hasList || hasMeta;
 });
 
-/** 當前 tab 未上傳 ZIP 時，Pack、RAG 產生 quiz、產生 quiz 按鈕 disable；若有 rag_list 或 rag_metadata 則不 disable。Pack 仍會在送出時檢查 API key。 */
+/** 未輸入 API key 或當前 tab 未上傳 ZIP 時，Pack、RAG 產生題目、產生題目按鈕皆 disable；若有 rag_list 或 rag_metadata 則不 disable */
 const packAndGenerateDisabled = computed(() => {
   if (hasRagListOrMetadata.value) return false;
+  if (!openaiApiKey.value?.trim()) return true;
   const id = activeTabId.value;
   if (!id) return true;
   if (isNewTabId(id)) {
@@ -138,14 +129,14 @@ const packAndGenerateDisabled = computed(() => {
   return false;
 });
 
-/** 當前 RAG 是否有 rag_metadata；有則 RAG 產生 quiz 區塊 enable */
+/** 當前 RAG 是否有 rag_metadata；有則 RAG 產生題目區塊 enable */
 const hasRagMetadata = computed(() => {
   const r = currentRagItem.value;
   if (!r || typeof r !== 'object') return false;
   return r.rag_metadata != null && (typeof r.rag_metadata === 'string' ? String(r.rag_metadata).trim() !== '' : true);
 });
 
-/** 未執行 Pack 時，RAG 產生 quiz 區塊與產生 quiz 按鈕 disable（需有 packResponseJson）；若有 rag_metadata 則 enable */
+/** 未執行 Pack 時，RAG 產生題目區塊與產生題目按鈕 disable（需有 packResponseJson）；若有 rag_metadata 則 enable */
 const ragGenerateDisabled = computed(() => {
   if (hasRagMetadata.value) return false;
   return packAndGenerateDisabled.value || currentState.value.packResponseJson == null;
@@ -169,7 +160,7 @@ function deriveRagName(o) {
   return f || s || '';
 }
 
-/** 產生 quiz：選擇單元 = rag_name 下拉（供 API；Pack 無資料時從 /rags 推導） */
+/** 產生題目：選擇單元 = rag_name 下拉（供 API；Pack 無資料時從 /rags 推導） */
 const generateQuizUnits = computed(() => {
   const data = currentState.value.packResponseJson;
   const out = packOutputs.value;
@@ -193,8 +184,8 @@ const generateQuizUnits = computed(() => {
   return generateQuizUnitsFromRag.value;
 });
 
-/** 難度、chunk 參數（共用）0=基礎 1=進階 */
-const filterDifficulty = ref(0);
+/** 難度、chunk 參數（共用） */
+const filterDifficulty = ref('入門');
 const chunkSize = ref(1000);
 const chunkOverlap = ref(200);
 
@@ -234,7 +225,7 @@ const fileMetadataToShow = computed(() => {
   return rag;
 });
 
-/** 從 file_metadata 取得 course_name（供產生 quiz、評分 API 使用） */
+/** 從 file_metadata 取得 course_name（供產生題目、評分 API 使用） */
 const courseNameFromFileMetadata = computed(() => {
   const meta = fileMetadataToShow.value;
   if (meta == null || typeof meta !== 'object') return '';
@@ -276,33 +267,10 @@ const generateQuizUnitsFromRag = computed(() => {
     });
 });
 
-/** 從 GET /rag/rags 的 answer 物件取出批改結果顯示文字（支援 answer_metadata、answer_feedback_metadata、grading_result 等） */
-function getGradingResultFromAnswer(answer) {
-  if (!answer || typeof answer !== 'object') return '';
-  const raw =
-    answer.answer_metadata ??
-    answer.answer_feedback_metadata ??
-    answer.grading_result ??
-    answer.result ??
-    answer.grade_result ??
-    answer.grading_feedback ??
-    answer.feedback ??
-    '';
-  if (raw == null || raw === '') return '';
-  if (typeof raw === 'string') return raw;
-  if (typeof raw === 'object') return JSON.stringify(raw);
-  return String(raw);
-}
-
-/** 當切換到既有 tab 時，從同一筆 Rag 資料填入：llm_api_key、rag_list、rag_metadata、chunk_size、chunk_overlap、name、system_prompt_instruction；若 API 有回傳 quizzes/answers 則填入 cardList。 */
+/** 當切換到既有 tab 時，從同一筆 Rag 資料填入：rag_list、rag_metadata、chunk_size、chunk_overlap、name、system_prompt_instruction */
 watch(currentRagItem, (rag) => {
   if (!rag || typeof rag !== 'object') return;
   const state = currentState.value;
-  if (rag.llm_api_key != null && String(rag.llm_api_key).trim() !== '') {
-    state.openaiApiKey = String(rag.llm_api_key).trim();
-  } else {
-    state.openaiApiKey = '';
-  }
   if (rag.rag_list != null && String(rag.rag_list).trim() !== '') {
     state.packTasks = String(rag.rag_list).trim();
     state.packTasksList = parsePackTasksList(state.packTasks);
@@ -314,43 +282,50 @@ watch(currentRagItem, (rag) => {
   if (rag.chunk_overlap != null) chunkOverlap.value = Number(rag.chunk_overlap);
   if (rag.name != null && String(rag.name).trim() !== '') state.zipUploadName = String(rag.name).trim();
   if (rag.filename != null && String(rag.filename).trim() !== '') state.zipFileName = String(rag.filename).trim();
+  if (rag.llm_api_key != null && String(rag.llm_api_key).trim() !== '') {
+    openaiApiKey.value = String(rag.llm_api_key).trim();
+  }
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
     state.systemInstruction = String(rag.system_prompt_instruction).trim();
   }
-  // 從 GET /rag/rags 回傳的 quizzes、answers 初始化 cardList
-  const quizzes = Array.isArray(rag.quizzes) ? rag.quizzes : [];
-  const answers = Array.isArray(rag.answers) ? rag.answers : [];
-  if (quizzes.length > 0) {
-    state.cardList = quizzes.map((q, i) => {
-      const answerByQuizId = q.quiz_id != null ? answers.find((a) => a.quiz_id === q.quiz_id) : null;
-      const answerByIndex = answerByQuizId ?? answers[i] ?? null;
-      const studentAnswer = answerByIndex?.student_answer ?? '';
-      const gradingObj = answerByIndex?.answer_metadata ?? answerByIndex?.grading_response ?? answerByIndex?.result ?? null;
-      const gradingResultStr = gradingObj != null && typeof gradingObj === 'object'
-        ? JSON.stringify(gradingObj)
-        : getGradingResultFromAnswer(answerByIndex);
-      return {
-        id: nextCardId(),
-        quiz: q.quiz_content ?? q.quiz ?? '',
-        quiz_hint: q.quiz_hint ?? q.hint ?? '',
-        referenceAnswer: q.reference_answer ?? q.answer ?? '',
-        sourceFilename: q.unit_filename ?? q.target_filename ?? null,
-        ragName: q.rag_name ?? null,
-        answer: typeof studentAnswer === 'string' ? studentAnswer : '',
-        quizHintVisible: false,
-        confirmed: !!studentAnswer,
-        gradingResult: gradingResultStr,
-        gradingResponseJson: gradingObj,
-        generateQuizResponseJson: q,
-        quiz_id: q.quiz_id ?? null,
-        quiz_level: q.quiz_level ?? null,
-        systemInstructionUsed: q.system_instruction ?? null,
-      };
-    });
-    state.quizSlotsCount = state.cardList.length;
-    state.showQuizGeneratorBlock = state.cardList.length > 0;
+  // 從 /rag/rags 回傳的 quizzes、answers 寫入「RAG 產生題目與題目與作答」
+  if (rag.quizzes != null && Array.isArray(rag.quizzes)) {
+    state.showQuizGeneratorBlock = true;
+    state.quizSlotsCount = rag.quizzes.length;
+    const firstRagName = (parsePackTasksList(rag.rag_list)[0]?.[0] ?? '').trim();
+    state.cardList = rag.quizzes.map((q) => buildCardFromRagQuiz(q, firstRagName));
+  } else {
+    state.quizSlotsCount = 0;
+    state.cardList = [];
   }
 }, { immediate: true });
+
+/** 由 /rag/rags 的 quiz（含 answers）組成一張題目卡片，供題目與作答區塊顯示 */
+function buildCardFromRagQuiz(quiz, ragName) {
+  const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
+  const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
+  const gradingResult = latestAnswer
+    ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestAnswer.student_answer != null ? '已批改' : ''))
+    : '';
+  return {
+    id: nextCardId(),
+    quiz: quiz.quiz_content ?? '',
+    hint: quiz.quiz_hint ?? '',
+    referenceAnswer: quiz.reference_answer ?? '',
+    sourceFilename: null,
+    ragName: ragName || null,
+    answer: latestAnswer?.student_answer ?? '',
+    hintVisible: false,
+    confirmed: !!latestAnswer,
+    gradingResult,
+    gradingResponseJson: latestAnswer ?? null,
+    generateQuizResponseJson: null,
+    generateLevel: null,
+    systemInstructionUsed: null,
+    quiz_id: quiz.quiz_id ?? null,
+    answer_id: latestAnswer?.answer_id ?? null,
+  };
+}
 
 /** packTasks 與 packTasksList 雙向同步（輸入框與拖曳 UI） */
 watch(
@@ -407,18 +382,14 @@ watch(ragList, (list) => {
   }
 }, { immediate: true });
 
-/** 載入 RAG 列表：GET /rag/rags 回傳 { rags: [...], count? }，每筆可有 quizzes、answers。每一筆一個 tab。可選帶 Header X-API-Key。 */
+/** 載入 RAG 列表：GET /rag/rags 列出 Rag 表全部內容（與 GET /user/users 一樣回傳全部資料），每一筆一個 tab。 */
 async function fetchRagList() {
   ragListLoading.value = true;
   ragListError.value = '';
   try {
-    const headers = {};
-    const llmKey = currentState.value?.openaiApiKey?.trim();
-    if (llmKey) headers['X-LLM-Api-Key'] = llmKey;
-    const res = await fetch(`${API_BASE}/rag/rags`, { method: 'GET', headers });
+    const res = await fetch(`${API_BASE}/rag/rags`, { method: 'GET' });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
-    console.log('GET /rag/rags', data);
     ragList.value = Array.isArray(data) ? data : (data?.rags ?? data?.items ?? []);
   } catch (err) {
     ragListError.value = err.message || '無法載入 RAG 列表';
@@ -428,9 +399,19 @@ async function fetchRagList() {
   }
 }
 
-/** 畫面一打開就抓 GET /rag/rags，每一筆 RAG 一個 tab */
+/** 上傳 ZIP 的 <input type="file"> ref，用於進入頁面／新增 tab 時清空，讓欄位一開始是空的 */
+const zipFileInputRef = ref(null);
+
+function clearZipFileInput() {
+  if (zipFileInputRef.value) {
+    zipFileInputRef.value.value = '';
+  }
+}
+
+/** 畫面一打開就抓 GET /rag/rags，每一筆 RAG 一個 tab；並清空檔案選擇讓上傳欄位一開始是空的 */
 onMounted(() => {
   fetchRagList();
+  clearZipFileInput();
 });
 
 /** 更新 RAG 名稱：PATCH /rag/name/{file_id}，body { name }，Header X-Person-Id。成功後更新 ragList 該筆的 name，tab 標籤會自動更新。 */
@@ -475,94 +456,6 @@ async function updateRagName() {
     state.updateNameError = err.message || String(err);
   } finally {
     state.updateNameLoading = false;
-  }
-}
-
-/** 更新 RAG 的 LLM API Key：PATCH /rag/llm_api_key/{file_id}，body { llm_api_key }，Header X-Person-Id。 */
-async function updateRagLlmApiKey() {
-  const rag = currentRagItem.value;
-  if (!rag || isNewTabId(activeTabId.value)) return;
-  const fileId = rag.file_id ?? rag.id ?? rag;
-  if (fileId == null || fileId === '') return;
-  const personId = authStore.user?.person_id;
-  if (personId == null) {
-    alert('請先登入');
-    return;
-  }
-  const llmKey = (currentState.value?.openaiApiKey ?? '').trim();
-  const state = getTabState(activeTabId.value);
-  state.updateLlmKeyLoading = true;
-  state.updateLlmKeyError = '';
-  try {
-    const res = await fetch(`${API_BASE}/rag/llm_api_key/${encodeURIComponent(String(fileId))}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Person-Id': String(personId),
-      },
-      body: JSON.stringify({ llm_api_key: llmKey || null }),
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      let msg = res.statusText;
-      try {
-        const err = JSON.parse(text);
-        msg = err.detail ?? err.error ?? msg;
-      } catch (_) {
-        if (text) msg = text;
-      }
-      throw new Error(msg);
-    }
-    state.updateLlmKeyError = '';
-  } catch (err) {
-    state.updateLlmKeyError = err.message || String(err);
-  } finally {
-    state.updateLlmKeyLoading = false;
-  }
-}
-
-/** 設為使用中 RAG：PATCH /rag/applied/{file_id}，Header X-Person-Id；該 file_id applied=true，同 person 其餘 applied=false。成功後更新 ragList 的 applied 欄位。 */
-async function setRagApplied() {
-  const rag = currentRagItem.value;
-  if (!rag || isNewTabId(activeTabId.value)) return;
-  const fileId = rag.file_id ?? rag.id ?? rag;
-  if (fileId == null || fileId === '') return;
-  const personId = authStore.user?.person_id;
-  if (personId == null) {
-    alert('請先登入');
-    return;
-  }
-  const state = getTabState(activeTabId.value);
-  state.setAppliedLoading = true;
-  state.setAppliedError = '';
-  try {
-    const res = await fetch(`${API_BASE}${API_RAG_APPLIED}/${encodeURIComponent(String(fileId))}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Person-Id': String(personId),
-      },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      let msg = res.statusText;
-      try {
-        const err = JSON.parse(text);
-        msg = err.detail ?? err.error ?? msg;
-      } catch (_) {
-        if (text) msg = text;
-      }
-      throw new Error(msg);
-    }
-    ragList.value.forEach((r) => {
-      const fid = r.file_id ?? r.id ?? r;
-      r.applied = String(fid) === String(fileId);
-    });
-    state.setAppliedError = '';
-  } catch (err) {
-    state.setAppliedError = err.message || String(err);
-  } finally {
-    state.setAppliedLoading = false;
   }
 }
 
@@ -611,13 +504,14 @@ async function deleteRag(rag, e) {
 /** upload-zip 成功回傳的 created_at，用於 tab 標籤（key = rag_id） */
 const ragCreatedAtMap = ref({});
 
-/** 點「新增」：只加一個新 tab（不 call API），name 預設為 yymmddhhmmss；在該 tab 內上傳 ZIP 時會呼叫 upload-zip */
+/** 點「新增」：只加一個新 tab（不 call API），name 預設為 yymmddhhmmss；在該 tab 內上傳 ZIP 時會呼叫 upload-zip。上傳欄位清空。 */
 function addNewTab() {
   const id = 'new-' + generateTabFileId();
   newTabIds.value = [...newTabIds.value, id];
   activeTabId.value = id;
   getTabState(id).zipUploadName = getDefaultUploadName();
   if (ragList.value.length === 0) showFormWhenNoData.value = true;
+  clearZipFileInput();
 }
 
 /** 取得 RAG 顯示名稱（用於 tab 標籤）；只顯示 name（按 + 時設定的），上傳後不改成時間 */
@@ -670,7 +564,7 @@ function getDefaultUploadName() {
   return `${yy}${mm}${dd}${hh}${min}${ss}`;
 }
 
-/** 按下確定：呼叫 POST /rag/upload-zip（傳入 person_id、ZIP 檔案；name 可選，未傳則以檔名去 .zip 寫入 Rag.name；llm_api_key 可選，寫入 Rag 表），後端回傳 rag_id、file_id、created_at、filename、second_folders、file_metadata */
+/** 按下確定：呼叫 POST /rag/upload-zip（傳入 person_id、ZIP 檔案；name 可選，未傳則以檔名去 .zip 寫入 Rag.name），後端回傳 rag_id、file_id、created_at、filename、second_folders、file_metadata */
 async function confirmUploadZip() {
   const state = currentState.value;
   if (!state.uploadedZipFile) {
@@ -690,8 +584,17 @@ async function confirmUploadZip() {
     if (personId != null) formData.append('person_id', String(personId));
     const name = (state.zipUploadName || '').trim() || getDefaultUploadName();
     formData.append('name', name);
-    const llmKey = (state.openaiApiKey ?? '').trim();
-    if (llmKey) formData.append('llm_api_key', llmKey);
+    // llm_api_key 必填，上傳時寫入 Rag 表
+    const apiKey = (openaiApiKey.value ?? '').trim();
+    if (!apiKey) {
+      state.zipError = '請先輸入 OpenAI API Key（必填）';
+      state.zipLoading = false;
+      return;
+    }
+    formData.append('llm_api_key', apiKey);
+    // 上傳時一併寫入 Rag 表 system_prompt_instruction（出題系統指令）
+    const systemInstruction = (currentState.value.systemInstruction ?? '').trim();
+    if (systemInstruction) formData.append('system_prompt_instruction', systemInstruction);
     const headers = {};
     if (personId != null) headers['X-Person-Id'] = String(personId);
     const res = await fetch(`${API_BASE}/rag/upload-zip`, {
@@ -742,13 +645,13 @@ async function confirmUploadZip() {
   }
 }
 
-/** 呼叫 /rag/create-rag-zip；body: file_id, person_id, rag_list, openai_api_key, chunk_size, chunk_overlap, system_prompt_instruction（後端寫入資料庫） */
+/** 呼叫 /rag/create-rag-zip；body: file_id, person_id, rag_list, openai_api_key, chunk_size, chunk_overlap, system_prompt_instruction */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipFileId ?? '').trim();
   const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
-  const apiKey = currentState.value?.openaiApiKey?.trim() ?? '';
+  const apiKey = openaiApiKey.value?.trim() ?? '';
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 file_id（見上方 file_metadata）';
     return;
@@ -768,7 +671,6 @@ async function confirmPack() {
   state.packLoading = true;
   state.packError = '';
   state.packResponseJson = null;
-  const systemPromptInstruction = (state.systemInstruction ?? '').trim() || null;
   try {
     const res = await fetch(`${API_BASE}/rag/create-rag-zip`, {
       method: 'POST',
@@ -780,7 +682,7 @@ async function confirmPack() {
         openai_api_key: apiKey,
         chunk_size: Number(chunkSize.value) || 1000,
         chunk_overlap: Number(chunkOverlap.value) || 200,
-        ...(systemPromptInstruction != null ? { system_prompt_instruction: systemPromptInstruction } : {}),
+        system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
       }),
     });
     const text = await res.text();
@@ -800,7 +702,7 @@ async function confirmPack() {
       state.packResponseJson = text;
     }
     state.ragMetadata = typeof state.packResponseJson === 'string' ? state.packResponseJson : JSON.stringify(state.packResponseJson, null, 2);
-    // 重新載入列表（create-rag-zip 後端已會更新 Rag 表的 rag_list、rag_metadata、chunk_size、chunk_overlap、system_prompt_instruction）
+    // 重新載入列表（create-rag-zip 後端已會更新 Rag 表的 rag_list、rag_metadata、chunk_size、chunk_overlap）
     await fetchRagList();
   } catch (err) {
     state.packError = err.message || '壓縮失敗';
@@ -810,24 +712,9 @@ async function confirmPack() {
   }
 }
 
-const difficultyOptions = [
-  { value: 0, label: '基礎' },
-  { value: 1, label: '進階' },
-];
+const difficultyOptions = ['入門', '進階', '困難'];
 
-/** 將 quiz_level 轉為數字顯示：0=基礎 1=進階，舊資料若為中文也對應轉成數字 */
-function quizLevelDisplay(val) {
-  if (val == null || val === '') return '—';
-  const n = Number(val);
-  if (n === 0 || n === 1) return String(n);
-  if (typeof val === 'string') {
-    if (val === '入門' || val === '基礎') return '0';
-    if (val === '進階') return '1';
-  }
-  return String(val);
-}
-
-/** 取得第 slotIndex 個 quiz 的表單狀態（獨立、不連動） */
+/** 取得第 slotIndex 題的產生題目表單狀態（獨立、不連動） */
 function getSlotFormState(slotIndex) {
   const state = currentState.value;
   if (!state.slotFormState[slotIndex]) {
@@ -843,7 +730,7 @@ function getSlotFormState(slotIndex) {
   return state.slotFormState[slotIndex];
 }
 
-/** 點「新增 quiz」：展開一個新的 quiz 區塊；cardList 與 slot 對齊 */
+/** 點「新增題目」：展開一個新的題目區塊（第 n 題）；cardList 與 slot 對齊 */
 function openNextQuizSlot() {
   const state = currentState.value;
   state.showQuizGeneratorBlock = true;
@@ -853,8 +740,8 @@ function openNextQuizSlot() {
   }
 }
 
-/** 將第 slotIndex 個 quiz 設為指定卡片（每個獨立，不連動） */
-function setCardAtSlot(slotIndex, quizContent, quizHint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, quizLevel, systemInstructionUsed) {
+/** 將第 slotIndex 題設為指定卡片（每題獨立，不連動） */
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed) {
   const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
@@ -862,24 +749,23 @@ function setCardAtSlot(slotIndex, quizContent, quizHint, sourceFilename, referen
   const card = {
     id: nextCardId(),
     quiz: quizContent ?? '',
-    quiz_hint: quizHint ?? '',
+    hint: hint ?? '',
     referenceAnswer: referenceAnswer ?? '',
     sourceFilename: sourceFilename ?? null,
     ragName: ragName ?? null,
     answer: '',
-    quizHintVisible: false,
+    hintVisible: false,
     confirmed: false,
     gradingResult: '',
     gradingResponseJson: null,
     generateQuizResponseJson: generateQuizResponseJson ?? null,
-    quiz_id: generateQuizResponseJson?.quiz_id ?? null,
-    quiz_level: quizLevel ?? null,
+    generateLevel: generateLevel ?? null,
     systemInstructionUsed: systemInstructionUsed ?? null,
   };
   state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫產生 quiz API；傳入 slotIndex 使用該 slot 的表單狀態（不傳 openai_api_key、system_prompt_instruction，後端依 file_id/rag 從資料庫讀取） */
+/** 呼叫 /rag/generate-quiz；每題獨立，傳入 slotIndex 使用該題的表單狀態。API 從 Rag 表取得 OpenAI key 與 system_prompt_instruction */
 async function generateQuiz(slotIndex) {
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
@@ -897,8 +783,9 @@ async function generateQuiz(slotIndex) {
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
-  const systemInstructionForDisplay = (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION;
   const courseName = courseNameFromFileMetadata.value;
+  const difficultyOpts = ['入門', '進階', '困難'];
+  const quizLevel = difficultyOpts.indexOf(filterDifficulty.value);
   try {
     const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {
       method: 'POST',
@@ -906,9 +793,9 @@ async function generateQuiz(slotIndex) {
       body: JSON.stringify({
         file_id: sourceFileId,
         rag_name: ragName,
-        quiz_level: filterDifficulty.value,
+        quiz_level: quizLevel >= 0 ? quizLevel : 0,
         course_name: courseName || '未命名課程',
-        quiz_type: 0,
+        quiz_type: 1,
       }),
     });
     const text = await res.text();
@@ -924,22 +811,23 @@ async function generateQuiz(slotIndex) {
     }
     const data = text ? JSON.parse(text) : {};
     slotState.responseJson = data;
-    const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? '';
-    const quizHintText = data.quiz_hint ?? data.hint ?? '';
+    const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
+    const hintText = data.quiz_hint ?? data.hint ?? '';
     const targetFilename = data.unit_filename ?? data.target_filename ?? selectedUnit?.filename ?? '';
     const referenceAnswerText = data.reference_answer ?? data.answer ?? '';
-    setCardAtSlot(slotIndex, quizContent, quizHintText, targetFilename, referenceAnswerText, ragName, data, filterDifficulty.value, systemInstructionForDisplay);
+    setCardAtSlot(slotIndex, quizContent, hintText, targetFilename, referenceAnswerText, ragName, data, filterDifficulty.value, (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION);
   } catch (err) {
-    slotState.error = err.message || '產生 quiz 失敗';
+    slotState.error = err.message || '產生題目失敗';
   } finally {
     slotState.loading = false;
   }
 }
 
 function toggleHint(item) {
-  item.quizHintVisible = !item.quizHintVisible;
+  item.hintVisible = !item.hintVisible;
 }
 
+/** 評分：POST /rag/quiz-grade 傳 file_id、rag_name、題目與學生回答等，回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。OpenAI key 由 Rag 表 llm_api_key 取得。 */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
   const sourceFileId = String(currentState.value.zipFileId ?? '').trim();
@@ -948,29 +836,28 @@ async function confirmAnswer(item) {
     item.gradingResult = '評分需要 file_id：請先在「上傳 ZIP 檔」區塊上傳 RAG/講義 ZIP 取得 file_id 後再進行評分。';
     return;
   }
+  const ragName = item.ragName?.trim() ?? generateQuizUnits.value[0]?.rag_name?.trim();
+  if (!ragName) {
+    item.confirmed = true;
+    item.gradingResult = '評分失敗：此題目未關聯 RAG 單元（rag_name），請由「產生題目」產生題目後再評分。';
+    return;
+  }
   item.confirmed = true;
   item.gradingResult = '批改中...';
+  const courseName = courseNameFromFileMetadata.value ?? '';
   try {
-    const ragName = item.ragName?.trim() ?? generateQuizUnits.value[0]?.rag_name?.trim();
-    if (!ragName) {
-      item.gradingResult = '評分失敗：此 quiz 未關聯 RAG 單元（rag_name），請由「產生 quiz」產生後再評分。';
-      return;
-    }
-    const courseName = courseNameFromFileMetadata.value || '';
-    const quizId = item.quiz_id != null ? String(item.quiz_id) : '0';
-    const params = new URLSearchParams({
-      file_id: sourceFileId,
-      rag_name: ragName,
-      question_text: item.quiz ?? '',
-      student_answer: item.answer.trim(),
-      qtype: 'short_answer',
-      course_name: courseName,
-      quiz_id: quizId,
-    });
     const res = await fetch(`${API_BASE}${API_GRADE_SUBMISSION}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_id: sourceFileId,
+        rag_name: ragName,
+        quiz_content: item.quiz ?? '',
+        student_answer: item.answer.trim(),
+        qtype: 'short_answer',
+        course_name: courseName,
+        quiz_id: item.quiz_id ?? 0,
+      }),
     });
     const text = await res.text();
     if (!res.ok) {
@@ -983,105 +870,141 @@ async function confirmAnswer(item) {
           msg = text;
         }
       }
-      const statusHint = res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n' : '');
+      const statusHint = res.status === 400 ? '（例如 Rag 表 llm_api_key 未設定）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n' : ''));
       item.gradingResult = `評分失敗：${statusHint}${msg}`;
       return;
     }
-    // 後端改為非同步：202 + job_id，需輪詢取得結果（避免 Render 逾時 502）
-    if (res.status === 202) {
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (_) {
-        item.gradingResult = '評分失敗：無法解析 job_id';
-        return;
-      }
-      const jobId = data.job_id;
-      if (!jobId) {
-        item.gradingResult = '評分失敗：未取得 job_id';
-        return;
-      }
-      const maxPolls = 60; // 約 2 分鐘
-      const intervalMs = 2000;
-      const maxRetries = 3;
-      const retryDelayMs = 2000;
-      const friendlyUnavailable = '評分失敗：後端暫時無法連線，可能是服務喚醒中，請稍後再試或重新送出。';
-
-      for (let i = 0; i < maxPolls; i++) {
-        await new Promise((r) => setTimeout(r, intervalMs));
-        let pollRes = null;
-        let pollText = '';
-        for (let r = 0; r <= maxRetries; r++) {
-          if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
-          try {
-            pollRes = await fetch(`${API_BASE}${API_GRADE_RESULT}/${jobId}`);
-            pollText = await pollRes.text();
-            if (pollRes.status !== 502 && pollRes.status !== 504) break;
-          } catch (_) {
-            // 網路錯誤也重試，最後一輪會由下方判斷 pollRes 為 null
-          }
-        }
-        if (!pollRes || pollRes.status === 502 || pollRes.status === 504) {
-          item.gradingResult = friendlyUnavailable;
-          return;
-        }
-        // 404：job 不存在（例如服務重啟／冷啟動），顯示友善說明
-        if (pollRes.status === 404) {
-          item.gradingResult = '評分任務不存在或已過期（伺服器可能曾休眠或重啟），請重新送出評分。';
-          return;
-        }
-        let pollData;
-        try {
-          pollData = JSON.parse(pollText);
-        } catch (_) {
-          item.gradingResult = friendlyUnavailable;
-          return;
-        }
-        if (pollData.status === 'ready') {
-          item.gradingResponseJson = pollData.result;
-          item.gradingResult = typeof pollData.result === 'string' ? pollData.result : (pollData.result != null ? JSON.stringify(pollData.result) : '');
-          return;
-        }
-        if (pollData.status === 'error') {
-          // 404 有時被代理轉成 200，body 仍為 status/error；統一顯示友善說明
-          const errMsg = pollData.error || '';
-          const isJobNotFound = errMsg.includes('job not found');
-          item.gradingResult = isJobNotFound
-            ? '評分任務不存在或已過期（伺服器可能曾休眠或重啟），請重新送出評分。'
-            : `評分失敗：${pollData.error || '未知錯誤'}`;
-          return;
-        }
-        // pending：繼續輪詢
-      }
-      item.gradingResult = '評分逾時：請稍後再試或重新送出';
+    if (res.status !== 202) {
+      let parsed = null;
+      try { parsed = text ? JSON.parse(text) : null; } catch { /* ignore */ }
+      item.gradingResponseJson = parsed;
+      item.gradingResult = formatGradingResult(text) || '（無批改內容）';
       return;
     }
-    let parsed = null;
-    try { parsed = text ? JSON.parse(text) : null; } catch { /* ignore parse error */ }
-    item.gradingResponseJson = parsed;
-    item.gradingResult = text || '';
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (_) {
+      item.gradingResult = '評分失敗：無法解析 job_id';
+      return;
+    }
+    const jobId = data.job_id;
+    if (!jobId) {
+      item.gradingResult = '評分失敗：未取得 job_id';
+      return;
+    }
+    const maxPolls = 60;
+    const intervalMs = 2000;
+    const maxRetries = 3;
+    const retryDelayMs = 2000;
+    const friendlyUnavailable = '評分失敗：後端暫時無法連線，可能是服務喚醒中，請稍後再試或重新送出。';
+
+    for (let i = 0; i < maxPolls; i++) {
+      await new Promise((r) => setTimeout(r, intervalMs));
+      let pollRes = null;
+      let pollText = '';
+      for (let r = 0; r <= maxRetries; r++) {
+        if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
+        try {
+          pollRes = await fetch(`${API_BASE}${API_GRADE_RESULT}/${encodeURIComponent(jobId)}`);
+          pollText = await pollRes.text();
+          if (pollRes.status !== 502 && pollRes.status !== 504) break;
+        } catch (_) {
+          // 網路錯誤時重試，由下方判斷 pollRes 為 null
+        }
+      }
+      if (!pollRes || pollRes.status === 502 || pollRes.status === 504) {
+        item.gradingResult = friendlyUnavailable;
+        return;
+      }
+      if (pollRes.status === 404) {
+        item.gradingResult = '評分任務不存在或已過期（伺服器可能曾休眠或重啟），請重新送出評分。';
+        return;
+      }
+      let pollData;
+      try {
+        pollData = JSON.parse(pollText);
+      } catch (_) {
+        item.gradingResult = friendlyUnavailable;
+        return;
+      }
+      if (pollData.status === 'ready') {
+        item.gradingResponseJson = pollData.result;
+        item.gradingResult = formatGradingResult(JSON.stringify(pollData.result)) || '（無批改內容）';
+        return;
+      }
+      if (pollData.status === 'error') {
+        const errMsg = pollData.error || '';
+        const isJobNotFound = errMsg.includes('job not found');
+        item.gradingResult = isJobNotFound
+          ? '評分任務不存在或已過期（伺服器可能曾休眠或重啟），請重新送出評分。'
+          : `評分失敗：${pollData.error || '未知錯誤'}`;
+        return;
+      }
+    }
+    item.gradingResult = '評分逾時：請稍後再試或重新送出';
   } catch (err) {
     item.gradingResult = '評分失敗：後端逾時或服務喚醒中，請稍後再試。';
   }
 }
 
-/** 解析批改結果（gradingResponseJson 或 gradingResult 字串），回傳 { parsed, raw } 供模板顯示 */
-function parseGradingResult(card) {
-  if (!card) return { parsed: null, raw: '' };
-  let obj = card.gradingResponseJson;
-  if (obj != null && typeof obj === 'object') {
-    return { parsed: obj, raw: JSON.stringify(obj, null, 2) };
-  }
-  const str = card.gradingResult;
-  if (typeof str === 'string' && str.trim().startsWith('{')) {
-    try {
-      obj = JSON.parse(str);
-      return { parsed: obj, raw: JSON.stringify(obj, null, 2) };
-    } catch (_) {
-      return { parsed: null, raw: str };
+/** 將評分 API 回傳的 JSON 轉成易讀文字；支援完整 answer 物件（含 student_answer、answer_metadata / answer_feedback_metadata） */
+function formatGradingResult(text) {
+  if (!text || typeof text !== 'string') return text;
+  const t = text.trim();
+  if (!t.startsWith('{')) return text;
+  try {
+    const raw = JSON.parse(text);
+    // 完整 answer 物件時：從 answer_metadata 或 answer_feedback_metadata 取批改內容
+    let data = raw;
+    if (raw.answer_metadata && typeof raw.answer_metadata === 'object') {
+      data = raw.answer_metadata;
+    } else if (raw.answer_feedback_metadata) {
+      const parsed =
+        typeof raw.answer_feedback_metadata === 'string'
+          ? (() => {
+              try {
+                return JSON.parse(raw.answer_feedback_metadata);
+              } catch {
+                return null;
+              }
+            })()
+          : raw.answer_feedback_metadata;
+      if (parsed) data = parsed;
     }
+
+    const lines = [];
+    if (data.score != null) lines.push(`總分：${data.score} / 10`);
+    if (data.level) lines.push(`等級：${data.level}`);
+    if (lines.length) lines.push('');
+
+    const rubric = data.rubric;
+    if (Array.isArray(rubric) && rubric.length > 0) {
+      lines.push('【評分項目】');
+      rubric.forEach((r) => {
+        const criteria = r.criteria ?? '';
+        const score = r.score != null ? ` (${r.score}分)` : '';
+        const comment = r.comment ? `\n  ${r.comment}` : '';
+        lines.push(`• ${criteria}${score}${comment}`);
+      });
+      lines.push('');
+    }
+
+    const section = (title, arr) => {
+      if (!Array.isArray(arr) || arr.length === 0) return;
+      lines.push(`【${title}】`);
+      arr.forEach((s) => lines.push(`• ${s}`));
+      lines.push('');
+    };
+    section('優點', data.strengths);
+    section('待改進', data.weaknesses);
+    section('遺漏項目', data.missing_items);
+    section('建議後續', data.action_items);
+
+    return lines.join('\n').trim() || text;
+  } catch (_) {
+    return text;
   }
-  return { parsed: null, raw: str || '' };
 }
 
 function rewriteAnswer(item) {
@@ -1185,9 +1108,9 @@ function addAllSecondFoldersAsGroups() {
 
 <template>
   <div class="d-flex flex-column bg-body-secondary h-100">
-    <!-- 固定：tab 標籤列，不隨內容滾動 -->
-    <div class="flex-shrink-0 bg-white border-bottom">
-      <div class="d-flex align-items-center gap-2 px-4 pt-4 pb-2">
+    <div class="flex-grow-1 overflow-auto bg-white p-4">
+      <!-- 每個 tab = 一筆 /rag/rags 資料；「新增」= 只加新 tab，在該 tab 內上傳 ZIP 時呼叫 /rag/upload-zip 產生 RAG -->
+      <div class="d-flex align-items-center gap-2 mb-3">
         <template v-if="ragListLoading">
           <span class="small text-muted">載入中...</span>
         </template>
@@ -1243,36 +1166,20 @@ function addAllSecondFoldersAsGroups() {
           </ul>
         </template>
       </div>
-      <div v-if="ragListError" class="alert alert-warning py-2 small mx-4 mb-3">
+      <div v-if="ragListError" class="alert alert-warning py-2 small mb-3">
         {{ ragListError }}
       </div>
-    </div>
 
-    <!-- 可滾動：僅內容區上下拉 -->
-    <div class="flex-grow-1 overflow-auto bg-white p-4">
       <!-- 無資料時不顯示表單，點「新增」後才顯示；有資料時一律顯示 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
       <!-- 基本資訊、OpenAI API Key、ZIP 上傳與 file_metadata 合併為一區塊 -->
       <div class="bg-body-tertiary rounded text-start p-4 mb-3">
-        <div class="h6 fw-semibold text-muted mb-3 pb-2 border-bottom">基本資訊、API 與 ZIP 上傳</div>
+        <div class="small text-muted mb-3 pb-2 border-bottom">基本資訊、API 與 ZIP 上傳</div>
         <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
           <span class="text-muted">rag_id：</span>
           <span class="small">{{ currentRagIdAndFileId.rag_id }}</span>
           <span class="text-muted">file_id：</span>
           <span class="small">{{ currentRagIdAndFileId.file_id }}</span>
-          <button
-            v-if="!isNewTabId(activeTabId) && currentRagItem"
-            type="button"
-            class="btn btn-sm btn-success ms-2"
-            :disabled="currentState.setAppliedLoading || !hasRagMetadata || currentRagItem?.applied === true"
-            @click="setRagApplied"
-          >
-            {{ currentState.setAppliedLoading ? '設定中...' : '使用此RAG' }}
-          </button>
-          <span v-if="currentRagItem?.applied === true" class="text-success small ms-1">已使用</span>
-        </div>
-        <div v-if="currentState.setAppliedError" class="alert alert-danger mt-2 mb-0 py-2 small">
-          {{ currentState.setAppliedError }}
         </div>
         <div class="d-flex flex-wrap align-items-center gap-2">
           <span class="text-muted">name</span>
@@ -1294,36 +1201,23 @@ function addAllSecondFoldersAsGroups() {
         <div v-if="currentState.updateNameError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.updateNameError }}
         </div>
-        <div class="mb-3">
-          <div class="form-label text-muted small mb-2 mt-4">OpenAI API Key</div>
-          <p class="form-text text-muted small mb-2">每個 RAG 的 tab 各自獨立，與其他 tab 互不干擾；Pack、產生 quiz 會使用本 tab 的 key；上傳 ZIP 時可寫入 Rag 表，亦可在此修改已儲存的 key。</p>
-          <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-            <input
-              v-model="currentState.openaiApiKey"
-              type="password"
-              class="form-control form-control-sm"
-              style="max-width: 400px;"
-              placeholder="請輸入 OpenAI API Key"
-              autocomplete="off"
-            >
-            <button
-              v-if="!isNewTabId(activeTabId) && currentRagItem"
-              type="button"
-              class="btn btn-sm btn-primary"
-              @click="updateRagLlmApiKey"
-            >
-              {{ currentState.updateLlmKeyLoading ? '修改中...' : '確定修改' }}
-            </button>
-          </div>
-          <div v-if="currentState.updateLlmKeyError" class="alert alert-danger mb-0 py-2 small">
-            {{ currentState.updateLlmKeyError }}
-          </div>
+        <div class="form-label text-muted mb-2 mt-4">OpenAI API Key</div>
+        <p class="form-text text-muted small mb-2">本頁共用，Pack、產生題目、評分等會自動使用。</p>
+        <div style="max-width: 400px;" class="mb-3">
+          <input
+            v-model="openaiApiKey"
+            type="text"
+            class="form-control form-control-sm"
+            placeholder="請輸入 OpenAI API Key"
+            autocomplete="off"
+          >
         </div>
         <div v-if="isNewTabId(activeTabId) || fileMetadataToShow != null" class="mb-3">
-          <div class="form-label text-muted small mb-2">上傳 ZIP 檔</div>
-          <p class="form-text text-muted small mb-2">支援 .pdf、.docx、.rmd／.r、.html／.htm。上傳時會將上方 OpenAI API Key 一併寫入 Rag 表（可選）。</p>
+          <div class="form-label text-muted mb-2">上傳 ZIP 檔</div>
+          <p class="form-text text-muted small mb-2">支援 .pdf、.docx、.rmd／.r、.html／.htm</p>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             <input
+              ref="zipFileInputRef"
               type="file"
               accept=".zip"
               class="form-control form-control-sm"
@@ -1335,7 +1229,7 @@ function addAllSecondFoldersAsGroups() {
             <button
               type="button"
               class="btn btn-sm btn-primary"
-              :disabled="fileMetadataToShow != null || currentState.zipLoading"
+              :disabled="fileMetadataToShow != null || currentState.zipLoading || !openaiApiKey?.trim()"
               @click="confirmUploadZip"
             >
               {{ currentState.zipLoading ? '上傳中...' : '確定' }}
@@ -1346,18 +1240,18 @@ function addAllSecondFoldersAsGroups() {
           {{ currentState.zipError }}
         </div>
         <div v-if="fileMetadataToShow != null" class="mt-3">
-          <div class="form-label text-muted small mb-2">file_metadata</div>
+          <div class="form-label text-muted mb-2">file_metadata</div>
           <pre class="bg-body-secondary border rounded p-2 mb-0 font-monospace small overflow-auto" style="max-height: 20rem;"><code>{{ JSON.stringify(fileMetadataToShow, null, 2) }}</code></pre>
         </div>
       </div>
       <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未輸入 API key 或未上傳 ZIP 時 disable -->
       <div v-if="fileMetadataToShow != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
-        <div class="h6 fw-semibold text-muted mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
+        <div class="small text-muted mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
           <p class="form-text text-muted small mb-2">依上方 file_metadata 的當前 RAG 與 rag_list 壓縮指定資料夾，可一併產生 RAG。rag_list：逗號=多個 ZIP，加號=同檔內多資料夾，例 <code>220222+220301</code>、<code>220222,220301+220302</code>。</p>
 
           <!-- second_folders 標籤區：可拖曳至 rag_list；完整顯示不因拖入 rag_list 而移除 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
-            <label class="form-label text-muted small mb-1">second_folders（可拖曳至下方 rag_list）</label>
+            <label class="form-label text-muted mb-1">second_folders（可拖曳至下方 rag_list）</label>
             <div class="d-flex flex-wrap gap-2 p-2 rounded border bg-body">
               <span
                 v-for="(name, i) in secondFoldersFull"
@@ -1375,7 +1269,7 @@ function addAllSecondFoldersAsGroups() {
           <!-- rag_list 虛擬資料夾區：可放置 second_folders 標籤 -->
           <div class="mb-2">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-              <label class="form-label text-muted small mb-0">rag_list（虛擬資料夾，將上方標籤拖入）</label>
+              <label class="form-label text-muted mb-0">rag_list（虛擬資料夾，將上方標籤拖入）</label>
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
@@ -1446,7 +1340,7 @@ function addAllSecondFoldersAsGroups() {
 
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div style="width: 100px;">
-              <label class="form-label text-muted small mb-1">chunk_size</label>
+              <label class="form-label text-muted mb-1">chunk_size</label>
               <input
                 v-model.number="chunkSize"
                 type="number"
@@ -1456,7 +1350,7 @@ function addAllSecondFoldersAsGroups() {
               >
             </div>
             <div style="width: 100px;">
-              <label class="form-label text-muted small mb-1">chunk_overlap</label>
+              <label class="form-label text-muted mb-1">chunk_overlap</label>
               <input
                 v-model.number="chunkOverlap"
                 type="number"
@@ -1466,27 +1360,28 @@ function addAllSecondFoldersAsGroups() {
               >
             </div>
           </div>
-          <div class="mt-3 mb-3">
-            <label class="form-label text-muted small mb-1">system_prompt_instruction（quiz 規範，傳給 GPT）</label>
+          <div class="mt-3">
+            <label class="form-label text-muted mb-1">system_prompt_instruction（出題規範，傳給 GPT）</label>
             <textarea
               v-model="currentState.systemInstruction"
               class="form-control form-control-sm font-monospace small"
-              rows="4"
+              rows="5"
               :placeholder="'留空則使用預設：' + DEFAULT_SYSTEM_INSTRUCTION"
               style="max-width: 100%;"
             />
           </div>
-          <div class="mb-3">
+          <div class="mt-3">
             <button
               type="button"
               class="btn btn-sm btn-primary"
+              :disabled="packAndGenerateDisabled"
               @click="confirmPack"
             >
               {{ currentState.packLoading ? '處理中...' : '執行 Pack' }}
             </button>
           </div>
           <div class="mt-3">
-            <label class="form-label text-muted small mb-1">rag_metadata（Pack API 回傳）</label>
+            <label class="form-label text-muted mb-1">rag_metadata（Pack API 回傳）</label>
             <textarea
               v-model="currentState.ragMetadata"
               class="form-control form-control-sm font-monospace small bg-body-secondary border"
@@ -1500,52 +1395,52 @@ function addAllSecondFoldersAsGroups() {
             {{ currentState.packError }}
           </div>
       </div>
-      <!-- RAG 產生 quiz 與作答：要有 rag_metadata 才顯示；點「新增 quiz」後才出現 quiz 生成子區塊 -->
+      <!-- RAG 產生題目與題目與作答：要有 rag_metadata 才顯示；點「新增題目」後才出現題目生成子區塊 -->
       <div v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
-        <div class="h6 fw-semibold text-muted mb-3 pb-2 border-bottom">RAG 產生 quiz 與作答</div>
-        <p class="form-text text-muted small mb-3">點「新增 quiz」後會出現一個 quiz 區塊（選擇單元、難度、產生 quiz 等）；每按一次「新增 quiz」才會多一個 quiz 區塊。「新增 quiz」按鈕固定在最下面。</p>
+        <div class="small text-muted mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
+        <p class="form-text text-muted small mb-3">點「新增題目」後會出現一題的區塊（選擇單元、難度、產生題目等）；每按一次「新增題目」才會多一個題目區塊。「新增題目」按鈕固定在最下面。</p>
 
-        <!-- quiz 區塊：每按一次「新增 quiz」才多一個「第 n 個 quiz」；按鈕固定在最下面 -->
+        <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
         <div class="bg-light rounded mb-3">
           <template v-for="(slotIndex) in currentState.quizSlotsCount" :key="slotIndex">
-            <!-- 第 slotIndex 個 quiz：若已有該卡片則顯示卡片，否則顯示產生 quiz 表單 -->
+            <!-- 第 slotIndex 題：若已有該題卡片則顯示卡片，否則顯示產生題目表單 -->
             <template v-if="currentState.cardList[slotIndex - 1]">
-              <!-- 已有卡片：顯示完整 quiz 區塊 -->
+              <!-- 已有卡片：顯示完整題目區塊 -->
               <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                 <div class="card-header py-2">
-                  <span class="fw-semibold mb-0">第 {{ slotIndex }} 個 quiz</span>
+                  <span class="fw-semibold small mb-0">第 {{ slotIndex }} 題</span>
                 </div>
                 <div class="card-body text-start">
                   <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
                     <div>
-                      <label class="form-label text-muted small mb-1">選擇單元（rag_name）</label>
+                      <label class="form-label text-muted mb-1">選擇單元（rag_name）</label>
                       <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].ragName || '—' }}</div>
                     </div>
                     <div>
-                      <label class="form-label text-muted small mb-1">難度</label>
-                      <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ quizLevelDisplay(currentState.cardList[slotIndex - 1].quiz_level) }}</div>
+                      <label class="form-label text-muted mb-1">難度</label>
+                      <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].generateLevel || '—' }}</div>
                     </div>
                   </div>
                   <div class="mb-3">
-                    <div class="form-label text-muted small mb-1">quiz</div>
+                    <div class="form-label text-muted mb-1">題目</div>
                     <div class="bg-body-secondary border rounded p-2">
                       {{ currentState.cardList[slotIndex - 1].quiz }}
                     </div>
                   </div>
                   <div class="mb-3">
                     <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
-                      {{ currentState.cardList[slotIndex - 1].quizHintVisible ? '隱藏提示' : '顯示提示' }}
+                      {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                     </button>
-                    <div v-show="currentState.cardList[slotIndex - 1].quizHintVisible" class="rounded bg-body-tertiary text-muted mt-2 p-2">
-                      {{ currentState.cardList[slotIndex - 1].quiz_hint }}
+                    <div v-show="currentState.cardList[slotIndex - 1].hintVisible" class="rounded bg-body-tertiary text-muted mt-2 p-2">
+                      {{ currentState.cardList[slotIndex - 1].hint }}
                     </div>
                   </div>
                   <div v-if="currentState.cardList[slotIndex - 1].referenceAnswer" class="mb-3">
-                    <div class="form-label text-muted small mb-1">參考答案</div>
+                    <div class="form-label text-muted mb-1">參考答案</div>
                     <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
                   </div>
                   <div class="mb-3">
-                    <label :for="`answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label text-muted small mb-1">回答</label>
+                    <label :for="`answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label text-muted mb-1">回答</label>
                     <template v-if="!currentState.cardList[slotIndex - 1].confirmed">
                       <textarea
                         :id="`answer-${currentState.cardList[slotIndex - 1].id}`"
@@ -1569,98 +1464,55 @@ function addAllSecondFoldersAsGroups() {
                     </template>
                   </div>
                   <div class="border rounded bg-light p-3 mb-3">
-                    <div class="form-label text-muted small mb-1">批改結果</div>
-                    <template v-if="(parsedGradingsBySlot[slotIndex - 1] || {}).parsed">
-                      <div class="small">
-                        <div v-if="(parsedGradingsBySlot[slotIndex - 1].parsed.score != null)" class="mb-2">
-                          <span class="fw-semibold">總分：</span>{{ parsedGradingsBySlot[slotIndex - 1].parsed.score }} / 10
-                        </div>
-                        <div v-if="parsedGradingsBySlot[slotIndex - 1].parsed.level" class="mb-2">
-                          <span class="fw-semibold">等級：</span>{{ parsedGradingsBySlot[slotIndex - 1].parsed.level }}
-                        </div>
-                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.rubric) && parsedGradingsBySlot[slotIndex - 1].parsed.rubric.length" class="mb-2">
-                          <div class="fw-semibold mb-1">評分項目</div>
-                          <div v-for="(r, ri) in parsedGradingsBySlot[slotIndex - 1].parsed.rubric" :key="ri" class="mb-2 ps-2 border-start border-2">
-                            <div class="text-secondary">{{ r.criterion || r.criteria || '項目' }}{{ r.score != null ? `（${r.score} 分）` : '' }}</div>
-                            <div v-if="r.description" class="mt-1">{{ r.description }}</div>
-                            <div v-else-if="r.comments" class="mt-1">{{ r.comments }}</div>
-                            <div v-else-if="r.comment" class="mt-1">{{ r.comment }}</div>
-                          </div>
-                        </div>
-                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.strengths) && parsedGradingsBySlot[slotIndex - 1].parsed.strengths.length" class="mb-2">
-                          <div class="fw-semibold mb-1">優點</div>
-                          <ul class="mb-0 ps-3 small">
-                            <li v-for="(s, si) in parsedGradingsBySlot[slotIndex - 1].parsed.strengths" :key="si">{{ s }}</li>
-                          </ul>
-                        </div>
-                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.weaknesses) && parsedGradingsBySlot[slotIndex - 1].parsed.weaknesses.length" class="mb-2">
-                          <div class="fw-semibold mb-1">待改進</div>
-                          <ul class="mb-0 ps-3 small">
-                            <li v-for="(w, wi) in parsedGradingsBySlot[slotIndex - 1].parsed.weaknesses" :key="wi">{{ w }}</li>
-                          </ul>
-                        </div>
-                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.missing_items) && parsedGradingsBySlot[slotIndex - 1].parsed.missing_items.length" class="mb-2">
-                          <div class="fw-semibold mb-1">遺漏項目</div>
-                          <ul class="mb-0 ps-3 small">
-                            <li v-for="(m, mi) in parsedGradingsBySlot[slotIndex - 1].parsed.missing_items" :key="mi">{{ m }}</li>
-                          </ul>
-                        </div>
-                        <div v-if="Array.isArray(parsedGradingsBySlot[slotIndex - 1].parsed.action_items) && parsedGradingsBySlot[slotIndex - 1].parsed.action_items.length">
-                          <div class="fw-semibold mb-1">建議後續</div>
-                          <ul class="mb-0 ps-3 small">
-                            <li v-for="(a, ai) in parsedGradingsBySlot[slotIndex - 1].parsed.action_items" :key="ai">{{ a }}</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </template>
-                    <div v-else class="small" style="white-space: pre-wrap;">{{ (parsedGradingsBySlot[slotIndex - 1] || {}).raw || '尚未批改' }}</div>
-                  </div>
-                  <div v-if="(parsedGradingsBySlot[slotIndex - 1] || {}).raw" class="mb-3">
-                    <div class="form-label text-muted small mb-1">批改結果原始 JSON</div>
-                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ (parsedGradingsBySlot[slotIndex - 1] || {}).raw }}</pre>
+                    <div class="form-label text-muted mb-1">批改結果</div>
+                    <div class="small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
                   </div>
                   <div v-if="currentState.cardList[slotIndex - 1].generateQuizResponseJson != null" class="mb-3">
-                    <div class="form-label text-muted small mb-1">產生 quiz API 回傳 JSON：</div>
+                    <div class="form-label text-muted mb-1">產生題目 API 回傳 JSON：</div>
                     <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].generateQuizResponseJson, null, 2) }}</pre>
+                  </div>
+                  <div v-if="currentState.cardList[slotIndex - 1].gradingResponseJson != null">
+                    <div class="form-label text-muted mb-1">批改結果 API 回傳 JSON：</div>
+                    <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].gradingResponseJson, null, 2) }}</pre>
                   </div>
                 </div>
               </div>
             </template>
             <template v-else>
-              <!-- 尚未產生：顯示產生 quiz 表單（第 slotIndex 個 quiz，每個獨立不連動） -->
+              <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
               <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                 <div class="card-header py-2">
-                  <span class="fw-semibold mb-0">第 {{ slotIndex }} 個 quiz</span>
+                  <span class="fw-semibold small mb-0">第 {{ slotIndex }} 題</span>
                 </div>
                 <div class="card-body text-start pt-3">
                   <div class="d-flex flex-wrap align-items-end gap-3">
                     <div>
-                      <label class="form-label text-muted small mb-1">選擇單元（rag_name）</label>
+                      <label class="form-label text-muted mb-1">選擇單元（rag_name）</label>
                       <select v-model="getSlotFormState(slotIndex).generateQuizFileId" class="form-select form-select-sm">
                         <option value="">— 請先執行 Pack —</option>
                         <option v-for="(opt, i) in generateQuizUnits" :key="i" :value="opt.file_id">{{ opt.rag_name }}</option>
                       </select>
                     </div>
                     <div>
-                      <label class="form-label text-muted small mb-1">難度</label>
+                      <label class="form-label text-muted mb-1">難度</label>
                       <select v-model="filterDifficulty" class="form-select form-select-sm">
-                        <option v-for="opt in difficultyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                        <option v-for="opt in difficultyOptions" :key="opt" :value="opt">{{ opt }}</option>
                       </select>
                     </div>
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      :disabled="getSlotFormState(slotIndex).loading || !currentState.openaiApiKey?.trim()"
+                      :disabled="getSlotFormState(slotIndex).loading || !openaiApiKey?.trim()"
                       @click="generateQuiz(slotIndex)"
                     >
-                      {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生 quiz' }}
+                      {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}
                     </button>
                   </div>
                   <div v-if="getSlotFormState(slotIndex).error" class="alert alert-danger mt-2 mb-0 py-2 small">
                     {{ getSlotFormState(slotIndex).error }}
                   </div>
                   <div v-if="getSlotFormState(slotIndex).responseJson !== null" class="mt-2">
-                    <div class="form-label text-muted small mb-1">產生 quiz API 回傳 JSON：</div>
+                    <div class="form-label text-muted mb-1">產生題目 API 回傳 JSON：</div>
                     <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(getSlotFormState(slotIndex).responseJson, null, 2) }}</pre>
                   </div>
                 </div>
@@ -1668,17 +1520,23 @@ function addAllSecondFoldersAsGroups() {
             </template>
           </template>
 
-          <!-- 新增 quiz 按鈕：固定在最下面，每按一次多一個「第 n 個 quiz」區塊 -->
+          <!-- 新增題目按鈕：固定在最下面，每按一次多一個「第 n 題」區塊 -->
           <div class="mb-0 pt-2">
             <button
               type="button"
               class="btn btn-sm btn-primary"
               @click="openNextQuizSlot"
             >
-              新增 quiz
+              新增題目
             </button>
           </div>
         </div>
+      </div>
+
+      <!-- 該 RAG 的資料（GET /rag/rags 回傳） -->
+      <div v-if="currentRagItem != null && !isNewTabId(activeTabId)" class="bg-body-tertiary rounded text-start p-4 mb-3">
+        <div class="small text-muted mb-3 pb-2 border-bottom">該 RAG 的資料（GET /rag/rags 回傳）</div>
+        <pre class="bg-body-secondary border rounded p-3 font-monospace small mb-0 overflow-auto" style="max-height: 24rem;">{{ JSON.stringify(currentRagItem, null, 2) }}</pre>
       </div>
       </template>
     </div>
