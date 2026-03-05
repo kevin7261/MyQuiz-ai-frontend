@@ -93,6 +93,8 @@ function getTabState(id) {
       setAppliedLoading: false,
       setAppliedError: '',
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
+      /** 本 tab 專用 API Key，與其他 tab 互不干擾 */
+      openaiApiKey: '',
     });
   }
   return tabStateMap[id];
@@ -113,9 +115,7 @@ const parsedGradingsBySlot = computed(() => {
   return list.map((card) => parseGradingResult(card));
 });
 
-/** 全畫面共用 */
-/** 僅由使用者於頁面輸入，不從環境變數或任何儲存讀取 */
-const openaiApiKey = ref('');
+/** API Key 已改為每個 tab 獨立儲存於 currentState.openaiApiKey，不跨 tab 共用 */
 
 /** 當前 RAG（來自 /rag/rags）是否有 rag_list 或 rag_metadata；有則壓縮資料夾 (Pack) 與 RAG 不 disable */
 const hasRagListOrMetadata = computed(() => {
@@ -193,8 +193,8 @@ const generateQuizUnits = computed(() => {
   return generateQuizUnitsFromRag.value;
 });
 
-/** 難度、chunk 參數（共用） */
-const filterDifficulty = ref('入門');
+/** 難度、chunk 參數（共用）0=基礎 1=進階 */
+const filterDifficulty = ref(0);
 const chunkSize = ref(1000);
 const chunkOverlap = ref(200);
 
@@ -299,9 +299,9 @@ watch(currentRagItem, (rag) => {
   if (!rag || typeof rag !== 'object') return;
   const state = currentState.value;
   if (rag.llm_api_key != null && String(rag.llm_api_key).trim() !== '') {
-    openaiApiKey.value = String(rag.llm_api_key).trim();
+    state.openaiApiKey = String(rag.llm_api_key).trim();
   } else {
-    openaiApiKey.value = '';
+    state.openaiApiKey = '';
   }
   if (rag.rag_list != null && String(rag.rag_list).trim() !== '') {
     state.packTasks = String(rag.rag_list).trim();
@@ -413,7 +413,7 @@ async function fetchRagList() {
   ragListError.value = '';
   try {
     const headers = {};
-    const llmKey = openaiApiKey.value?.trim();
+    const llmKey = currentState.value?.openaiApiKey?.trim();
     if (llmKey) headers['X-LLM-Api-Key'] = llmKey;
     const res = await fetch(`${API_BASE}/rag/rags`, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText);
@@ -489,7 +489,7 @@ async function updateRagLlmApiKey() {
     alert('請先登入');
     return;
   }
-  const llmKey = (openaiApiKey.value ?? '').trim();
+  const llmKey = (currentState.value?.openaiApiKey ?? '').trim();
   const state = getTabState(activeTabId.value);
   state.updateLlmKeyLoading = true;
   state.updateLlmKeyError = '';
@@ -690,7 +690,7 @@ async function confirmUploadZip() {
     if (personId != null) formData.append('person_id', String(personId));
     const name = (state.zipUploadName || '').trim() || getDefaultUploadName();
     formData.append('name', name);
-    const llmKey = (openaiApiKey.value ?? '').trim();
+    const llmKey = (state.openaiApiKey ?? '').trim();
     if (llmKey) formData.append('llm_api_key', llmKey);
     const headers = {};
     if (personId != null) headers['X-Person-Id'] = String(personId);
@@ -748,7 +748,7 @@ async function confirmPack() {
   const fileId = String(state.zipFileId ?? '').trim();
   const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
-  const apiKey = openaiApiKey.value?.trim() ?? '';
+  const apiKey = currentState.value?.openaiApiKey?.trim() ?? '';
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 file_id（見上方 file_metadata）';
     return;
@@ -810,7 +810,22 @@ async function confirmPack() {
   }
 }
 
-const difficultyOptions = ['入門', '進階', '困難'];
+const difficultyOptions = [
+  { value: 0, label: '基礎' },
+  { value: 1, label: '進階' },
+];
+
+/** 將 quiz_level 轉為數字顯示：0=基礎 1=進階，舊資料若為中文也對應轉成數字 */
+function quizLevelDisplay(val) {
+  if (val == null || val === '') return '—';
+  const n = Number(val);
+  if (n === 0 || n === 1) return String(n);
+  if (typeof val === 'string') {
+    if (val === '入門' || val === '基礎') return '0';
+    if (val === '進階') return '1';
+  }
+  return String(val);
+}
 
 /** 取得第 slotIndex 個 quiz 的表單狀態（獨立、不連動） */
 function getSlotFormState(slotIndex) {
@@ -893,6 +908,7 @@ async function generateQuiz(slotIndex) {
         rag_name: ragName,
         quiz_level: filterDifficulty.value,
         course_name: courseName || '未命名課程',
+        quiz_type: 0,
       }),
     });
     const text = await res.text();
@@ -1280,10 +1296,10 @@ function addAllSecondFoldersAsGroups() {
         </div>
         <div class="mb-3">
           <div class="form-label text-muted small mb-2 mt-4">OpenAI API Key</div>
-          <p class="form-text text-muted small mb-2">本頁共用，Pack、產生 quiz 等會自動使用；上傳 ZIP 時可寫入 Rag 表，亦可在此修改已儲存的 key。</p>
+          <p class="form-text text-muted small mb-2">每個 RAG 的 tab 各自獨立，與其他 tab 互不干擾；Pack、產生 quiz 會使用本 tab 的 key；上傳 ZIP 時可寫入 Rag 表，亦可在此修改已儲存的 key。</p>
           <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
             <input
-              v-model="openaiApiKey"
+              v-model="currentState.openaiApiKey"
               type="password"
               class="form-control form-control-sm"
               style="max-width: 400px;"
@@ -1507,7 +1523,7 @@ function addAllSecondFoldersAsGroups() {
                     </div>
                     <div>
                       <label class="form-label text-muted small mb-1">難度</label>
-                      <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].quiz_level || '—' }}</div>
+                      <div class="form-control form-control-sm bg-body-secondary border" style="min-height: 31px;">{{ quizLevelDisplay(currentState.cardList[slotIndex - 1].quiz_level) }}</div>
                     </div>
                   </div>
                   <div class="mb-3">
@@ -1628,13 +1644,13 @@ function addAllSecondFoldersAsGroups() {
                     <div>
                       <label class="form-label text-muted small mb-1">難度</label>
                       <select v-model="filterDifficulty" class="form-select form-select-sm">
-                        <option v-for="opt in difficultyOptions" :key="opt" :value="opt">{{ opt }}</option>
+                        <option v-for="opt in difficultyOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
                       </select>
                     </div>
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      :disabled="getSlotFormState(slotIndex).loading || !openaiApiKey?.trim()"
+                      :disabled="getSlotFormState(slotIndex).loading || !currentState.openaiApiKey?.trim()"
                       @click="generateQuiz(slotIndex)"
                     >
                       {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生 quiz' }}
