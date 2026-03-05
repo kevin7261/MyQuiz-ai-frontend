@@ -25,3 +25,12 @@ export const API_RAG_APPLIED = '/rag/applied';
 
 /** 答題分析：GET /quiz/quiz-answers?person_id=xxx，回傳 { items: [{ quiz, answers }], count }，quiz_type=1 */
 export const API_QUIZ_ANSWERS = '/quiz/quiz-answers';
+
+/** 試題頁：建立 Test POST /test/create-test，body 可選 test_tab_id、person_id、test_name；回傳 test_id、test_tab_id、person_id、test_name、created_at */
+export const API_CREATE_TEST = '/test/create-test';
+/** 試題頁：出題 POST /test/generate-quiz，body: llm_api_key、test_tab_id、rag_name、system_prompt_instruction、course_name、quiz_level、quiz_type；回傳 quiz_content, quiz_hint, reference_answer, quiz_id */
+export const API_TEST_GENERATE_QUIZ = '/test/generate-quiz';
+/** 試題頁：評分 POST /test/quiz-grade，body: llm_api_key、test_tab_id、rag_name、quiz_content、student_answer、qtype、course_name、quiz_id；回傳 202 + job_id */
+export const API_TEST_QUIZ_GRADE = '/test/quiz-grade';
+/** 試題頁：輪詢評分結果 GET /test/quiz-grade-result/{job_id}，回傳 status: pending | ready | error；ready 時 result 含 answer_id */
+export const API_TEST_QUIZ_GRADE_RESULT = '/test/quiz-grade-result';

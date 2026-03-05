@@ -36,12 +36,19 @@
       const route = useRoute();
       const dataStore = useDataStore();
       const authStore = useAuthStore();
-      /** 由網址 params.view 換算成內部類型，預設試題 */
-      const currentView = computed(() => PATH_TO_VIEW[route.params.view] || 'work');
+      /** 由網址 params.view 或 path /test 換算成內部類型，預設試題 */
+      const currentView = computed(() => {
+        if (route.path === '/test') return 'work';
+        return PATH_TO_VIEW[route.params.view] || 'work';
+      });
       const userAccount = computed(() => (authStore.user ? `ID ${authStore.user.user_id}` : '未登入'));
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
 
       const setView = (type) => {
+        if (type === 'work') {
+          if (route.path !== '/test') router.push('/test');
+          return;
+        }
         const path = VIEW_TO_PATH[type] ?? 'work';
         if (route.params.view !== path) router.push(`/main/${path}`);
       };
@@ -97,7 +104,7 @@
             <ul class="align-items-center navbar-nav gap-2 ms-auto mb-2 mb-lg-0">
               <li class="nav-item">
                 <router-link
-                  to="/main/work"
+                  to="/test"
                   class="nav-link"
                   active-class="active"
                   aria-current="page"

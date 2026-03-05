@@ -1,18 +1,20 @@
 <script setup>
 /**
  * 試題頁面。與建立 RAG 頁版面一致，但僅使用「使用中 RAG」資料，不包含建立 RAG、上傳 ZIP、Pack。
- * 資料來源：GET /rag/applied，回傳格式與 file_metadata、quiz_metadata 一致（同 GET /rag/rags 單筆）。
+ * 資料來源：GET /rag/applied（回傳格式與 file_metadata、quiz_metadata 一致）。
+ * 出題／評分使用 Test API：create-test → generate-quiz、quiz-grade、quiz-grade-result。
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_BASE,
-  API_GENERATE_QUIZ,
   API_RESPONSE_QUIZ_CONTENT,
   API_RESPONSE_QUIZ_LEGACY,
-  API_GRADE_SUBMISSION,
-  API_GRADE_RESULT,
   API_RAG_APPLIED,
+  API_CREATE_TEST,
+  API_TEST_GENERATE_QUIZ,
+  API_TEST_QUIZ_GRADE,
+  API_TEST_QUIZ_GRADE_RESULT,
 } from '../constants/api.js';
 
 defineProps({
@@ -27,23 +29,48 @@ function nextCardId() {
   return `card-${++cardIdSeq}`;
 }
 
-const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
-
 /** GET /rag/applied 回傳的「使用中 RAG」資料（格式同 file_metadata、quiz_metadata） */
 const appliedRag = ref(null);
 const appliedLoading = ref(false);
 const appliedError = ref('');
 
-/** 單一頁面狀態（無多 tab） */
-const state = reactive({
+/** 使用中 RAG 帶來的 API key、system instruction（由 watch 填入，供出題／評分使用） */
+const appliedState = reactive({
   openaiApiKey: '',
-  generateQuizTabId: '',
-  cardList: [],
-  slotFormState: {},
-  showQuizGeneratorBlock: false,
-  quizSlotsCount: 0,
   systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
-  zipTabId: '',
+});
+
+/** 測驗列表（每個 tab 一筆 Test；按 + 呼叫 POST /test/create-test 新增） */
+const testList = ref([]);
+const createTestLoading = ref(false);
+const createTestError = ref('');
+/** 當前選中的 tab = 該測驗的 test_tab_id */
+const activeTabId = ref(null);
+
+/** 每個 tab（test_tab_id）的狀態 */
+const tabStateMap = reactive({});
+
+function getTabState(id) {
+  if (!id) return getTabState(testList.value[0]?.test_tab_id || '');
+  if (!tabStateMap[id]) {
+    const units = generateQuizUnits.value;
+    const first = units.length ? units[0].rag_tab_id : '';
+    tabStateMap[id] = reactive({
+      generateQuizTabId: first,
+      cardList: [],
+      slotFormState: {},
+      showQuizGeneratorBlock: false,
+      quizSlotsCount: 0,
+    });
+  }
+  return tabStateMap[id];
+}
+
+/** 當前 tab 的狀態（template 與方法內使用） */
+const currentState = computed(() => {
+  const id = activeTabId.value;
+  if (id) return getTabState(id);
+  return getTabState(testList.value[0]?.test_tab_id || '');
 });
 
 const filterDifficulty = ref('基礎');
@@ -109,90 +136,35 @@ const sourceTabId = computed(() => {
   return String(rag.rag_tab_id ?? rag.id ?? '').trim();
 });
 
-/** 顯示用 rag_id / rag_tab_id */
-const ragIdAndTabId = computed(() => {
-  const rag = appliedRag.value;
-  if (!rag || typeof rag !== 'object') return { rag_id: '—', rag_tab_id: '—' };
-  const rid = rag.rag_id ?? rag.id;
-  const tid = rag.rag_tab_id ?? rag.id;
-  return {
-    rag_id: rid != null ? String(rid) : '—',
-    rag_tab_id: tid != null ? String(tid) : '—',
-  };
-});
-
-/** 產生題目／評分是否應停用（無 API key 或無 applied RAG） */
+/** 產生題目／評分是否應停用（未選測驗 tab 或無 applied RAG）；API Key 由 GET /rag/applied 回傳提供 */
 const generateDisabled = computed(() => {
+  if (!activeTabId.value) return true;
   if (!sourceTabId.value) return true;
-  return !state.openaiApiKey?.trim();
+  return false;
 });
 
-/** 由 GET /rag/applied 的 quiz（含 answers）組成一張題目卡片 */
-function buildCardFromRagQuiz(quiz, ragName) {
-  const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
-  const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
-  const gradingResult = latestAnswer
-    ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestAnswer.student_answer != null ? '已批改' : ''))
-    : '';
-  const levelNum = quiz.quiz_level;
-  const generateLevel = (levelNum === 0 || levelNum === 1) ? QUIZ_LEVEL_LABELS[levelNum] : null;
-  return {
-    id: nextCardId(),
-    quiz: quiz.quiz_content ?? '',
-    hint: quiz.quiz_hint ?? '',
-    referenceAnswer: quiz.reference_answer ?? '',
-    sourceFilename: null,
-    ragName: ragName || null,
-    answer: latestAnswer?.student_answer ?? '',
-    hintVisible: false,
-    confirmed: !!latestAnswer,
-    gradingResult,
-    gradingResponseJson: latestAnswer ?? null,
-    generateQuizResponseJson: null,
-    generateLevel: generateLevel ?? null,
-    systemInstructionUsed: null,
-    quiz_id: quiz.quiz_id ?? null,
-    answer_id: latestAnswer?.answer_id ?? null,
-  };
-}
-
-/** 當 appliedRag 載入後，從 quizzes + answers 填入題目卡片 */
+/** 當 appliedRag 載入後，填入 API key、system instruction（供各 tab 出題／評分使用） */
 watch(appliedRag, (rag) => {
   if (!rag || typeof rag !== 'object') return;
-  state.zipTabId = String(rag.rag_tab_id ?? rag.id ?? '');
   if (rag.llm_api_key != null && String(rag.llm_api_key).trim() !== '') {
-    state.openaiApiKey = String(rag.llm_api_key).trim();
+    appliedState.openaiApiKey = String(rag.llm_api_key).trim();
   }
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
-    state.systemInstruction = String(rag.system_prompt_instruction).trim();
-  }
-  const quizzes = rag.quizzes ?? [];
-  const ragAnswers = rag.answers ?? [];
-  if (quizzes.length > 0) {
-    const answersByQuizId = ragAnswers.reduce((acc, a) => {
-      const id = a.quiz_id;
-      if (!acc[id]) acc[id] = [];
-      acc[id].push(a);
-      return acc;
-    }, {});
-    const quizzesWithAnswers = quizzes.map((q, i) => {
-      const byId = q.answers ?? answersByQuizId[q.quiz_id];
-      const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (ragAnswers[i] != null ? [ragAnswers[i]] : []);
-      return { ...q, answers };
-    });
-    const firstRagName = (generateQuizUnits.value[0]?.rag_name ?? quizzes[0]?.rag_name ?? '').trim();
-    state.showQuizGeneratorBlock = true;
-    state.quizSlotsCount = quizzesWithAnswers.length;
-    state.cardList = quizzesWithAnswers.map((q) => buildCardFromRagQuiz(q, q.rag_name ?? firstRagName));
-  } else {
-    state.quizSlotsCount = 0;
-    state.cardList = [];
+    appliedState.systemInstruction = String(rag.system_prompt_instruction).trim();
   }
 }, { immediate: true });
 
-/** 選擇單元預設第一筆 */
+/** 有測驗列表時預設選第一個 tab */
+watch(testList, (list) => {
+  if (list.length > 0 && activeTabId.value == null) {
+    activeTabId.value = list[0].test_tab_id ?? list[0].id ?? list[0];
+  }
+}, { immediate: true });
+
+/** 選擇單元預設第一筆（每個 tab 各自） */
 watch(generateQuizUnits, (units) => {
   if (units.length === 0) return;
+  const state = currentState.value;
   const firstTabId = units[0].rag_tab_id;
   const currentInList = units.some((u) => u.rag_tab_id === state.generateQuizTabId);
   if (!state.generateQuizTabId || !currentInList) {
@@ -232,7 +204,60 @@ async function fetchApplied() {
   }
 }
 
+/** 測驗 tab 顯示名稱 */
+function getTestTabLabel(test) {
+  if (test == null) return '測驗';
+  if (typeof test === 'string') return test;
+  const name = test.test_name != null && String(test.test_name).trim() !== '' ? String(test.test_name).trim() : '';
+  const tid = test.test_tab_id ?? test.id ?? '';
+  const created = test.created_at ?? '';
+  return name || tid || created || '測驗';
+}
+
+/** 按 + 新增測驗：POST /test/create-test，加入 testList 並切到新 tab */
+async function addNewTab() {
+  const personId = authStore.user?.person_id;
+  if (personId == null || String(personId).trim() === '') {
+    createTestError.value = '請先登入以建立測驗';
+    return;
+  }
+  createTestError.value = '';
+  createTestLoading.value = true;
+  try {
+    const res = await fetch(`${API_BASE}${API_CREATE_TEST}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        person_id: String(personId),
+        test_name: '',
+      }),
+    });
+    if (!res.ok) {
+      const errBody = await res.json().catch(() => ({}));
+      const msg = errBody.detail ? JSON.stringify(errBody.detail) : res.statusText;
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const testTabIdVal = data?.test_tab_id != null ? String(data.test_tab_id) : '';
+    if (!testTabIdVal) throw new Error('未取得 test_tab_id');
+    const item = {
+      test_id: data.test_id,
+      test_tab_id: testTabIdVal,
+      person_id: data.person_id,
+      test_name: data.test_name ?? '',
+      created_at: data.created_at,
+    };
+    testList.value = [...testList.value, item];
+    activeTabId.value = testTabIdVal;
+  } catch (err) {
+    createTestError.value = err.message || '建立測驗失敗';
+  } finally {
+    createTestLoading.value = false;
+  }
+}
+
 function getSlotFormState(slotIndex) {
+  const state = currentState.value;
   if (!state.slotFormState[slotIndex]) {
     const units = generateQuizUnits.value;
     const first = units.length ? units[0].rag_tab_id : '';
@@ -247,6 +272,7 @@ function getSlotFormState(slotIndex) {
 }
 
 function openNextQuizSlot() {
+  const state = currentState.value;
   state.showQuizGeneratorBlock = true;
   state.quizSlotsCount = (state.quizSlotsCount || 0) + 1;
   while (state.cardList.length < state.quizSlotsCount) {
@@ -254,7 +280,8 @@ function openNextQuizSlot() {
   }
 }
 
-function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed) {
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed, quizId) {
+  const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
   }
@@ -273,15 +300,17 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     generateQuizResponseJson: generateQuizResponseJson ?? null,
     generateLevel: generateLevel ?? null,
     systemInstructionUsed: systemInstructionUsed ?? null,
+    quiz_id: quizId ?? null,
   };
 }
 
+/** 出題：POST /test/generate-quiz，傳 test_tab_id、rag_name、system_prompt_instruction 等 */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const selectedUnit = generateQuizUnits.value.find((u) => u.rag_tab_id === slotState.generateQuizTabId);
   const ragName = selectedUnit?.rag_name?.trim();
-  if (!sourceTabId.value) {
-    slotState.error = '尚未載入使用中 RAG（rag_tab_id）';
+  if (!activeTabId.value) {
+    slotState.error = '尚未建立測驗（請按 + 新增測驗）或請確認已載入使用中 RAG';
     return;
   }
   if (!ragName) {
@@ -294,15 +323,16 @@ async function generateQuiz(slotIndex) {
   const courseName = courseNameFromFileMetadata.value;
   const quizLevel = difficultyOptions.indexOf(filterDifficulty.value);
   try {
-    const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {
+    const res = await fetch(`${API_BASE}${API_TEST_GENERATE_QUIZ}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: (state.openaiApiKey ?? '').trim(),
-        rag_tab_id: sourceTabId.value,
+        llm_api_key: (appliedState.openaiApiKey ?? '').trim(),
+        test_tab_id: activeTabId.value,
         rag_name: ragName,
-        quiz_level: quizLevel >= 0 ? quizLevel : 0,
+        system_prompt_instruction: (appliedState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
         course_name: courseName || '未命名課程',
+        quiz_level: quizLevel >= 0 ? quizLevel : 0,
         quiz_type: 0,
       }),
     });
@@ -322,7 +352,8 @@ async function generateQuiz(slotIndex) {
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const hintText = data.quiz_hint ?? data.hint ?? '';
     const referenceAnswerText = data.reference_answer ?? data.answer ?? '';
-    setCardAtSlot(slotIndex, quizContent, hintText, null, referenceAnswerText, ragName, data, filterDifficulty.value, (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION);
+    const quizId = data.quiz_id != null ? Number(data.quiz_id) : null;
+    setCardAtSlot(slotIndex, quizContent, hintText, null, referenceAnswerText, ragName, data, filterDifficulty.value, (appliedState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION, quizId);
   } catch (err) {
     slotState.error = err.message || '產生題目失敗';
   } finally {
@@ -394,11 +425,12 @@ function rewriteAnswer(item) {
   item.gradingResponseJson = null;
 }
 
+/** 評分：POST /test/quiz-grade 傳 test_tab_id、rag_name 等，回傳 202 + job_id；輪詢 GET /test/quiz-grade-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
-  if (!sourceTabId.value) {
+  if (!activeTabId.value) {
     item.confirmed = true;
-    item.gradingResult = '評分需要 rag_tab_id：請確認已載入使用中 RAG。';
+    item.gradingResult = '評分需要測驗 tab：請選擇測驗或按 + 新增測驗。';
     return;
   }
   const ragName = item.ragName?.trim() ?? generateQuizUnits.value[0]?.rag_name?.trim();
@@ -411,12 +443,12 @@ async function confirmAnswer(item) {
   item.gradingResult = '批改中...';
   const courseName = courseNameFromFileMetadata.value ?? '';
   try {
-    const res = await fetch(`${API_BASE}${API_GRADE_SUBMISSION}`, {
+    const res = await fetch(`${API_BASE}${API_TEST_QUIZ_GRADE}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: (state.openaiApiKey ?? '').trim(),
-        rag_tab_id: sourceTabId.value,
+        llm_api_key: (appliedState.openaiApiKey ?? '').trim(),
+        test_tab_id: activeTabId.value,
         rag_name: ragName,
         quiz_content: item.quiz ?? '',
         student_answer: item.answer.trim(),
@@ -471,10 +503,10 @@ async function confirmAnswer(item) {
       for (let r = 0; r <= maxRetries; r++) {
         if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
         try {
-          pollRes = await fetch(`${API_BASE}${API_GRADE_RESULT}/${encodeURIComponent(jobId)}`);
+          pollRes = await fetch(`${API_BASE}${API_TEST_QUIZ_GRADE_RESULT}/${encodeURIComponent(jobId)}`);
           pollText = await pollRes.text();
           if (pollRes.status !== 502 && pollRes.status !== 504) break;
-        } catch (_) {}
+        } catch (_) { /* ignore */ }
       }
       if (!pollRes || pollRes.status === 502 || pollRes.status === 504) {
         item.gradingResult = friendlyUnavailable;
@@ -517,54 +549,69 @@ onMounted(() => {
 
 <template>
   <div class="d-flex flex-column bg-body-secondary h-100">
+    <!-- 固定 tab 頁籤列（與建立 RAG 頁一致） -->
     <div class="flex-shrink-0 bg-white border-bottom">
       <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
-        <span class="fw-semibold">試題</span>
         <template v-if="appliedLoading">
           <span class="small text-secondary">載入使用中 RAG...</span>
+        </template>
+        <template v-else-if="testList.length === 0">
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            :disabled="createTestLoading"
+            @click="addNewTab"
+          >
+            {{ createTestLoading ? '建立中...' : '+' }}
+          </button>
+        </template>
+        <template v-else>
+          <ul class="nav nav-tabs mb-0">
+            <li v-for="test in testList" :key="'test-' + (test.test_tab_id ?? test.id ?? test)" class="nav-item">
+              <button
+                type="button"
+                class="nav-link border-0 rounded-0"
+                :class="{ active: activeTabId === (test.test_tab_id ?? test.id ?? test) }"
+                @click="activeTabId = (test.test_tab_id ?? test.id ?? String(test))"
+              >
+                {{ getTestTabLabel(test) }}
+              </button>
+            </li>
+            <li class="nav-item ms-2 align-self-center">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                :disabled="createTestLoading"
+                @click="addNewTab"
+              >
+                {{ createTestLoading ? '建立中...' : '+' }}
+              </button>
+            </li>
+          </ul>
         </template>
       </div>
       <div v-if="appliedError" class="alert alert-warning py-2 small mx-4 mb-3">
         {{ appliedError }}
       </div>
+      <div v-if="createTestError" class="alert alert-danger py-2 small mx-4 mb-3">
+        {{ createTestError }}
+      </div>
     </div>
 
+    <!-- 內容區：可上下捲動（與建立 RAG 頁一致） -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <template v-if="appliedRag != null">
-        <!-- 基本資訊與 file_metadata（無上傳、無 Pack） -->
-        <div class="bg-body-tertiary rounded text-start p-4 mb-3">
-          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊與 file_metadata</div>
-          <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
-            <span class="form-label small text-secondary fw-medium">rag_id：</span>
-            <span class="small">{{ ragIdAndTabId.rag_id }}</span>
-            <span class="form-label small text-secondary fw-medium">rag_tab_id：</span>
-            <span class="small">{{ ragIdAndTabId.rag_tab_id }}</span>
-          </div>
-          <div class="form-label small text-secondary fw-medium mb-2 mt-4">OpenAI API Key</div>
-          <p class="form-text small text-secondary mb-2">產生題目與評分時使用；若後端已儲存則可留空由後端提供。</p>
-          <div style="max-width: 400px;" class="mb-3">
-            <input
-              v-model="state.openaiApiKey"
-              type="text"
-              class="form-control form-control-sm"
-              placeholder="請輸入 OpenAI API Key"
-              autocomplete="off"
-            >
-          </div>
-          <div v-if="fileMetadataToShow != null" class="mt-3">
-            <div class="form-label small text-secondary fw-medium mb-2">file_metadata</div>
-            <pre class="bg-body-secondary border rounded p-2 mb-0 font-monospace small overflow-auto" style="max-height: 20rem;"><code>{{ JSON.stringify(fileMetadataToShow, null, 2) }}</code></pre>
-          </div>
-        </div>
-
-        <!-- RAG 產生題目與題目與作答（與建立 RAG 頁同區塊，無 Pack 前置） -->
-        <div v-if="hasRagMetadata" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': generateDisabled }">
+        <!-- RAG 產生題目與題目與作答：要有選中 tab 才顯示；點「新增題目」後才出現題目生成子區塊（與建立 RAG 頁同區塊） -->
+        <div v-if="hasRagMetadata && activeTabId" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': generateDisabled }">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
-          <p class="small text-secondary mb-3">點「新增題目」後會出現一題的區塊（選擇單元、難度、產生題目等）；每按一次「新增題目」才會多一個題目區塊。</p>
+          <p class="small text-secondary mb-3">點「新增題目」後會出現一題的區塊（選擇單元、難度、產生題目等）；每按一次「新增題目」才會多一個題目區塊。「新增題目」按鈕固定在最下面。</p>
 
+          <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
           <div class="bg-light rounded mb-3">
-            <template v-for="(slotIndex) in state.quizSlotsCount" :key="slotIndex">
-              <template v-if="state.cardList[slotIndex - 1]">
+            <template v-for="(slotIndex) in currentState.quizSlotsCount" :key="slotIndex">
+              <!-- 第 slotIndex 題：若已有該題卡片則顯示卡片，否則顯示產生題目表單 -->
+              <template v-if="currentState.cardList[slotIndex - 1]">
+                <!-- 已有卡片：顯示完整題目區塊 -->
                 <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                   <div class="card-header py-2">
                     <span class="fs-6 fw-semibold mb-0">第 {{ slotIndex }} 題</span>
@@ -573,71 +620,72 @@ onMounted(() => {
                     <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
                       <div>
                         <label class="form-label small text-secondary fw-medium mb-1">選擇單元（rag_name）</label>
-                        <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ state.cardList[slotIndex - 1].ragName || '—' }}</div>
+                        <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].ragName || '—' }}</div>
                       </div>
                       <div>
                         <label class="form-label small text-secondary fw-medium mb-1">難度</label>
-                        <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ state.cardList[slotIndex - 1].generateLevel || '—' }}</div>
+                        <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].generateLevel || '—' }}</div>
                       </div>
                     </div>
                     <div class="mb-3">
                       <div class="form-label small text-secondary fw-medium mb-1">題目</div>
                       <div class="bg-body-secondary border rounded p-2 lh-base">
-                        {{ state.cardList[slotIndex - 1].quiz }}
+                        {{ currentState.cardList[slotIndex - 1].quiz }}
                       </div>
                     </div>
                     <div class="mb-3">
-                      <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="toggleHint(state.cardList[slotIndex - 1])">
-                        {{ state.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
+                      <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
+                        {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                       </button>
-                      <div v-show="state.cardList[slotIndex - 1].hintVisible" class="rounded bg-body-tertiary small mt-2 p-2 text-secondary">
-                        {{ state.cardList[slotIndex - 1].hint }}
+                      <div v-show="currentState.cardList[slotIndex - 1].hintVisible" class="rounded bg-body-tertiary small mt-2 p-2 text-secondary">
+                        {{ currentState.cardList[slotIndex - 1].hint }}
                       </div>
                     </div>
-                    <div v-if="state.cardList[slotIndex - 1].referenceAnswer" class="mb-3">
+                    <div v-if="currentState.cardList[slotIndex - 1].referenceAnswer" class="mb-3">
                       <div class="form-label small text-secondary fw-medium mb-1">參考答案</div>
-                      <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ state.cardList[slotIndex - 1].referenceAnswer }}</div>
+                      <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
                     </div>
                     <div class="mb-3">
-                      <label :for="`answer-${state.cardList[slotIndex - 1].id}`" class="form-label small text-secondary fw-medium mb-1">回答</label>
-                      <template v-if="!state.cardList[slotIndex - 1].confirmed">
+                      <label :for="`answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label small text-secondary fw-medium mb-1">回答</label>
+                      <template v-if="!currentState.cardList[slotIndex - 1].confirmed">
                         <textarea
-                          :id="`answer-${state.cardList[slotIndex - 1].id}`"
-                          v-model="state.cardList[slotIndex - 1].answer"
+                          :id="`answer-${currentState.cardList[slotIndex - 1].id}`"
+                          v-model="currentState.cardList[slotIndex - 1].answer"
                           class="form-control"
                           rows="4"
                           placeholder="請輸入您的回答..."
                           maxlength="2000"
                         />
-                        <div class="form-text small">{{ state.cardList[slotIndex - 1].answer.length }} / 2000</div>
+                        <div class="form-text small">{{ currentState.cardList[slotIndex - 1].answer.length }} / 2000</div>
                         <div class="d-flex gap-2 mt-2">
-                          <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(state.cardList[slotIndex - 1])">重寫</button>
-                          <button type="button" class="btn btn-sm btn-primary" @click="confirmAnswer(state.cardList[slotIndex - 1])">確定</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(currentState.cardList[slotIndex - 1])">重寫</button>
+                          <button type="button" class="btn btn-sm btn-primary" @click="confirmAnswer(currentState.cardList[slotIndex - 1])">確定</button>
                         </div>
                       </template>
                       <template v-else>
-                        <div class="rounded bg-body-tertiary small mb-2 p-2">{{ state.cardList[slotIndex - 1].answer }}</div>
+                        <div class="rounded bg-body-tertiary small mb-2 p-2">{{ currentState.cardList[slotIndex - 1].answer }}</div>
                         <div class="d-flex gap-2 mb-3">
-                          <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(state.cardList[slotIndex - 1])">重寫</button>
+                          <button type="button" class="btn btn-sm btn-outline-secondary" @click="rewriteAnswer(currentState.cardList[slotIndex - 1])">重寫</button>
                         </div>
                       </template>
                     </div>
                     <div class="border rounded bg-light p-3 mb-3">
                       <div class="form-label small fw-semibold text-secondary mb-1">批改結果</div>
-                      <div class="small" style="white-space: pre-wrap;">{{ state.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
+                      <div class="small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
                     </div>
-                    <div v-if="state.cardList[slotIndex - 1].generateQuizResponseJson != null" class="mb-3">
+                    <div v-if="currentState.cardList[slotIndex - 1].generateQuizResponseJson != null" class="mb-3">
                       <div class="form-label small text-secondary fw-medium mb-1">產生題目 API 回傳 JSON：</div>
-                      <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(state.cardList[slotIndex - 1].generateQuizResponseJson, null, 2) }}</pre>
+                      <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].generateQuizResponseJson, null, 2) }}</pre>
                     </div>
-                    <div v-if="state.cardList[slotIndex - 1].gradingResponseJson != null">
+                    <div v-if="currentState.cardList[slotIndex - 1].gradingResponseJson != null">
                       <div class="form-label small text-secondary fw-medium mb-1">批改結果 API 回傳 JSON：</div>
-                      <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(state.cardList[slotIndex - 1].gradingResponseJson, null, 2) }}</pre>
+                      <pre class="bg-body-secondary border rounded p-2 font-monospace small mb-0 overflow-auto" style="max-height: 20rem;">{{ JSON.stringify(currentState.cardList[slotIndex - 1].gradingResponseJson, null, 2) }}</pre>
                     </div>
                   </div>
                 </div>
               </template>
               <template v-else>
+                <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
                 <div class="card mb-3" :class="{ 'mt-4': slotIndex > 1 }">
                   <div class="card-header py-2">
                     <span class="fs-6 fw-semibold mb-0">第 {{ slotIndex }} 題</span>
@@ -678,19 +726,20 @@ onMounted(() => {
               </template>
             </template>
 
-            <div class="mb-0 pt-2">
-              <button
-                type="button"
-                class="btn btn-sm btn-primary"
-                @click="openNextQuizSlot"
-              >
-                新增題目
-              </button>
-            </div>
+          <!-- 新增題目按鈕：固定在最下面，每按一次多一個「第 n 題」區塊 -->
+          <div class="mb-0 pt-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              @click="openNextQuizSlot"
+            >
+              新增題目
+            </button>
           </div>
         </div>
+      </div>
 
-        <!-- 該 RAG 的資料（GET /rag/applied 回傳） -->
+        <!-- 該 RAG 的資料（GET /rag/applied 回傳；與建立 RAG 頁「該 RAG 的資料」區塊一致） -->
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">該 RAG 的資料（GET /rag/applied 回傳）</div>
           <pre class="bg-body-secondary border rounded p-3 font-monospace small mb-0 overflow-auto" style="max-height: 24rem;">{{ JSON.stringify(appliedRag, null, 2) }}</pre>

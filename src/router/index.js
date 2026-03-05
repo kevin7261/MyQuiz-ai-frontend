@@ -28,7 +28,13 @@ const routes = [
   },
   {
     path: '/main',
-    redirect: (to) => ({ path: '/main/work', query: to.query }),
+    redirect: (to) => ({ path: '/test', query: to.query }),
+  },
+  {
+    path: '/test',
+    name: 'Test',
+    component: HomeView,
+    meta: { title: '試題 - AIQuiz' },
   },
   {
     path: '/main/:view',
@@ -37,7 +43,7 @@ const routes = [
     meta: { title: 'AIQuiz' },
     beforeEnter(to, _from, next) {
       if (VALID_VIEWS.includes(to.params.view)) return next();
-      next({ path: '/main/work', replace: true });
+      next({ path: '/test', replace: true });
     },
   },
 ];
@@ -53,8 +59,10 @@ const router = createRouter({
 router.beforeEach((to, _from, next) => {
   if (to.name === 'Main' && to.params.view && VIEW_TITLES[to.params.view]) {
     document.title = VIEW_TITLES[to.params.view];
+  } else if (to.meta.title) {
+    document.title = to.meta.title;
   } else {
-    document.title = to.meta.title ? `${to.meta.title}` : 'AIQuiz';
+    document.title = 'AIQuiz';
   }
   next();
 });
