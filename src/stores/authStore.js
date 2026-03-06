@@ -7,7 +7,7 @@ import { ref } from 'vue';
 export const useAuthStore = defineStore(
   'auth',
   () => {
-    /** @type {import('vue').Ref<{ user_id: number, name?: string, type?: number, created_at?: string, metadata?: unknown } | null>} */
+    /** @type {import('vue').Ref<{ user_id: number, person_id: string, name?: string, password?: string, user_type?: number, llm_api_key?: string, user_metadata?: unknown, updated_at?: string, created_at?: string } | null>} */
     const user = ref(null);
 
     function setUser(userData) {

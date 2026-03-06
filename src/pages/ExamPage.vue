@@ -64,9 +64,8 @@ const forExamRag = ref(null);
 const forExamLoading = ref(false);
 const forExamError = ref('');
 
-/** 試題用 RAG 帶來的 API key、system instruction（由 watch 填入，供出題／評分使用） */
+/** 試題用 RAG 帶來的 system instruction（由 watch 填入）；llm_api_key 改為使用登入回傳的 authStore.user.llm_api_key */
 const forExamState = reactive({
-  openaiApiKey: '',
   systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
 });
 
@@ -209,20 +208,16 @@ const currentExamDisplay = computed(() => {
   };
 });
 
-/** 產生題目／評分是否應停用（未選測驗 tab 或無試題用 RAG）；API Key 由 GET /rag/for-exam 回傳提供 */
+/** 產生題目／評分是否應停用（未選測驗 tab 或無試題用 RAG）；llm_api_key 使用登入帳號 */
 const generateDisabled = computed(() => {
   if (!activeTabId.value) return true;
   if (!sourceTabId.value) return true;
   return false;
 });
 
-/** 當試題用 RAG（forExamRag）載入後，填入 API key、system instruction（供出題／評分使用） */
+/** 當試題用 RAG（forExamRag）載入後，填入 system instruction；llm_api_key 一律使用登入回傳的 authStore.user.llm_api_key */
 watch(forExamRag, (rag) => {
   if (!rag || typeof rag !== 'object') return;
-  const key = rag.llm_api_key ?? rag.apikey;
-  if (key != null && String(key).trim() !== '') {
-    forExamState.openaiApiKey = String(key).trim();
-  }
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
     forExamState.systemInstruction = String(rag.system_prompt_instruction).trim();
   }
@@ -582,7 +577,7 @@ async function generateQuiz(slotIndex) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: (forExamState.openaiApiKey ?? '').trim(),
+        llm_api_key: (authStore.user?.llm_api_key ?? '').trim(),
         exam_id: Number(examId) || 0,
         exam_tab_id: Number(activeTabId.value) || 0,
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
@@ -699,7 +694,7 @@ async function confirmAnswer(item) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: (forExamState.openaiApiKey ?? '').trim(),
+        llm_api_key: (authStore.user?.llm_api_key ?? '').trim(),
         exam_id: String(examId),
         exam_tab_id: String(activeTabId.value),
         exam_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
@@ -718,7 +713,7 @@ async function confirmAnswer(item) {
           msg = text;
         }
       }
-      const statusHint = res.status === 400 ? '（例如 API Key 未設定）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤）\n\n' : ''));
+      const statusHint = res.status === 400 ? '（例如 llm_api_key 未設定）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤）\n\n' : ''));
       item.gradingResult = `評分失敗：${statusHint}${msg}`;
       return;
     }
@@ -874,30 +869,36 @@ onMounted(() => {
           <div v-if="deleteExamError" class="alert alert-danger py-2 small mb-2">
             {{ deleteExamError }}
           </div>
-          <div class="mb-3">
+          <div class="mb-3 small">
             <div class="form-label small text-secondary fw-medium mb-1">當前測驗</div>
-            <div class="d-flex flex-wrap align-items-center gap-3 small">
-              <span class="text-secondary">exam_tab_id：</span>
-              <span class="small">{{ currentExamDisplay.exam_tab_id }}</span>
-              <span class="text-secondary">exam_name：</span>
-              <span class="small">{{ currentExamDisplay.exam_name }}</span>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="text-secondary" style="min-width: 10rem;">exam_tab_id：</span>
+              <span>{{ currentExamDisplay.exam_tab_id }}</span>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="text-secondary" style="min-width: 10rem;">exam_name：</span>
+              <span>{{ currentExamDisplay.exam_name }}</span>
             </div>
           </div>
-          <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
-            <span class="form-label small text-secondary fw-medium mb-0">試題用 RAG</span>
-            <span class="text-secondary">rag_id：</span>
-            <span class="small">{{ forExamRagIdAndTabId.rag_id }}</span>
-            <span class="text-secondary">rag_tab_id：</span>
-            <span class="small">{{ forExamRagIdAndTabId.rag_tab_id }}</span>
-          </div>
-          <div class="row g-2 small mb-2">
-            <div class="col-12 col-md-6">
-              <span class="text-secondary">llm_api_key：</span>
-              <code>{{ (forExamRag && (forExamRag.llm_api_key ?? forExamRag.apikey)) || '—' }}</code>
+          <div class="mb-3 small">
+            <div class="form-label small text-secondary fw-medium mb-1">試題用 RAG</div>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="text-secondary" style="min-width: 10rem;">rag_id：</span>
+              <span>{{ forExamRagIdAndTabId.rag_id }}</span>
             </div>
-            <div class="col-12">
-              <span class="text-secondary">system_prompt_instruction：</span>
-              <code class="d-block mt-1">{{ (forExamRag && forExamRag.system_prompt_instruction) ? forExamRag.system_prompt_instruction : '—' }}</code>
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="text-secondary" style="min-width: 10rem;">rag_tab_id：</span>
+              <span>{{ forExamRagIdAndTabId.rag_tab_id }}</span>
+            </div>
+          </div>
+          <div class="small mb-2">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="text-secondary" style="min-width: 10rem;">llm_api_key（登入帳號）：</span>
+              <code>{{ (authStore.user?.llm_api_key ?? '').trim() || '—' }}</code>
+            </div>
+            <div class="d-flex align-items-start gap-2 mb-1">
+              <span class="text-secondary" style="min-width: 10rem;">system_prompt_instruction：</span>
+              <code class="d-block mt-0">{{ (forExamRag && forExamRag.system_prompt_instruction) ? forExamRag.system_prompt_instruction : '—' }}</code>
             </div>
           </div>
           <div v-if="fileMetadataToShow != null" class="mt-3">
@@ -1013,7 +1014,7 @@ onMounted(() => {
                       <button
                         type="button"
                         class="btn btn-sm btn-primary"
-                        :disabled="getSlotFormState(slotIndex).loading || generateDisabled || !forExamState.openaiApiKey?.trim()"
+                        :disabled="getSlotFormState(slotIndex).loading || generateDisabled || !authStore.user?.llm_api_key?.trim()"
                         @click="generateQuiz(slotIndex)"
                       >
                         {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}
@@ -1071,7 +1072,7 @@ onMounted(() => {
               </table>
             </div>
           </div>
-          <div class="small text-secondary mb-1">完整回傳（API key 已遮蔽）</div>
+          <div class="small text-secondary mb-1">完整回傳（llm_api_key 已遮蔽）</div>
           <pre class="bg-body-secondary border rounded p-3 font-monospace small mb-0 overflow-auto" style="max-height: 24rem;">{{ JSON.stringify(forExamRagDisplay, null, 2) }}</pre>
         </div>
       </template>

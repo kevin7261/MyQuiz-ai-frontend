@@ -44,6 +44,9 @@ const authStore = useAuthStore();
 /** generate-quiz API 的 system_instruction 預設內容（由 Rag 表取得，此處僅為 UI 預設） */
 const DEFAULT_SYSTEM_INSTRUCTION = '題目字數不超過50字';
 
+/** 登入成功後回傳的 user 含 llm_api_key，所有 API 皆使用此 key，不需使用者輸入 */
+const userLlmApiKey = computed(() => (authStore.user?.llm_api_key ?? '').trim());
+
 /** RAG 列表（GET /rag/rags）、載入中、錯誤 */
 const ragList = ref([]);
 const ragListLoading = ref(false);
@@ -72,8 +75,6 @@ function getTabState(id) {
     const isNew = isNewTabId(id);
     tabStateMap[id] = reactive({
       tabId: isNew ? generateTabId(authStore.user?.person_id) : id,
-      /** 每個 tab 各自儲存 API key；新增 tab 為空，既有 tab 由 watch 從 Rag 填入 */
-      openaiApiKey: '',
       uploadedZipFile: null,
       zipFileName: '',
       zipSecondFolders: [],
@@ -117,8 +118,6 @@ const currentState = computed(() => {
   return getTabState(firstNew || (firstRag && (firstRag.rag_tab_id ?? firstRag.id ?? firstRag)) || 'new');
 });
 
-/** OpenAI API Key 已改為每個 tab 各自儲存於 tabStateMap[id].openaiApiKey，新增 tab 為空 */
-
 /** 當前 RAG（來自 /rag/rags）是否有 rag_list 或 rag_metadata；有則壓縮資料夾 (Pack) 與 RAG 不 disable */
 const hasRagListOrMetadata = computed(() => {
   const r = currentRagItem.value;
@@ -128,10 +127,10 @@ const hasRagListOrMetadata = computed(() => {
   return hasList || hasMeta;
 });
 
-/** 未輸入 API key 或當前 tab 未上傳 ZIP 時，Pack、RAG 產生題目、產生題目按鈕皆 disable；若有 rag_list 或 rag_metadata 則不 disable */
+/** 未設定帳號 llm_api_key（登入回傳）或當前 tab 未上傳 ZIP 時，Pack、RAG 產生題目、產生題目按鈕皆 disable；若有 rag_list 或 rag_metadata 則不 disable */
 const packAndGenerateDisabled = computed(() => {
   if (hasRagListOrMetadata.value) return false;
-  if (!currentState.value.openaiApiKey?.trim()) return true;
+  if (!userLlmApiKey.value) return true;
   const id = activeTabId.value;
   if (!id) return true;
   if (isNewTabId(id)) {
@@ -210,7 +209,7 @@ const currentRagItem = computed(() => {
   ) ?? null;
 });
 
-/** 當前 tab 的 rag_id、rag_tab_id（供 OpenAI API Key 上方顯示；未上傳則為「未上傳」） */
+/** 當前 tab 的 rag_id、rag_tab_id（供 llm_api_key 上方顯示；未上傳則為「未上傳」） */
 const currentRagIdAndTabId = computed(() => {
   const state = currentState.value;
   const rag = currentRagItem.value;
@@ -297,10 +296,6 @@ watch(currentRagItem, (rag) => {
   if (rag.chunk_overlap != null) chunkOverlap.value = Number(rag.chunk_overlap);
   const filename = rag.file_metadata?.filename ?? rag.filename;
   if (filename != null && String(filename).trim() !== '') state.zipFileName = String(filename).trim();
-  const llmKey = rag.llm_api_key ?? rag.apikey;
-  if (llmKey != null && String(llmKey).trim() !== '') {
-    state.openaiApiKey = String(llmKey).trim();
-  }
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
     state.systemInstruction = String(rag.system_prompt_instruction).trim();
   }
@@ -662,7 +657,7 @@ async function confirmUploadZip() {
     formData.append('file', state.uploadedZipFile);
     formData.append('rag_tab_id', String(tabId));
     formData.append('person_id', String(personId));
-    const llmKey = (state.openaiApiKey ?? '').trim();
+    const llmKey = userLlmApiKey.value;
     if (llmKey) formData.append('llm_api_key', llmKey);
     const res = await fetch(`${API_BASE}${API_UPLOAD_ZIP}`, {
       method: 'POST',
@@ -697,13 +692,13 @@ async function confirmUploadZip() {
   }
 }
 
-/** 呼叫 /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, openai_api_key, chunk_size, chunk_overlap, system_prompt_instruction */
+/** 呼叫 /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, llm_api_key, chunk_size, chunk_overlap, system_prompt_instruction */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
   const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
-  const apiKey = state.openaiApiKey?.trim() ?? '';
+  const apiKey = userLlmApiKey.value;
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 rag_tab_id（見上方 file_metadata）';
     return;
@@ -717,7 +712,7 @@ async function confirmPack() {
     return;
   }
   if (!apiKey) {
-    state.packError = '請輸入 OpenAI API Key';
+    state.packError = '請確認帳號已設定 llm_api_key（登入後由後端回傳）';
     return;
   }
   state.packLoading = true;
@@ -731,7 +726,7 @@ async function confirmPack() {
         rag_tab_id: fileId,
         person_id: String(personId),
         rag_list: ragList,
-        openai_api_key: apiKey,
+        llm_api_key: apiKey,
         chunk_size: Number(chunkSize.value) || 1000,
         chunk_overlap: Number(chunkOverlap.value) || 200,
         system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
@@ -845,7 +840,7 @@ async function generateQuiz(slotIndex) {
   const difficultyOpts = ['基礎', '進階'];
   const quizLevel = difficultyOpts.indexOf(filterDifficulty.value);
   try {
-    const llmApiKey = (state.openaiApiKey ?? '').trim();
+    const llmApiKey = userLlmApiKey.value;
     const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -904,7 +899,7 @@ async function confirmAnswer(item) {
   }
   item.confirmed = true;
   item.gradingResult = '批改中...';
-  const llmApiKey = (state.openaiApiKey ?? '').trim();
+  const llmApiKey = userLlmApiKey.value;
   try {
     const res = await fetch(`${API_BASE}${API_GRADE_SUBMISSION}`, {
       method: 'POST',
@@ -1230,7 +1225,7 @@ function addAllSecondFoldersAsGroups() {
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <!-- 無資料時不顯示表單，點「+」後才顯示；有資料時顯示對應 tab 表單 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
-      <!-- 基本資訊、OpenAI API Key、ZIP 上傳與 file_metadata 合併為一區塊 -->
+      <!-- 基本資訊、llm_api_key、ZIP 上傳與 file_metadata 合併為一區塊 -->
       <div class="bg-body-tertiary rounded text-start p-4 mb-3">
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
           <span>基本資訊、API 與 ZIP 上傳</span>
@@ -1255,22 +1250,19 @@ function addAllSecondFoldersAsGroups() {
         <div v-if="currentState.forExamError" class="alert alert-danger py-2 small mb-2">
           {{ currentState.forExamError }}
         </div>
-        <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
-          <span class="form-label small text-secondary fw-medium">rag_id：</span>
-          <span class="small">{{ currentRagIdAndTabId.rag_id }}</span>
-          <span class="form-label small text-secondary fw-medium">rag_tab_id：</span>
-          <span class="small">{{ currentRagIdAndTabId.rag_tab_id }}</span>
-        </div>
-        <div class="form-label small text-secondary fw-medium mb-2 mt-4">OpenAI API Key</div>
-        <p class="form-text small text-secondary mb-2">每個 tab 各自輸入；新增 RAG 時請在此 tab 輸入，上傳後會寫入該筆 RAG。</p>
-        <div style="max-width: 400px;" class="mb-3">
-          <input
-            v-model="currentState.openaiApiKey"
-            type="text"
-            class="form-control form-control-sm"
-            placeholder="請輸入 OpenAI API Key"
-            autocomplete="off"
-          >
+        <div class="small mb-2">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="form-label small text-secondary fw-medium mb-0" style="min-width: 10rem;">rag_id：</span>
+            <span class="small">{{ currentRagIdAndTabId.rag_id }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="form-label small text-secondary fw-medium mb-0" style="min-width: 10rem;">rag_tab_id：</span>
+            <span class="small">{{ currentRagIdAndTabId.rag_tab_id }}</span>
+          </div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="form-label small text-secondary fw-medium mb-0" style="min-width: 10rem;">llm_api_key（登入帳號）：</span>
+            <span class="small"><code>{{ userLlmApiKey || '未設定' }}</code></span>
+          </div>
         </div>
         <div v-if="activeTabId" class="mb-3">
           <div class="form-label small text-secondary fw-medium mb-2">上傳 ZIP 檔</div>
@@ -1304,7 +1296,7 @@ function addAllSecondFoldersAsGroups() {
           <pre class="bg-body-secondary border rounded p-2 mb-0 font-monospace small overflow-auto" style="max-height: 20rem;"><code>{{ JSON.stringify(fileMetadataToShow, null, 2) }}</code></pre>
         </div>
       </div>
-      <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未輸入 API key 或未上傳 ZIP 時 disable -->
+      <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未設定帳號 llm_api_key 或未上傳 ZIP 時 disable -->
       <div v-if="fileMetadataToShow != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
           <p class="small text-secondary mb-2">依上方 file_metadata 的當前 RAG 與 rag_list 壓縮指定資料夾，可一併產生 RAG。rag_list：逗號=多個 ZIP，加號=同檔內多資料夾，例 <code>220222+220301</code>、<code>220222,220301+220302</code>。</p>
@@ -1562,7 +1554,7 @@ function addAllSecondFoldersAsGroups() {
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      :disabled="getSlotFormState(slotIndex).loading || !currentState.openaiApiKey?.trim()"
+                      :disabled="getSlotFormState(slotIndex).loading || !userLlmApiKey"
                       @click="generateQuiz(slotIndex)"
                     >
                       {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}

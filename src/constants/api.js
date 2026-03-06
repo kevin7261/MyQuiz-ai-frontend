@@ -18,7 +18,7 @@ export const API_GRADE_RESULT = '/rag/quiz-grade-result';
 export const API_CREATE_RAG = '/rag/create-rag';
 /** 上傳 ZIP：POST /rag/upload-zip，需先 create-rag；Form: file、rag_tab_id、person_id（必填），可選 llm_api_key；回傳 file_metadata */
 export const API_UPLOAD_ZIP = '/rag/upload-zip';
-/** 建 RAG ZIP：POST /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, openai_api_key, chunk_size, chunk_overlap, system_prompt_instruction */
+/** 建 RAG ZIP：POST /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, llm_api_key, chunk_size, chunk_overlap, system_prompt_instruction */
 export const API_BUILD_RAG_ZIP = '/rag/build-rag-zip';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';
