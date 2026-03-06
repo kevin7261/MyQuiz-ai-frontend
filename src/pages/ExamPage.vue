@@ -134,27 +134,36 @@ const fileMetadataToShow = computed(() => {
   return null;
 });
 
-/** 從 file_metadata 或 RAG 頂層取得 course_name */
-const courseNameFromFileMetadata = computed(() => {
-  const meta = fileMetadataToShow.value;
+/** 用於「該 RAG 的資料」顯示：遮蔽 llm_api_key、apikey，其餘與 GET /rag/for-exam 回傳一致 */
+const forExamRagDisplay = computed(() => {
   const rag = forExamRag.value;
-  const fromMeta = meta != null && typeof meta === 'object' && meta.course_name != null ? String(meta.course_name).trim() : '';
-  const fromRag = rag?.course_name != null ? String(rag.course_name).trim() : '';
-  return fromMeta || fromRag || '';
+  if (rag == null || typeof rag !== 'object') return null;
+  const mask = (v) => (v != null && String(v).trim() !== '' ? '***' : v);
+  return {
+    ...rag,
+    llm_api_key: mask(rag.llm_api_key),
+    apikey: mask(rag.apikey),
+  };
 });
 
-/** 從試題用 RAG 的 rag_metadata.outputs 或 rag_list 推導 generateQuizUnits */
+/** 從試題用 RAG 推導 generateQuizUnits；格式同 /rag/build-rag-zip：頂層 outputs、rag_tab_id，或 rag_metadata.outputs / rag_list */
 const generateQuizUnits = computed(() => {
   const rag = forExamRag.value;
   if (!rag || typeof rag !== 'object') return [];
   const sourceTabId = String(rag.rag_tab_id ?? '');
-  const outputs = rag.rag_metadata?.outputs;
-  if (Array.isArray(outputs) && outputs.length > 0) {
-    return outputs.map((o) => ({
-      rag_tab_id: sourceTabId || o.rag_tab_id || `${(o.rag_name ?? '').replace(/\+/g, '_')}_rag`,
-      filename: o.filename ?? `${(o.rag_name ?? '').replace(/\+/g, '_')}.zip`,
-      rag_name: (o.rag_name ?? '').replace(/\+/g, '_'),
-    }));
+  const mapOutput = (o) => ({
+    rag_tab_id: o.rag_tab_id || `${(o.rag_name ?? '').replace(/\+/g, '_')}_rag` || sourceTabId,
+    filename: o.filename ?? o.rag_filename ?? `${(o.rag_name ?? '').replace(/\+/g, '_')}.zip`,
+    rag_name: (o.rag_name ?? '').replace(/\+/g, '_') || (o.filename || o.rag_filename || '').replace(/_rag\.zip?$/i, '').replace(/\.zip$/i, ''),
+  });
+  // 與 build-rag-zip 相同：頂層 outputs
+  const topOutputs = rag.outputs;
+  if (Array.isArray(topOutputs) && topOutputs.length > 0) {
+    return topOutputs.map(mapOutput);
+  }
+  const nestedOutputs = rag.rag_metadata?.outputs;
+  if (Array.isArray(nestedOutputs) && nestedOutputs.length > 0) {
+    return nestedOutputs.map(mapOutput);
   }
   const ragListStr = rag.rag_list ?? '';
   if (!ragListStr) return [];
@@ -165,7 +174,7 @@ const generateQuizUnits = computed(() => {
     .map((group) => {
       const ragName = group.replace(/\+/g, '_');
       return {
-        rag_tab_id: sourceTabId || `${ragName}_rag`,
+        rag_tab_id: `${ragName}_rag` || sourceTabId,
         filename: `${ragName}_rag.zip`,
         rag_name: ragName,
       };
@@ -188,6 +197,18 @@ const forExamRagIdAndTabId = computed(() => {
   return { rag_id: rid != null ? String(rid) : '—', rag_tab_id: tid ? String(tid) : '—' };
 });
 
+/** 當前測驗顯示用（exam_tab_id、exam_name，來自 GET /exam/exams） */
+const currentExamDisplay = computed(() => {
+  const exam = currentExamItem.value;
+  const id = activeTabId.value;
+  if (!id) return { exam_tab_id: '—', exam_name: '—' };
+  if (!exam) return { exam_tab_id: id, exam_name: getExamTabLabel({ exam_tab_id: id, test_tab_id: id }) || id };
+  return {
+    exam_tab_id: getExamTabId(exam) || id,
+    exam_name: getExamTabLabel(exam) || id,
+  };
+});
+
 /** 產生題目／評分是否應停用（未選測驗 tab 或無試題用 RAG）；API Key 由 GET /rag/for-exam 回傳提供 */
 const generateDisabled = computed(() => {
   if (!activeTabId.value) return true;
@@ -206,6 +227,15 @@ watch(forExamRag, (rag) => {
     forExamState.systemInstruction = String(rag.system_prompt_instruction).trim();
   }
 }, { immediate: true });
+
+/** 當登入者（person_id 或 user_id）可用時再載入 GET /exam/exams；與 RAG 頁一致，且覆蓋重新打開頁面時 Pinia 還原較晚的情況 */
+watch(
+  () => getCurrentPersonId(),
+  (id) => {
+    if (id) fetchExamTests();
+  },
+  { immediate: true }
+);
 
 /** 有測驗列表時預設選第一個 tab */
 watch(examList, (list) => {
@@ -256,50 +286,66 @@ function buildCardFromExamQuiz(quiz, ragName) {
   };
 }
 
-/** 當切換到某個 Exam tab 時，從該筆的 quizzes、answers 填入題目卡片（格式同 GET /rag/rags，與 CreateRAGPage 一致） */
-watch(currentExamItem, (exam) => {
-  if (!exam || typeof exam !== 'object') return;
-  const tabId = getExamTabId(exam);
-  if (!tabId) return;
-  const state = getTabState(tabId);
-  const quizzes = exam.quizzes ?? [];
-  const examAnswers = exam.answers ?? [];
-  if (quizzes.length > 0) {
-    const answersByQuizId = examAnswers.reduce((acc, a) => {
-      const id = a.exam_quiz_id ?? a.quiz_id;
-      if (!acc[id]) acc[id] = [];
-      acc[id].push(a);
-      return acc;
-    }, {});
-    const quizzesWithAnswers = quizzes.map((q, i) => {
-      const byId = q.answers ?? answersByQuizId[q.exam_quiz_id ?? q.quiz_id];
-      const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (examAnswers[i] != null ? [examAnswers[i]] : []);
-      return { ...q, answers };
-    });
-    const firstRagName = (quizzes[0]?.rag_name ?? '').trim();
-    state.showQuizGeneratorBlock = true;
-    state.quizSlotsCount = quizzesWithAnswers.length;
-    state.cardList = quizzesWithAnswers.map((q) => buildCardFromExamQuiz(q, q.rag_name ?? firstRagName));
-  } else {
-    state.quizSlotsCount = 0;
-    state.cardList = [];
-  }
-}, { immediate: true });
+/** 當切換到某個 Exam tab 或試題用 RAG 載入時，從該筆的 quizzes、answers 填入題目卡片（格式同 GET /rag/rags，與 CreateRAGPage 一致）；firstRagName 從 forExamRag.outputs / rag_metadata.outputs / rag_list 推導，與 CreateRAGPage 一致 */
+watch(
+  () => [currentExamItem.value, forExamRag.value],
+  ([exam]) => {
+    if (!exam || typeof exam !== 'object') return;
+    const tabId = getExamTabId(exam);
+    if (!tabId) return;
+    const state = getTabState(tabId);
+    const quizzes = exam.quizzes ?? [];
+    const examAnswers = exam.answers ?? [];
+    const units = generateQuizUnits.value;
+    const firstRagName = (units[0]?.rag_name ?? forExamRag.value?.outputs?.[0]?.rag_name ?? forExamRag.value?.rag_metadata?.outputs?.[0]?.rag_name ?? quizzes[0]?.rag_name ?? '').trim();
+    if (quizzes.length > 0) {
+      const answersByQuizId = examAnswers.reduce((acc, a) => {
+        const id = a.exam_quiz_id ?? a.quiz_id;
+        if (!acc[id]) acc[id] = [];
+        acc[id].push(a);
+        return acc;
+      }, {});
+      const quizzesWithAnswers = quizzes.map((q, i) => {
+        const byId = q.answers ?? answersByQuizId[q.exam_quiz_id ?? q.quiz_id];
+        const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (examAnswers[i] != null ? [examAnswers[i]] : []);
+        return { ...q, answers };
+      });
+      state.showQuizGeneratorBlock = true;
+      state.quizSlotsCount = quizzesWithAnswers.length;
+      state.cardList = quizzesWithAnswers.map((q) => buildCardFromExamQuiz(q, q.rag_name ?? firstRagName));
+    } else {
+      state.quizSlotsCount = 0;
+      state.cardList = [];
+    }
+  },
+  { immediate: true }
+);
+
+/** 取得當前使用者的 person_id（與 RAG 頁一致；後端若只回傳 user_id 則用 user_id 當 person_id） */
+function getCurrentPersonId() {
+  const u = authStore.user;
+  if (!u) return null;
+  const pid = u.person_id;
+  if (pid != null && String(pid).trim() !== '') return String(pid).trim();
+  const uid = u.user_id ?? u.id;
+  if (uid != null && String(uid).trim() !== '') return String(uid).trim();
+  return null;
+}
 
 /** 載入測驗列表：GET /exam/exams；僅 deleted=false，每筆含表上所有欄位 + quizzes（每題帶 answers）、頂層 answers；格式同 GET /rag/rags。query: person_id 可選。 */
 async function fetchExamTests() {
   examListLoading.value = true;
   examListError.value = '';
   try {
-    const personId = authStore.user?.person_id;
+    const personId = getCurrentPersonId();
     const params = new URLSearchParams();
-    if (personId != null && String(personId).trim() !== '') {
-      params.set('person_id', String(personId).trim());
+    if (personId) {
+      params.set('person_id', personId);
     }
     const url = params.toString() ? `${API_BASE}${API_EXAM_TESTS}?${params}` : `${API_BASE}${API_EXAM_TESTS}`;
     const headers = {};
-    if (personId != null && String(personId).trim() !== '') {
-      headers['X-Person-Id'] = String(personId).trim();
+    if (personId) {
+      headers['X-Person-Id'] = personId;
     }
     const res = await fetch(url, { method: 'GET', headers });
     if (!res.ok) {
@@ -314,7 +360,8 @@ async function fetchExamTests() {
       throw new Error(msg);
     }
     const data = await res.json();
-    const raw = Array.isArray(data) ? data : (data?.items ?? data?.data ?? []);
+    // 後端回傳 { exams: [...], count: N }，與 RAG 頁 normalizeRagListResponse 一致支援多種格式
+    const raw = Array.isArray(data) ? data : (data?.exams ?? data?.items ?? data?.data ?? []);
     const list = Array.isArray(raw) ? raw : [];
     // 保留完整欄位與 quizzes、answers（供 watch(currentExamItem) 預填題目卡片）
     examList.value = list.map((row) => ({
@@ -352,10 +399,9 @@ async function fetchForExamRag() {
       throw new Error(msg);
     }
     const data = await res.json();
-    // GET /rag/for-exam 回傳單筆 RAG 或 { rag_metadata, apikey }；前端預期 forExamRag 為單一 RAG 物件
-    const meta = data?.rag_metadata ?? data;
-    forExamRag.value = meta != null && typeof meta === 'object'
-      ? { ...meta, apikey: data.apikey ?? meta.apikey ?? meta.llm_api_key }
+    // GET /rag/for-exam 回傳格式與 /rag/build-rag-zip 相同：頂層含 outputs、rag_tab_id、file_metadata、llm_api_key 等
+    forExamRag.value = data != null && typeof data === 'object'
+      ? { ...data, apikey: data.apikey ?? data.llm_api_key }
       : null;
   } catch (err) {
     forExamError.value = err.message || '無法載入試題用 RAG';
@@ -384,8 +430,8 @@ function getExamTabId(exam) {
 
 /** 按 + 新增測驗：POST /exam/create-exam，body 用 exam_tab_id、exam_name；加入 examList 並切到新 tab。 */
 async function addNewTab() {
-  const personId = authStore.user?.person_id;
-  if (personId == null || String(personId).trim() === '') {
+  const personId = getCurrentPersonId();
+  if (!personId) {
     createExamError.value = '請先登入以建立測驗';
     return;
   }
@@ -399,7 +445,7 @@ async function addNewTab() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         exam_tab_id: examTabId,
-        person_id: String(personId),
+        person_id: personId,
         exam_name: examName,
       }),
     });
@@ -440,7 +486,7 @@ async function deleteExam(examTabId) {
   try {
     const res = await fetch(`${API_BASE}${API_EXAM_DELETE}/${encodeURIComponent(examTabId)}`, {
       method: 'POST',
-      headers: authStore.user?.person_id ? { 'X-Person-Id': String(authStore.user.person_id) } : {},
+      headers: getCurrentPersonId() ? { 'X-Person-Id': getCurrentPersonId() } : {},
     });
     if (!res.ok) {
       const text = await res.text();
@@ -512,23 +558,24 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   };
 }
 
-/** 出題：POST /exam/generate-quiz，傳 test_tab_id、rag_name、system_prompt_instruction 等 */
+/** 出題：POST /exam/generate-quiz；body: llm_api_key, exam_id, exam_tab_id, quiz_level（number）。回傳 quiz_content, quiz_hint, reference_answer, exam_quiz_id 等。 */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const selectedUnit = generateQuizUnits.value.find((u) => u.rag_tab_id === slotState.generateQuizTabId);
   const ragName = selectedUnit?.rag_name?.trim();
+  const exam = currentExamItem.value;
+  const examId = exam?.exam_id ?? exam?.test_id;
   if (!activeTabId.value) {
     slotState.error = '尚未建立測驗（請按 + 新增測驗）或請確認已載入試題用 RAG（GET /rag/for-exam）';
     return;
   }
-  if (!ragName) {
-    slotState.error = '請先選擇單元';
+  if (examId == null) {
+    slotState.error = '無法取得當前測驗的 exam_id';
     return;
   }
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
-  const courseName = courseNameFromFileMetadata.value;
   const quizLevel = difficultyOptions.indexOf(filterDifficulty.value);
   try {
     const res = await fetch(`${API_BASE}${API_TEST_GENERATE_QUIZ}`, {
@@ -536,12 +583,9 @@ async function generateQuiz(slotIndex) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         llm_api_key: (forExamState.openaiApiKey ?? '').trim(),
-        test_tab_id: activeTabId.value,
-        rag_name: ragName,
-        system_prompt_instruction: (forExamState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
-        course_name: courseName || '未命名課程',
+        exam_id: Number(examId) || 0,
+        exam_tab_id: Number(activeTabId.value) || 0,
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
-        quiz_type: 0,
       }),
     });
     const text = await res.text();
@@ -560,7 +604,7 @@ async function generateQuiz(slotIndex) {
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const hintText = data.quiz_hint ?? data.hint ?? '';
     const referenceAnswerText = data.reference_answer ?? data.answer ?? '';
-    const quizId = data.quiz_id != null ? Number(data.quiz_id) : null;
+    const quizId = data.exam_quiz_id != null ? Number(data.exam_quiz_id) : (data.quiz_id != null ? Number(data.quiz_id) : null);
     setCardAtSlot(slotIndex, quizContent, hintText, null, referenceAnswerText, ragName, data, filterDifficulty.value, (forExamState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION, quizId);
   } catch (err) {
     slotState.error = err.message || '產生題目失敗';
@@ -633,7 +677,7 @@ function rewriteAnswer(item) {
   item.gradingResponseJson = null;
 }
 
-/** 評分：POST /exam/quiz-grade 傳 test_tab_id、rag_name 等，回傳 202 + job_id；輪詢 GET /exam/quiz-grade-result/{job_id} */
+/** 評分：POST /exam/quiz-grade；body: llm_api_key, exam_id, exam_tab_id, exam_quiz_id, quiz_content, answer（皆 string）；回傳 202 + job_id；輪詢 GET /exam/quiz-grade-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
   if (!activeTabId.value) {
@@ -641,28 +685,26 @@ async function confirmAnswer(item) {
     item.gradingResult = '評分需要測驗 tab：請選擇測驗或按 + 新增測驗。';
     return;
   }
-  const ragName = item.ragName?.trim() ?? generateQuizUnits.value[0]?.rag_name?.trim();
-  if (!ragName) {
+  const exam = currentExamItem.value;
+  const examId = exam?.exam_id ?? exam?.test_id;
+  if (examId == null) {
     item.confirmed = true;
-    item.gradingResult = '評分失敗：此題目未關聯 RAG 單元（rag_name）。';
+    item.gradingResult = '評分失敗：無法取得當前測驗的 exam_id。';
     return;
   }
   item.confirmed = true;
   item.gradingResult = '批改中...';
-  const courseName = courseNameFromFileMetadata.value ?? '';
   try {
     const res = await fetch(`${API_BASE}${API_TEST_QUIZ_GRADE}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         llm_api_key: (forExamState.openaiApiKey ?? '').trim(),
-        test_tab_id: activeTabId.value,
-        rag_name: ragName,
+        exam_id: String(examId),
+        exam_tab_id: String(activeTabId.value),
+        exam_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
         quiz_content: item.quiz ?? '',
-        student_answer: item.answer.trim(),
-        qtype: 'short_answer',
-        course_name: courseName,
-        quiz_id: item.quiz_id ?? 0,
+        answer: item.answer.trim(),
       }),
     });
     const text = await res.text();
@@ -750,6 +792,7 @@ async function confirmAnswer(item) {
   }
 }
 
+/** 與建立 RAG 頁一致：畫面一打開就抓 GET /exam/exams；watch(person_id) 在還原後再抓一次以帶 person_id */
 onMounted(() => {
   fetchForExamRag();
   fetchExamTests();
@@ -813,7 +856,7 @@ onMounted(() => {
     <!-- 內容區：可上下捲動 -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <template v-if="examList.length > 0">
-        <!-- 基本資訊：對應 CreateRAGPage「基本資訊、API 與 ZIP 上傳」，僅顯示試題用 RAG（GET /rag/for-exam）的 rag_id、rag_tab_id，無 ZIP 上傳、Pack -->
+        <!-- 基本資訊：當前測驗（exam）＋試題用 RAG -->
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
             <span>基本資訊</span>
@@ -831,11 +874,31 @@ onMounted(() => {
           <div v-if="deleteExamError" class="alert alert-danger py-2 small mb-2">
             {{ deleteExamError }}
           </div>
+          <div class="mb-3">
+            <div class="form-label small text-secondary fw-medium mb-1">當前測驗</div>
+            <div class="d-flex flex-wrap align-items-center gap-3 small">
+              <span class="text-secondary">exam_tab_id：</span>
+              <span class="small">{{ currentExamDisplay.exam_tab_id }}</span>
+              <span class="text-secondary">exam_name：</span>
+              <span class="small">{{ currentExamDisplay.exam_name }}</span>
+            </div>
+          </div>
           <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
-            <span class="form-label small text-secondary fw-medium">rag_id：</span>
+            <span class="form-label small text-secondary fw-medium mb-0">試題用 RAG</span>
+            <span class="text-secondary">rag_id：</span>
             <span class="small">{{ forExamRagIdAndTabId.rag_id }}</span>
-            <span class="form-label small text-secondary fw-medium">rag_tab_id：</span>
+            <span class="text-secondary">rag_tab_id：</span>
             <span class="small">{{ forExamRagIdAndTabId.rag_tab_id }}</span>
+          </div>
+          <div class="row g-2 small mb-2">
+            <div class="col-12 col-md-6">
+              <span class="text-secondary">llm_api_key：</span>
+              <code>{{ (forExamRag && (forExamRag.llm_api_key ?? forExamRag.apikey)) || '—' }}</code>
+            </div>
+            <div class="col-12">
+              <span class="text-secondary">system_prompt_instruction：</span>
+              <code class="d-block mt-1">{{ (forExamRag && forExamRag.system_prompt_instruction) ? forExamRag.system_prompt_instruction : '—' }}</code>
+            </div>
           </div>
           <div v-if="fileMetadataToShow != null" class="mt-3">
             <div class="form-label small text-secondary fw-medium mb-2">file_metadata</div>
@@ -844,7 +907,7 @@ onMounted(() => {
         </div>
 
         <!-- RAG 產生題目與題目與作答：與建立 RAG 頁一模一樣（出題與評分）；資料來自 GET /rag/for-exam，使用 /exam/generate-quiz、/exam/quiz-grade -->
-        <div v-if="activeTabId" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': generateDisabled }">
+        <div v-if="activeTabId && forExamRag != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': generateDisabled }">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
           <p class="small text-secondary mb-3">點「新增題目」後會出現一題的區塊（選擇單元、難度、產生題目等）；每按一次「新增題目」才會多一個題目區塊。「新增題目」按鈕固定在最下面。</p>
 
@@ -984,7 +1047,32 @@ onMounted(() => {
         <!-- 該 RAG 的資料（GET /rag/for-exam 回傳；對應 CreateRAGPage「該 RAG 的資料」區塊） -->
         <div v-if="forExamRag != null" class="bg-body-tertiary rounded text-start p-4 mb-3">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">該 RAG 的資料（GET /rag/for-exam 回傳）</div>
-          <pre class="bg-body-secondary border rounded p-3 font-monospace small mb-0 overflow-auto" style="max-height: 24rem;">{{ JSON.stringify(forExamRag, null, 2) }}</pre>
+          <div class="mb-3">
+            <div class="row g-2 small">
+              <div class="col-12 col-md-6"><span class="text-secondary">source_rag_tab_id:</span> <code>{{ forExamRag.source_rag_tab_id ?? forExamRag.rag_tab_id ?? '—' }}</code></div>
+              <div class="col-12 col-md-6"><span class="text-secondary">rag_id:</span> <code>{{ forExamRag.rag_id ?? '—' }}</code></div>
+              <div class="col-12 col-md-6"><span class="text-secondary">rag_tab_id:</span> <code>{{ forExamRag.rag_tab_id ?? '—' }}</code></div>
+              <div class="col-12 col-md-6"><span class="text-secondary">rag_list:</span> <code class="small">{{ forExamRag.rag_list ?? '—' }}</code></div>
+              <div class="col-12"><span class="text-secondary">system_prompt_instruction:</span> <code>{{ forExamRag.system_prompt_instruction ?? '—' }}</code></div>
+            </div>
+          </div>
+          <div v-if="Array.isArray(forExamRag.outputs) && forExamRag.outputs.length > 0" class="mb-3">
+            <div class="small fw-medium text-secondary mb-2">outputs ({{ forExamRag.outputs.length }})</div>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered mb-0">
+                <thead><tr><th>rag_tab_id</th><th>rag_name</th><th>filename</th></tr></thead>
+                <tbody>
+                  <tr v-for="o in forExamRag.outputs" :key="o.rag_tab_id ?? o.rag_name">
+                    <td><code>{{ o.rag_tab_id ?? '—' }}</code></td>
+                    <td><code>{{ o.rag_name ?? '—' }}</code></td>
+                    <td><code>{{ o.filename ?? '—' }}</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="small text-secondary mb-1">完整回傳（API key 已遮蔽）</div>
+          <pre class="bg-body-secondary border rounded p-3 font-monospace small mb-0 overflow-auto" style="max-height: 24rem;">{{ JSON.stringify(forExamRagDisplay, null, 2) }}</pre>
         </div>
       </template>
     </div>

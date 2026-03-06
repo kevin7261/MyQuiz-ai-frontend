@@ -108,7 +108,7 @@
                   class="nav-link"
                   active-class="active"
                   aria-current="page"
-                >Exam</router-link>
+                >測驗</router-link>
               </li>
               <li class="nav-item">
                 <router-link

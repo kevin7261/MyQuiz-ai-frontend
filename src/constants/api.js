@@ -3,14 +3,14 @@
  */
 export const API_BASE = 'http://127.0.0.1:8000';//'https://aiquiz-backend-z4mo.onrender.com';
 
-/** Generate Quiz API：/rag/generate-quiz；回傳 quiz_content, quiz_hint, reference_answer 等 */
+/** Generate Quiz API：/rag/generate-quiz；body: llm_api_key, rag_id, rag_tab_id, quiz_level（number）；回傳 quiz_content, quiz_hint, reference_answer 等 */
 export const API_GENERATE_QUIZ = '/rag/generate-quiz';
 export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';
 export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
 /** 評分 API 表單欄位：測驗題目內容（與後端 quiz_content、Quiz 表一致） */
 export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
-/** 評分：POST /rag/quiz-grade 回傳 202 + job_id，再以 GET /rag/quiz-grade-result/{job_id} 輪詢 */
+/** 評分：POST /rag/quiz-grade；body: llm_api_key, rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；回傳 202 + job_id，再以 GET /rag/quiz-grade-result/{job_id} 輪詢 */
 export const API_GRADE_SUBMISSION = '/rag/quiz-grade';
 export const API_GRADE_RESULT = '/rag/quiz-grade-result';
 
@@ -22,7 +22,7 @@ export const API_UPLOAD_ZIP = '/rag/upload-zip';
 export const API_BUILD_RAG_ZIP = '/rag/build-rag-zip';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';
-/** 試題頁用 RAG：GET /rag/for-exam 取得 for_exam=true 且 deleted=false（0 或 1 筆）；PATCH /rag/for-exam/{rag_tab_id} Set Rag For Exam */
+/** 試題頁用 RAG：GET /rag/for-exam 取得 for_exam=true 且 deleted=false（0 或 1 筆），回傳格式同 /rag/build-rag-zip；PATCH /rag/for-exam/{rag_tab_id} Set Rag For Exam */
 export const API_RAG_FOR_EXAM = '/rag/for-exam';
 
 /** 答題分析：GET /quiz/quiz-answers?person_id=xxx，回傳 { items: [{ quiz, answers }], count }，quiz_type=1 */
@@ -34,9 +34,9 @@ export const API_EXAM_TESTS = '/exam/exams';
 export const API_CREATE_EXAM = '/exam/create-exam';
 /** Exam：POST /exam/delete/{exam_tab_id} Delete Exam */
 export const API_EXAM_DELETE = '/exam/delete';
-/** Exam：POST /exam/generate-quiz Exam Generate Quiz */
+/** Exam：POST /exam/generate-quiz；body: llm_api_key, exam_id, exam_tab_id, quiz_level（number）；回傳 quiz_content, quiz_hint, reference_answer, exam_quiz_id 等 */
 export const API_TEST_GENERATE_QUIZ = '/exam/generate-quiz';
-/** Exam：POST /exam/quiz-grade Exam Grade Submission */
+/** Exam：POST /exam/quiz-grade；body: llm_api_key, exam_id, exam_tab_id, exam_quiz_id, quiz_content, answer（皆 string） */
 export const API_TEST_QUIZ_GRADE = '/exam/quiz-grade';
 /** Exam：GET /exam/quiz-grade-result/{job_id} Get Exam Grade Result */
 export const API_TEST_QUIZ_GRADE_RESULT = '/exam/quiz-grade-result';

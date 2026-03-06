@@ -240,15 +240,6 @@ const fileMetadataToShow = computed(() => {
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
 
-/** 從 file_metadata 或 RAG 頂層取得 course_name（供產生題目、評分 API 使用；新格式頂層有 course_name） */
-const courseNameFromFileMetadata = computed(() => {
-  const meta = fileMetadataToShow.value;
-  const rag = currentRagItem.value;
-  const fromMeta = meta != null && typeof meta === 'object' && meta.course_name != null ? String(meta.course_name).trim() : '';
-  const fromRag = rag?.course_name != null ? String(rag.course_name).trim() : '';
-  return fromMeta || fromRag || '';
-});
-
 /** 將 rag_list 字串解析為虛擬資料夾結構：'a+b,c' -> [['a','b'],['c']] */
 function parsePackTasksList(str) {
   const s = String(str ?? '').trim();
@@ -827,15 +818,21 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫 /rag/generate-quiz；每題獨立，傳入 slotIndex 使用該題的表單狀態。API 從 Rag 表取得 OpenAI key 與 system_prompt_instruction */
+/** 呼叫 /rag/generate-quiz；body: llm_api_key, rag_id, rag_tab_id, quiz_level（皆 number，rag_tab_id 無法解析時送 0） */
 async function generateQuiz(slotIndex) {
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
   const sourceTabId = String(state.zipTabId ?? '').trim();
   const selectedUnit = generateQuizUnits.value.find((u) => u.rag_tab_id === slotState.generateQuizTabId);
   const ragName = selectedUnit?.rag_name?.trim();
+  const rag = currentRagItem.value;
+  const ragId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
   if (!sourceTabId) {
     slotState.error = '請先上傳 ZIP 取得 rag_tab_id';
+    return;
+  }
+  if (ragId == null) {
+    slotState.error = '無法取得 rag_id（請先上傳 ZIP 或確認已載入 RAG）';
     return;
   }
   if (!ragName) {
@@ -845,7 +842,6 @@ async function generateQuiz(slotIndex) {
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
-  const courseName = courseNameFromFileMetadata.value;
   const difficultyOpts = ['基礎', '進階'];
   const quizLevel = difficultyOpts.indexOf(filterDifficulty.value);
   try {
@@ -855,11 +851,9 @@ async function generateQuiz(slotIndex) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         llm_api_key: llmApiKey,
-        rag_tab_id: sourceTabId,
-        rag_name: ragName,
+        rag_id: Number(ragId) || 0,
+        rag_tab_id: Number(sourceTabId) || 0,
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
-        course_name: courseName || '未命名課程',
-        quiz_type: 0,
       }),
     });
     const text = await res.text();
@@ -891,25 +885,25 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：POST /rag/quiz-grade 傳 llm_api_key、rag_tab_id、rag_name、題目與學生回答等，回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。llm_api_key 由請求 body 傳入（僅能從 GET /rag/rags 或 /rag/upload-zip 取得）。 */
+/** 評分：POST /rag/quiz-grade；body: llm_api_key, rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。 */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
   const state = currentState.value;
   const sourceTabId = String(state.zipTabId ?? '').trim();
+  const rag = currentRagItem.value;
+  const ragId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
   if (!sourceTabId) {
     item.confirmed = true;
     item.gradingResult = '評分需要 rag_tab_id：請先在「上傳 ZIP 檔」區塊上傳 RAG/講義 ZIP 取得 rag_tab_id 後再進行評分。';
     return;
   }
-  const ragName = item.ragName?.trim() ?? generateQuizUnits.value[0]?.rag_name?.trim();
-  if (!ragName) {
+  if (ragId == null) {
     item.confirmed = true;
-    item.gradingResult = '評分失敗：此題目未關聯 RAG 單元（rag_name），請由「產生題目」產生題目後再評分。';
+    item.gradingResult = '評分失敗：無法取得 rag_id，請先上傳 ZIP 或確認已載入 RAG。';
     return;
   }
   item.confirmed = true;
   item.gradingResult = '批改中...';
-  const courseName = courseNameFromFileMetadata.value ?? '';
   const llmApiKey = (state.openaiApiKey ?? '').trim();
   try {
     const res = await fetch(`${API_BASE}${API_GRADE_SUBMISSION}`, {
@@ -917,13 +911,11 @@ async function confirmAnswer(item) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         llm_api_key: llmApiKey,
+        rag_id: String(ragId),
         rag_tab_id: sourceTabId,
-        rag_name: ragName,
+        rag_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
         quiz_content: item.quiz ?? '',
-        student_answer: item.answer.trim(),
-        qtype: 'short_answer',
-        course_name: courseName,
-        quiz_id: item.quiz_id ?? 0,
+        answer: item.answer.trim(),
       }),
     });
     const text = await res.text();
