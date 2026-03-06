@@ -58,35 +58,47 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-200 h-100">
-    <div class="flex-grow-1 overflow-auto my-bgcolor-white p-4">
-      <div class="my-bgcolor-gray-100 rounded text-start p-4">
-        <h6 class="my-title-sm-black mb-3">使用者管理</h6>
-        <p class="text-muted small mb-3">共 {{ count }} 筆使用者</p>
+  <div class="d-flex flex-column bg-body-secondary h-100">
+    <div class="flex-shrink-0 bg-white border-bottom">
+      <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
+        <span class="fs-5 fw-semibold">使用者管理</span>
+        <span v-if="loading" class="small text-secondary">載入中...</span>
+      </div>
+      <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3" role="alert">{{ error }}</div>
+    </div>
+    <div class="flex-grow-1 overflow-auto bg-white p-4">
+      <div class="bg-body-tertiary rounded text-start p-4 mb-3">
+        <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">使用者列表</div>
+        <p class="small text-secondary mb-3">共 {{ count }} 筆使用者</p>
 
-        <div v-if="loading" class="text-muted">載入中...</div>
-        <div v-else-if="error" class="alert alert-warning" role="alert">{{ error }}</div>
+        <div v-if="loading" class="text-muted small">載入中...</div>
         <div v-else class="table-responsive">
-          <table class="table table-bordered table-hover">
+          <table class="table table-bordered table-hover table-sm">
             <thead class="table-light">
               <tr>
-                <th>user_id</th>
-                <th>created_at</th>
-                <th>name</th>
-                <th>type</th>
-                <th>metadata</th>
+                <th class="small fw-medium">user_id</th>
+                <th class="small fw-medium">person_id</th>
+                <th class="small fw-medium">name</th>
+                <th class="small fw-medium">user_type</th>
+                <th class="small fw-medium">llm_api_key</th>
+                <th class="small fw-medium">user_metadata</th>
+                <th class="small fw-medium">updated_at</th>
+                <th class="small fw-medium">created_at</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="u in users" :key="u.user_id">
-                <td>{{ u.user_id }}</td>
-                <td>{{ formatDate(u.created_at) }}</td>
-                <td>{{ u.name ?? '—' }}</td>
-                <td>{{ u.type }}</td>
-                <td class="text-break small">{{ displayMetadata(u.metadata) }}</td>
+                <td class="small">{{ u.user_id }}</td>
+                <td class="small">{{ u.person_id ?? '—' }}</td>
+                <td class="small">{{ u.name ?? '—' }}</td>
+                <td class="small">{{ u.user_type ?? '—' }}</td>
+                <td class="small text-break">{{ (u.llm_api_key ?? '').trim() || '—' }}</td>
+                <td class="text-break small">{{ displayMetadata(u.user_metadata) }}</td>
+                <td class="small">{{ formatDate(u.updated_at) }}</td>
+                <td class="small">{{ formatDate(u.created_at) }}</td>
               </tr>
-              <tr v-if="users.length === 0">
-                <td colspan="5" class="text-muted text-center">尚無使用者</td>
+              <tr v-if="!loading && users.length === 0">
+                <td colspan="8" class="text-muted text-center small">尚無使用者</td>
               </tr>
             </tbody>
           </table>
