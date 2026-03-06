@@ -3,6 +3,9 @@
  */
 export const API_BASE = 'http://127.0.0.1:8000';//'https://aiquiz-backend-z4mo.onrender.com';
 
+/** 修改個資：PATCH /user/profile；以 person_id 識別（Header X-Person-Id），body 可傳 name、llm_api_key（擇一或兩者）；回傳更新後使用者資訊（不含 password） */
+export const API_UPDATE_PROFILE = '/user/profile';
+
 /** Generate Quiz API：/rag/generate-quiz；body: llm_api_key, rag_id, rag_tab_id, quiz_level（number）；回傳 quiz_content, quiz_hint, reference_answer 等 */
 export const API_GENERATE_QUIZ = '/rag/generate-quiz';
 export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';

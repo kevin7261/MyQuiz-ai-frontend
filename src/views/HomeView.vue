@@ -6,7 +6,6 @@
   import { useRouter, useRoute } from 'vue-router';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import ExamPage from '../pages/ExamPage.vue';
-  import DashboardPage from '../pages/DashboardPage.vue';
   import AnalysisPage from '../pages/AnalysisPage.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
   import CreateRAGPage from '../pages/CreateRAGPage.vue';
@@ -20,7 +19,6 @@
   const PATH_TO_VIEW = {
     work: 'work',
     'analysis': 'analysis',
-    dashboard: 'dashboard',
     profile: 'profile',
     'create-rag': 'createRAG',
     users: 'userManagement',
@@ -29,7 +27,7 @@
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, ExamPage, DashboardPage, AnalysisPage, ProfilePage, CreateRAGPage, UserManagementPage },
+    components: { LoadingOverlay, ExamPage, AnalysisPage, ProfilePage, CreateRAGPage, UserManagementPage },
 
     setup() {
       const router = useRouter();
@@ -119,13 +117,6 @@
               </li>
               <li class="nav-item">
                 <router-link
-                  to="/main/dashboard"
-                  class="nav-link"
-                  active-class="active"
-                >儀表板</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
                   to="/main/profile"
                   class="nav-link"
                   active-class="active"
@@ -158,7 +149,6 @@
 
       <main class="flex-grow-1 overflow-hidden">
         <ExamPage v-if="currentView === 'work'" :tabId="MAIN_WORK_TAB_ID" />
-        <DashboardPage v-else-if="currentView === 'dashboard'" />
         <AnalysisPage v-else-if="currentView === 'analysis'" />
         <ProfilePage v-else-if="currentView === 'profile'" />
         <CreateRAGPage v-else-if="currentView === 'createRAG'" :tabId="MAIN_WORK_TAB_ID" />
