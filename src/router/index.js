@@ -1,5 +1,5 @@
 /**
- * 路由：/login 登入頁；/main 為主頁，/main/:view 對應各功能（exam、分析、儀表板等）。
+ * 路由：/login 登入頁；/main 為主頁，/main/:view 對應各功能（exam、分析、個資修改等）。
  */
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
