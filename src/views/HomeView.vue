@@ -5,7 +5,7 @@
   import { computed, onMounted } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
-  import TestPage from '../pages/TestPage.vue';
+  import ExamPage from '../pages/ExamPage.vue';
   import DashboardPage from '../pages/DashboardPage.vue';
   import AnswerAnalysisPage from '../pages/AnswerAnalysisPage.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
@@ -29,7 +29,7 @@
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, TestPage, DashboardPage, AnswerAnalysisPage, ProfilePage, CreateRAGPage, UserManagementPage },
+    components: { LoadingOverlay, ExamPage, DashboardPage, AnswerAnalysisPage, ProfilePage, CreateRAGPage, UserManagementPage },
 
     setup() {
       const router = useRouter();
@@ -157,7 +157,7 @@
       </nav>
 
       <main class="flex-grow-1 overflow-hidden">
-        <TestPage v-if="currentView === 'work'" :tabId="MAIN_WORK_TAB_ID" />
+        <ExamPage v-if="currentView === 'work'" :tabId="MAIN_WORK_TAB_ID" />
         <DashboardPage v-else-if="currentView === 'dashboard'" />
         <AnswerAnalysisPage v-else-if="currentView === 'answerAnalysis'" />
         <ProfilePage v-else-if="currentView === 'profile'" />

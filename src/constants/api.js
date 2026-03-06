@@ -22,6 +22,8 @@ export const API_UPLOAD_ZIP = '/rag/upload-zip';
 export const API_BUILD_RAG_ZIP = '/rag/build-rag-zip';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';
+/** 試題頁用 RAG：GET /rag/for-exam 取得 for_exam=true 且 deleted=false（0 或 1 筆）；PATCH /rag/for-exam/{rag_tab_id} Set Rag For Exam */
+export const API_RAG_FOR_EXAM = '/rag/for-exam';
 
 /** 答題分析：GET /quiz/quiz-answers?person_id=xxx，回傳 { items: [{ quiz, answers }], count }，quiz_type=1 */
 export const API_QUIZ_ANSWERS = '/quiz/quiz-answers';

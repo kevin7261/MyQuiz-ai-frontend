@@ -6,7 +6,7 @@
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
-import { API_BASE, API_GENERATE_QUIZ, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_GRADE_SUBMISSION, API_GRADE_RESULT, API_RAG_APPLIED, API_CREATE_RAG, API_UPLOAD_ZIP, API_BUILD_RAG_ZIP } from '../constants/api.js';
+import { API_BASE, API_GENERATE_QUIZ, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_GRADE_SUBMISSION, API_GRADE_RESULT, API_RAG_FOR_EXAM, API_CREATE_RAG, API_UPLOAD_ZIP, API_BUILD_RAG_ZIP } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -100,8 +100,8 @@ function getTabState(id) {
       showQuizGeneratorBlock: false,
       /** 已展開的題目區塊數（每按一次「新增題目」+1，每個區塊對應一題） */
       quizSlotsCount: 0,
-      appliedLoading: false,
-      appliedError: '',
+      forExamLoading: false,
+      forExamError: '',
       systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
     });
   }
@@ -470,8 +470,8 @@ onMounted(() => {
   clearZipFileInput();
 });
 
-/** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
-async function setRagApplied() {
+/** 設為試題用 RAG：PATCH /rag/for-exam/{rag_tab_id}（Set Rag For Exam），Header X-Person-Id */
+async function setRagForExam() {
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
   const fileId = rag.rag_tab_id ?? rag.id ?? rag;
@@ -482,10 +482,10 @@ async function setRagApplied() {
     return;
   }
   const state = getTabState(activeTabId.value);
-  state.appliedLoading = true;
-  state.appliedError = '';
+  state.forExamLoading = true;
+  state.forExamError = '';
   try {
-    const res = await fetch(`${API_BASE}${API_RAG_APPLIED}/${encodeURIComponent(String(fileId))}`, {
+    const res = await fetch(`${API_BASE}${API_RAG_FOR_EXAM}/${encodeURIComponent(String(fileId))}`, {
       method: 'PATCH',
       headers: { 'X-Person-Id': String(personId) },
     });
@@ -502,9 +502,9 @@ async function setRagApplied() {
     }
     await fetchRagList();
   } catch (err) {
-    state.appliedError = err.message || String(err);
+    state.forExamError = err.message || String(err);
   } finally {
-    state.appliedLoading = false;
+    state.forExamLoading = false;
   }
 }
 
@@ -1253,15 +1253,15 @@ function addAllSecondFoldersAsGroups() {
             <button
               type="button"
               class="btn btn-sm btn-success"
-              :disabled="currentState.appliedLoading || currentRagItem?.applied === true || !hasRagMetadata"
-              @click="setRagApplied"
+              :disabled="currentState.forExamLoading || currentRagItem?.for_exam === true || !hasRagMetadata"
+              @click="setRagForExam"
             >
-              {{ currentState.appliedLoading ? '設定中...' : '使用此 RAG' }}
+              {{ currentState.forExamLoading ? '設定中...' : '設為試題用 RAG' }}
             </button>
           </div>
         </div>
-        <div v-if="currentState.appliedError" class="alert alert-danger py-2 small mb-2">
-          {{ currentState.appliedError }}
+        <div v-if="currentState.forExamError" class="alert alert-danger py-2 small mb-2">
+          {{ currentState.forExamError }}
         </div>
         <div class="d-flex flex-wrap align-items-center gap-3 small mb-2">
           <span class="form-label small text-secondary fw-medium">rag_id：</span>
