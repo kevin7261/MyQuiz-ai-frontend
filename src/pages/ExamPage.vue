@@ -579,7 +579,7 @@ async function generateQuiz(slotIndex) {
       body: JSON.stringify({
         llm_api_key: (authStore.user?.llm_api_key ?? '').trim(),
         exam_id: Number(examId) || 0,
-        exam_tab_id: Number(activeTabId.value) || 0,
+        exam_tab_id: activeTabId.value != null && activeTabId.value !== '' ? String(activeTabId.value) : '',
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
       }),
     });

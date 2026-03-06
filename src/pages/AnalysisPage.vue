@@ -1,5 +1,5 @@
 <script setup>
-/** 分析頁面：讀取 GET /analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。樣式與測驗、建立 RAG 一致。 */
+/** 分析頁面：讀取 GET /analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。query 可帶 language（en/zh）、llm_api_key；有 llm_api_key 時回傳 weakness_report（AI 弱點分析報告）。 */
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
@@ -8,6 +8,7 @@ const authStore = useAuthStore();
 
 const items = ref([]);
 const count = ref(0);
+const weaknessReport = ref('');
 const loading = ref(false);
 const error = ref('');
 
@@ -87,7 +88,12 @@ async function fetchQuizAnswers() {
     return;
   }
   try {
-    const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}`;
+    const params = new URLSearchParams();
+    params.set('language', 'zh');
+    const llmKey = (authStore.user?.llm_api_key ?? '').trim();
+    if (llmKey) params.set('llm_api_key', llmKey);
+    const query = params.toString();
+    const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}${query ? `?${query}` : ''}`;
     const headers = { 'X-Person-Id': String(personId) };
     const res = await fetch(url, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText || '無法載入答題資料');
@@ -95,10 +101,12 @@ async function fetchQuizAnswers() {
     console.log('/analysis/quizzes-by-person 回傳', data);
     items.value = data?.quizzes ?? [];
     count.value = data?.count ?? items.value.length;
+    weaknessReport.value = (data?.weakness_report != null && String(data.weakness_report).trim() !== '') ? String(data.weakness_report).trim() : '';
   } catch (err) {
     error.value = err.message || '無法載入分析';
     items.value = [];
     count.value = 0;
+    weaknessReport.value = '';
   } finally {
     loading.value = false;
   }
@@ -111,7 +119,7 @@ onMounted(() => {
 
 <template>
   <div class="d-flex flex-column bg-body-secondary h-100">
-    <!-- 固定頂列：標題與錯誤（與測驗、建立 RAG 一致） -->
+    <!-- 固定頂列：標題與錯誤（分析無 tab，僅一頁） -->
     <div class="flex-shrink-0 bg-white border-bottom">
       <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
         <span class="fs-5 fw-semibold">分析</span>
@@ -122,8 +130,19 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 內容區：可上下捲動 -->
+    <!-- 內容區：可上下捲動；基本資訊區塊樣式與建立 RAG、測驗一致 -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
+      <!-- 基本資訊（與建立 RAG、測驗頁同一 style） -->
+      <div class="bg-body-tertiary rounded text-start p-4 mb-3">
+        <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊</div>
+        <div class="small mb-2">
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="text-secondary" style="min-width: 10rem;">llm_api_key（登入帳號）：</span>
+            <code>{{ (authStore.user?.llm_api_key ?? '').trim() || '—' }}</code>
+          </div>
+        </div>
+      </div>
+
       <div v-if="loading" class="text-center py-5 text-muted">載入中...</div>
       <div v-else-if="items.length === 0" class="alert alert-info mt-0">尚無答題紀錄。</div>
 
@@ -131,6 +150,11 @@ onMounted(() => {
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">分析</div>
           <div class="small text-secondary">共 {{ count }} 筆試題</div>
+        </div>
+
+        <div v-if="weaknessReport" class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-start p-4 mb-3">
+          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">學習弱點分析報告</div>
+          <div class="small lh-base" style="white-space: pre-wrap;">{{ weaknessReport }}</div>
         </div>
 
         <div
