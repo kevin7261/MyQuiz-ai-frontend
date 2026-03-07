@@ -18,6 +18,7 @@ import {
   API_TEST_QUIZ_GRADE,
   API_TEST_QUIZ_GRADE_RESULT,
 } from '../constants/api.js';
+import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -452,6 +453,28 @@ async function addNewTab() {
 
 /** 刪除測驗：POST /exam/delete/{exam_tab_id}，成功後從列表移除並切到其他 tab */
 const deleteExamLoading = ref(false);
+const gradingLoading = ref(false);
+
+/** 任一 slot 的產生題目是否 loading */
+const anySlotLoading = computed(() => {
+  const state = currentState.value;
+  const count = state.quizSlotsCount || 0;
+  for (let i = 1; i <= count; i++) {
+    const slot = state.slotFormState?.[i];
+    if (slot?.loading) return true;
+  }
+  return false;
+});
+
+/** 任一非同步操作執行中時為 true，用於全螢幕遮罩 */
+const isAnyLoading = computed(() =>
+  forExamLoading.value ||
+  examListLoading.value ||
+  createExamLoading.value ||
+  deleteExamLoading.value ||
+  gradingLoading.value ||
+  anySlotLoading.value
+);
 const deleteExamError = ref('');
 async function deleteExam(examTabId) {
   if (!examTabId) return;
@@ -669,6 +692,7 @@ async function confirmAnswer(item) {
   }
   item.confirmed = true;
   item.gradingResult = '批改中...';
+  gradingLoading.value = true;
   try {
     const res = await fetch(`${API_BASE}${API_TEST_QUIZ_GRADE}`, {
       method: 'POST',
@@ -764,6 +788,8 @@ async function confirmAnswer(item) {
     item.gradingResult = '評分逾時：請稍後再試或重新送出';
   } catch (err) {
     item.gradingResult = '評分失敗：後端逾時或服務喚醒中，請稍後再試。';
+  } finally {
+    gradingLoading.value = false;
   }
 }
 
@@ -775,12 +801,16 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100">
+  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+    <LoadingOverlay
+      :is-visible="isAnyLoading"
+      loading-text="執行中..."
+    />
     <!-- 固定 tab 頁籤列（與建立 RAG 頁一致，僅內容區可上下滑） -->
     <div class="flex-shrink-0 bg-white border-bottom">
       <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
         <template v-if="examListLoading || forExamLoading">
-          <span class="small text-secondary">載入中...</span>
+          <span class="small text-secondary">—</span>
         </template>
         <template v-else-if="examList.length === 0">
           <button
@@ -789,7 +819,7 @@ onMounted(() => {
             :disabled="createExamLoading"
             @click="addNewTab"
           >
-            {{ createExamLoading ? '建立中...' : '+' }}
+            +
           </button>
         </template>
         <template v-else>
@@ -811,7 +841,7 @@ onMounted(() => {
                 :disabled="createExamLoading"
                 @click="addNewTab"
               >
-                {{ createExamLoading ? '建立中...' : '+' }}
+                +
               </button>
             </li>
           </ul>
@@ -842,7 +872,7 @@ onMounted(() => {
                 :disabled="deleteExamLoading"
                 @click="deleteExam(activeTabId)"
               >
-                {{ deleteExamLoading ? '刪除中...' : '刪除' }}
+                刪除
               </button>
             </div>
           </div>
@@ -988,7 +1018,7 @@ onMounted(() => {
                         :disabled="getSlotFormState(slotIndex).loading || generateDisabled || !authStore.user?.llm_api_key?.trim()"
                         @click="generateQuiz(slotIndex)"
                       >
-                        {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}
+                        產生題目
                       </button>
                     </div>
                     <div v-if="getSlotFormState(slotIndex).error" class="alert alert-danger mt-2 mb-0 py-2 small">

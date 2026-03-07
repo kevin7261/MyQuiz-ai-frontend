@@ -2,6 +2,7 @@
 /** 使用者管理頁面：呼叫 GET /user/users 取得使用者列表並以表格顯示。 */
 import { ref, onMounted } from 'vue';
 import { API_BASE } from '../constants/api.js';
+import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 const users = ref([]);
 const count = ref(0);
@@ -58,11 +59,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100">
+  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+    <LoadingOverlay
+      :is-visible="loading"
+      loading-text="執行中..."
+    />
     <div class="flex-shrink-0 bg-white border-bottom">
       <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
         <span class="fs-5 fw-semibold">使用者管理</span>
-        <span v-if="loading" class="small text-secondary">載入中...</span>
       </div>
       <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3" role="alert">{{ error }}</div>
     </div>
@@ -71,7 +75,7 @@ onMounted(() => {
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">使用者列表</div>
         <p class="small text-secondary mb-3">共 {{ count }} 筆使用者</p>
 
-        <div v-if="loading" class="text-muted small">載入中...</div>
+        <div v-if="loading" class="text-muted small" />
         <div v-else class="table-responsive">
           <table class="table table-bordered table-hover table-sm">
             <thead class="table-light">

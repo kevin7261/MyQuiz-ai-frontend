@@ -3,6 +3,7 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_UPDATE_PROFILE } from '../constants/api.js';
+import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 const authStore = useAuthStore();
 
@@ -73,7 +74,11 @@ async function saveProfile() {
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100">
+  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+    <LoadingOverlay
+      :is-visible="loading"
+      loading-text="執行中..."
+    />
     <div class="flex-shrink-0 bg-white border-bottom">
       <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
         <span class="fs-5 fw-semibold">個資修改</span>
@@ -98,7 +103,7 @@ async function saveProfile() {
           {{ message }}
         </div>
         <button type="button" class="btn btn-primary btn-sm" :disabled="loading" @click="saveProfile">
-          {{ loading ? '儲存中...' : '儲存' }}
+          儲存
         </button>
       </div>
     </div>

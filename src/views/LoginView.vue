@@ -6,8 +6,10 @@
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
   import { API_BASE } from '../constants/api.js';
+  import LoadingOverlay from '../components/LoadingOverlay.vue';
 
   export default {
+    components: { LoadingOverlay },
     name: 'LoginView',
     setup() {
       const router = useRouter();
@@ -56,7 +58,11 @@
 </script>
 
 <template>
-  <div class="d-flex flex-column justify-content-center align-items-center h-100 my-bgcolor-gray-100">
+  <div class="d-flex flex-column justify-content-center align-items-center h-100 my-bgcolor-gray-100 position-relative">
+    <LoadingOverlay
+      :is-visible="loading"
+      loading-text="執行中..."
+    />
     <div class="card shadow-sm my-login-card">
       <div class="card-body p-4">
         <h4 class="card-title text-center mb-4">AIQuiz 登入</h4>
@@ -85,7 +91,7 @@
           </div>
           <div v-if="error" class="alert alert-danger py-2 mb-3" role="alert">{{ error }}</div>
           <button type="submit" class="btn btn-primary w-100" :disabled="loading">
-            {{ loading ? '登入中...' : '登入' }}
+            登入
           </button>
         </form>
       </div>

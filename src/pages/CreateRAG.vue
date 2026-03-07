@@ -16,6 +16,7 @@ import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
 import RagTabsBar from '../components/RagTabsBar.vue';
+import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -32,6 +33,8 @@ const userLlmApiKey = computed(() => (authStore.user?.llm_api_key ?? '').trim())
 const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList();
 const createRagLoading = ref(false);
 const createRagError = ref('');
+const gradingLoading = ref(false);
+const deleteRagLoading = ref(false);
 const activeTabId = ref(null);
 const showFormWhenNoData = ref(false);
 const newTabIds = ref([]);
@@ -135,6 +138,29 @@ const currentRagIdAndTabId = computed(() => {
   }
   return { rag_id: '未上傳', rag_tab_id: '未上傳' };
 });
+
+/** 任一 slot 的產生題目是否 loading */
+const anySlotLoading = computed(() => {
+  const state = currentState.value;
+  const count = state.quizSlotsCount || 0;
+  for (let i = 1; i <= count; i++) {
+    const slot = state.slotFormState?.[i];
+    if (slot?.loading) return true;
+  }
+  return false;
+});
+
+/** 任一非同步操作執行中時為 true，用於全螢幕遮罩 */
+const isAnyLoading = computed(() =>
+  ragListLoading.value ||
+  createRagLoading.value ||
+  deleteRagLoading.value ||
+  gradingLoading.value ||
+  currentState.value.forExamLoading ||
+  currentState.value.zipLoading ||
+  currentState.value.packLoading ||
+  anySlotLoading.value
+);
 
 /** 用於顯示 file_metadata：僅在上傳 ZIP 後才有（上傳回傳的 zipResponseJson，或 GET /rag/rags 該筆的 file_metadata）；未上傳則為 null */
 const fileMetadataToShow = computed(() => {
@@ -359,6 +385,7 @@ async function deleteRag(rag, e) {
     return;
   }
   if (!confirm(`確定要刪除「${getRagTabLabel(rag)}」嗎？`)) return;
+  deleteRagLoading.value = true;
   try {
     const res = await fetch(`${API_BASE}/rag/delete/${encodeURIComponent(String(fileId))}`, {
       method: 'POST',
@@ -380,6 +407,8 @@ async function deleteRag(rag, e) {
     }
   } catch (err) {
     alert('刪除失敗：' + (err.message || String(err)));
+  } finally {
+    deleteRagLoading.value = false;
   }
 }
 
@@ -722,13 +751,22 @@ async function confirmAnswer(item) {
     item.gradingResult = '評分失敗：無法取得 rag_id，請先上傳 ZIP 或確認已載入 RAG。';
     return;
   }
-  await submitGrade(item, { sourceTabId, ragId, llmApiKey: userLlmApiKey.value });
+  gradingLoading.value = true;
+  try {
+    await submitGrade(item, { sourceTabId, ragId, llmApiKey: userLlmApiKey.value });
+  } finally {
+    gradingLoading.value = false;
+  }
 }
 
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100">
+  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+    <LoadingOverlay
+      :is-visible="isAnyLoading"
+      loading-text="執行中..."
+    />
     <RagTabsBar
       :rag-items="ragItems"
       :new-tab-items="newTabItems"
@@ -753,6 +791,7 @@ async function confirmAnswer(item) {
             <button
               type="button"
               class="btn btn-sm btn-outline-danger"
+              :disabled="deleteRagLoading"
               @click="deleteRag(currentRagItem, $event)"
             >
               刪除
@@ -763,7 +802,7 @@ async function confirmAnswer(item) {
               :disabled="currentState.forExamLoading || currentRagItem?.for_exam === true || !hasRagMetadata"
               @click="setRagForExam"
             >
-              {{ currentState.forExamLoading ? '設定中...' : '設為試題用 RAG' }}
+              設為試題用 RAG
             </button>
           </div>
         </div>
@@ -804,7 +843,7 @@ async function confirmAnswer(item) {
               :disabled="hasUploadedFileMetadata || currentState.zipLoading"
               @click="confirmUploadZip"
             >
-              {{ currentState.zipLoading ? '上傳中...' : '確定' }}
+              確定
             </button>
           </div>
         </div>
@@ -944,7 +983,7 @@ async function confirmAnswer(item) {
               :disabled="packAndGenerateDisabled"
               @click="confirmPack"
             >
-              {{ currentState.packLoading ? '處理中...' : '執行 Pack' }}
+              執行 Pack
             </button>
           </div>
           <div v-if="currentState.packError" class="alert alert-danger py-2 small mb-2">
@@ -996,7 +1035,7 @@ async function confirmAnswer(item) {
                       :disabled="getSlotFormState(slotIndex).loading || !userLlmApiKey"
                       @click="generateQuiz(slotIndex)"
                     >
-                      {{ getSlotFormState(slotIndex).loading ? '產生中...' : '產生題目' }}
+                      產生題目
                     </button>
                   </div>
                   <div v-if="getSlotFormState(slotIndex).error" class="alert alert-danger mt-2 mb-0 py-2 small">
