@@ -28,8 +28,10 @@ export const API_RAG_APPLIED = '/rag/applied';
 /** 試題頁用 RAG：GET /rag/for-exam 取得試題用 RAG（for_exam=true 且 deleted=false，0 或 1 筆），無 parameters；回傳格式同 /rag/build-rag-zip。PATCH /rag/for-exam/{rag_tab_id} Set Rag For Exam */
 export const API_RAG_FOR_EXAM = '/rag/for-exam';
 
-/** 個人答題分析：GET /person-analysis/quizzes-by-person/{person_id}；query 可選 language（en/zh）；回傳 { exams: [{ exam_id, exam_tab_id, person_id, exam_name, deleted, quizzes, answers }], count, weakness_report? } */
-export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes-by-person';
+/** 個人答題分析：GET /person-analysis/quizzes/{person_id}；query 可選 language（en/zh）；回傳 { exams: [{ exam_id, exam_tab_id, person_id, exam_name, deleted, quizzes, answers }], count, weakness_report? } */
+export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
+/** 課程分析：GET /course-analysis/quizzes；回傳格式同 List Quizzes By Person（exams、count、weakness_report 固定 null） */
+export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
 /** Exam API：GET /exam/exams List Exams（僅 deleted=false；每筆含 quizzes、answers，格式同 GET /rag/rags；每題 quiz 含 rag_name、file_name（Exam_Quiz）；query: person_id 可選） */
 export const API_EXAM_TESTS = '/exam/exams';
