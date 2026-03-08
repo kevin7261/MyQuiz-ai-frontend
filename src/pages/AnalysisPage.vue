@@ -1,5 +1,5 @@
 <script setup>
-/** 個人分析頁面：讀取 GET /person-analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。query 可帶 language（en/zh）。 */
+/** 個人分析頁面：讀取 GET /person-analysis/quizzes-by-person/{person_id}，回傳 { exams, count, weakness_report }，每 exam 含 quizzes、answers。 */
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
@@ -32,6 +32,19 @@ function extractJsonFromWeaknessReport(text) {
 }
 
 const weaknessReportParsed = computed(() => extractJsonFromWeaknessReport(weaknessReport.value));
+
+/** 難度數字轉標籤（與測驗頁一致：0=基礎、1=進階） */
+const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
+function getDifficultyLabel(quizLevel) {
+  if (quizLevel === 0 || quizLevel === 1) return QUIZ_LEVEL_LABELS[quizLevel];
+  return quizLevel != null ? String(quizLevel) : '—';
+}
+
+/** 每題作答紀錄只會有一筆，取第一筆 */
+function getSingleAnswer(item) {
+  const list = item?.answers;
+  return Array.isArray(list) && list.length > 0 ? list[0] : null;
+}
 
 /** 依 JSON 的 key 順序產生的區塊列表 */
 const weaknessReportSections = computed(() => {
@@ -124,8 +137,12 @@ async function fetchQuizAnswers() {
     const res = await fetch(url, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText || '無法載入答題資料');
     const data = await res.json();
-    items.value = data?.quizzes ?? [];
-    count.value = data?.count ?? items.value.length;
+    const exams = data?.exams ?? [];
+    // 將所有 exam 的 quizzes 扁平化，並帶入 exam_name 供單元顯示
+    items.value = exams.flatMap((exam) =>
+      (exam.quizzes ?? []).map((q) => ({ ...q, exam_name: exam.exam_name ?? exam.exam_tab_id ?? '' }))
+    );
+    count.value = data?.count ?? exams.length;
     weaknessReport.value = (data?.weakness_report != null && String(data.weakness_report).trim() !== '') ? String(data.weakness_report).trim() : '';
   } catch (err) {
     error.value = err.message || '無法載入個人分析';
@@ -166,7 +183,7 @@ onMounted(() => {
       <template v-else>
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
           <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊與個人分析</div>
-          <div class="small text-secondary">共 {{ count }} 筆試題</div>
+          <div class="small text-secondary">共 {{ items.length }} 題，{{ count }} 個測驗</div>
         </div>
 
         <div v-if="weaknessReport" class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-start p-4 mb-3">
@@ -188,16 +205,53 @@ onMounted(() => {
           <div v-else class="small lh-base" style="white-space: pre-wrap;">{{ weaknessReport }}</div>
         </div>
 
+        <!-- 作答紀錄摘要表：題號 / 單元 / 難度 / 分數 / 時間（每題一筆作答） -->
+        <div class="bg-body-tertiary rounded text-start p-4 mb-3">
+          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">作答紀錄摘要</div>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0 small">
+              <thead class="table-light">
+                <tr>
+                  <th class="fw-medium">題號</th>
+                  <th class="fw-medium">單元</th>
+                  <th class="fw-medium">難度</th>
+                  <th class="fw-medium">分數</th>
+                  <th class="fw-medium">時間</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, idx) in items" :key="item.exam_quiz_id ?? idx">
+                  <td>{{ idx + 1 }}</td>
+                  <td>{{ item.rag_name ?? item.exam_name ?? '—' }}</td>
+                  <td>{{ getDifficultyLabel(item.quiz_level) }}</td>
+                  <td>{{ getSingleAnswer(item)?.answer_grade ?? '—' }}</td>
+                  <td>{{ getSingleAnswer(item)?.created_at ?? '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 題目與答案詳情（樣式與測驗頁純顯示一致） -->
         <div
           v-for="(item, idx) in items"
           :key="item.exam_quiz_id ?? idx"
           class="card mb-3"
         >
-          <div class="card-header py-2 d-flex justify-content-between align-items-center">
+          <div class="card-header py-2">
             <span class="fs-6 fw-semibold mb-0">第 {{ idx + 1 }} 題</span>
-            <span class="badge bg-secondary">exam_quiz_id: {{ item.exam_quiz_id }}</span>
           </div>
           <div class="card-body text-start">
+            <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+              <div>
+                <label class="form-label small text-secondary fw-medium mb-1">單元</label>
+                <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ item.rag_name ?? item.exam_name ?? '—' }}</div>
+              </div>
+              <div>
+                <label class="form-label small text-secondary fw-medium mb-1">難度</label>
+                <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ getDifficultyLabel(item.quiz_level) }}</div>
+              </div>
+            </div>
             <div class="mb-3">
               <div class="form-label small text-secondary fw-medium mb-1">題目</div>
               <div class="bg-body-secondary border rounded p-2 lh-base">
@@ -206,7 +260,7 @@ onMounted(() => {
             </div>
             <div v-if="item.quiz_hint" class="mb-3">
               <div class="form-label small text-secondary fw-medium mb-1">提示</div>
-              <div class="rounded bg-body-tertiary small p-2 text-secondary">
+              <div class="rounded bg-body-tertiary small mt-2 p-2 text-secondary">
                 {{ item.quiz_hint }}
               </div>
             </div>
@@ -214,30 +268,18 @@ onMounted(() => {
               <div class="form-label small text-secondary fw-medium mb-1">參考答案</div>
               <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ item.reference_answer }}</div>
             </div>
-
-            <div class="small fw-semibold text-secondary mb-2">作答紀錄（{{ (item.answers || []).length }} 筆）</div>
-            <template v-if="(item.answers || []).length === 0">
-              <div class="text-muted small">尚無作答</div>
+            <template v-if="getSingleAnswer(item)">
+              <div class="mb-3">
+                <label class="form-label small text-secondary fw-medium mb-1">回答</label>
+                <div class="rounded bg-body-tertiary small mb-2 p-2">{{ getSingleAnswer(item).student_answer ?? '—' }}</div>
+              </div>
+              <div class="border rounded bg-light p-3 mb-3">
+                <div class="form-label small fw-semibold text-secondary mb-1">批改結果</div>
+                <div class="small" style="white-space: pre-wrap;">{{ getGradingResultText(getSingleAnswer(item)) }}</div>
+              </div>
             </template>
             <template v-else>
-              <div
-                v-for="(ans, aIdx) in (item.answers || [])"
-                :key="ans.exam_answer_id ?? aIdx"
-                class="border-top pt-3 mt-2"
-              >
-                <div class="d-flex justify-content-between align-items-center small mb-2">
-                  <span class="text-muted">{{ ans.created_at }}</span>
-                  <span v-if="ans.answer_grade != null" class="badge bg-primary">分數 {{ ans.answer_grade }}</span>
-                </div>
-                <div class="mb-3">
-                  <label class="form-label small text-secondary fw-medium mb-1">回答</label>
-                  <div class="rounded bg-body-tertiary small p-2">{{ ans.student_answer ?? '—' }}</div>
-                </div>
-                <div class="border rounded bg-light p-3 mb-3">
-                  <div class="form-label small fw-semibold text-secondary mb-1">批改結果</div>
-                  <div class="small" style="white-space: pre-wrap;">{{ getGradingResultText(ans) }}</div>
-                </div>
-              </div>
+              <div class="text-muted small">尚無作答</div>
             </template>
           </div>
         </div>

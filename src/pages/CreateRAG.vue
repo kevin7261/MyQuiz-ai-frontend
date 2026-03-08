@@ -288,8 +288,8 @@ function buildCardFromRagQuiz(quiz, ragName) {
     quiz: quiz.quiz_content ?? '',
     hint: quiz.quiz_hint ?? '',
     referenceAnswer: quiz.reference_answer ?? '',
-    sourceFilename: null,
-    ragName: ragName || null,
+    sourceFilename: quiz.file_name ?? null,
+    ragName: (ragName || quiz.rag_name || '').trim() || null,
     answer: latestAnswer?.student_answer ?? '',
     hintVisible: false,
     confirmed: !!latestAnswer,
@@ -558,7 +558,7 @@ async function confirmPack() {
   const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
   if (!fileId) {
-    state.packError = '請先上傳 ZIP 取得 rag_tab_id（見上方 file_metadata）';
+    state.packError = '請先上傳 ZIP 取得 rag_tab_id';
     return;
   }
   if (personId == null || String(personId).trim() === '') {
@@ -820,11 +820,10 @@ async function confirmAnswer(item) {
               :disabled="hasUploadedFileMetadata"
               @change="onZipChange"
             >
-            <span v-if="currentState.zipFileName" class="small">{{ currentState.zipFileName }}</span>
             <button
               type="button"
               class="btn btn-sm btn-primary"
-              :disabled="hasUploadedFileMetadata || currentState.zipLoading"
+              :disabled="hasUploadedFileMetadata || currentState.zipLoading || !currentState.zipFileName"
               @click="confirmUploadZip"
             >
               確定

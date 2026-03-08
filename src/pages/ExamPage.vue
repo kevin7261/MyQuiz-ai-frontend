@@ -247,8 +247,8 @@ function buildCardFromExamQuiz(quiz, ragName) {
     quiz: quiz.quiz_content ?? '',
     hint: quiz.quiz_hint ?? '',
     referenceAnswer: quiz.reference_answer ?? '',
-    sourceFilename: null,
-    ragName: ragName ?? quiz.rag_name ?? null,
+    sourceFilename: quiz.file_name ?? null,
+    ragName: (ragName || quiz.rag_name || '').trim() || null,
     answer: latestAnswer?.student_answer ?? '',
     hintVisible: false,
     confirmed: !!latestAnswer,
@@ -600,9 +600,11 @@ async function generateQuiz(slotIndex) {
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const hintText = data.quiz_hint ?? data.hint ?? '';
+    const targetFilename = data.file_name ?? data.unit_filename ?? data.target_filename ?? selectedUnit?.filename ?? null;
     const referenceAnswerText = data.reference_answer ?? data.answer ?? '';
+    const displayRagName = (data.rag_name ?? ragName ?? '').trim() || ragName;
     const quizId = data.exam_quiz_id != null ? Number(data.exam_quiz_id) : (data.quiz_id != null ? Number(data.quiz_id) : null);
-    setCardAtSlot(slotIndex, quizContent, hintText, null, referenceAnswerText, ragName, data, filterDifficulty.value, (forExamState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION, quizId);
+    setCardAtSlot(slotIndex, quizContent, hintText, targetFilename, referenceAnswerText, displayRagName, data, filterDifficulty.value, (forExamState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION, quizId);
   } catch (err) {
     slotState.error = err.message || '產生題目失敗';
   } finally {

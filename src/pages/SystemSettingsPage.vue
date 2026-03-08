@@ -106,7 +106,7 @@ async function saveLlmApiKey() {
           <label class="form-label small text-secondary fw-medium mb-1">API Key</label>
           <input
             v-model="llmApiKey"
-            type="password"
+            type="text"
             class="form-control form-control-sm"
             placeholder="選填，用於呼叫 LLM"
             autocomplete="off"
