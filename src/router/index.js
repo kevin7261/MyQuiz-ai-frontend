@@ -6,7 +6,7 @@ import LoginView from '../views/LoginView.vue';
 import HomeView from '../views/HomeView.vue';
 
 /** 允許的 view 路徑（網址用） */
-const VALID_VIEWS = ['work', 'analysis', 'profile', 'create-rag', 'users'];
+const VALID_VIEWS = ['work', 'analysis', 'profile', 'create-rag', 'users', 'settings'];
 
 /** 各 view 的頁面標題 */
 const VIEW_TITLES = {
@@ -15,6 +15,7 @@ const VIEW_TITLES = {
   profile: '個資修改 - AIQuiz',
   'create-rag': '建立 RAG - AIQuiz',
   users: '使用者管理 - AIQuiz',
+  settings: '系統設定 - AIQuiz',
 };
 
 const routes = [

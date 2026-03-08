@@ -10,6 +10,7 @@
   import ProfilePage from '../pages/ProfilePage.vue';
   import CreateRAG from '../pages/CreateRAG.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
+  import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
   import { useDataStore } from '../stores/dataStore.js';
   import { useAuthStore } from '../stores/authStore.js';
 
@@ -22,12 +23,13 @@
     profile: 'profile',
     'create-rag': 'createRAG',
     users: 'userManagement',
+    settings: 'systemSettings',
   };
   const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, ExamPage, AnalysisPage, ProfilePage, CreateRAG, UserManagementPage },
+    components: { LoadingOverlay, ExamPage, AnalysisPage, ProfilePage, CreateRAG, UserManagementPage, SystemSettingsPage },
 
     setup() {
       const router = useRouter();
@@ -137,6 +139,13 @@
                 >使用者管理</router-link>
               </li>
               <li class="nav-item">
+                <router-link
+                  to="/main/settings"
+                  class="nav-link"
+                  active-class="active"
+                >系統設定</router-link>
+              </li>
+              <li class="nav-item">
                 <span class="text-muted small">{{ userAccount }} / {{ userName }}</span>
               </li>
               <li class="nav-item">
@@ -153,6 +162,7 @@
         <ProfilePage v-else-if="currentView === 'profile'" />
         <CreateRAG v-else-if="currentView === 'createRAG'" :tabId="MAIN_WORK_TAB_ID" />
         <UserManagementPage v-else-if="currentView === 'userManagement'" />
+        <SystemSettingsPage v-else-if="currentView === 'systemSettings'" />
       </main>
     </div>
   </div>
