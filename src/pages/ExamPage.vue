@@ -580,7 +580,6 @@ async function generateQuiz(slotIndex) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: (authStore.user?.llm_api_key ?? '').trim(),
         exam_id: Number(examId) || 0,
         exam_tab_id: activeTabId.value != null && activeTabId.value !== '' ? String(activeTabId.value) : '',
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
@@ -698,7 +697,6 @@ async function confirmAnswer(item) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: (authStore.user?.llm_api_key ?? '').trim(),
         exam_id: String(examId),
         exam_tab_id: String(activeTabId.value),
         exam_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
@@ -717,7 +715,7 @@ async function confirmAnswer(item) {
           msg = text;
         }
       }
-      const statusHint = res.status === 400 ? '（例如 llm_api_key 未設定）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤）\n\n' : ''));
+      const statusHint = res.status === 400 ? '（例如請於系統設定設定 LLM API Key）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤）\n\n' : ''));
       item.gradingResult = `評分失敗：${statusHint}${msg}`;
       return;
     }
@@ -902,10 +900,6 @@ onMounted(() => {
             </div>
           </div>
           <div class="small mb-2">
-            <div class="d-flex align-items-center gap-2 mb-1">
-              <span class="text-secondary" style="min-width: 10rem;">llm_api_key：</span>
-              <code>{{ (authStore.user?.llm_api_key ?? '').trim() || '—' }}</code>
-            </div>
             <div class="d-flex align-items-start gap-2 mb-1">
               <span class="text-secondary" style="min-width: 10rem;">system_prompt_instruction：</span>
               <code class="d-block mt-0">{{ (forExamRag && forExamRag.system_prompt_instruction) ? forExamRag.system_prompt_instruction : '—' }}</code>
@@ -1015,7 +1009,7 @@ onMounted(() => {
                       <button
                         type="button"
                         class="btn btn-sm btn-primary"
-                        :disabled="getSlotFormState(slotIndex).loading || generateDisabled || !authStore.user?.llm_api_key?.trim()"
+                        :disabled="getSlotFormState(slotIndex).loading || generateDisabled"
                         @click="generateQuiz(slotIndex)"
                       >
                         產生題目

@@ -1,5 +1,5 @@
 <script setup>
-/** 分析頁面：讀取 GET /analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。query 可帶 language（en/zh）、llm_api_key；有 llm_api_key 時回傳 weakness_report（AI 弱點分析報告）。 */
+/** 分析頁面：讀取 GET /analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。query 可帶 language（en/zh）；不需 llm_api_key。 */
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
@@ -91,8 +91,6 @@ async function fetchQuizAnswers() {
   try {
     const params = new URLSearchParams();
     params.set('language', 'zh');
-    const llmKey = (authStore.user?.llm_api_key ?? '').trim();
-    if (llmKey) params.set('llm_api_key', llmKey);
     const query = params.toString();
     const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}${query ? `?${query}` : ''}`;
     const headers = { 'X-Person-Id': String(personId) };
@@ -139,12 +137,6 @@ onMounted(() => {
       <!-- 基本資訊（與建立 RAG、測驗頁同一 style） -->
       <div class="bg-body-tertiary rounded text-start p-4 mb-3">
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊</div>
-        <div class="small mb-2">
-          <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="text-secondary" style="min-width: 10rem;">llm_api_key：</span>
-            <code>{{ (authStore.user?.llm_api_key ?? '').trim() || '—' }}</code>
-          </div>
-        </div>
       </div>
 
       <div v-if="loading" class="text-center py-5 text-muted" />

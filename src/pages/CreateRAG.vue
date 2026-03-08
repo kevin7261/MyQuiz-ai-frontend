@@ -2,7 +2,7 @@
 /**
  * 建立 RAG 頁面。
  * 資料對應：一個 RAG 頁面（一個 tab）= 後端 public."Rag" 表的一筆（主鍵 rag_id + rag_tab_id）。
- * 列表 GET /rag/rags；建立 tab（按 +）POST /rag/create-rag（rag_tab_id、person_id、rag_name 必填）；上傳 ZIP POST /rag/upload-zip（Form: file、rag_tab_id、person_id，可選 llm_api_key）；build-rag-zip 傳入 system_prompt_instruction 等，會更新同筆的 rag_list、rag_metadata、chunk_size、chunk_overlap。
+ * 列表 GET /rag/rags；建立 tab（按 +）POST /rag/create-rag（rag_tab_id、person_id、rag_name 必填）；上傳 ZIP POST /rag/upload-zip（Form: file、rag_tab_id、person_id）；build-rag-zip 傳入 system_prompt_instruction 等，會更新同筆的 rag_list、rag_metadata、chunk_size、chunk_overlap；上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
@@ -28,7 +28,6 @@ function nextCardId() {
 }
 
 const authStore = useAuthStore();
-const userLlmApiKey = computed(() => (authStore.user?.llm_api_key ?? '').trim());
 
 const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList();
 const createRagLoading = ref(false);
@@ -50,11 +49,10 @@ const hasRagListOrMetadata = computed(() => {
   return hasList || hasMeta;
 });
 
-/** 一旦執行 Pack 成功過（有 rag_metadata），壓縮資料夾 (Pack) 與 RAG 區塊即 disable；否則未設定 llm_api_key 或未上傳 ZIP 時也 disable */
+/** 一旦執行 Pack 成功過（有 rag_metadata），壓縮資料夾 (Pack) 與 RAG 區塊即 disable；否則未上傳 ZIP 時也 disable */
 const packAndGenerateDisabled = computed(() => {
   if (hasRagMetadata.value) return true;
   if (hasRagListOrMetadata.value) return false;
-  if (!userLlmApiKey.value) return true;
   const id = activeTabId.value;
   if (!id) return true;
   if (isNewTabId(id)) {
@@ -497,7 +495,7 @@ function onZipChange(e) {
   }
 }
 
-/** 按下確定：POST /rag/upload-zip 僅上傳（需先以 create-rag 建立該 rag_tab_id）。Form: file、rag_tab_id、person_id（必填），可選 llm_api_key。回傳 file_metadata。 */
+/** 按下確定：POST /rag/upload-zip 僅上傳（需先以 create-rag 建立該 rag_tab_id）。Form: file、rag_tab_id、person_id（必填）。回傳 file_metadata。 */
 async function confirmUploadZip() {
   const state = currentState.value;
   if (!state.uploadedZipFile) {
@@ -523,8 +521,6 @@ async function confirmUploadZip() {
     formData.append('file', state.uploadedZipFile);
     formData.append('rag_tab_id', String(tabId));
     formData.append('person_id', String(personId));
-    const llmKey = userLlmApiKey.value;
-    if (llmKey) formData.append('llm_api_key', llmKey);
     const res = await fetch(`${API_BASE}${API_UPLOAD_ZIP}`, {
       method: 'POST',
       body: formData,
@@ -555,13 +551,12 @@ async function confirmUploadZip() {
   }
 }
 
-/** 呼叫 /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, llm_api_key, chunk_size, chunk_overlap, system_prompt_instruction */
+/** 呼叫 /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, chunk_size, chunk_overlap, system_prompt_instruction；不需 llm_api_key */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
   const ragList = state.packTasks?.trim();
   const personId = authStore.user?.person_id;
-  const apiKey = userLlmApiKey.value;
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 rag_tab_id（見上方 file_metadata）';
     return;
@@ -572,10 +567,6 @@ async function confirmPack() {
   }
   if (!ragList) {
     state.packError = '請輸入 rag_list（例：220222+220301 或 220222,220301+220302）';
-    return;
-  }
-  if (!apiKey) {
-    state.packError = '請確認帳號已設定 llm_api_key（登入後由後端回傳）';
     return;
   }
   state.packLoading = true;
@@ -589,7 +580,6 @@ async function confirmPack() {
         rag_tab_id: fileId,
         person_id: String(personId),
         rag_list: ragList,
-        llm_api_key: apiKey,
         chunk_size: Number(chunkSize.value) || 1000,
         chunk_overlap: Number(chunkOverlap.value) || 200,
         system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
@@ -667,7 +657,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫 /rag/generate-quiz；body: llm_api_key, rag_id, rag_tab_id, quiz_level（皆 number，rag_tab_id 無法解析時送 0） */
+/** 呼叫 /rag/generate-quiz；body: rag_id, rag_tab_id, quiz_level（皆 number，rag_tab_id 無法解析時送 0）；不需 llm_api_key */
 async function generateQuiz(slotIndex) {
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
@@ -694,12 +684,10 @@ async function generateQuiz(slotIndex) {
   const difficultyOpts = ['基礎', '進階'];
   const quizLevel = difficultyOpts.indexOf(filterDifficulty.value);
   try {
-    const llmApiKey = userLlmApiKey.value;
     const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: llmApiKey,
         rag_id: Number(ragId) || 0,
         rag_tab_id: Number(sourceTabId) || 0,
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
@@ -734,7 +722,7 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：POST /rag/quiz-grade；body: llm_api_key, rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。 */
+/** 評分：POST /rag/quiz-grade；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；不需 llm_api_key；回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。 */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
   const state = currentState.value;
@@ -753,7 +741,7 @@ async function confirmAnswer(item) {
   }
   gradingLoading.value = true;
   try {
-    await submitGrade(item, { sourceTabId, ragId, llmApiKey: userLlmApiKey.value });
+    await submitGrade(item, { sourceTabId, ragId });
   } finally {
     gradingLoading.value = false;
   }
@@ -818,10 +806,6 @@ async function confirmAnswer(item) {
             <span class="form-label small text-secondary fw-medium mb-0" style="min-width: 10rem;">rag_tab_id：</span>
             <span class="small">{{ currentRagIdAndTabId.rag_tab_id }}</span>
           </div>
-          <div class="d-flex align-items-center gap-2 mb-1">
-            <span class="form-label small text-secondary fw-medium mb-0" style="min-width: 10rem;">llm_api_key：</span>
-            <span class="small"><code>{{ userLlmApiKey || '未設定' }}</code></span>
-          </div>
         </div>
         <div v-if="activeTabId" class="mb-3">
           <div class="form-label small text-secondary fw-medium mb-2">上傳 ZIP 檔</div>
@@ -851,7 +835,7 @@ async function confirmAnswer(item) {
           {{ currentState.zipError }}
         </div>
       </div>
-      <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未設定帳號 llm_api_key 或未上傳 ZIP 時 disable -->
+      <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未上傳 ZIP 時 disable -->
       <div v-if="fileMetadataToShow != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
 
@@ -1032,7 +1016,7 @@ async function confirmAnswer(item) {
                     <button
                       type="button"
                       class="btn btn-sm btn-primary"
-                      :disabled="getSlotFormState(slotIndex).loading || !userLlmApiKey"
+                      :disabled="getSlotFormState(slotIndex).loading"
                       @click="generateQuiz(slotIndex)"
                     >
                       產生題目

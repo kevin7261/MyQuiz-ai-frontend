@@ -8,11 +8,11 @@ import { formatGradingResult } from '../utils/grading.js';
 /**
  * 送出評分並輪詢結果。會直接修改 item（item.confirmed、item.gradingResult、item.gradingResponseJson）。
  * @param {Object} item - 題目卡片物件，會被 mutate
- * @param {Object} context - { sourceTabId, ragId, llmApiKey }
+ * @param {Object} context - { sourceTabId, ragId }
  * @param {Object} options - { gradeSubmissionPath, gradeResultPath } 可覆寫 API 路徑（預設為 RAG 的 /rag/quiz-grade）
  */
 export async function submitGrade(item, context, options = {}) {
-  const { sourceTabId, ragId, llmApiKey } = context;
+  const { sourceTabId, ragId } = context;
   const gradeSubmissionPath = options.gradeSubmissionPath ?? API_GRADE_SUBMISSION;
   const gradeResultPath = options.gradeResultPath ?? API_GRADE_RESULT;
 
@@ -24,7 +24,6 @@ export async function submitGrade(item, context, options = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        llm_api_key: llmApiKey,
         rag_id: String(ragId),
         rag_tab_id: sourceTabId,
         rag_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
@@ -43,7 +42,7 @@ export async function submitGrade(item, context, options = {}) {
           msg = text;
         }
       }
-      const statusHint = res.status === 400 ? '（例如 Rag 表 llm_api_key 未設定）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n' : ''));
+      const statusHint = res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n' : '');
       item.gradingResult = `評分失敗：${statusHint}${msg}`;
       return;
     }

@@ -65,7 +65,7 @@ async function saveLlmApiKey() {
         'Content-Type': 'application/json',
         'X-Person-Id': String(personId),
       },
-      body: JSON.stringify({ llm_api_key: llmApiKey.value ?? '' }),
+      body: JSON.stringify({ person_id: String(personId), llm_api_key: llmApiKey.value ?? '' }),
     });
     const text = await res.text();
     if (!res.ok) {
