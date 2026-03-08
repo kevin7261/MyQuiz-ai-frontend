@@ -45,6 +45,12 @@
       });
       const userAccount = computed(() => (authStore.user ? `ID ${authStore.user.user_id}` : '未登入'));
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
+      /** user_type 對應中文：1=系統開發者 2=課程管理者 3=學生 */
+      const USER_TYPE_LABELS = { 1: '系統開發者', 2: '課程管理者', 3: '學生' };
+      const userTypeLabel = computed(() => {
+        const ut = authStore.user?.user_type;
+        return ut === 1 || ut === 2 || ut === 3 ? USER_TYPE_LABELS[ut] : (ut != null ? String(ut) : '—');
+      });
 
       const setView = (type) => {
         if (type === 'work') {
@@ -69,6 +75,7 @@
         MAIN_WORK_TAB_ID,
         userAccount,
         userName,
+        userTypeLabel,
         setView,
         onLogout,
       };
@@ -155,7 +162,7 @@
                 >個資修改</router-link>
               </li>
               <li class="nav-item">
-                <span class="text-muted small">{{ userAccount }} / {{ userName }}</span>
+                <span class="text-muted small">{{ userAccount }} / {{ userName }} / {{ userTypeLabel }}</span>
               </li>
               <li class="nav-item">
                 <a class="nav-link" href="#" @click.prevent="onLogout">登出</a>
