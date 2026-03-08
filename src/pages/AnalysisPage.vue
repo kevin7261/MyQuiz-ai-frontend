@@ -1,5 +1,5 @@
 <script setup>
-/** 分析頁面：讀取 GET /analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。query 可帶 language（en/zh）；不需 llm_api_key。 */
+/** 個人分析頁面：讀取 GET /person-analysis/quizzes-by-person/{person_id}，顯示 Exam_Quiz 與關聯的 Exam_Answer 列表。query 可帶 language（en/zh）。 */
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
@@ -111,7 +111,7 @@ async function fetchQuizAnswers() {
   error.value = '';
   const personId = authStore.user?.person_id;
   if (!personId) {
-    error.value = '請先登入以查看分析';
+    error.value = '請先登入以查看個人分析';
     loading.value = false;
     return;
   }
@@ -128,7 +128,7 @@ async function fetchQuizAnswers() {
     count.value = data?.count ?? items.value.length;
     weaknessReport.value = (data?.weakness_report != null && String(data.weakness_report).trim() !== '') ? String(data.weakness_report).trim() : '';
   } catch (err) {
-    error.value = err.message || '無法載入分析';
+    error.value = err.message || '無法載入個人分析';
     items.value = [];
     count.value = 0;
     weaknessReport.value = '';
@@ -151,7 +151,7 @@ onMounted(() => {
     <!-- 固定頂列：標題與錯誤（分析無 tab，僅一頁） -->
     <div class="flex-shrink-0 bg-white border-bottom">
       <div class="d-flex align-items-center gap-2 px-4 pt-2 pb-2">
-        <span class="fs-5 fw-semibold">分析</span>
+        <span class="fs-5 fw-semibold">個人分析</span>
       </div>
       <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3">
         {{ error }}
@@ -165,7 +165,7 @@ onMounted(() => {
 
       <template v-else>
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
-          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊與分析</div>
+          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊與個人分析</div>
           <div class="small text-secondary">共 {{ count }} 筆試題</div>
         </div>
 

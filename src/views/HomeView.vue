@@ -122,7 +122,7 @@
                   to="/main/analysis"
                   class="nav-link"
                   active-class="active"
-                >分析</router-link>
+                >個人分析</router-link>
               </li>
               <li class="nav-item">
                 <router-link

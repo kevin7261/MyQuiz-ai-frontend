@@ -1,5 +1,5 @@
 /**
- * 路由：/login 登入頁；/main 為主頁，/main/:view 對應各功能（exam、分析、個資修改等）。
+ * 路由：/login 登入頁；/main 為主頁，/main/:view 對應各功能（exam、個人分析、個資修改等）。
  */
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
@@ -11,7 +11,7 @@ const VALID_VIEWS = ['work', 'analysis', 'profile', 'create-rag', 'users', 'sett
 /** 各 view 的頁面標題 */
 const VIEW_TITLES = {
   work: 'Exam - AIQuiz',
-  'analysis': '分析 - AIQuiz',
+  'analysis': '個人分析 - AIQuiz',
   profile: '個資修改 - AIQuiz',
   'create-rag': '建立 RAG - AIQuiz',
   users: '使用者管理 - AIQuiz',
