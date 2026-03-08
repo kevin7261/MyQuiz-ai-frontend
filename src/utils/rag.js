@@ -36,7 +36,7 @@ export function deriveRagNameFromTabId(ragTabId) {
 /** 從 output 推得 rag_name（後端 rag_tab_id = {rag_name}_rag） */
 export function deriveRagName(o) {
   if (o && typeof o.rag_name === 'string' && o.rag_name) return o.rag_name;
-  const id = o?.rag_tab_id ?? o?.rag_tab_id ?? '';
+  const id = o?.rag_tab_id ?? '';
   const s = String(id);
   if (s.endsWith('_rag')) return s.slice(0, -4);
   const fn = o?.filename ?? o?.rag_filename ?? '';

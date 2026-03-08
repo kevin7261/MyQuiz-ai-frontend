@@ -6,8 +6,17 @@
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
-import { API_BASE, API_GENERATE_QUIZ, API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY, API_RAG_FOR_EXAM, API_CREATE_RAG, API_UPLOAD_ZIP, API_BUILD_RAG_ZIP } from '../constants/api.js';
-import { parseFetchError } from '../utils/apiError.js';
+import { API_RESPONSE_QUIZ_CONTENT, API_RESPONSE_QUIZ_LEGACY } from '../constants/api.js';
+import {
+  getPersonId,
+  apiCreateRag,
+  apiUploadZip,
+  apiDeleteRag,
+  apiSetRagForExam,
+  apiBuildRagZip,
+  apiGenerateQuiz,
+  is504OrNetworkError,
+} from '../services/ragApi.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { submitGrade, rewriteAnswer } from '../composables/useQuizGrading.js';
 import { generateTabId, deriveRagNameFromTabId, deriveRagName, parsePackTasksList, DEFAULT_SYSTEM_INSTRUCTION, QUIZ_LEVEL_LABELS } from '../utils/rag.js';
@@ -40,33 +49,26 @@ const newTabIds = ref([]);
 
 const { getTabState, currentState, isNewTabId } = useRagTabState(activeTabId, newTabIds, ragList, authStore, { defaultSystemInstruction: DEFAULT_SYSTEM_INSTRUCTION });
 
-/** 當前 RAG（來自 /rag/rags）是否有 rag_list 或 rag_metadata；有則壓縮資料夾 (Pack) 與 RAG 不 disable */
-const hasRagListOrMetadata = computed(() => {
-  const r = currentRagItem.value;
-  if (!r || typeof r !== 'object') return false;
-  const hasList = r.rag_list != null && String(r.rag_list).trim() !== '';
-  const hasMeta = r.rag_metadata != null && (typeof r.rag_metadata === 'string' ? String(r.rag_metadata).trim() !== '' : true);
-  return hasList || hasMeta;
-});
+function checkRagHasMetadata(rag) {
+  if (!rag || typeof rag !== 'object') return false;
+  return rag.rag_metadata != null && (typeof rag.rag_metadata === 'string' ? String(rag.rag_metadata).trim() !== '' : true);
+}
 
-/** 一旦執行 Pack 成功過（有 rag_metadata），壓縮資料夾 (Pack) 與 RAG 區塊即 disable；否則未上傳 ZIP 時也 disable */
+function checkRagHasList(rag) {
+  if (!rag || typeof rag !== 'object') return false;
+  return rag.rag_list != null && String(rag.rag_list).trim() !== '';
+}
+
+const hasRagMetadata = computed(() => checkRagHasMetadata(currentRagItem.value));
+const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.value) || checkRagHasList(currentRagItem.value));
+
 const packAndGenerateDisabled = computed(() => {
   if (hasRagMetadata.value) return true;
   if (hasRagListOrMetadata.value) return false;
   const id = activeTabId.value;
   if (!id) return true;
-  if (isNewTabId(id)) {
-    const tid = String(currentState.value.zipTabId ?? '').trim();
-    return tid === '';
-  }
+  if (isNewTabId(id)) return String(currentState.value.zipTabId ?? '').trim() === '';
   return false;
-});
-
-/** 當前 RAG 是否有 rag_metadata；有則 RAG 產生題目區塊 enable */
-const hasRagMetadata = computed(() => {
-  const r = currentRagItem.value;
-  if (!r || typeof r !== 'object') return false;
-  return r.rag_metadata != null && (typeof r.rag_metadata === 'string' ? String(r.rag_metadata).trim() !== '' : true);
 });
 
 /** 未執行 Pack 時，RAG 產生題目區塊與產生題目按鈕 disable（需有 packResponseJson）；若有 rag_metadata 則 enable */
@@ -87,10 +89,10 @@ const generateQuizUnits = computed(() => {
   const data = currentState.value.packResponseJson;
   const out = packOutputs.value;
   const singleTabId = data && typeof data === 'object' && data.rag_tab_id != null ? data.rag_tab_id : null;
-  const withId = out.filter((o) => o && (o.rag_tab_id != null || o.rag_tab_id != null));
+  const withId = out.filter((o) => o && o.rag_tab_id != null);
   if (withId.length) {
     return withId.map((o) => ({
-      rag_tab_id: String(o.rag_tab_id ?? o.rag_tab_id),
+      rag_tab_id: String(o.rag_tab_id),
       filename: o.filename || o.rag_filename || 'RAG',
       rag_name: deriveRagName(o),
     }));
@@ -231,10 +233,9 @@ const generateQuizUnitsFromRag = computed(() => {
     });
 });
 
-/** 當切換到既有 tab 時，從同一筆 Rag 資料填入（對應 GET /rag/rags 新格式：file_metadata、rag_metadata.outputs、頂層 course_name、quizzes + 頂層 answers）。 */
-watch(currentRagItem, (rag) => {
+/** 從 Rag 項目同步到 tab state（packTasks、ragMetadata、chunk、quizzes 等） */
+function syncRagItemToState(rag, state) {
   if (!rag || typeof rag !== 'object') return;
-  const state = currentState.value;
   if (rag.rag_list != null && String(rag.rag_list).trim() !== '') {
     state.packTasks = String(rag.rag_list).trim();
     state.packTasksList = parsePackTasksList(state.packTasks);
@@ -249,7 +250,6 @@ watch(currentRagItem, (rag) => {
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
     state.systemInstruction = String(rag.system_prompt_instruction).trim();
   }
-  // 從 /rag/rags 回傳的 quizzes 與頂層 answers 合併後寫入題目卡片（新格式：answers 在 RAG 頂層；依 quiz_id 對應，若無則依索引對應，因後端可能回傳 quiz_id: 0）
   const quizzes = rag.quizzes ?? [];
   const ragAnswers = rag.answers ?? [];
   if (quizzes.length > 0) {
@@ -272,7 +272,9 @@ watch(currentRagItem, (rag) => {
     state.quizSlotsCount = 0;
     state.cardList = [];
   }
-}, { immediate: true });
+}
+
+watch(currentRagItem, (rag) => syncRagItemToState(rag, currentState.value), { immediate: true });
 
 /** 由 /rag/rags 的 quiz（含 answers）組成一張題目卡片，供題目與作答區塊顯示；批改結果從 answer 的 answer_metadata / answer_feedback_metadata 格式化 */
 function buildCardFromRagQuiz(quiz, ragName) {
@@ -341,14 +343,14 @@ onMounted(() => {
   clearZipFileInput();
 });
 
-/** 設為試題用 RAG：PATCH /rag/for-exam/{rag_tab_id}（Set Rag For Exam），Header X-Person-Id */
+/** 設為試題用 RAG */
 async function setRagForExam() {
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
   const fileId = rag.rag_tab_id ?? rag.id ?? rag;
   if (fileId == null || fileId === '') return;
-  const personId = authStore.user?.person_id;
-  if (personId == null) {
+  const personId = getPersonId(authStore);
+  if (!personId) {
     alert('請先登入');
     return;
   }
@@ -356,14 +358,7 @@ async function setRagForExam() {
   state.forExamLoading = true;
   state.forExamError = '';
   try {
-    const res = await fetch(`${API_BASE}${API_RAG_FOR_EXAM}/${encodeURIComponent(String(fileId))}`, {
-      method: 'PATCH',
-      headers: { 'X-Person-Id': String(personId) },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(parseFetchError(res, text));
-    }
+    await apiSetRagForExam(fileId, personId);
     await fetchRagList();
   } catch (err) {
     state.forExamError = err.message || String(err);
@@ -372,27 +367,20 @@ async function setRagForExam() {
   }
 }
 
-/** 刪除 RAG：呼叫 POST /rag/delete/{rag_tab_id}（軟刪 + 刪資料夾），成功後重抓 /rag/rags。Header 必帶 X-Person-Id。 */
+/** 刪除 RAG */
 async function deleteRag(rag, e) {
   if (e) e.stopPropagation();
   const fileId = rag?.rag_tab_id ?? rag?.id ?? rag;
   if (fileId == null || fileId === '') return;
-  const personId = authStore.user?.person_id;
-  if (personId == null) {
+  const personId = getPersonId(authStore);
+  if (!personId) {
     alert('請先登入');
     return;
   }
   if (!confirm(`確定要刪除「${getRagTabLabel(rag)}」嗎？`)) return;
   deleteRagLoading.value = true;
   try {
-    const res = await fetch(`${API_BASE}/rag/delete/${encodeURIComponent(String(fileId))}`, {
-      method: 'POST',
-      headers: { 'X-Person-Id': String(personId) },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(parseFetchError(res, text));
-    }
+    await apiDeleteRag(fileId, personId);
     await fetchRagList();
     if (activeTabId.value === (rag?.rag_tab_id ?? rag?.id ?? String(fileId))) {
       if (ragList.value.length > 0) {
@@ -413,10 +401,10 @@ async function deleteRag(rag, e) {
 /** create-rag 回傳的 created_at 與 tab 標籤用 name（key = rag_id） */
 const ragCreatedAtMap = ref({});
 
-/** 點「新增」：POST /rag/create-rag 建立一筆 RAG（rag_tab_id、person_id、rag_name 必填），成功後重整列表並切到新 tab。rag_name 預設為 rag_tab_id 底線後的時間。 */
+/** 點「新增」：建立 RAG，成功後重整列表並切到新 tab */
 async function addNewTab() {
-  const personId = authStore.user?.person_id;
-  if (personId == null || String(personId).trim() === '') {
+  const personId = getPersonId(authStore);
+  if (!personId) {
     createRagError.value = '請先登入以取得 person_id';
     return;
   }
@@ -425,26 +413,13 @@ async function addNewTab() {
   const ragTabId = generateTabId(personId);
   const ragName = deriveRagNameFromTabId(ragTabId) || ragTabId;
   try {
-    const res = await fetch(`${API_BASE}${API_CREATE_RAG}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rag_tab_id: ragTabId,
-        person_id: String(personId),
-        rag_name: ragName,
-      }),
-    });
-    const text = await res.text();
-    if (!res.ok) throw new Error(parseFetchError(res, text));
-    const data = text ? JSON.parse(text) : {};
+    const data = await apiCreateRag(personId, ragTabId, ragName);
     if (data?.rag_id != null && data?.created_at != null) {
       ragCreatedAtMap.value = { ...ragCreatedAtMap.value, [String(data.rag_id)]: data.created_at };
     }
     ragListError.value = '';
     await fetchRagList();
-    if (data?.rag_tab_id != null) {
-      activeTabId.value = String(data.rag_tab_id);
-    }
+    if (data?.rag_tab_id != null) activeTabId.value = String(data.rag_tab_id);
     clearZipFileInput();
     if (ragList.value.length === 0) showFormWhenNoData.value = true;
   } catch (err) {
@@ -467,35 +442,35 @@ function getRagTabLabel(rag) {
   return (ragName && ragName !== '') ? ragName : (fromMap ?? rag.file_metadata?.filename ?? rag.course_name ?? rag.filename ?? rag.created_at ?? deriveRagNameFromTabId(rag.rag_tab_id ?? '') ?? 'RAG');
 }
 
+function resetZipState(state, tabId) {
+  state.uploadedZipFile = null;
+  state.zipFileName = '';
+  state.zipSecondFolders = [];
+  state.zipResponseJson = null;
+  state.zipTabId = isNewTabId(tabId) ? '' : tabId;
+}
+
 function onZipChange(e) {
   const state = currentState.value;
   const file = e.target.files?.[0];
+  const tabId = activeTabId.value;
   if (file) {
     if (!file.name.toLowerCase().endsWith('.zip')) {
-      state.uploadedZipFile = null;
-      state.zipFileName = '';
-      state.zipSecondFolders = [];
-      state.zipResponseJson = null;
-      state.zipTabId = isNewTabId(activeTabId.value) ? '' : activeTabId.value;
+      resetZipState(state, tabId);
       state.zipError = '請選擇 .zip 檔案';
       return;
     }
+    resetZipState(state, tabId);
     state.uploadedZipFile = file;
     state.zipFileName = file.name;
-    state.zipSecondFolders = [];
-    state.zipResponseJson = null;
     state.zipError = '';
   } else {
-    state.uploadedZipFile = null;
-    state.zipFileName = '';
-    state.zipSecondFolders = [];
-    state.zipResponseJson = null;
-    state.zipTabId = isNewTabId(activeTabId.value) ? '' : activeTabId.value;
+    resetZipState(state, tabId);
     state.zipError = '';
   }
 }
 
-/** 按下確定：POST /rag/upload-zip 僅上傳（需先以 create-rag 建立該 rag_tab_id）。Form: file、rag_tab_id、person_id（必填）。回傳 file_metadata。 */
+/** 上傳 ZIP */
 async function confirmUploadZip() {
   const state = currentState.value;
   if (!state.uploadedZipFile) {
@@ -507,8 +482,8 @@ async function confirmUploadZip() {
     state.zipError = '請先按 + 建立 RAG（此 tab 需先建立後端資料）';
     return;
   }
-  const personId = authStore.user?.person_id;
-  if (personId == null || String(personId).trim() === '') {
+  const personId = getPersonId(authStore);
+  if (!personId) {
     state.zipError = '請先登入以取得 person_id';
     return;
   }
@@ -517,17 +492,7 @@ async function confirmUploadZip() {
   state.zipSecondFolders = [];
   state.zipResponseJson = null;
   try {
-    const formData = new FormData();
-    formData.append('file', state.uploadedZipFile);
-    formData.append('rag_tab_id', String(tabId));
-    formData.append('person_id', String(personId));
-    const res = await fetch(`${API_BASE}${API_UPLOAD_ZIP}`, {
-      method: 'POST',
-      body: formData,
-    });
-    const text = await res.text();
-    if (!res.ok) throw new Error(`${res.status}: ${parseFetchError(res, text)}`);
-    const data = text ? JSON.parse(text) : {};
+    const data = await apiUploadZip(state.uploadedZipFile, tabId, personId);
     const meta = data?.file_metadata ?? data;
     state.zipResponseJson = meta ?? data;
     state.zipTabId = String(tabId);
@@ -540,8 +505,7 @@ async function confirmUploadZip() {
     }
     await fetchRagList();
   } catch (err) {
-    const is504 = err.message?.includes('504') || (err.name === 'TypeError' && err.message?.includes('Failed to fetch'));
-    state.zipError = is504
+    state.zipError = is504OrNetworkError(err)
       ? '後端正在啟動中（約需 1 分鐘），請稍後再試一次'
       : err.message || '上傳失敗';
     state.zipSecondFolders = [];
@@ -551,17 +515,17 @@ async function confirmUploadZip() {
   }
 }
 
-/** 呼叫 /rag/build-rag-zip；body: rag_tab_id, person_id, rag_list, chunk_size, chunk_overlap, system_prompt_instruction；不需 llm_api_key */
+/** 執行 Pack（build-rag-zip） */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
   const ragList = state.packTasks?.trim();
-  const personId = authStore.user?.person_id;
+  const personId = getPersonId(authStore);
   if (!fileId) {
     state.packError = '請先上傳 ZIP 取得 rag_tab_id';
     return;
   }
-  if (personId == null || String(personId).trim() === '') {
+  if (!personId) {
     state.packError = '請先登入以取得 person_id';
     return;
   }
@@ -573,27 +537,15 @@ async function confirmPack() {
   state.packError = '';
   state.packResponseJson = null;
   try {
-    const res = await fetch(`${API_BASE}${API_BUILD_RAG_ZIP}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rag_tab_id: fileId,
-        person_id: String(personId),
-        rag_list: ragList,
-        chunk_size: Number(chunkSize.value) || 1000,
-        chunk_overlap: Number(chunkOverlap.value) || 200,
-        system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
-      }),
+    state.packResponseJson = await apiBuildRagZip({
+      rag_tab_id: fileId,
+      person_id: personId,
+      rag_list: ragList,
+      chunk_size: Number(chunkSize.value) || 1000,
+      chunk_overlap: Number(chunkOverlap.value) || 200,
+      system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
     });
-    const text = await res.text();
-    if (!res.ok) throw new Error(parseFetchError(res, text));
-    try {
-      state.packResponseJson = text ? JSON.parse(text) : null;
-    } catch (_) {
-      state.packResponseJson = text;
-    }
     state.ragMetadata = typeof state.packResponseJson === 'string' ? state.packResponseJson : JSON.stringify(state.packResponseJson, null, 2);
-    // 重新載入列表（build-rag-zip 後端已會更新 Rag 表的 rag_list、rag_metadata、chunk_size、chunk_overlap）
     await fetchRagList();
   } catch (err) {
     state.packError = err.message || '壓縮失敗';
@@ -657,7 +609,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   state.cardList[slotIndex - 1] = card;
 }
 
-/** 呼叫 /rag/generate-quiz；body: rag_id, rag_tab_id, quiz_level（皆 number，rag_tab_id 無法解析時送 0）；不需 llm_api_key */
+/** 產生題目 */
 async function generateQuiz(slotIndex) {
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
@@ -681,30 +633,9 @@ async function generateQuiz(slotIndex) {
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
-  const difficultyOpts = ['基礎', '進階'];
-  const quizLevel = difficultyOpts.indexOf(filterDifficulty.value);
+  const quizLevel = difficultyOptions.indexOf(filterDifficulty.value);
   try {
-    const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rag_id: Number(ragId) || 0,
-        rag_tab_id: Number(sourceTabId) || 0,
-        quiz_level: quizLevel >= 0 ? quizLevel : 0,
-      }),
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      let msg = res.statusText;
-      try {
-        const errBody = JSON.parse(text);
-        msg = errBody.detail ? JSON.stringify(errBody.detail) : msg;
-      } catch (_) {
-        if (text) msg = text;
-      }
-      throw new Error(msg);
-    }
-    const data = text ? JSON.parse(text) : {};
+    const data = await apiGenerateQuiz(ragId, sourceTabId, quizLevel >= 0 ? quizLevel : 0);
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const hintText = data.quiz_hint ?? data.hint ?? '';
