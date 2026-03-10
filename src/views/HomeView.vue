@@ -3,7 +3,7 @@
    * HomeView - 登入後的主畫面
    *
    * 職責：
-   * - 左側選單：測驗、個人分析、建立 RAG、課程分析、使用者管理、系統設定、個資修改、登出
+   * - 左側選單：測驗、個人測驗分析、建立 RAG、課程測驗分析、使用者管理、系統設定、個資修改、登出
    * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
    * - /exam 對應 work（ExamPage），/main/:view 對應 analysis / createRAG 等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用

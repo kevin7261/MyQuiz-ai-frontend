@@ -922,9 +922,9 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- RAG 產生題目與題目與作答：與建立 RAG 頁一模一樣（出題與評分）；資料來自 GET /rag/for-exam，使用 /exam/generate-quiz、/exam/quiz-grade -->
+        <!-- 產生題目與作答：與建立 RAG 頁一模一樣（出題與評分）；資料來自 GET /rag/for-exam，使用 /exam/generate-quiz、/exam/quiz-grade -->
         <div v-if="activeTabId && forExamRag != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': generateDisabled }">
-          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
+          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">產生題目與作答</div>
 
           <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
           <div class="bg-light rounded mb-3">

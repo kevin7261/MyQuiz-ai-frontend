@@ -3,26 +3,22 @@
  *
  * 職責：
  * - 從 currentState 與 fileMetadataToShow 衍生 secondFoldersFull、ragListDisplayGroups
- * - 拖曳事件：onDragStartTag、onDragOver、onDragLeave、onDropRagList
+ * - 拖曳事件：以模組層級變數儲存 payload，避免 dataTransfer 跨瀏覽器問題
  * - 群組操作：removeFromRagList、removeRagListGroup、addRagListGroup、addAllSecondFoldersAsGroups
- * - 以 watch 同步 packTasks 字串與 packTasksList 陣列（parsePackTasksList / serializePackTasksList）
+ * - 以 watch 同步 packTasks 字串與 packTasksList 陣列
  */
 import { computed, watch } from 'vue';
 import { parsePackTasksList, serializePackTasksList } from '../utils/rag.js';
 
-/**
- * @param {import('vue').Ref<object>} currentState - 目前 RAG tab 的狀態（含 packTasks、packTasksList、zipSecondFolders）
- * @param {import('vue').Ref<object>} fileMetadataToShow - 上傳 ZIP 後後端回傳的 file_metadata（含 second_folders）
- * @param {import('vue').Ref<boolean>} packAndGenerateDisabled - 為 true 時不允許 drop 等操作
- */
+/** 模組層級：拖曳中攜帶的資料，不依賴 dataTransfer */
+let dragPayload = null;
+
 export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDisabled) {
-  /** 第二層資料夾名稱列表（來自 ZIP 上傳回傳或 currentState） */
   const secondFoldersFull = computed(() => {
     const folders = fileMetadataToShow.value?.second_folders ?? currentState.value.zipSecondFolders ?? [];
     return Array.isArray(folders) ? folders : [];
   });
 
-  /** 用於畫面的 rag_list 群組（二維陣列）；若無則依 second_folders 給一空群組 */
   const ragListDisplayGroups = computed(() => {
     const list = currentState.value.packTasksList ?? [];
     if (list.length > 0) return list;
@@ -30,52 +26,83 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     return [];
   });
 
-  /** 拖曳開始：寫入 dataTransfer 供 onDropRagList 讀取 */
   function onDragStartTag(e, folderName, fromRagList, groupIdx, tagIdx) {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('application/json', JSON.stringify({
-      folderName,
+    dragPayload = {
+      folderName: String(folderName || '').trim(),
       fromRagList: !!fromRagList,
       groupIdx: fromRagList ? groupIdx : -1,
       tagIdx: fromRagList ? tagIdx : -1,
-    }));
-    e.dataTransfer.setData('text/plain', folderName);
+    };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', dragPayload.folderName);
+    e.dataTransfer.setData('text', dragPayload.folderName);
   }
 
-  /** 拖曳經過：允許 drop、顯示視覺回饋 */
+  function onDragEndTag() {
+    dragPayload = null;
+  }
+
   function onDragOver(e) {
     e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    e.currentTarget?.classList?.add('bg-info-subtle', 'border-info');
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const el = e.currentTarget;
+    if (el && !el.classList.contains('pack-drop-active')) {
+      el.classList.add('pack-drop-active');
+    }
   }
 
-  /** 拖曳離開：移除視覺回饋 */
+  function onDragEnter(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+    const el = e.currentTarget;
+    if (el && !el.classList.contains('pack-drop-active')) {
+      el.classList.add('pack-drop-active');
+    }
+  }
+
   function onDragLeave(e) {
-    e.currentTarget?.classList?.remove('bg-info-subtle', 'border-info');
+    const el = e.currentTarget;
+    const related = e.relatedTarget;
+    if (el && related && el.contains(related)) return;
+    if (el) el.classList.remove('pack-drop-active');
   }
 
-  /** 放下：從 dataTransfer 讀取來源，更新 currentState.packTasksList */
   function onDropRagList(e, targetGroupIdx) {
     e.preventDefault();
-    e.currentTarget?.classList?.remove('bg-info-subtle', 'border-info');
+    e.stopPropagation();
+    const el = e.currentTarget;
+    if (el) el.classList.remove('pack-drop-active');
     if (packAndGenerateDisabled.value) return;
-    let data;
-    try {
-      data = JSON.parse(e.dataTransfer.getData('application/json') || '{}');
-    } catch (_) {
-      data = { folderName: e.dataTransfer.getData('text/plain') || '', fromRagList: false };
+
+    const payload = dragPayload;
+    dragPayload = null;
+
+    let folderName = '';
+    if (payload && payload.folderName) {
+      folderName = payload.folderName;
+    } else if (e.dataTransfer) {
+      folderName = (e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text') || '').trim();
     }
-    const folderName = (data.folderName || '').trim();
+
     if (!folderName) return;
+
+    const fromRagList = payload?.fromRagList ?? false;
+    const groupIdx = payload?.groupIdx ?? -1;
+    const tagIdx = payload?.tagIdx ?? -1;
+
     const state = currentState.value;
     let list = [...(state.packTasksList || [])];
-    if (data.fromRagList && data.groupIdx >= 0) {
-      const g = list[data.groupIdx];
+
+    if (fromRagList && groupIdx >= 0) {
+      const g = list[groupIdx];
       if (Array.isArray(g)) {
-        const next = g.filter((_, i) => i !== data.tagIdx);
-        list[data.groupIdx] = next.length ? next : null;
+        const next = g.filter((_, i) => i !== tagIdx);
+        list[groupIdx] = next.length ? next : null;
       }
     }
+
     if (targetGroupIdx >= list.length) {
       for (let i = list.length; i <= targetGroupIdx; i++) list.push([]);
     }
@@ -87,7 +114,6 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packTasksList = list;
   }
 
-  /** 從指定群組移除一個資料夾 tag */
   function removeFromRagList(groupIdx, tagIdx) {
     const state = currentState.value;
     const list = [...(state.packTasksList || [])];
@@ -98,7 +124,6 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
   }
 
-  /** 移除整個群組 */
   function removeRagListGroup(groupIdx) {
     const state = currentState.value;
     const list = [...(state.packTasksList || [])];
@@ -106,13 +131,11 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
   }
 
-  /** 新增一個空群組 */
   function addRagListGroup() {
     const state = currentState.value;
     state.packTasksList = [...(state.packTasksList || []), []];
   }
 
-  /** 將所有 second_folders 各成單一資料夾一組，追加到 packTasksList */
   function addAllSecondFoldersAsGroups() {
     const names = secondFoldersFull.value;
     if (!names.length) return;
@@ -122,7 +145,6 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packTasksList = [...existing, ...newGroups];
   }
 
-  /* 雙向同步：packTasks 字串 ↔ packTasksList 陣列 */
   watch(
     () => currentState.value.packTasks,
     (val) => {
@@ -149,7 +171,9 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     secondFoldersFull,
     ragListDisplayGroups,
     onDragStartTag,
+    onDragEndTag,
     onDragOver,
+    onDragEnter,
     onDragLeave,
     onDropRagList,
     removeFromRagList,

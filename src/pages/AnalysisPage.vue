@@ -1,6 +1,6 @@
 <script setup>
 /**
- * AnalysisPage - 個人分析頁面
+ * AnalysisPage - 個人測驗分析頁面
  *
  * 讀取 GET /person-analysis/quizzes/{person_id}，回傳 { exams, count, weakness_report }。
  * 每筆 exam 含 quizzes、answers；可顯示作答紀錄摘要、弱點報告（JSON 區塊）、匯出 Excel。
@@ -130,7 +130,7 @@ async function fetchQuizAnswers() {
   error.value = '';
   const personId = authStore.user?.person_id;
   if (!personId) {
-    error.value = '請先登入以查看個人分析';
+    error.value = '請先登入以查看個人測驗分析';
     loading.value = false;
     return;
   }
@@ -151,7 +151,7 @@ async function fetchQuizAnswers() {
     count.value = data?.count ?? exams.length;
     weaknessReport.value = (data?.weakness_report != null && String(data.weakness_report).trim() !== '') ? String(data.weakness_report).trim() : '';
   } catch (err) {
-    error.value = err.message || '無法載入個人分析';
+    error.value = err.message || '無法載入個人測驗分析';
     items.value = [];
     count.value = 0;
     weaknessReport.value = '';
@@ -172,7 +172,7 @@ function getSummaryRows() {
 
 async function onDownloadExcel() {
   const headers = ['題號', '單元', '難度', '分數', '時間'];
-  await downloadSummaryExcel(headers, getSummaryRows(), '個人分析-作答紀錄摘要.xlsx');
+  await downloadSummaryExcel(headers, getSummaryRows(), '個人測驗分析-作答紀錄摘要.xlsx');
 }
 
 onMounted(() => {
@@ -188,7 +188,7 @@ onMounted(() => {
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">個人分析</span>
+        <span class="navbar-brand mb-0">個人測驗分析</span>
       </div>
     </div>
     <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3">
@@ -204,7 +204,7 @@ onMounted(() => {
 
       <template v-else>
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
-          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊與個人分析</div>
+          <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">基本資訊與個人測驗分析</div>
           <div class="small text-secondary">共 {{ items.length }} 題</div>
         </div>
 

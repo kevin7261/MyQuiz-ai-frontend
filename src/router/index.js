@@ -20,10 +20,10 @@ const VALID_VIEWS = ['work', 'analysis', 'course-analysis', 'profile', 'create-r
 /** 各 view 對應的瀏覽器頁籤標題 */
 const VIEW_TITLES = {
   work: 'Exam - AIQuiz',
-  'analysis': '個人分析 - AIQuiz',
-  'course-analysis': '課程分析 - AIQuiz',
+  'analysis': '個人測驗分析 - AIQuiz',
+  'course-analysis': '課程測驗分析 - AIQuiz',
   profile: '個資修改 - AIQuiz',
-  'create-rag': '建立 RAG - AIQuiz',
+  'create-rag': '建立出題群組 - AIQuiz',
   users: '使用者管理 - AIQuiz',
   settings: '系統設定 - AIQuiz',
 };

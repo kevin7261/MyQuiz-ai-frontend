@@ -35,7 +35,7 @@ export const API_RAG_FOR_EXAM = '/rag/for-exam';
 
 /** 個人答題分析：GET /person-analysis/quizzes/{person_id}；query 可選 language（en/zh）；回傳 { exams: [{ exam_id, exam_tab_id, person_id, exam_name, deleted, quizzes, answers }], count, weakness_report? } */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
-/** 課程分析：GET /course-analysis/quizzes；回傳格式同 List Quizzes By Person（exams、count、weakness_report 固定 null） */
+/** 課程測驗分析：GET /course-analysis/quizzes；回傳格式同 List Quizzes By Person（exams、count、weakness_report 固定 null） */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
 /** Exam API：GET /exam/exams List Exams（僅 deleted=false；每筆含 quizzes、answers，格式同 GET /rag/rags；每題 quiz 含 rag_name、file_name（Exam_Quiz）；query: person_id 可選） */
@@ -51,7 +51,18 @@ export const API_TEST_QUIZ_GRADE = '/exam/quiz-grade';
 /** Exam：GET /exam/quiz-grade-result/{job_id} Get Exam Grade Result */
 export const API_TEST_QUIZ_GRADE_RESULT = '/exam/quiz-grade-result';
 
-/** 系統設定：GET /system-settings/llm-api-key 取用 LLM API Key。資料庫只會有一筆，不需傳 person_id。若尚無資料，回傳 llm_api_key_id 等皆為 null。 */
+/**
+ * 系統設定 system-settings
+ * - GET  /system-settings/course-name   Get Course Name Setting
+ * - PUT  /system-settings/course-name   Put Course Name Setting
+ * - GET  /system-settings/llm-api-key  Get Llm Api Key
+ * - PUT  /system-settings/llm-api-key  Put Llm Api Key
+ */
+/** GET：取得課程名稱；回傳含 course_name。 */
+export const API_GET_SYSTEM_SETTING_COURSE_NAME = '/system-settings/course-name';
+/** PUT：寫入課程名稱；body 僅傳 { course_name }。表 key=course_name；若尚無該 key 則新增且 value 為空，已有則不覆蓋 value。 */
+export const API_PUT_SYSTEM_SETTING_COURSE_NAME = '/system-settings/course-name';
+/** GET：取得 LLM API Key。若尚無資料，回傳 llm_api_key_id 等皆為 null。 */
 export const API_GET_LLM_API_KEY = '/system-settings/llm-api-key';
-/** 系統設定：PUT /system-settings/llm-api-key 寫入或更新 LLM API Key；body 必填: { llm_api_key }，空字串表示清除；不需傳 person_id。 */
-export const API_PUT_LLM_API_KEY = '/system-settings/llm-api-key';
+/** PUT：寫入或更新系統預設 LLM API Key（表 key=llm_api_key）；body 僅傳 { llm_api_key }，空字串表示清除。 */
+export const API_PUT_SYSTEM_SETTING_LLM_API_KEY = '/system-settings/llm-api-key';

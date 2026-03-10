@@ -3,7 +3,7 @@
    * LeftView - 主畫面左側選單
    *
    * 職責：
-   * - 顯示品牌、使用者資訊、導覽連結（測驗、個人分析、建立 RAG 等）、登出
+   * - 顯示品牌、使用者資訊、導覽連結（測驗、個人測驗分析、建立 RAG 等）、登出
    * - 透過 router-link 與 active-class 標示當前頁面
    * - 登出時 emit('logout') 由父層處理
    */
@@ -30,9 +30,9 @@
     </div>
     <nav class="sidebar-nav">
       <router-link to="/exam" class="sidebar-link" active-class="active">測驗</router-link>
-      <router-link to="/main/analysis" class="sidebar-link" active-class="active">個人分析</router-link>
-      <router-link to="/main/create-rag" class="sidebar-link" active-class="active">建立 RAG</router-link>
-      <router-link to="/main/course-analysis" class="sidebar-link" active-class="active">課程分析</router-link>
+      <router-link to="/main/analysis" class="sidebar-link" active-class="active">個人測驗分析</router-link>
+      <router-link to="/main/create-rag" class="sidebar-link" active-class="active">建立出題群組</router-link>
+      <router-link to="/main/course-analysis" class="sidebar-link" active-class="active">課程測驗分析</router-link>
       <router-link to="/main/users" class="sidebar-link" active-class="active">使用者管理</router-link>
       <router-link to="/main/settings" class="sidebar-link" active-class="active">系統設定</router-link>
       <router-link to="/main/profile" class="sidebar-link" active-class="active">個資修改</router-link>

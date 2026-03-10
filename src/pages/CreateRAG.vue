@@ -117,7 +117,14 @@ const generateQuizUnits = computed(() => {
   return generateQuizUnitsFromRag.value;
 });
 
-/** 難度、chunk 參數（共用） */
+/** 確保為數字，空字串/null/undefined/NaN 時回傳預設值 */
+function ensureNumber(val, defaultVal) {
+  if (val === '' || val == null) return defaultVal;
+  const n = Number(val);
+  return (n === n && isFinite(n)) ? n : defaultVal;
+}
+
+/** 難度、chunk 參數（共用）；chunk_size / chunk_overlap 一律為數字 */
 const filterDifficulty = ref('基礎');
 const chunkSize = ref(1000);
 const chunkOverlap = ref(200);
@@ -188,7 +195,9 @@ const {
   secondFoldersFull,
   ragListDisplayGroups,
   onDragStartTag,
+  onDragEndTag,
   onDragOver,
+  onDragEnter,
   onDragLeave,
   onDropRagList,
   removeFromRagList,
@@ -252,8 +261,8 @@ function syncRagItemToState(rag, state) {
   if (rag.rag_metadata != null) {
     state.ragMetadata = typeof rag.rag_metadata === 'string' ? rag.rag_metadata : JSON.stringify(rag.rag_metadata, null, 2);
   }
-  if (rag.chunk_size != null) chunkSize.value = Number(rag.chunk_size);
-  if (rag.chunk_overlap != null) chunkOverlap.value = Number(rag.chunk_overlap);
+  if (rag.chunk_size != null) chunkSize.value = ensureNumber(rag.chunk_size, 1000);
+  if (rag.chunk_overlap != null) chunkOverlap.value = ensureNumber(rag.chunk_overlap, 200);
   const filename = rag.file_metadata?.filename ?? rag.filename;
   if (filename != null && String(filename).trim() !== '') state.zipFileName = String(filename).trim();
   if (rag.system_prompt_instruction != null && String(rag.system_prompt_instruction).trim() !== '') {
@@ -346,6 +355,16 @@ watch(activeTabId, (id) => {
   if (id && isNewTabId(id)) clearZipFileInput();
 });
 
+/** chunk_size / chunk_overlap 一律為數字；無效輸入時還原為預設 */
+watch(chunkSize, (v) => {
+  const n = ensureNumber(v, 1000);
+  if (n !== v && (v === '' || v == null || Number.isNaN(Number(v)))) chunkSize.value = n;
+}, { flush: 'post' });
+watch(chunkOverlap, (v) => {
+  const n = ensureNumber(v, 200);
+  if (n !== v && (v === '' || v == null || Number.isNaN(Number(v)))) chunkOverlap.value = n;
+}, { flush: 'post' });
+
 /** 畫面一打開就抓 GET /rag/rags，每一筆 RAG 一個 tab；並清空檔案選擇讓上傳欄位一開始是空的 */
 onMounted(() => {
   fetchRagList();
@@ -432,7 +451,7 @@ async function addNewTab() {
     clearZipFileInput();
     if (ragList.value.length === 0) showFormWhenNoData.value = true;
   } catch (err) {
-    createRagError.value = err.message || '建立 RAG 失敗';
+    createRagError.value = err.message || '建立出題群組失敗';
   } finally {
     createRagLoading.value = false;
   }
@@ -459,24 +478,55 @@ function resetZipState(state, tabId) {
   state.zipTabId = isNewTabId(tabId) ? '' : tabId;
 }
 
+function setZipFileFromFile(state, tabId, file) {
+  if (!file) {
+    resetZipState(state, tabId);
+    state.zipError = '';
+    return;
+  }
+  if (!file.name.toLowerCase().endsWith('.zip')) {
+    resetZipState(state, tabId);
+    state.zipError = '請選擇 .zip 檔案';
+    return;
+  }
+  resetZipState(state, tabId);
+  state.uploadedZipFile = file;
+  state.zipFileName = file.name;
+  state.zipError = '';
+}
+
 function onZipChange(e) {
   const state = currentState.value;
   const file = e.target.files?.[0];
   const tabId = activeTabId.value;
-  if (file) {
-    if (!file.name.toLowerCase().endsWith('.zip')) {
-      resetZipState(state, tabId);
-      state.zipError = '請選擇 .zip 檔案';
-      return;
-    }
-    resetZipState(state, tabId);
-    state.uploadedZipFile = file;
-    state.zipFileName = file.name;
-    state.zipError = '';
-  } else {
-    resetZipState(state, tabId);
-    state.zipError = '';
-  }
+  setZipFileFromFile(state, tabId, file);
+}
+
+/** 拖曳置放 ZIP：僅接受 .zip */
+const isZipDragOver = ref(false);
+function onZipDragOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer.types.includes('Files')) isZipDragOver.value = true;
+}
+function onZipDragLeave(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  isZipDragOver.value = false;
+}
+function onZipDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  isZipDragOver.value = false;
+  const file = e.dataTransfer.files?.[0];
+  if (!file) return;
+  const state = currentState.value;
+  const tabId = activeTabId.value;
+  setZipFileFromFile(state, tabId, file);
+  clearZipFileInput();
+}
+function openZipFileDialog() {
+  if (zipFileInputRef.value) zipFileInputRef.value.click();
 }
 
 /** 上傳 ZIP */
@@ -488,7 +538,7 @@ async function confirmUploadZip() {
   }
   const tabId = activeTabId.value;
   if (isNewTabId(tabId) || !tabId) {
-    state.zipError = '請先按 + 建立 RAG（此 tab 需先建立後端資料）';
+    state.zipError = '請先按 + 建立出題群組（此 tab 需先建立後端資料）';
     return;
   }
   const personId = getPersonId(authStore);
@@ -550,8 +600,8 @@ async function confirmPack() {
       rag_tab_id: fileId,
       person_id: personId,
       rag_list: ragList,
-      chunk_size: Number(chunkSize.value) || 1000,
-      chunk_overlap: Number(chunkOverlap.value) || 200,
+      chunk_size: ensureNumber(chunkSize.value, 1000),
+      chunk_overlap: ensureNumber(chunkOverlap.value, 200),
       system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
     });
     state.ragMetadata = typeof state.packResponseJson === 'string' ? state.packResponseJson : JSON.stringify(state.packResponseJson, null, 2);
@@ -697,7 +747,7 @@ async function confirmAnswer(item) {
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">建立 RAG</span>
+        <span class="navbar-brand mb-0">建立出題群組</span>
       </div>
     </div>
     <RagTabsBar
@@ -757,23 +807,42 @@ async function confirmAnswer(item) {
         <div v-if="activeTabId" class="mb-3">
           <div class="form-label small text-secondary fw-medium mb-2">上傳 ZIP 檔</div>
           <p class="form-text small text-secondary mb-2">支援 .pdf、.docx、.rmd／.r、.html／.htm</p>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
-            <input
-              ref="zipFileInputRef"
-              type="file"
-              accept=".zip"
-              class="form-control form-control-sm"
-              style="max-width: 240px;"
-              :disabled="hasUploadedFileMetadata"
-              @change="onZipChange"
-            >
+          <input
+            ref="zipFileInputRef"
+            type="file"
+            accept=".zip"
+            class="d-none"
+            :disabled="hasUploadedFileMetadata"
+            @change="onZipChange"
+          >
+          <div
+            class="zip-drop-zone rounded border border-dashed p-4 text-center position-relative"
+            :class="{ 'zip-drop-zone-over': isZipDragOver, 'zip-drop-zone-disabled': hasUploadedFileMetadata }"
+            @dragover="onZipDragOver"
+            @dragenter="onZipDragOver"
+            @dragleave="onZipDragLeave"
+            @drop="onZipDrop"
+            @click="hasUploadedFileMetadata ? null : openZipFileDialog()"
+          >
+            <template v-if="currentState.zipLoading">
+              <span class="text-secondary small">上傳中...</span>
+            </template>
+            <template v-else-if="currentState.zipFileName">
+              <span class="small text-success">{{ currentState.zipFileName }}</span>
+              <div class="mt-1 small text-muted">點擊可重新選擇檔案</div>
+            </template>
+            <template v-else>
+              <span class="small text-secondary">拖曳 ZIP 檔到這裡，或點擊選擇檔案</span>
+            </template>
+          </div>
+          <div class="d-flex justify-content-end mt-2">
             <button
               type="button"
               class="btn btn-sm btn-primary"
               :disabled="hasUploadedFileMetadata || currentState.zipLoading || !currentState.zipFileName"
-              @click="confirmUploadZip"
+              @click.stop="confirmUploadZip"
             >
-              確定
+              確定上傳
             </button>
           </div>
         </div>
@@ -781,57 +850,53 @@ async function confirmAnswer(item) {
           {{ currentState.zipError }}
         </div>
       </div>
-      <!-- 壓縮資料夾 (Pack) 與 RAG：要有 file_metadata 才顯示；未上傳 ZIP 時 disable -->
-      <div v-if="fileMetadataToShow != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': packAndGenerateDisabled }">
-        <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">壓縮資料夾 (Pack) 與 RAG</div>
+      <!-- 建立 RAG：要有 file_metadata 才顯示；未上傳 ZIP 時 disable -->
+      <div v-if="fileMetadataToShow != null" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75 pe-none': packAndGenerateDisabled }">
+        <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">建立出題群組</div>
 
-          <!-- second_folders 標籤區：可拖曳至 rag_list；完整顯示不因拖入 rag_list 而移除 -->
+          <!-- 課程：可拖曳至出題群組 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
             <label class="form-label small text-secondary fw-medium mb-1">課程</label>
             <div class="d-flex flex-wrap gap-2 p-2 rounded border bg-body">
-              <span
+              <div
                 v-for="(name, i) in secondFoldersFull"
                 :key="'sf-' + i"
                 class="badge bg-info text-dark px-2 py-1 user-select-none"
                 style="cursor: grab;"
                 draggable="true"
+                role="button"
+                tabindex="0"
                 @dragstart="onDragStartTag($event, name, false, -1, -1)"
+                @dragend="onDragEndTag"
               >
                 {{ name }}
-              </span>
+              </div>
             </div>
           </div>
 
-          <!-- rag_list 虛擬資料夾區：可放置 second_folders 標籤 -->
+          <!-- 出題群組：可放置課程標籤 -->
           <div class="mb-2">
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-              <label class="form-label small text-secondary fw-medium mb-0">資料夾</label>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                :disabled="!secondFoldersFull.length"
-                @click="addAllSecondFoldersAsGroups"
-              >
-                每個 second_folder 各一虛擬資料夾
-              </button>
-            </div>
+            <label class="form-label small text-secondary fw-medium mb-0">出題群組</label>
             <div class="d-flex flex-wrap align-items-start gap-2">
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
                 <div
-                  class="border rounded p-2 d-flex align-items-center gap-1 position-relative bg-body-secondary"
+                  class="pack-drop-target border rounded p-2 d-flex align-items-center gap-1 position-relative bg-body-secondary"
                   style="min-width: 120px; min-height: 2.5rem;"
-                  @dragover="onDragOver"
-                  @dragleave="onDragLeave"
-                  @drop="onDropRagList($event, gi)"
+                  @dragover.prevent="onDragOver($event)"
+                  @dragenter.prevent="onDragEnter($event)"
+                  @dragleave="onDragLeave($event)"
+                  @drop.prevent="onDropRagList($event, gi)"
                 >
                   <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1">
-                    <span
+                    <div
                       v-for="(tag, ti) in group"
                       :key="'t-' + gi + '-' + ti"
                       class="badge bg-primary px-2 py-1 d-inline-flex align-items-center gap-1"
                       style="cursor: grab;"
                       draggable="true"
+                      role="button"
                       @dragstart="onDragStartTag($event, tag, true, gi, ti)"
+                      @dragend="onDragEndTag"
                     >
                       {{ tag }}
                       <span
@@ -840,7 +905,7 @@ async function confirmAnswer(item) {
                         aria-label="移除標籤"
                         @click.stop="removeFromRagList(gi, ti)"
                       >×</span>
-                    </span>
+                    </div>
                     <span v-if="!group.length" class="text-muted small">拖入此處</span>
                   </div>
                   <button
@@ -848,7 +913,7 @@ async function confirmAnswer(item) {
                     type="button"
                     class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
                     style="min-width: 1.5rem;"
-                    aria-label="刪除此虛擬資料夾"
+                    aria-label="刪除此出題群組"
                     @click.stop="removeRagListGroup(gi)"
                   >
                     ×
@@ -856,41 +921,52 @@ async function confirmAnswer(item) {
                 </div>
               </template>
               <div
-                class="border border-dashed rounded p-2 d-flex align-items-center justify-content-center"
-                style="min-width: 140px; min-height: 2.5rem;"
-                :class="{ 'opacity-50': packAndGenerateDisabled }"
-                @dragover="onDragOver($event)"
+                class="pack-drop-target border border-dashed rounded p-2 d-flex align-items-center justify-content-center"
+                style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
+                role="button"
+                tabindex="0"
+                @dragover.prevent="onDragOver($event)"
+                @dragenter.prevent="onDragEnter($event)"
                 @dragleave="onDragLeave($event)"
-                @drop="onDropRagList($event, (currentState.packTasksList || []).length)"
+                @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
+                @click="addRagListGroup"
+                @keydown.enter.prevent="addRagListGroup"
+                @keydown.space.prevent="addRagListGroup"
               >
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  @click="addRagListGroup"
-                >
-                  + 新增虛擬資料夾
-                </button>
+                + 新增出題群組
               </div>
+            </div>
+            <div class="mt-2">
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                :disabled="!secondFoldersFull.length"
+                @click="addAllSecondFoldersAsGroups"
+              >
+                每個課程建立出題群組
+              </button>
             </div>
           </div>
 
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div style="width: 100px;">
-              <label class="form-label small text-secondary fw-medium mb-1">chunk_size</label>
+              <label class="form-label small text-secondary fw-medium mb-1">chunk size</label>
               <input
                 v-model.number="chunkSize"
                 type="number"
                 min="1"
+                step="1"
                 class="form-control form-control-sm"
                 placeholder="1000"
               >
             </div>
             <div style="width: 100px;">
-              <label class="form-label small text-secondary fw-medium mb-1">chunk_overlap</label>
+              <label class="form-label small text-secondary fw-medium mb-1">chunk overlap</label>
               <input
                 v-model.number="chunkOverlap"
                 type="number"
                 min="0"
+                step="1"
                 class="form-control form-control-sm"
                 placeholder="200"
               >
@@ -920,9 +996,9 @@ async function confirmAnswer(item) {
             {{ currentState.packError }}
           </div>
       </div>
-      <!-- RAG 產生題目與題目與作答：要有 rag_metadata 才顯示；點「新增題目」後才出現題目生成子區塊 -->
+      <!-- 產生題目與作答：要有 rag_metadata 才顯示；點「新增題目」後才出現題目生成子區塊 -->
       <div v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''" class="bg-body-tertiary rounded text-start p-4 mb-3" :class="{ 'opacity-75': ragGenerateDisabled }">
-        <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">RAG 產生題目與題目與作答</div>
+        <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">產生題目與作答</div>
 
         <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
         <div class="bg-light rounded mb-3">
@@ -995,3 +1071,29 @@ async function confirmAnswer(item) {
     </div>
   </div>
 </template>
+
+<style scoped>
+.zip-drop-zone {
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+  border-width: 2px;
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.02);
+}
+.zip-drop-zone:hover:not(.zip-drop-zone-disabled) {
+  border-color: var(--bs-primary);
+  background: rgba(13, 110, 253, 0.04);
+}
+.zip-drop-zone-over {
+  border-color: var(--bs-primary) !important;
+  background: rgba(13, 110, 253, 0.08) !important;
+}
+.zip-drop-zone-disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+.pack-drop-target.pack-drop-active {
+  background-color: rgba(13, 202, 240, 0.15) !important;
+  border-color: var(--bs-info) !important;
+}
+</style>

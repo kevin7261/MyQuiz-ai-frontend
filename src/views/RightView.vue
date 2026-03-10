@@ -3,7 +3,7 @@
    * RightView - 主畫面右側內容區
    *
    * 職責：
-   * - 依 currentView 渲染對應頁面：測驗、個人分析、建立 RAG、課程分析等
+   * - 依 currentView 渲染對應頁面：測驗、個人測驗分析、建立 RAG、課程測驗分析等
    */
   import ExamPage from '../pages/ExamPage.vue';
   import AnalysisPage from '../pages/AnalysisPage.vue';
