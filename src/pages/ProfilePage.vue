@@ -114,7 +114,7 @@ async function saveProfile() {
       loading-text="執行中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
-      <div class="container-fluid">
+      <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand mb-0">個資修改</span>
       </div>
     </div>

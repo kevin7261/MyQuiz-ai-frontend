@@ -812,13 +812,13 @@ onMounted(() => {
       loading-text="執行中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
-      <div class="container-fluid">
+      <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand mb-0">測驗</span>
       </div>
     </div>
     <!-- 固定 tab 頁籤列（與建立 RAG 頁一致，僅內容區可上下滑） -->
     <div class="flex-shrink-0 bg-white">
-      <div class="d-flex align-items-center px-4">
+      <div class="d-flex align-items-center justify-content-center px-4 w-100">
         <template v-if="examListLoading || forExamLoading">
           <span class="small text-secondary">—</span>
         </template>

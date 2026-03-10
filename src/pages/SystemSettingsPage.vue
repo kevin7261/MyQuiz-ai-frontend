@@ -97,7 +97,7 @@ async function saveLlmApiKey() {
       loading-text="儲存中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
-      <div class="container-fluid">
+      <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand mb-0">系統設定</span>
       </div>
     </div>

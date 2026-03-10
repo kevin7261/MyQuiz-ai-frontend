@@ -144,7 +144,7 @@ onMounted(() => {
       loading-text="執行中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
-      <div class="container-fluid">
+      <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand mb-0">課程分析</span>
       </div>
     </div>

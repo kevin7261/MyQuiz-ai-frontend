@@ -29,7 +29,7 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab']);
 
 <template>
   <div class="flex-shrink-0 bg-white">
-    <div class="d-flex align-items-center px-4">
+    <div class="d-flex align-items-center justify-content-center px-4 w-100">
       <!-- 載入中僅顯示文字 -->
       <template v-if="ragListLoading">
         <span class="small text-secondary">載入中...</span>
