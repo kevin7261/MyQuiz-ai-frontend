@@ -65,7 +65,7 @@
 <style scoped>
 .sidebar {
   width: 100%;
-  background: var(--bs-light, #f8f9fa);
+  background: #fff;
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
@@ -75,7 +75,6 @@
   font-weight: 600;
   font-size: 1.1rem;
   padding: 0 1rem 0.75rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
   margin-bottom: 0.5rem;
 }
 .sidebar-user {
@@ -110,7 +109,6 @@
 }
 .sidebar-footer {
   padding: 0.5rem 0.5rem 0;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
   margin-top: 0.5rem;
 }
 .sidebar-link-logout {
