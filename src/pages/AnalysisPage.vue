@@ -197,6 +197,8 @@ onMounted(() => {
 
     <!-- 內容區：可上下捲動；基本資訊與分析合併為一區塊 -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
       <div v-if="loading" class="text-center py-5 text-muted" />
       <div v-else-if="items.length === 0" class="alert alert-info mt-0">尚無答題紀錄。</div>
 
@@ -313,6 +315,8 @@ onMounted(() => {
           </div>
         </div>
       </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>

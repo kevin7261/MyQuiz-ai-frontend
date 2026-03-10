@@ -154,6 +154,8 @@ onMounted(() => {
 
     <!-- 內容區：與個人分析相同結構，不顯示 weakness_report（課程分析固定為 null） -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
       <div v-if="loading" class="text-center py-5 text-muted" />
       <div v-else-if="items.length === 0" class="alert alert-info mt-0">尚無答題紀錄。</div>
 
@@ -257,6 +259,8 @@ onMounted(() => {
           </div>
         </div>
       </template>
+        </div>
+      </div>
     </div>
   </div>
 </template>

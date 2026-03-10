@@ -76,6 +76,8 @@ onMounted(() => {
     </div>
     <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3" role="alert">{{ error }}</div>
     <div class="flex-grow-1 overflow-auto bg-white p-4">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-8">
       <div class="bg-body-tertiary rounded text-start p-4 mb-3">
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">使用者列表</div>
         <p class="small text-secondary mb-3">共 {{ count }} 筆使用者</p>
@@ -115,6 +117,8 @@ onMounted(() => {
         <button type="button" class="btn btn-outline-primary btn-sm mt-2" :disabled="loading" @click="fetchUsers">
           重新載入
         </button>
+      </div>
+        </div>
       </div>
     </div>
   </div>
