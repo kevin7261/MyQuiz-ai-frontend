@@ -3,7 +3,7 @@
    * HomeView - 登入後的主畫面
    *
    * 職責：
-   * - 頂部導覽列：測驗、個人分析、建立 RAG、課程分析、使用者管理、系統設定、個資修改、登出
+   * - 左側選單：測驗、個人分析、建立 RAG、課程分析、使用者管理、系統設定、個資修改、登出
    * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
    * - /exam 對應 work（ExamPage），/main/:view 對應 analysis / createRAG 等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
@@ -11,13 +11,8 @@
   import { computed, onMounted } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
-  import ExamPage from '../pages/ExamPage.vue';
-  import AnalysisPage from '../pages/AnalysisPage.vue';
-  import CourseAnalysisPage from '../pages/CourseAnalysisPage.vue';
-  import ProfilePage from '../pages/ProfilePage.vue';
-  import CreateRAG from '../pages/CreateRAG.vue';
-  import UserManagementPage from '../pages/UserManagementPage.vue';
-  import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
+  import LeftView from './LeftView.vue';
+  import RightView from './RightView.vue';
   import { useDataStore } from '../stores/dataStore.js';
   import { useAuthStore } from '../stores/authStore.js';
 
@@ -38,7 +33,7 @@
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, ExamPage, AnalysisPage, CourseAnalysisPage, ProfilePage, CreateRAG, UserManagementPage, SystemSettingsPage },
+    components: { LoadingOverlay, LeftView, RightView },
 
     setup() {
       const router = useRouter();
@@ -102,94 +97,20 @@
       subText=""
     />
 
-    <div class="d-flex flex-column h-100">
-      <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <div class="container-fluid">
-          <span class="navbar-brand mb-0">AIQuiz</span>
-          <span v-if="userName" class="navbar-text ms-2">{{ userName }}</span>
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="align-items-center navbar-nav gap-2 ms-auto mb-2 mb-lg-0">
-              <li class="nav-item">
-                <router-link
-                  to="/exam"
-                  class="nav-link"
-                  active-class="active"
-                  aria-current="page"
-                >測驗</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/main/analysis"
-                  class="nav-link"
-                  active-class="active"
-                >個人分析</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/main/create-rag"
-                  class="nav-link"
-                  active-class="active"
-                >建立 RAG</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/main/course-analysis"
-                  class="nav-link"
-                  active-class="active"
-                >課程分析</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/main/users"
-                  class="nav-link"
-                  active-class="active"
-                >使用者管理</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/main/settings"
-                  class="nav-link"
-                  active-class="active"
-                >系統設定</router-link>
-              </li>
-              <li class="nav-item">
-                <router-link
-                  to="/main/profile"
-                  class="nav-link"
-                  active-class="active"
-                >個資修改</router-link>
-              </li>
-              <li class="nav-item">
-                <span class="text-muted small">{{ userAccount }} / {{ userName }} / {{ userTypeLabel }}</span>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="#" @click.prevent="onLogout">登出</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </nav>
-
-      <main class="flex-grow-1 overflow-hidden">
-        <ExamPage v-if="currentView === 'work'" :tabId="MAIN_WORK_TAB_ID" />
-        <AnalysisPage v-else-if="currentView === 'analysis'" />
-        <CourseAnalysisPage v-else-if="currentView === 'courseAnalysis'" />
-        <ProfilePage v-else-if="currentView === 'profile'" />
-        <CreateRAG v-else-if="currentView === 'createRAG'" :tabId="MAIN_WORK_TAB_ID" />
-        <UserManagementPage v-else-if="currentView === 'userManagement'" />
-        <SystemSettingsPage v-else-if="currentView === 'systemSettings'" />
-      </main>
+    <div class="home-layout d-flex h-100">
+      <LeftView
+        :user-account="userAccount"
+        :user-name="userName"
+        :user-type-label="userTypeLabel"
+        @logout="onLogout"
+      />
+      <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
     </div>
   </div>
 </template>
+
+<style scoped>
+.home-layout {
+  min-height: 0;
+}
+</style>
