@@ -120,7 +120,7 @@ async function saveProfile() {
     </div>
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <div class="row justify-content-center">
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <div class="bg-body-tertiary rounded text-start p-4 mb-3">
         <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">個人資料</div>
         <div class="mb-3">

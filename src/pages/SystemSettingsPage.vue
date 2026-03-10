@@ -155,7 +155,7 @@ async function save(block) {
     </div>
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <div class="row justify-content-center">
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
           <div
             v-for="block in BLOCKS"
             :key="block.id"

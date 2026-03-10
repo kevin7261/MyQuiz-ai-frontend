@@ -7,10 +7,10 @@
    * 失敗時：顯示後端 detail 或錯誤訊息於 error。
    * 載入中顯示 LoadingOverlay。
    */
-  import { ref } from 'vue';
+  import { ref, onMounted } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
-  import { API_BASE } from '../constants/api.js';
+  import { API_BASE, API_GET_SYSTEM_SETTING_COURSE_NAME } from '../constants/api.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
 
   export default {
@@ -19,10 +19,25 @@
     setup() {
       const router = useRouter();
       const authStore = useAuthStore();
+      const courseName = ref('AIQuiz');
       const personId = ref('');
       const password = ref('');
       const loading = ref(false);
       const error = ref('');
+
+      onMounted(async () => {
+        try {
+          const res = await fetch(`${API_BASE}${API_GET_SYSTEM_SETTING_COURSE_NAME}`, { method: 'GET' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.course_name && String(data.course_name).trim()) {
+              courseName.value = String(data.course_name).trim();
+            }
+          }
+        } catch {
+          // 保持預設 AIQuiz
+        }
+      });
 
       const onLogin = async () => {
         error.value = '';
@@ -57,7 +72,7 @@
         }
       };
 
-      return { personId, password, loading, error, onLogin };
+      return { courseName, personId, password, loading, error, onLogin };
     },
   };
 </script>
@@ -70,7 +85,7 @@
     />
     <div class="card shadow-sm my-login-card">
       <div class="card-body p-4">
-        <h4 class="card-title text-center mb-4">AIQuiz 登入</h4>
+        <h4 class="card-title text-center mb-4">{{ courseName }} 登入</h4>
         <form @submit.prevent="onLogin">
           <div class="mb-3">
             <label class="form-label" for="login-person-id">使用者 ID</label>

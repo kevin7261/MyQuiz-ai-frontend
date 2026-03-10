@@ -3,10 +3,13 @@
    * LeftView - 主畫面左側選單
    *
    * 職責：
-   * - 顯示品牌、使用者資訊、導覽連結（測驗、個人測驗分析、建立 RAG 等）、登出
+   * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、使用者資訊、導覽連結、登出
    * - 透過 router-link 與 active-class 標示當前頁面
    * - 登出時 emit('logout') 由父層處理
    */
+  import { ref, onMounted } from 'vue';
+  import { API_BASE, API_GET_SYSTEM_SETTING_COURSE_NAME } from '../constants/api.js';
+
   export default {
     name: 'LeftView',
     props: {
@@ -16,15 +19,31 @@
     },
     emits: ['logout'],
     setup(props, { emit }) {
+      const courseName = ref('AIQuiz');
       const onLogout = () => emit('logout');
-      return { onLogout };
+
+      onMounted(async () => {
+        try {
+          const res = await fetch(`${API_BASE}${API_GET_SYSTEM_SETTING_COURSE_NAME}`, { method: 'GET' });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.course_name && String(data.course_name).trim()) {
+              courseName.value = String(data.course_name).trim();
+            }
+          }
+        } catch {
+          // 保持預設 AIQuiz
+        }
+      });
+
+      return { courseName, onLogout };
     },
   };
 </script>
 
 <template>
-  <aside class="sidebar flex-shrink-0">
-    <div class="sidebar-brand">AIQuiz</div>
+  <aside class="sidebar h-100">
+    <div class="sidebar-brand">{{ courseName }}</div>
     <div v-if="userName" class="sidebar-user text-muted small">
       {{ userAccount }} / {{ userName }} / {{ userTypeLabel }}
     </div>
@@ -45,7 +64,7 @@
 
 <style scoped>
 .sidebar {
-  width: 220px;
+  width: 100%;
   background: var(--bs-light, #f8f9fa);
   border-right: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;

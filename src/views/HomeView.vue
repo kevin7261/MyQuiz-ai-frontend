@@ -88,7 +88,7 @@
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100">
+  <div class="container-fluid h-100 p-0 d-flex flex-column">
     <LoadingOverlay
       :isVisible="false"
       loadingText="載入中..."
@@ -97,14 +97,18 @@
       subText=""
     />
 
-    <div class="home-layout d-flex h-100">
-      <LeftView
-        :user-account="userAccount"
-        :user-name="userName"
-        :user-type-label="userTypeLabel"
-        @logout="onLogout"
-      />
-      <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
+    <div class="row h-100 g-0 home-layout">
+      <div class="col-4 col-lg-3 col-xl-2 col-xxl-2 h-100 overflow-hidden">
+        <LeftView
+          :user-account="userAccount"
+          :user-name="userName"
+          :user-type-label="userTypeLabel"
+          @logout="onLogout"
+        />
+      </div>
+      <div class="col-8 col-lg-9 col-xl-10 col-xxl-10 h-100 overflow-hidden d-flex flex-column">
+        <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
+      </div>
     </div>
   </div>
 </template>
@@ -112,5 +116,6 @@
 <style scoped>
 .home-layout {
   min-height: 0;
+  flex: 1 1 0;
 }
 </style>

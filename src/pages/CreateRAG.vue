@@ -765,7 +765,7 @@ async function confirmAnswer(item) {
     <!-- 內容區：可上下捲動 -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <div class="row justify-content-center">
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <!-- 無資料時不顯示表單，點「+」後才顯示；有資料時顯示對應 tab 表單 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
       <!-- 基本資訊、llm_api_key、ZIP 上傳與 file_metadata 合併為一區塊 -->

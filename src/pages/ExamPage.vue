@@ -872,7 +872,7 @@ onMounted(() => {
     <!-- 內容區：可上下捲動 -->
     <div class="flex-grow-1 overflow-auto bg-white p-4">
       <div class="row justify-content-center">
-        <div class="col-12 col-lg-8">
+        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <template v-if="examList.length > 0">
         <!-- 基本資訊：當前測驗（exam）＋試題用 RAG -->
         <div class="bg-body-tertiary rounded text-start p-4 mb-3">
