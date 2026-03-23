@@ -28,7 +28,7 @@ import {
 } from '../services/ragApi.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { submitGrade, rewriteAnswer } from '../composables/useQuizGrading.js';
-import { generateTabId, deriveRagNameFromTabId, deriveRagName, parsePackTasksList, DEFAULT_SYSTEM_INSTRUCTION, QUIZ_LEVEL_LABELS } from '../utils/rag.js';
+import { generateTabId, deriveRagNameFromTabId, deriveRagName, parsePackTasksList, parseRagMetadataObject, DEFAULT_SYSTEM_INSTRUCTION, QUIZ_LEVEL_LABELS } from '../utils/rag.js';
 import { useRagList } from '../composables/useRagList.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
@@ -222,18 +222,35 @@ const newTabItems = computed(() =>
   }))
 );
 
-/** 從 /rag/rags 的 rag_metadata.outputs 或 rag_list 字串推導 generateQuizUnits（新格式優先用 outputs） */
+/** 從 /rag/rags 的 outputs（頂層或 rag_metadata 內）或 rag_list 推導 generateQuizUnits（與 ExamPage／build-rag-zip 一致） */
 const generateQuizUnitsFromRag = computed(() => {
   const rag = currentRagItem.value;
   if (!rag || typeof rag !== 'object') return [];
   const sourceTabId = String(rag.rag_tab_id ?? '');
-  const outputs = rag.rag_metadata?.outputs;
-  if (Array.isArray(outputs) && outputs.length > 0) {
-    return outputs.map((o) => ({
-      rag_tab_id: sourceTabId || o.rag_tab_id || `${(o.rag_name ?? '').replace(/\+/g, '_')}_rag`,
-      filename: o.filename ?? `${(o.rag_name ?? '').replace(/\+/g, '_')}.zip`,
-      rag_name: (o.rag_name ?? '').replace(/\+/g, '_'),
-    }));
+  const metaObj = parseRagMetadataObject(rag);
+  const topOutputs = rag.outputs;
+  const nestedOutputs = metaObj?.outputs;
+  const outputs =
+    Array.isArray(topOutputs) && topOutputs.length > 0
+      ? topOutputs
+      : Array.isArray(nestedOutputs) && nestedOutputs.length > 0
+        ? nestedOutputs
+        : null;
+  if (outputs) {
+    return outputs.map((o) => {
+      const derivedName = `${(o.rag_name ?? '').replace(/\+/g, '_')}`;
+      const tabId =
+        o.rag_tab_id != null && String(o.rag_tab_id).trim() !== ''
+          ? String(o.rag_tab_id)
+          : derivedName
+            ? `${derivedName}_rag`
+            : sourceTabId;
+      return {
+        rag_tab_id: tabId,
+        filename: o.filename ?? o.rag_filename ?? `${derivedName || deriveRagName(o) || 'RAG'}.zip`,
+        rag_name: deriveRagName(o),
+      };
+    });
   }
   const ragListStr = rag.rag_list ?? '';
   if (!ragListStr) return [];
@@ -282,7 +299,9 @@ function syncRagItemToState(rag, state) {
       const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (ragAnswers[i] != null ? [ragAnswers[i]] : []);
       return { ...q, answers };
     });
-    const firstRagName = (parsePackTasksList(rag.rag_list)[0]?.[0] ?? rag.rag_metadata?.outputs?.[0]?.rag_name ?? quizzes[0]?.rag_name ?? '').trim();
+    const metaParsed = parseRagMetadataObject(rag);
+    const out0 = Array.isArray(rag.outputs) && rag.outputs.length > 0 ? rag.outputs[0] : metaParsed?.outputs?.[0];
+    const firstRagName = (parsePackTasksList(rag.rag_list)[0]?.[0] ?? out0?.rag_name ?? quizzes[0]?.rag_name ?? '').trim();
     state.showQuizGeneratorBlock = true;
     state.quizSlotsCount = quizzesWithAnswers.length;
     state.cardList = quizzesWithAnswers.map((q) => buildCardFromRagQuiz(q, q.rag_name ?? firstRagName));
@@ -323,7 +342,7 @@ function buildCardFromRagQuiz(quiz, ragName) {
   };
 }
 
-/** 選擇單元預設一定要第一筆 */
+/** 選擇單元預設一定要第一筆；並同步各題 slot（下拉綁定 slotFormState，非 state.generateQuizTabId） */
 watch(generateQuizUnits, (units) => {
   const state = currentState.value;
   if (units.length === 0) return;
@@ -331,6 +350,15 @@ watch(generateQuizUnits, (units) => {
   const currentInList = units.some((u) => u.rag_tab_id === state.generateQuizTabId);
   if (!state.generateQuizTabId || !currentInList) {
     state.generateQuizTabId = firstTabId;
+  }
+  const count = state.quizSlotsCount || 0;
+  for (let i = 1; i <= count; i++) {
+    const slot = state.slotFormState?.[i];
+    if (!slot) continue;
+    const slotOk = units.some((u) => u.rag_tab_id === slot.generateQuizTabId);
+    if (!slot.generateQuizTabId || !slotOk) {
+      slot.generateQuizTabId = firstTabId;
+    }
   }
 }, { immediate: true });
 

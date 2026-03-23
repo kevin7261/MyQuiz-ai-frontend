@@ -23,6 +23,7 @@ import {
   API_TEST_QUIZ_GRADE,
   API_TEST_QUIZ_GRADE_RESULT,
 } from '../constants/api.js';
+import { parseRagMetadataObject } from '../utils/rag.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 defineProps({
@@ -146,7 +147,7 @@ const generateQuizUnits = computed(() => {
   if (Array.isArray(topOutputs) && topOutputs.length > 0) {
     return topOutputs.map(mapOutput);
   }
-  const nestedOutputs = rag.rag_metadata?.outputs;
+  const nestedOutputs = parseRagMetadataObject(rag)?.outputs;
   if (Array.isArray(nestedOutputs) && nestedOutputs.length > 0) {
     return nestedOutputs.map(mapOutput);
   }
@@ -225,7 +226,7 @@ watch(examList, (list) => {
   }
 }, { immediate: true });
 
-/** 選擇單元預設第一筆（每個 tab 各自） */
+/** 選擇單元預設第一筆（每個 tab 各自）；同步各題 slot 的下拉值 */
 watch(generateQuizUnits, (units) => {
   if (units.length === 0) return;
   const state = currentState.value;
@@ -233,6 +234,15 @@ watch(generateQuizUnits, (units) => {
   const currentInList = units.some((u) => u.rag_tab_id === state.generateQuizTabId);
   if (!state.generateQuizTabId || !currentInList) {
     state.generateQuizTabId = firstTabId;
+  }
+  const count = state.quizSlotsCount || 0;
+  for (let i = 1; i <= count; i++) {
+    const slot = state.slotFormState?.[i];
+    if (!slot) continue;
+    const slotOk = units.some((u) => u.rag_tab_id === slot.generateQuizTabId);
+    if (!slot.generateQuizTabId || !slotOk) {
+      slot.generateQuizTabId = firstTabId;
+    }
   }
 }, { immediate: true });
 

@@ -65,6 +65,28 @@ export function deriveRagName(o) {
 }
 
 /**
+ * 將 GET /rag/rags 單筆的 rag_metadata 正規化為物件。
+ * 後端常將 rag_metadata 存成 JSON 字串，若直接用 rag.rag_metadata.outputs 會讀不到。
+ * @param {object} [rag]
+ * @returns {object | null}
+ */
+export function parseRagMetadataObject(rag) {
+  const raw = rag?.rag_metadata;
+  if (raw == null) return null;
+  if (typeof raw === 'string') {
+    const s = raw.trim();
+    if (!s) return null;
+    try {
+      return JSON.parse(s);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw === 'object') return raw;
+  return null;
+}
+
+/**
  * 將 rag_list 字串解析為虛擬資料夾群組（供建 RAG 時分組上傳）
  * 格式：'a+b,c' → [['a','b'],['c']]，逗號分隔群組，加號分隔同群組內的資料夾
  * @param {string} [str]
