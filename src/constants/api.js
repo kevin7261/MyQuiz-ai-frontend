@@ -6,7 +6,7 @@
  */
 
 /** 後端 API 基底網址，全專案統一由此設定（開發時多為 localhost:8000） */
-export const API_BASE = 'http://127.0.0.1:8000';
+export const API_BASE = 'https://aiquiz-backend-z4mo.onrender.com';
 
 /** 修改個資：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=系統開發者 2=課程管理者 3=學生）、llm_api_key（空字串表示清除）；回傳更新後使用者資訊（不含 password） */
 export const API_UPDATE_PROFILE = '/user/profile';
