@@ -806,7 +806,7 @@ async function confirmAnswer(item) {
         </div>
         <div v-if="activeTabId" class="mb-3">
           <div class="form-label small text-secondary fw-medium mb-2">上傳 ZIP 檔</div>
-          <p class="form-text small text-secondary mb-2">支援 .pdf、.docx、.rmd／.r、.html／.htm</p>
+          <p class="form-text small text-secondary mb-2">支援 .pdf、.doc、.docx、.ppt、.pptx</p>
           <input
             ref="zipFileInputRef"
             type="file"
