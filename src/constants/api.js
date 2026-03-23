@@ -5,8 +5,20 @@
  * 請求時請搭配 API_BASE 組成完整 URL（或由 axios 等 baseURL 設定）。
  */
 
-/** 後端 API 基底網址，全專案統一由此設定（開發時多為 localhost:8000） */
-export const API_BASE = 'http://127.0.0.1:8000';
+/** 正式環境後端（非本機開啟前端時使用） */
+const API_BASE_PRODUCTION = 'https://aiquiz-backend-z4mo.onrender.com';
+/** 本機開發後端 */
+const API_BASE_LOCAL = 'http://127.0.0.1:8000';
+
+/**
+ * 後端 API 基底網址：前端網址為 localhost 或 127.0.0.1 時連本機後端，否則連 Render 預設後端。
+ * （Node／測試環境無 window 時視為正式網址。）
+ */
+export const API_BASE =
+  typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? API_BASE_LOCAL
+    : API_BASE_PRODUCTION;
 
 /** 修改個資：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=系統開發者 2=課程管理者 3=學生）、llm_api_key（空字串表示清除）；回傳更新後使用者資訊（不含 password） */
 export const API_UPDATE_PROFILE = '/user/profile';

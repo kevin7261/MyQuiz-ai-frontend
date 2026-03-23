@@ -193,6 +193,23 @@ async function save(block) {
               儲存
             </button>
           </div>
+          <div class="bg-body-tertiary rounded text-start p-4 mb-3">
+            <div class="fs-5 fw-semibold mb-3 pb-2 border-bottom">
+              API 基底網址
+            </div>
+            <p class="small text-secondary mb-3">
+              目前前端實際使用的後端位址（本機開啟時連本機後端，其餘連正式環境）。
+            </p>
+            <div class="mb-0">
+              <label class="form-label small text-secondary fw-medium mb-1">API_BASE</label>
+              <div
+                class="form-control form-control-sm bg-body-secondary font-monospace text-break py-2"
+                role="status"
+              >
+                {{ API_BASE }}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
