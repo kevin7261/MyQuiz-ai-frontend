@@ -10,7 +10,7 @@
  * - 上傳 ZIP：POST /rag/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/build-rag-zip（rag_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
  * - 試題用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為試題用RAG」
- * - 出題：POST /rag/generate-quiz；評分：POST /rag/quiz-grade、GET /rag/quiz-grade-result/{job_id}
+ * - 出題：POST /rag/create-quiz；評分：POST /rag/grade-quiz、GET /rag/quiz-grade-result/{job_id}
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
@@ -868,7 +868,7 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：POST /rag/quiz-grade；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；不需 llm_api_key；回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。 */
+/** 評分：POST /rag/grade-quiz；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；不需 llm_api_key；回傳 202 + job_id；輪詢 GET /rag/quiz-grade-result/{job_id}，ready 時 result 含 answer_id。 */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
   const state = currentState.value;

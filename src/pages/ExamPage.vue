@@ -8,7 +8,7 @@
  * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（試驗／題目關聯由 GET /exam/exams 等提供即可）
  * - GET /rag/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／rag_list 時仍可用 rag_tab_id 合成單元）
  * - GET /exam/exams?local=&person_id=：local 與 GET /rag/rags 相同（依網址是否 localhost）；POST /exam/create-exam body 含 local
- * 出題：POST /exam/generate-quiz；評分：POST /exam/quiz-grade、GET /exam/quiz-grade-result/{job_id}；刪除：POST /exam/delete/{exam_tab_id}
+ * 出題：POST /exam/create-quiz；評分：POST /exam/grade-quiz、GET /exam/quiz-grade-result/{job_id}；刪除：POST /exam/delete/{exam_tab_id}
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
@@ -144,10 +144,18 @@ const generateQuizUnits = computed(() => {
     const base = outputBaseName(o);
     const fromFile = (o.filename || o.rag_filename || '').replace(/_rag\.zip?$/i, '').replace(/\.zip$/i, '');
     const label = base || fromFile;
+    const rawUnit =
+      (o.unit_name != null && String(o.unit_name).trim() !== '')
+        ? String(o.unit_name).trim()
+        : (o.rag_name != null && String(o.rag_name).trim() !== '')
+          ? String(o.rag_name).trim()
+          : label;
+    const unit_name = String(rawUnit || '').replace(/\+/g, '_') || label || sourceTabId;
     return {
       rag_tab_id: o.rag_tab_id || (base ? `${base}_rag` : '') || sourceTabId,
       filename: o.filename ?? o.rag_filename ?? (label ? `${label.replace(/\+/g, '_')}.zip` : `${sourceTabId}.zip`),
       rag_name: label || sourceTabId,
+      unit_name,
     };
   };
   // 與 build-rag-zip 相同：頂層 outputs
@@ -171,6 +179,7 @@ const generateQuizUnits = computed(() => {
           rag_tab_id: `${ragName}_rag` || sourceTabId,
           filename: `${ragName}_rag.zip`,
           rag_name: ragName,
+          unit_name: ragName,
         };
       });
   }
@@ -181,6 +190,7 @@ const generateQuizUnits = computed(() => {
       rag_tab_id: sourceTabId,
       filename: `${nm}_rag.zip`,
       rag_name: nm,
+      unit_name: nm,
     }];
   }
   return [];
@@ -633,16 +643,14 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   };
 }
 
-/** 出題：POST /exam/generate-quiz；須帶選中之單元（unit_name 等），否則後端易固定寫入第一個 output（例如始終為 10_ERGMs） */
+/** 出題：POST /exam/create-quiz；body: exam_id、exam_tab_id、quiz_level、unit_name（供後端對 rag_metadata.outputs 選 ZIP）。回傳 quiz_content 等。 */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const selectedUnit = generateQuizUnits.value.find((u) => u.rag_tab_id === slotState.generateQuizTabId);
+  const unitName = String(selectedUnit?.unit_name ?? selectedUnit?.rag_name ?? '').trim();
   const ragName = selectedUnit?.rag_name?.trim();
   const exam = currentExamItem.value;
   const examId = exam?.exam_id ?? exam?.test_id;
-  const rag = forExamRag.value;
-  const ragId = rag?.rag_id ?? rag?.id;
-  const parentRagTabId = sourceTabId.value;
   if (!canGenerateExamQuiz.value) {
     slotState.error = '目前沒有可用RAG';
     return;
@@ -655,20 +663,8 @@ async function generateQuiz(slotIndex) {
     slotState.error = '無法取得當前測驗的 exam_id';
     return;
   }
-  if (ragId == null || ragId === '') {
-    slotState.error = '無法取得試題用 rag_id';
-    return;
-  }
-  if (!parentRagTabId) {
-    slotState.error = '無法取得試題用 rag_tab_id';
-    return;
-  }
-  if (!selectedUnit || !slotState.generateQuizTabId) {
+  if (!unitName) {
     slotState.error = '請選擇單元';
-    return;
-  }
-  if (!ragName) {
-    slotState.error = '請選擇有效單元（單元名稱不可為空）';
     return;
   }
   slotState.loading = true;
@@ -683,10 +679,7 @@ async function generateQuiz(slotIndex) {
         exam_id: Number(examId) || 0,
         exam_tab_id: activeTabId.value != null && activeTabId.value !== '' ? String(activeTabId.value) : '',
         quiz_level: quizLevel >= 0 ? quizLevel : 0,
-        rag_id: Number(ragId) || 0,
-        rag_tab_id: String(parentRagTabId),
-        unit_name: String(ragName),
-        unit_rag_tab_id: String(slotState.generateQuizTabId),
+        unit_name: unitName,
       }),
     });
     const text = await res.text();
@@ -773,7 +766,7 @@ function formatGradingResult(text) {
   }
 }
 
-/** 評分：POST /exam/quiz-grade；body: llm_api_key, exam_id, exam_tab_id, exam_quiz_id, quiz_content, answer（皆 string）；回傳 202 + job_id；輪詢 GET /exam/quiz-grade-result/{job_id} */
+/** 評分：POST /exam/grade-quiz；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, answer（皆 string）；回傳 202 + job_id；輪詢 GET /exam/quiz-grade-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.answer.trim()) return;
   if (!activeTabId.value) {
@@ -984,7 +977,7 @@ onMounted(() => {
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <template v-if="examList.length > 0">
-        <!-- 產生題目與作答：與建立 RAG 頁一模一樣（出題與評分）；資料來自 GET /rag/for-exam，使用 /exam/generate-quiz、/exam/quiz-grade -->
+        <!-- 產生題目與作答：與建立 RAG 頁一模一樣（出題與評分）；資料來自 GET /rag/for-exam，使用 /exam/create-quiz、/exam/grade-quiz -->
         <div
           v-if="activeTabId"
           class="text-start page-block-spacing"

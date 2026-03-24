@@ -1,7 +1,7 @@
 /**
  * RAG 相關 API 呼叫模組
  *
- * 集中封裝 create-rag、upload-zip、build-rag-zip、generate-quiz、設為試題用（system-settings）、delete 等
+ * 集中封裝 create-rag、upload-zip、build-rag-zip、create-quiz、設為試題用（system-settings）、delete 等
  * 使用 fetch，錯誤時以 parseFetchError 解析並 throw Error，供呼叫端 catch 顯示。
  */
 import {
@@ -174,7 +174,7 @@ export async function apiBuildRagZip(body) {
 }
 
 /**
- * 產生題目：POST /rag/generate-quiz
+ * 產生題目：POST /rag/create-quiz
  * @param {string | number} ragId
  * @param {string | number} ragTabId
  * @param {number} quizLevel - 0 基礎 / 1 進階

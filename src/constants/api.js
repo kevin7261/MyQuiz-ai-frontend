@@ -28,15 +28,15 @@ export const API_BASE = isFrontendLocalHost() ? API_BASE_LOCAL : API_BASE_PRODUC
 /** 修改個資：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=系統開發者 2=課程管理者 3=學生）、llm_api_key（空字串表示清除）；回傳更新後使用者資訊（不含 password） */
 export const API_UPDATE_PROFILE = '/user/profile';
 
-/** Generate Quiz API：/rag/generate-quiz；body: rag_id, rag_tab_id, quiz_level（number）；不需 llm_api_key；回傳 quiz_content, quiz_hint, reference_answer 等 */
-export const API_GENERATE_QUIZ = '/rag/generate-quiz';
+/** RAG 出題：POST /rag/create-quiz；body: rag_id, rag_tab_id, quiz_level（number）；不需 llm_api_key；回傳 quiz_content 等 */
+export const API_GENERATE_QUIZ = '/rag/create-quiz';
 export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';
 export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
 /** 評分 API 表單欄位：測驗題目內容（與後端 quiz_content、Quiz 表一致） */
 export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
-/** 評分：POST /rag/quiz-grade；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；不需 llm_api_key；回傳 202 + job_id，再以 GET /rag/quiz-grade-result/{job_id} 輪詢 */
-export const API_GRADE_SUBMISSION = '/rag/quiz-grade';
+/** RAG 評分：POST /rag/grade-quiz；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, answer（皆 string）；不需 llm_api_key；回傳 202 + job_id，再以 GET /rag/quiz-grade-result/{job_id} 輪詢 */
+export const API_GRADE_SUBMISSION = '/rag/grade-quiz';
 export const API_GRADE_RESULT = '/rag/quiz-grade-result';
 
 /** 建立 RAG（建立 tab 時按 +）：POST /rag/create-rag，body 必填 rag_tab_id、person_id、rag_name，選填 local（本機網址為 true）；回傳 rag_id、rag_tab_id、person_id、rag_name、local、created_at */
@@ -67,10 +67,10 @@ export const API_EXAM_TESTS = '/exam/exams';
 export const API_CREATE_EXAM = '/exam/create-exam';
 /** Exam：POST /exam/delete/{exam_tab_id} Delete Exam */
 export const API_EXAM_DELETE = '/exam/delete';
-/** Exam：POST /exam/generate-quiz；body: exam_id, exam_tab_id, quiz_level、rag_id、rag_tab_id（試題用 RAG 父層 tab）、unit_name（選中之出題單元顯示名）；可選 unit_rag_tab_id（下拉 value，如 xxx_rag）；後端由系統設定取 llm_api_key */
-export const API_TEST_GENERATE_QUIZ = '/exam/generate-quiz';
-/** Exam：POST /exam/quiz-grade；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, answer（皆 string）；後端由系統設定取 llm_api_key */
-export const API_TEST_QUIZ_GRADE = '/exam/quiz-grade';
+/** Exam：POST /exam/create-quiz；body: exam_id 或 exam_tab_id、quiz_level、unit_name（對應 rag_metadata.outputs）；回傳 quiz_content 等；llm_api_key 由 system-settings */
+export const API_TEST_GENERATE_QUIZ = '/exam/create-quiz';
+/** Exam：POST /exam/grade-quiz；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, answer（皆 string）；後端由系統設定取 llm_api_key */
+export const API_TEST_QUIZ_GRADE = '/exam/grade-quiz';
 /** Exam：GET /exam/quiz-grade-result/{job_id} Get Exam Grade Result */
 export const API_TEST_QUIZ_GRADE_RESULT = '/exam/quiz-grade-result';
 
