@@ -4,7 +4,7 @@
  * 職責：
  * - 從 currentState 與 fileMetadataToShow 衍生 secondFoldersFull、ragListDisplayGroups
  * - 拖曳事件：以模組層級變數儲存 payload，避免 dataTransfer 跨瀏覽器問題
- * - 群組操作：removeFromRagList、removeRagListGroup、addRagListGroup、addAllSecondFoldersAsGroups、setAllSecondFoldersAsSingleGroup
+ * - 群組操作：removeFromRagList、removeRagListGroup、addRagListGroup、addAllSecondFoldersAsGroups、setAllSecondFoldersAsSingleGroup（追加含全部單元之一群組）
  * - 以 watch 同步 packTasks 字串與 packTasksList 陣列
  */
 import { computed, watch } from 'vue';
@@ -145,11 +145,13 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packTasksList = [...existing, ...newGroups];
   }
 
-  /** 全部單元合併為一個出題群組（rag_list：a+b+c） */
+  /** 在現有群組之後新增一個出題群組，內含全部單元（rag_list：a+b+c），不覆寫既有群組 */
   function setAllSecondFoldersAsSingleGroup() {
     const names = secondFoldersFull.value;
     if (!names.length) return;
-    currentState.value.packTasksList = [[...names]];
+    const state = currentState.value;
+    const existing = state.packTasksList ?? [];
+    state.packTasksList = [...existing, [...names]];
   }
 
   watch(

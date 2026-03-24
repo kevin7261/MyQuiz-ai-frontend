@@ -1090,7 +1090,7 @@ async function confirmAnswer(item) {
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
-                title="合併為一個出題群組，內含全部單元（rag_list 以 + 連接）"
+                title="在現有群組之後新增一群組，內含全部單元（rag_list 以 + 連接）"
                 @click="setAllSecondFoldersAsSingleGroup"
               >
                 每個單元建立一個群組
