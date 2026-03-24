@@ -1008,10 +1008,21 @@ onMounted(() => {
                         </select>
                       </div>
                       <div>
-                        <label class="form-label small text-secondary fw-medium mb-1">難度</label>
-                        <select v-model="filterDifficulty" class="form-select form-select-sm">
-                          <option v-for="opt in difficultyOptions" :key="opt" :value="opt">{{ opt }}</option>
-                        </select>
+                        <label class="form-label small text-secondary fw-medium mb-1 d-block">難度</label>
+                        <div class="btn-group btn-group-sm" role="group" aria-label="難度">
+                          <template v-for="(opt, di) in difficultyOptions" :key="opt">
+                            <input
+                              :id="'exam-quiz-diff-' + slotIndex + '-' + di"
+                              v-model="filterDifficulty"
+                              type="radio"
+                              class="btn-check"
+                              :name="'exam-quiz-difficulty-' + slotIndex"
+                              :value="opt"
+                              autocomplete="off"
+                            >
+                            <label class="btn btn-outline-primary" :for="'exam-quiz-diff-' + slotIndex + '-' + di">{{ opt }}</label>
+                          </template>
+                        </div>
                       </div>
                       <button
                         type="button"
