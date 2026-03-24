@@ -794,7 +794,7 @@ async function confirmAnswer(item) {
   const ragId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
   if (!sourceTabId) {
     item.confirmed = true;
-    item.gradingResult = '評分需要 rag_tab_id：請先在「上傳 ZIP 檔」區塊上傳 RAG/講義 ZIP 取得 rag_tab_id 後再進行評分。';
+    item.gradingResult = '評分需要 rag_tab_id：請先上傳教材 ZIP 取得 rag_tab_id 後再進行評分。';
     return;
   }
   if (ragId == null) {
@@ -843,78 +843,73 @@ async function confirmAnswer(item) {
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <!-- 無資料時不顯示表單，點「+」後才顯示；有資料時顯示對應 tab 表單 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
-      <!-- 設為試題用 RAG：內容區最上方（錯誤訊息同區塊） -->
+      <!-- 設為試題用 RAG：需後端已有 rag_metadata 才顯示按鈕；錯誤訊息同區塊 -->
       <div
-        v-if="(!isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id)) || currentState.forExamError"
+        v-if="(hasRagMetadata && !isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id)) || currentState.forExamError"
         class="text-start page-block-spacing"
       >
         <div
-          v-if="!isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id)"
+          v-if="hasRagMetadata && !isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id)"
           class="d-flex flex-wrap justify-content-end align-items-center gap-2"
         >
           <button
             type="button"
             class="btn btn-sm btn-success"
-            :disabled="currentState.forExamLoading || currentRagItem?.for_exam === true || !hasRagMetadata"
+            :disabled="currentState.forExamLoading || currentRagItem?.for_exam === true"
             @click="setRagForExam"
           >
             設為試題用 RAG
           </button>
         </div>
-        <div v-if="currentState.forExamError" class="alert alert-danger py-2 small mb-0" :class="{ 'mt-2': !isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id) }">
+        <div
+          v-if="currentState.forExamError"
+          class="alert alert-danger py-2 small mb-0"
+          :class="{ 'mt-2': hasRagMetadata && !isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id) }"
+        >
           {{ currentState.forExamError }}
         </div>
       </div>
-      <!-- 基本資訊、llm_api_key、ZIP 上傳與 file_metadata 合併為一區塊 -->
-      <div class="text-start page-block-spacing">
-        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">
-          檔案上傳
-        </div>
-        <div v-if="activeTabId" class="mb-3">
-          <template v-if="hasUploadedFileMetadata">
-            <div class="small text-success">{{ uploadedZipDisplayName }}</div>
-          </template>
-          <template v-else>
-            <div class="form-label small text-secondary fw-medium mb-2">上傳 ZIP 檔</div>
-            <p class="form-text small text-secondary mb-2">支援 .pdf、.doc、.docx、.ppt、.pptx</p>
-            <input
-              ref="zipFileInputRef"
-              type="file"
-              accept=".zip"
-              class="d-none"
-              @change="onZipChange"
+      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立出題群組」內 -->
+      <div v-if="activeTabId && !hasUploadedFileMetadata" class="text-start page-block-spacing">
+        <div class="mb-3">
+          <div class="form-label small text-secondary fw-medium mb-2">上傳教材 ZIP 檔</div>
+          <input
+            ref="zipFileInputRef"
+            type="file"
+            accept=".zip"
+            class="d-none"
+            @change="onZipChange"
+          >
+          <div
+            class="zip-drop-zone rounded border border-dashed p-4 text-center position-relative"
+            :class="{ 'zip-drop-zone-over': isZipDragOver }"
+            @dragover="onZipDragOver"
+            @dragenter="onZipDragOver"
+            @dragleave="onZipDragLeave"
+            @drop="onZipDrop"
+            @click="openZipFileDialog()"
+          >
+            <template v-if="currentState.zipLoading">
+              <span class="text-secondary small">上傳中...</span>
+            </template>
+            <template v-else-if="currentState.zipFileName">
+              <span class="small text-success">{{ currentState.zipFileName }}</span>
+              <div class="mt-1 small text-muted">點擊可重新選擇檔案</div>
+            </template>
+            <template v-else>
+              <span class="small text-secondary">拖曳 ZIP 檔到這裡，或點擊選擇檔案</span>
+            </template>
+          </div>
+          <div class="d-flex justify-content-end mt-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-primary"
+              :disabled="currentState.zipLoading || !currentState.zipFileName"
+              @click.stop="confirmUploadZip"
             >
-            <div
-              class="zip-drop-zone rounded border border-dashed p-4 text-center position-relative"
-              :class="{ 'zip-drop-zone-over': isZipDragOver }"
-              @dragover="onZipDragOver"
-              @dragenter="onZipDragOver"
-              @dragleave="onZipDragLeave"
-              @drop="onZipDrop"
-              @click="openZipFileDialog()"
-            >
-              <template v-if="currentState.zipLoading">
-                <span class="text-secondary small">上傳中...</span>
-              </template>
-              <template v-else-if="currentState.zipFileName">
-                <span class="small text-success">{{ currentState.zipFileName }}</span>
-                <div class="mt-1 small text-muted">點擊可重新選擇檔案</div>
-              </template>
-              <template v-else>
-                <span class="small text-secondary">拖曳 ZIP 檔到這裡，或點擊選擇檔案</span>
-              </template>
-            </div>
-            <div class="d-flex justify-content-end mt-2">
-              <button
-                type="button"
-                class="btn btn-sm btn-primary"
-                :disabled="currentState.zipLoading || !currentState.zipFileName"
-                @click.stop="confirmUploadZip"
-              >
-                確定上傳
-              </button>
-            </div>
-          </template>
+              確定上傳
+            </button>
+          </div>
         </div>
         <div v-if="currentState.zipError" class="alert alert-danger mt-2 mb-0 py-2 small">
           {{ currentState.zipError }}
@@ -927,6 +922,11 @@ async function confirmAnswer(item) {
         :class="{ 'opacity-75 pe-none': !hasRagMetadata && packAndGenerateDisabled }"
       >
         <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">建立出題群組</div>
+
+        <div class="mb-3">
+          <div class="small text-secondary fw-medium mb-1">檔案名稱</div>
+          <div class="small text-success text-break">{{ uploadedZipDisplayName }}</div>
+        </div>
 
         <template v-if="hasRagMetadata">
           <div class="mb-3">
