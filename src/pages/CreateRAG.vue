@@ -258,6 +258,7 @@ const {
   removeRagListGroup,
   addRagListGroup,
   addAllSecondFoldersAsGroups,
+  setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packAndGenerateDisabled);
 
 /** Tab 列用：rag 項目含 _tabId、_label */
@@ -996,7 +997,7 @@ async function confirmAnswer(item) {
         <template v-else>
           <!-- 課程：可拖曳至出題群組 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
-            <label class="form-label small text-secondary fw-medium mb-1">課程</label>
+            <label class="form-label small text-secondary fw-medium mb-1">單元</label>
             <div class="d-flex flex-wrap gap-2 p-2 rounded border bg-body">
               <div
                 v-for="(name, i) in secondFoldersFull"
@@ -1076,14 +1077,23 @@ async function confirmAnswer(item) {
                 + 新增出題群組
               </div>
             </div>
-            <div class="mt-2">
+            <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
                 @click="addAllSecondFoldersAsGroups"
               >
-                每個課程建立出題群組
+                每個單元建立出題群組
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                :disabled="!secondFoldersFull.length"
+                title="合併為一個出題群組，內含全部單元（rag_list 以 + 連接）"
+                @click="setAllSecondFoldersAsSingleGroup"
+              >
+                每個單元建立一個群組
               </button>
             </div>
           </div>
