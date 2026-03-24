@@ -85,6 +85,11 @@ const ragListReadonlyGroups = computed(() => {
   return [];
 });
 
+/** 唯讀出題群組：橫向純文字，群組間以 · 分隔、群內以 + */
+const ragListReadonlyInlineText = computed(() =>
+  ragListReadonlyGroups.value.map((g) => (Array.isArray(g) ? g.join(' + ') : '')).filter(Boolean).join(' · ')
+);
+
 const packAndGenerateDisabled = computed(() => {
   if (hasRagMetadata.value) return true;
   if (hasRagListOrMetadata.value) return false;
@@ -214,6 +219,18 @@ const fileMetadataToShow = computed(() => {
 
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
+
+/**
+ * 建立流程 stepper：1 僅上傳、2 含建立群組、3 含題目測試
+ * - 無 file_metadata／無 rag_metadata → 1
+ * - 有 file_metadata／無 rag_metadata → 1–2
+ * - 有 file_metadata／有 rag_metadata → 1–2–3
+ */
+const createRagStepperPhase = computed(() => {
+  if (hasUploadedFileMetadata.value && hasRagMetadata.value) return 3;
+  if (hasUploadedFileMetadata.value) return 2;
+  return 1;
+});
 
 /** 已有 file_metadata 時，畫面僅顯示之 ZIP 檔名 */
 const uploadedZipDisplayName = computed(() => {
@@ -843,6 +860,42 @@ async function confirmAnswer(item) {
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <!-- 無資料時不顯示表單，點「+」後才顯示；有資料時顯示對應 tab 表單 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
+      <!-- 建立流程 stepper：依 file_metadata / rag_metadata 亮起 1～3 步 -->
+      <div v-if="activeTabId" class="create-rag-stepper text-start page-block-spacing" aria-label="建立流程">
+        <div class="d-flex align-items-start justify-content-between gap-2 gap-sm-3 w-100">
+          <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
+            <span
+              class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
+              :class="createRagStepperPhase >= 1 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
+            >1</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 1 ? 'text-dark fw-medium' : 'text-muted'">上傳檔案</span>
+          </div>
+          <div
+            class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
+            :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-line--on' : ''"
+            aria-hidden="true"
+          />
+          <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
+            <span
+              class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
+              :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
+            >2</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立出題群組</span>
+          </div>
+          <div
+            class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
+            :class="createRagStepperPhase >= 3 ? 'create-rag-stepper-line--on' : ''"
+            aria-hidden="true"
+          />
+          <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
+            <span
+              class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
+              :class="createRagStepperPhase >= 3 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
+            >3</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 3 ? 'text-dark fw-medium' : 'text-muted'">題目與作答測試</span>
+          </div>
+        </div>
+      </div>
       <!-- 設為試題用 RAG：需後端已有 rag_metadata 才顯示按鈕；錯誤訊息同區塊 -->
       <div
         v-if="(hasRagMetadata && !isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id)) || currentState.forExamError"
@@ -931,20 +984,18 @@ async function confirmAnswer(item) {
         <template v-if="hasRagMetadata">
           <div class="mb-3">
             <div class="small text-secondary fw-medium mb-1">出題群組</div>
-            <ul v-if="ragListReadonlyGroups.length" class="small mb-0 ps-3 text-break">
-              <li v-for="(group, gi) in ragListReadonlyGroups" :key="'rg-ro-' + gi">
-                {{ group.join(' + ') }}
-              </li>
-            </ul>
+            <div v-if="ragListReadonlyGroups.length" class="small text-break">{{ ragListReadonlyInlineText }}</div>
             <div v-else class="small text-muted">—</div>
           </div>
-          <div class="mb-3">
-            <div class="small text-secondary fw-medium mb-1">chunk size</div>
-            <div class="small">{{ chunkSize }}</div>
-          </div>
-          <div class="mb-3">
-            <div class="small text-secondary fw-medium mb-1">chunk overlap</div>
-            <div class="small">{{ chunkOverlap }}</div>
+          <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
+            <div>
+              <div class="small text-secondary fw-medium mb-1">chunk size</div>
+              <div class="small">{{ chunkSize }}</div>
+            </div>
+            <div>
+              <div class="small text-secondary fw-medium mb-1">chunk overlap</div>
+              <div class="small">{{ chunkOverlap }}</div>
+            </div>
           </div>
           <div class="mb-0">
             <div class="small text-secondary fw-medium mb-1">出題規範</div>
@@ -1096,13 +1147,13 @@ async function confirmAnswer(item) {
           </div>
         </template>
       </div>
-      <!-- 產生題目與作答：有 rag_metadata（本機 Pack 或後端已帶入）即顯示 -->
+      <!-- 題目與作答測試：有 rag_metadata（本機 Pack 或後端已帶入）即顯示 -->
       <div
         v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''"
         class="text-start page-block-spacing"
         :class="{ 'opacity-75': ragGenerateDisabled }"
       >
-        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">產生題目與作答</div>
+        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">題目與作答測試</div>
 
         <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
         <div class="mb-4">
@@ -1209,5 +1260,33 @@ async function confirmAnswer(item) {
 .pack-drop-target.pack-drop-active {
   background-color: rgba(13, 202, 240, 0.15) !important;
   border-color: var(--bs-info) !important;
+}
+
+/* 建立出題群組頁：流程 stepper（1–2–3） */
+.create-rag-stepper-num {
+  width: 2.25rem;
+  height: 2.25rem;
+  line-height: 1;
+}
+.create-rag-stepper-num--on {
+  background-color: var(--bs-primary);
+  color: var(--bs-white);
+}
+.create-rag-stepper-num--off {
+  background-color: var(--bs-secondary-bg);
+  color: var(--bs-secondary-color);
+  border: 1px solid var(--bs-border-color);
+}
+.create-rag-stepper-line {
+  flex: 1 1 1rem;
+  min-width: 0.35rem;
+  height: 2px;
+  margin-top: 1.125rem;
+  align-self: flex-start;
+  background-color: var(--bs-border-color);
+  border-radius: 1px;
+}
+.create-rag-stepper-line--on {
+  background-color: var(--bs-primary);
 }
 </style>
