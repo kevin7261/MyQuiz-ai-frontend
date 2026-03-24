@@ -9,7 +9,7 @@
  * - 建立 tab（按 +）：POST /rag/create-rag（rag_tab_id、person_id、rag_name 必填；local 由前端依網址是否為 localhost/127.0.0.1 帶入）
  * - 上傳 ZIP：POST /rag/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/build-rag-zip（rag_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
- * - 設為試題用：PATCH /rag/for-exam/{rag_tab_id}
+ * - 設為試題用：PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（body.rag_id）
  * - 出題：POST /rag/generate-quiz；評分：POST /rag/quiz-grade、GET /rag/quiz-grade-result/{job_id}
  * 上述 API 不需 llm_api_key。
  */
@@ -465,8 +465,12 @@ onMounted(() => {
 async function setRagForExam() {
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
-  const fileId = rag.rag_tab_id ?? rag.id ?? rag;
-  if (fileId == null || fileId === '') return;
+  const ragId = rag.rag_id ?? rag.id;
+  if (ragId == null || ragId === '') {
+    const state = getTabState(activeTabId.value);
+    state.forExamError = '無法取得 rag_id（請先建立並上傳 ZIP）';
+    return;
+  }
   const personId = getPersonId(authStore);
   if (!personId) {
     alert('請先登入');
@@ -476,7 +480,7 @@ async function setRagForExam() {
   state.forExamLoading = true;
   state.forExamError = '';
   try {
-    await apiSetRagForExam(fileId, personId);
+    await apiSetRagForExam(ragId);
     await fetchRagList();
   } catch (err) {
     state.forExamError = err.message || String(err);

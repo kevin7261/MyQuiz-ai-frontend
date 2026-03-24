@@ -1,7 +1,7 @@
 /**
  * RAG 相關 API 呼叫模組
  *
- * 集中封裝 create-rag、upload-zip、build-rag-zip、generate-quiz、for-exam、delete 等
+ * 集中封裝 create-rag、upload-zip、build-rag-zip、generate-quiz、設為試題用（system-settings）、delete 等
  * 使用 fetch，錯誤時以 parseFetchError 解析並 throw Error，供呼叫端 catch 顯示。
  */
 import {
@@ -10,7 +10,8 @@ import {
   API_UPLOAD_ZIP,
   API_BUILD_RAG_ZIP,
   API_GENERATE_QUIZ,
-  API_RAG_FOR_EXAM,
+  API_PUT_RAG_FOR_EXAM_DEPLOY,
+  API_PUT_RAG_FOR_EXAM_LOCALHOST,
   isFrontendLocalHost,
 } from '../constants/api.js';
 import { parseFetchError } from '../utils/apiError.js';
@@ -96,14 +97,15 @@ export async function apiDeleteRag(ragTabId, personId) {
 }
 
 /**
- * 設為試題用 RAG：PATCH /rag/for-exam/{rag_tab_id}
- * @param {string} ragTabId
- * @param {string} personId - 以 X-Person-Id header 傳送
+ * 設為試題用 RAG：PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（依前端是否為 localhost）
+ * @param {string | number} ragId - Rag.rag_id
  */
-export async function apiSetRagForExam(ragTabId, personId) {
-  const res = await fetch(`${API_BASE}${API_RAG_FOR_EXAM}/${encodeURIComponent(String(ragTabId))}`, {
-    method: 'PATCH',
-    headers: { 'X-Person-Id': String(personId) },
+export async function apiSetRagForExam(ragId) {
+  const path = isFrontendLocalHost() ? API_PUT_RAG_FOR_EXAM_LOCALHOST : API_PUT_RAG_FOR_EXAM_DEPLOY;
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rag_id: Number(ragId) || 0 }),
   });
   if (!res.ok) {
     const text = await res.text();

@@ -49,8 +49,12 @@ export const API_UPLOAD_ZIP = '/rag/upload-zip';
 export const API_BUILD_RAG_ZIP = '/rag/build-rag-zip';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';
-/** 試題頁用 RAG：GET /rag/for-exam 取得試題用 RAG（for_exam=true 且 deleted=false，0 或 1 筆），無 parameters；回傳格式同 /rag/build-rag-zip。PATCH /rag/for-exam/{rag_tab_id} Set Rag For Exam */
+/** 試題頁用 RAG：GET /rag/for-exam 取得試題用 RAG（for_exam=true 且 deleted=false，0 或 1 筆），無 parameters；回傳格式同 /rag/build-rag-zip。設為試題用改由 PUT system-settings（見下方 rag-for-exam-*） */
 export const API_RAG_FOR_EXAM = '/rag/for-exam';
+/** 設為試題用 RAG（本機前端）：PUT body { rag_id }；System_Setting key=rag_localhost */
+export const API_PUT_RAG_FOR_EXAM_LOCALHOST = '/system-settings/rag-for-exam-localhost';
+/** 設為試題用 RAG（非本機前端）：PUT body { rag_id }；System_Setting key=rag_deploy */
+export const API_PUT_RAG_FOR_EXAM_DEPLOY = '/system-settings/rag-for-exam-deploy';
 
 /** 個人答題分析：GET /person-analysis/quizzes/{person_id}；query 可選 language（en/zh）；回傳 { exams: [{ exam_id, exam_tab_id, person_id, exam_name, deleted, quizzes, answers }], count, weakness_report? } */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
@@ -76,6 +80,8 @@ export const API_TEST_QUIZ_GRADE_RESULT = '/exam/quiz-grade-result';
  * - PUT  /system-settings/course-name   Put Course Name Setting
  * - GET  /system-settings/llm-api-key  Get Llm Api Key
  * - PUT  /system-settings/llm-api-key  Put Llm Api Key
+ * - PUT  /system-settings/rag-for-exam-localhost  Put Rag For Exam Localhost（body: rag_id）
+ * - PUT  /system-settings/rag-for-exam-deploy  Put Rag For Exam Deploy（body: rag_id）
  */
 /** GET：取得課程名稱；回傳含 course_name。 */
 export const API_GET_SYSTEM_SETTING_COURSE_NAME = '/system-settings/course-name';
