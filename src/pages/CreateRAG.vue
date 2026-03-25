@@ -190,17 +190,20 @@ const currentRagItem = computed(() => {
 /** GET /system-settings/rag-for-exam-* 的 rag_id（列表未帶 for_exam 時仍可比對） */
 const ragForExamSettingRagId = ref(null);
 
-/** 目前分頁 RAG 是否為試題用（列表 for_exam 或與系統設定 rag_id 相同） */
-const currentRagIsExamRag = computed(() => {
-  const rag = currentRagItem.value;
-  if (!rag) return false;
+/** 列表 for_exam 或與系統設定 rag_id 相同時視為試題用 RAG（與分頁列綠點／刪除鈕一致） */
+function ragMatchesExamSetting(rag, settingRagId) {
+  if (!rag || typeof rag !== 'object') return false;
   if (rag.for_exam === true) return true;
   const rid = rag.rag_id ?? rag.id;
   if (rid == null || rid === '') return false;
-  const fromSetting = ragForExamSettingRagId.value;
-  if (fromSetting == null) return false;
-  return String(fromSetting) === String(rid);
-});
+  if (settingRagId == null) return false;
+  return String(settingRagId) === String(rid);
+}
+
+/** 目前分頁 RAG 是否為試題用（列表 for_exam 或與系統設定 rag_id 相同） */
+const currentRagIsExamRag = computed(() =>
+  ragMatchesExamSetting(currentRagItem.value, ragForExamSettingRagId.value)
+);
 
 /** 當前 tab 的 rag_id、rag_tab_id（僅 console 記錄；未上傳則為「未上傳」） */
 const currentRagIdAndTabId = computed(() => {
@@ -306,12 +309,13 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
-/** Tab 列用：rag 項目含 _tabId、_label */
+/** Tab 列用：rag 項目含 _tabId、_label、_isExamRag（試題用者分頁列不顯示刪除） */
 const ragItems = computed(() =>
   ragList.value.map((r) => ({
     ...r,
     _tabId: r.rag_tab_id ?? r.id ?? r,
     _label: getRagTabLabel(r),
+    _isExamRag: ragMatchesExamSetting(r, ragForExamSettingRagId.value),
   }))
 );
 /** Tab 列用：新增 tab 項目含 id、label */
