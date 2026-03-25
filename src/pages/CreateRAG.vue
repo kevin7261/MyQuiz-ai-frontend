@@ -628,7 +628,7 @@ async function addNewTab() {
     clearZipFileInput();
     if (ragList.value.length === 0) showFormWhenNoData.value = true;
   } catch (err) {
-    createRagError.value = err.message || '建立出題群組失敗';
+    createRagError.value = err.message || '出題群組建立失敗';
   } finally {
     createRagLoading.value = false;
   }
@@ -715,7 +715,7 @@ async function confirmUploadZip() {
   }
   const tabId = activeTabId.value;
   if (isNewTabId(tabId) || !tabId) {
-    state.zipError = '請先按 + 建立出題群組（此 tab 需先建立後端資料）';
+    state.zipError = '請先按 + 完成出題群組建立（此 tab 需先建立後端資料）';
     return;
   }
   const personId = getPersonId(authStore);
@@ -931,7 +931,7 @@ async function confirmAnswer(item) {
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">{{ hasRagMetadata ? '出題群組' : '建立出題群組' }}</span>
+        <span class="navbar-brand mb-0">{{ hasRagMetadata ? '出題群組' : '出題群組建立' }}</span>
       </div>
     </div>
     <RagTabsBar
@@ -974,7 +974,7 @@ async function confirmAnswer(item) {
               class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
               :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
             >2</span>
-            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立出題群組</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">出題群組建立</span>
           </div>
           <div
             class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
@@ -990,9 +990,8 @@ async function confirmAnswer(item) {
           </div>
         </div>
       </div>
-      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立出題群組」內 -->
-      <div v-if="activeTabId && !hasUploadedFileMetadata" class="text-start page-block-spacing">
-        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">上傳檔案</div>
+      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「出題群組建立」內 -->
+      <div v-if="activeTabId && !hasUploadedFileMetadata" class="text-start page-block-spacing border rounded p-3">
         <div class="mb-3">
           <input
             ref="zipFileInputRef"
@@ -1039,11 +1038,9 @@ async function confirmAnswer(item) {
       <!-- 建立 RAG：要有 file_metadata 才顯示；已有 rag_metadata 時僅純文字顯示群組／chunk／規範 -->
       <div
         v-if="fileMetadataToShow != null"
-        class="text-start page-block-spacing"
+        class="text-start page-block-spacing border rounded p-3"
         :class="{ 'opacity-75 pe-none': !hasRagMetadata && packGroupsEditBlocked }"
       >
-        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">{{ hasRagMetadata ? '出題群組' : '建立出題群組' }}</div>
-
         <div class="mb-3">
           <div class="small text-secondary fw-medium mb-1">上傳檔案名稱</div>
           <div class="small text-break">{{ uploadedZipDisplayName }}</div>
@@ -1361,7 +1358,7 @@ async function confirmAnswer(item) {
   border-color: var(--bs-info) !important;
 }
 
-/* 建立出題群組頁：流程 stepper（1–2–3） */
+/* 出題群組建立頁：流程 stepper（1–2–3） */
 .create-rag-stepper-num {
   width: 2.25rem;
   height: 2.25rem;
