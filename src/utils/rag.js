@@ -233,6 +233,64 @@ export function normalizeExamListResponse(data) {
 }
 
 /**
+ * GET /person-analysis/quizzes、GET /course-analysis/quizzes 回傳的列表包裝：
+ * 與 GET /exam/exams 一致時為 { exams }；與 GET /rag/rags 一致時為 { rags }
+ * @param {unknown} data
+ * @returns {object[]}
+ */
+export function normalizeAnalysisQuizzesListResponse(data) {
+  const fromExams = normalizeExamListResponse(data);
+  if (fromExams.length > 0) return fromExams;
+  return normalizeRagListResponse(data);
+}
+
+/**
+ * 與 ExamPage examQuizRowKey：合併 answers 時以字串當 key
+ * @param {object | null | undefined} q
+ * @returns {string}
+ */
+export function examOrRagQuizRowKey(q) {
+  if (!q || typeof q !== 'object') return '';
+  const v = q.exam_quiz_id ?? q.quiz_id;
+  return v != null && String(v).trim() !== '' ? String(v) : '';
+}
+
+/**
+ * @param {object | null | undefined} a
+ * @returns {string}
+ */
+export function examOrRagAnswerRowKey(a) {
+  if (!a || typeof a !== 'object') return '';
+  const v = a.exam_quiz_id ?? a.quiz_id;
+  return v != null && String(v).trim() !== '' ? String(v) : '';
+}
+
+/**
+ * 單筆 Exam／Rag 列（與 GET /exam/exams、GET /rag/rags 每筆相同）：quizzes／exam_quizzes 與頂層 answers／exam_answers 合併為每題含 answers（與 ExamPage syncExamItemToTabState 一致）
+ * @param {object | null | undefined} item
+ * @returns {object[]}
+ */
+export function mergeQuizzesWithTopLevelAnswers(item) {
+  if (!item || typeof item !== 'object') return [];
+  const quizzes = item.quizzes ?? item.exam_quizzes ?? [];
+  const topAnswers = item.answers ?? item.exam_answers ?? [];
+  if (quizzes.length === 0) return [];
+  const answersByQuizId = topAnswers.reduce((acc, a) => {
+    const id = examOrRagAnswerRowKey(a);
+    if (!id) return acc;
+    if (!acc[id]) acc[id] = [];
+    acc[id].push(a);
+    return acc;
+  }, {});
+  return quizzes.map((q, i) => {
+    const qKey = examOrRagQuizRowKey(q);
+    const byId = q.answers ?? (qKey ? answersByQuizId[qKey] : undefined);
+    const answers = Array.isArray(byId) && byId.length > 0 ? byId : topAnswers[i] != null ? [topAnswers[i]] : [];
+    return { ...q, answers };
+  });
+}
+
+/**
  * 是否為「新增」用的 tab id（尚未寫入後端）
  * @param {string} [id]
  * @returns {boolean}

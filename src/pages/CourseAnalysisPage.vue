@@ -2,14 +2,19 @@
 /**
  * CourseAnalysisPage - 學生測驗分析頁面
  *
- * 讀取 GET /course-analysis/quizzes，回傳 { exams, count, weakness_report: null }，每筆 exam 含 quizzes、answers。
- * 版面與測驗分析一致：作答紀錄摘要、批改結果、匯出 Excel；無 weakness_report 時不顯示弱點區塊。
+ * 讀取 GET /course-analysis/quizzes；列表格式與 GET /exam/exams、GET /rag/rags 每筆一致（頂層 answers 與 quizzes 合併）；weakness_report 固定 null。
+ * 版面與測驗分析一致：摘要、批改結果、匯出 Excel。
  */
 import { ref, onMounted } from 'vue';
 import { API_BASE, API_COURSE_ANALYSIS_QUIZZES } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { downloadSummaryExcel } from '../utils/exportExcel.js';
-import { normalizeQuizLevelLabel, examQuizLevelFromRow } from '../utils/rag.js';
+import {
+  normalizeQuizLevelLabel,
+  examQuizLevelFromRow,
+  normalizeAnalysisQuizzesListResponse,
+  mergeQuizzesWithTopLevelAnswers,
+} from '../utils/rag.js';
 import { formatGradingResult, formatQuizGradeDisplay } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
@@ -24,10 +29,11 @@ function getDifficultyLabel(quizLevel) {
   return quizLevel != null && String(quizLevel).trim() !== '' ? String(quizLevel) : '—';
 }
 
-/** 每題作答紀錄取第一筆（學生測驗分析可能多筆，顯示第一筆於摘要與卡片） */
+/** 每題可能多筆作答，與測驗頁一致取最後一筆 */
 function getSingleAnswer(item) {
   const list = item?.answers;
-  return Array.isArray(list) && list.length > 0 ? list[0] : null;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list[list.length - 1];
 }
 
 /** 從單筆 answer 取得批改結果文字（與測驗頁顯示一致） */
@@ -50,10 +56,12 @@ async function fetchQuizAnswers() {
     const res = await loggedFetch(url, { method: 'GET' });
     if (!res.ok) throw new Error(res.statusText || '無法載入課程答題資料');
     const data = await res.json();
-    const exams = data?.exams ?? [];
-    items.value = exams.flatMap((exam) =>
-      (exam.quizzes ?? []).map((q) => ({ ...q, exam_name: exam.exam_name ?? exam.exam_tab_id ?? '' }))
-    );
+    const exams = normalizeAnalysisQuizzesListResponse(data);
+    items.value = exams.flatMap((exam) => {
+      const quizzes = mergeQuizzesWithTopLevelAnswers(exam);
+      const examLabel = exam.exam_name ?? exam.exam_tab_id ?? '';
+      return quizzes.map((q) => ({ ...q, exam_name: examLabel }));
+    });
   } catch (err) {
     error.value = err.message || '無法載入學生測驗分析';
     items.value = [];
@@ -106,7 +114,7 @@ onMounted(() => {
       <div v-else-if="items.length === 0" class="alert alert-info mt-0">尚無答題紀錄。</div>
 
       <template v-else>
-        <!-- 作答紀錄摘要表：題號 / 單元 / 難度 / 分數 / 時間（每題取第一筆作答） -->
+        <!-- 作答紀錄摘要表：題號 / 單元 / 難度 / 分數 / 時間（每題取最新一筆作答） -->
         <div class="text-start page-block-spacing">
           <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">作答紀錄摘要</div>
           <div class="table-responsive">

@@ -58,9 +58,9 @@ export const API_PUT_RAG_FOR_EXAM_LOCALHOST = '/system-settings/rag-for-exam-loc
 /** 設為試題用 RAG（非本機前端）：PUT body { rag_id }；System_Setting key=rag_deploy */
 export const API_PUT_RAG_FOR_EXAM_DEPLOY = '/system-settings/rag-for-exam-deploy';
 
-/** 個人答題分析：GET /person-analysis/quizzes/{person_id}；query 可選 language（en/zh）；回傳 { exams: [{ exam_id, exam_tab_id, person_id, exam_name, deleted, quizzes, answers }], count, weakness_report? } */
+/** 個人答題分析：GET /person-analysis/quizzes/{person_id}；僅含 Exam_Answer 有對應之題；列表格式與 GET /exam/exams、GET /rag/rags 每筆一致（quizzes／exam_quizzes、頂層 answers／exam_answers、每題可含 answers）；另帶 count、weakness_report（有 LLM Key 時） */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
-/** 學生測驗分析：GET /course-analysis/quizzes；回傳格式同 List Quizzes By Person（exams、count、weakness_report 固定 null） */
+/** 學生測驗分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
 /** Exam API：GET /exam/exams List Exams（deleted=false；Exam.local 須與 query local 相符；未傳 local 時後端依連線判定；query: person_id 可選、local 建議與 create-unit 一致） */

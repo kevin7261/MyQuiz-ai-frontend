@@ -2,15 +2,20 @@
 /**
  * AnalysisPage - 測驗分析頁面
  *
- * 讀取 GET /person-analysis/quizzes/{person_id}，回傳 { exams, count, weakness_report }。
- * 每筆 exam 含 quizzes、answers；可顯示作答紀錄摘要、弱點報告（JSON 區塊）、匯出 Excel。
+ * 讀取 GET /person-analysis/quizzes/{person_id}；列表與 GET /exam/exams、GET /rag/rags 每筆一致（頂層 answers 與每題 quizzes 對齊合併）。
+ * 另含 count、weakness_report；可顯示作答摘要、弱點報告、匯出 Excel。
  */
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { downloadSummaryExcel } from '../utils/exportExcel.js';
-import { normalizeQuizLevelLabel, examQuizLevelFromRow } from '../utils/rag.js';
+import {
+  normalizeQuizLevelLabel,
+  examQuizLevelFromRow,
+  normalizeAnalysisQuizzesListResponse,
+  mergeQuizzesWithTopLevelAnswers,
+} from '../utils/rag.js';
 import { formatGradingResult, formatQuizGradeDisplay } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
@@ -49,10 +54,11 @@ function getDifficultyLabel(quizLevel) {
   return quizLevel != null && String(quizLevel).trim() !== '' ? String(quizLevel) : '—';
 }
 
-/** 每題作答紀錄只會有一筆，取第一筆 */
+/** 每題可能多筆作答，與測驗頁一致取最後一筆（最新提交） */
 function getSingleAnswer(item) {
   const list = item?.answers;
-  return Array.isArray(list) && list.length > 0 ? list[0] : null;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  return list[list.length - 1];
 }
 
 /** 依 JSON 的 key 順序產生的區塊列表 */
@@ -84,20 +90,18 @@ async function fetchQuizAnswers() {
     return;
   }
   try {
-    const params = new URLSearchParams();
-    params.set('language', 'zh');
-    const query = params.toString();
-    const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}${query ? `?${query}` : ''}`;
+    const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}`;
     const headers = { 'X-Person-Id': String(personId) };
     const res = await loggedFetch(url, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText || '無法載入答題資料');
     const data = await res.json();
-    const exams = data?.exams ?? [];
-    // 將所有 exam 的 quizzes 扁平化，並帶入 exam_name 供單元顯示
-    items.value = exams.flatMap((exam) =>
-      (exam.quizzes ?? []).map((q) => ({ ...q, exam_name: exam.exam_name ?? exam.exam_tab_id ?? '' }))
-    );
-    count.value = data?.count ?? exams.length;
+    const exams = normalizeAnalysisQuizzesListResponse(data);
+    items.value = exams.flatMap((exam) => {
+      const quizzes = mergeQuizzesWithTopLevelAnswers(exam);
+      const examLabel = exam.exam_name ?? exam.exam_tab_id ?? '';
+      return quizzes.map((q) => ({ ...q, exam_name: examLabel }));
+    });
+    count.value = data?.count ?? items.value.length;
     weaknessReport.value = (data?.weakness_report != null && String(data.weakness_report).trim() !== '') ? String(data.weakness_report).trim() : '';
   } catch (err) {
     error.value = err.message || '無法載入測驗分析';
