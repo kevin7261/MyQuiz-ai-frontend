@@ -3,7 +3,7 @@
    * HomeView - 登入後的主畫面
    *
    * 職責：
-   * - 左側選單：測驗、個人測驗分析、建立 RAG、課程測驗分析、使用者管理、系統設定、個資修改、登出
+   * - 左側選單：測驗、測驗分析；其餘項目與登出在使用者名下拉選單
    * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
    * - /exam 對應 work（ExamPage），/main/:view 對應 analysis / createRAG 等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
@@ -46,7 +46,6 @@
         if (route.path === '/exam') return 'work';
         return PATH_TO_VIEW[route.params.view] || 'work';
       });
-      const userAccount = computed(() => (authStore.user ? `ID ${authStore.user.user_id}` : '未登入'));
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
 
       /** 切換顯示區塊（由導覽連結或程式呼叫）；work 導向 /exam，其餘導向 /main/:view */
@@ -84,7 +83,6 @@
       return {
         currentView,
         MAIN_WORK_TAB_ID,
-        userAccount,
         userName,
         authStore,
         setView,
@@ -107,7 +105,6 @@
     <div class="row h-100 g-0 home-layout">
       <div class="col-4 col-md-3 col-lg-2 h-100 overflow-hidden">
         <LeftView
-          :user-account="userAccount"
           :user-name="userName"
           :user-type="authStore.user?.user_type"
           @logout="onLogout"

@@ -1,9 +1,9 @@
 <script setup>
 /**
- * CourseAnalysisPage - 課程測驗分析頁面
+ * CourseAnalysisPage - 學生測驗分析頁面
  *
  * 讀取 GET /course-analysis/quizzes，回傳 { exams, count, weakness_report: null }，每筆 exam 含 quizzes、answers。
- * 版面與個人測驗分析一致：作答紀錄摘要、批改結果、匯出 Excel；無 weakness_report 時不顯示弱點區塊。
+ * 版面與測驗分析一致：作答紀錄摘要、批改結果、匯出 Excel；無 weakness_report 時不顯示弱點區塊。
  */
 import { ref, onMounted } from 'vue';
 import { API_BASE, API_COURSE_ANALYSIS_QUIZZES } from '../constants/api.js';
@@ -21,7 +21,7 @@ function getDifficultyLabel(quizLevel) {
   return quizLevel != null ? String(quizLevel) : '—';
 }
 
-/** 每題作答紀錄取第一筆（課程測驗分析可能多筆，顯示第一筆於摘要與卡片） */
+/** 每題作答紀錄取第一筆（學生測驗分析可能多筆，顯示第一筆於摘要與卡片） */
 function getSingleAnswer(item) {
   const list = item?.answers;
   return Array.isArray(list) && list.length > 0 ? list[0] : null;
@@ -106,7 +106,7 @@ async function fetchQuizAnswers() {
       (exam.quizzes ?? []).map((q) => ({ ...q, exam_name: exam.exam_name ?? exam.exam_tab_id ?? '' }))
     );
   } catch (err) {
-    error.value = err.message || '無法載入課程測驗分析';
+    error.value = err.message || '無法載入學生測驗分析';
     items.value = [];
   } finally {
     loading.value = false;
@@ -126,7 +126,7 @@ function getSummaryRows() {
 
 async function onDownloadExcel() {
   const headers = ['題號', 'person_id', '單元', '難度', '分數', '時間'];
-  await downloadSummaryExcel(headers, getSummaryRows(), '課程測驗分析-作答紀錄摘要.xlsx');
+  await downloadSummaryExcel(headers, getSummaryRows(), '學生測驗分析-作答紀錄摘要.xlsx');
 }
 
 onMounted(() => {
@@ -142,14 +142,14 @@ onMounted(() => {
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">課程測驗分析</span>
+        <span class="navbar-brand mb-0">學生測驗分析</span>
       </div>
     </div>
     <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3">
       {{ error }}
     </div>
 
-    <!-- 內容區：不顯示 weakness_report（課程測驗分析固定為 null） -->
+    <!-- 內容區：不顯示 weakness_report（學生測驗分析固定為 null） -->
     <div class="flex-grow-1 overflow-auto bg-white px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
@@ -195,7 +195,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 題目與答案詳情（樣式與個人測驗分析一致） -->
+        <!-- 題目與答案詳情（樣式與測驗分析一致） -->
         <div
           v-for="(item, idx) in items"
           :key="item.exam_quiz_id ?? idx"

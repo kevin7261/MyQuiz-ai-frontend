@@ -20,9 +20,9 @@ const VALID_VIEWS = ['work', 'analysis', 'course-analysis', 'profile', 'create-u
 /** 各 view 對應的瀏覽器頁籤標題 */
 const VIEW_TITLES = {
   work: 'Exam - AIQuiz',
-  'analysis': '個人測驗分析 - AIQuiz',
-  'course-analysis': '課程測驗分析 - AIQuiz',
-  profile: '個資修改 - AIQuiz',
+  'analysis': '測驗分析 - AIQuiz',
+  'course-analysis': '學生測驗分析 - AIQuiz',
+  profile: '設定 - AIQuiz',
   'create-unit': '出題單元建立 - AIQuiz',
   users: '使用者管理 - AIQuiz',
   settings: '系統設定 - AIQuiz',
