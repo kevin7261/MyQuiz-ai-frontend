@@ -1068,7 +1068,7 @@ async function confirmAnswer(item) {
           </div>
           <div
             v-if="!isNewTabId(activeTabId) && currentRagItem && (currentRagItem.rag_tab_id ?? currentRagItem.id)"
-            class="d-flex flex-wrap justify-content-end align-items-center gap-2"
+            class="d-flex flex-wrap justify-content-center align-items-center gap-2"
           >
             <button
               type="button"
@@ -1222,7 +1222,7 @@ async function confirmAnswer(item) {
               style="max-width: 100%;"
             />
           </div>
-          <div class="mt-3">
+          <div class="mt-3 d-flex justify-content-center">
             <button
               type="button"
               class="btn btn-sm btn-primary"
@@ -1314,7 +1314,7 @@ async function confirmAnswer(item) {
           </template>
 
           <!-- 新增題目按鈕：固定在最下面，每按一次多一個「第 n 題」區塊 -->
-          <div class="mb-0 pt-2">
+          <div class="mb-0 pt-2 d-flex justify-content-center">
             <button
               type="button"
               class="btn btn-sm btn-primary"

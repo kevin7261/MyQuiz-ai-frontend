@@ -1020,7 +1020,7 @@ onMounted(() => {
                           maxlength="2000"
                         />
                         <div class="form-text small">{{ currentState.cardList[slotIndex - 1].answer.length }} / 2000</div>
-                        <div class="d-flex justify-content-end mt-2">
+                        <div class="d-flex justify-content-center mt-2">
                           <button type="button" class="btn btn-sm btn-primary" @click="confirmAnswer(currentState.cardList[slotIndex - 1])">確定</button>
                         </div>
                       </template>
@@ -1091,7 +1091,7 @@ onMounted(() => {
             </template>
 
             <!-- 新增題目按鈕：固定在最下面，每按一次多一個「第 n 題」區塊 -->
-            <div class="mb-0 pt-2">
+            <div class="mb-0 pt-2 d-flex flex-column align-items-center">
               <button
                 type="button"
                 class="btn btn-sm btn-primary"
@@ -1102,7 +1102,7 @@ onMounted(() => {
               </button>
               <p
                 v-if="generateQuizBlocked && !forExamLoading && activeTabId"
-                class="small text-secondary mb-0 mt-2"
+                class="small text-secondary mb-0 mt-2 text-center"
               >
                 目前沒有可用RAG
               </p>
