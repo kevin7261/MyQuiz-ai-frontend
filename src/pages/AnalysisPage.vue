@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { downloadSummaryExcel } from '../utils/exportExcel.js';
+import { normalizeQuizLevelLabel } from '../utils/rag.js';
 
 const authStore = useAuthStore();
 
@@ -39,11 +40,11 @@ function extractJsonFromWeaknessReport(text) {
 
 const weaknessReportParsed = computed(() => extractJsonFromWeaknessReport(weaknessReport.value));
 
-/** 難度數字轉標籤（與測驗頁一致：0=基礎、1=進階） */
-const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
+/** 難度顯示：API 字串「基礎」「進階」或舊版 0／1 */
 function getDifficultyLabel(quizLevel) {
-  if (quizLevel === 0 || quizLevel === 1) return QUIZ_LEVEL_LABELS[quizLevel];
-  return quizLevel != null ? String(quizLevel) : '—';
+  const label = normalizeQuizLevelLabel(quizLevel);
+  if (label) return label;
+  return quizLevel != null && String(quizLevel).trim() !== '' ? String(quizLevel) : '—';
 }
 
 /** 每題作答紀錄只會有一筆，取第一筆 */

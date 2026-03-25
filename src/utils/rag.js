@@ -7,8 +7,36 @@
 
 /** 建 RAG 時預設的系統提示（題目生成指令） */
 export const DEFAULT_SYSTEM_INSTRUCTION = '題目字數不超過50字';
-/** 題目難度選項的顯示文字（對應 quiz_level 0、1） */
+/** 題目難度選項與 create-quiz API 的 quiz_level 字串值 */
 export const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
+
+/**
+ * POST /rag/create-quiz、/exam/create-quiz 的 quiz_level：固定為「基礎」或「進階」
+ * @param {unknown} selected - UI 選取值，或舊版 0／1
+ * @returns {string}
+ */
+export function quizLevelStringForApi(selected) {
+  if (selected === 0 || selected === 1) return QUIZ_LEVEL_LABELS[selected];
+  const s = String(selected ?? '').trim();
+  if (s === '0') return QUIZ_LEVEL_LABELS[0];
+  if (s === '1') return QUIZ_LEVEL_LABELS[1];
+  if (QUIZ_LEVEL_LABELS.includes(s)) return s;
+  return QUIZ_LEVEL_LABELS[0];
+}
+
+/**
+ * 將 API／DB 的 quiz_level 轉成顯示用文字；支援字串「基礎」「進階」與舊版 0／1
+ * @param {unknown} level
+ * @returns {string | null} 無法辨識時 null
+ */
+export function normalizeQuizLevelLabel(level) {
+  if (level === 0 || level === 1) return QUIZ_LEVEL_LABELS[level];
+  const s = String(level ?? '').trim();
+  if (s === '0') return QUIZ_LEVEL_LABELS[0];
+  if (s === '1') return QUIZ_LEVEL_LABELS[1];
+  if (QUIZ_LEVEL_LABELS.includes(s)) return s;
+  return null;
+}
 
 /**
  * 產生 RAG tab 用唯一 id

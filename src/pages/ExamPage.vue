@@ -31,6 +31,9 @@ import {
   unitSelectValue,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
+  QUIZ_LEVEL_LABELS,
+  normalizeQuizLevelLabel,
+  quizLevelStringForApi,
 } from '../utils/rag.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 
@@ -127,9 +130,7 @@ const currentState = computed(() => {
 });
 
 const filterDifficulty = ref('基礎');
-const difficultyOptions = ['基礎', '進階'];
-
-const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
+const difficultyOptions = QUIZ_LEVEL_LABELS;
 
 /** 當前選中 tab 對應的 Exam（來自 GET /exam/exams 列表），格式同 GET /rag/rags 每筆含 quizzes、answers */
 const currentExamItem = computed(() => {
@@ -307,8 +308,7 @@ function buildCardFromExamQuiz(quiz, ragName) {
   const gradingResult = latestAnswer
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestAnswer.student_answer != null ? '已批改' : ''))
     : '';
-  const levelNum = quiz.quiz_level;
-  const generateLevel = (levelNum === 0 || levelNum === 1) ? QUIZ_LEVEL_LABELS[levelNum] : null;
+  const generateLevel = normalizeQuizLevelLabel(quiz.quiz_level);
   const quizId = quiz.exam_quiz_id ?? quiz.quiz_id ?? null;
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
   return {
@@ -665,11 +665,10 @@ async function generateQuiz(slotIndex) {
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
-  const quizLevel = difficultyOptions.indexOf(filterDifficulty.value);
   const body = {
     exam_id: hasValidExamId ? eidNum : 0,
     exam_tab_id: hasValidExamId ? '' : examTabIdStr,
-    quiz_level: quizLevel >= 0 ? quizLevel : 0,
+    quiz_level: quizLevelStringForApi(filterDifficulty.value),
     unit_name: unitName,
   };
   try {
@@ -890,22 +889,24 @@ onMounted(() => {
     </div>
     <!-- 固定 tab 頁籤列（與建立 RAG 頁一致，僅內容區可上下滑） -->
     <div class="flex-shrink-0 bg-white">
-      <div class="d-flex align-items-center justify-content-center px-4 w-100">
+      <div class="d-flex align-items-center justify-content-center px-4 w-100 border-bottom border-secondary-subtle">
         <template v-if="examListLoading || forExamLoading">
           <span class="small text-secondary">—</span>
         </template>
         <template v-else-if="examList.length === 0">
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
-            :disabled="createExamLoading"
-            @click="addNewTab"
-          >
-            {{ createExamLoading ? '建立中...' : '+ 新增' }}
-          </button>
+          <div class="w-100 d-flex justify-content-center py-2">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-primary bg-white"
+              :disabled="createExamLoading"
+              @click="addNewTab"
+            >
+              {{ createExamLoading ? '建立中...' : '+ 新增' }}
+            </button>
+          </div>
         </template>
         <template v-else>
-          <ul class="nav nav-tabs">
+          <ul class="nav nav-tabs border-bottom-0">
             <li v-for="exam in examList" :key="'exam-' + getExamTabId(exam)" class="nav-item">
               <div
                 role="tab"
@@ -935,7 +936,7 @@ onMounted(() => {
             <li class="nav-item ms-2 d-flex align-items-center">
               <button
                 type="button"
-                class="btn btn-sm btn-outline-primary mb-2"
+                class="btn btn-sm btn-outline-primary bg-white mb-2"
                 :disabled="createExamLoading"
                 @click="addNewTab"
               >

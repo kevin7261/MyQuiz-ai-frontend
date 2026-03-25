@@ -16,6 +16,7 @@ import {
   isFrontendLocalHost,
 } from '../constants/api.js';
 import { parseFetchError } from '../utils/apiError.js';
+import { quizLevelStringForApi } from '../utils/rag.js';
 
 /**
  * 從 authStore 取得目前使用者的 person_id
@@ -178,7 +179,7 @@ export async function apiBuildRagZip(body) {
  * 產生題目：POST /rag/create-quiz（與 OpenAPI 範例一致：四欄皆送出，選填欄可為 ""）
  * @param {string | number} ragId - Rag 表主鍵
  * @param {string | number | null | undefined} [ragTabId] - 選填；空則傳 ""
- * @param {number} quizLevel - 0 基礎 / 1 進階
+ * @param {string | number} quizLevel - 「基礎」／「進階」，或舊版 0／1
  * @param {string | null | undefined} [unitName] - 選填；空字串則後端依 outputs 用第一筆
  * @returns {Promise<object>} 含 quiz_content、quiz_hint、reference_answer、rag_quiz_id 等
  */
@@ -193,7 +194,7 @@ export async function apiGenerateQuiz(ragId, ragTabId, quizLevel, unitName) {
   const body = {
     rag_id: rid,
     rag_tab_id: tid,
-    quiz_level: quizLevel >= 0 ? quizLevel : 0,
+    quiz_level: quizLevelStringForApi(quizLevel),
     unit_name: un,
   };
   const res = await fetch(`${API_BASE}${API_GENERATE_QUIZ}`, {

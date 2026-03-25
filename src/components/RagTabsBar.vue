@@ -32,25 +32,27 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag']);
 
 <template>
   <div class="flex-shrink-0 bg-white">
-    <div class="d-flex align-items-center justify-content-center px-4 w-100">
+    <div class="d-flex align-items-center justify-content-center px-4 w-100 border-bottom border-secondary-subtle">
       <!-- 載入中僅顯示文字 -->
       <template v-if="ragListLoading">
         <span class="small text-secondary">載入中...</span>
       </template>
-      <!-- 無任何分頁時只顯示「+ 新增」建立按鈕 -->
+      <!-- 無任何分頁時只顯示「+ 新增」建立按鈕（上下留白，避免貼齊底線） -->
       <template v-else-if="ragItems.length === 0 && newTabItems.length === 0">
-        <button
-          type="button"
-          class="btn btn-sm btn-primary"
-          :disabled="createRagLoading"
-          @click="emit('add-new-tab')"
-        >
-          {{ createRagLoading ? '建立中...' : '+ 新增' }}
-        </button>
+        <div class="w-100 d-flex justify-content-center py-2">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary bg-white"
+            :disabled="createRagLoading"
+            @click="emit('add-new-tab')"
+          >
+            {{ createRagLoading ? '建立中...' : '+ 新增' }}
+          </button>
+        </div>
       </template>
       <!-- 有分頁時顯示 nav-tabs + 右側「+ 新增」（與底線留距，不貼齊） -->
       <template v-else>
-        <ul class="nav nav-tabs">
+        <ul class="nav nav-tabs border-bottom-0">
           <li v-for="item in ragItems" :key="'rag-' + item._tabId" class="nav-item">
             <div
               role="tab"
@@ -102,7 +104,7 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag']);
           <li class="nav-item ms-2 d-flex align-items-center">
             <button
               type="button"
-              class="btn btn-sm btn-outline-primary mb-2"
+              class="btn btn-sm btn-outline-primary bg-white mb-2"
               :disabled="createRagLoading"
               @click="emit('add-new-tab')"
             >

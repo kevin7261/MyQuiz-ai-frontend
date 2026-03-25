@@ -38,6 +38,8 @@ import {
   parseRagMetadataObject,
   DEFAULT_SYSTEM_INSTRUCTION,
   QUIZ_LEVEL_LABELS,
+  normalizeQuizLevelLabel,
+  quizLevelStringForApi,
   unitSelectValue,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
@@ -434,8 +436,7 @@ function buildCardFromRagQuiz(quiz, ragName) {
   const gradingResult = latestAnswer
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestAnswer.student_answer != null ? '已批改' : ''))
     : '';
-  const levelNum = quiz.quiz_level;
-  const generateLevel = (levelNum === 0 || levelNum === 1) ? QUIZ_LEVEL_LABELS[levelNum] : null;
+  const generateLevel = normalizeQuizLevelLabel(quiz.quiz_level);
   return {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? '',
@@ -795,8 +796,8 @@ async function confirmPack() {
   }
 }
 
-/** 難度選項：基礎=0、進階=1（與 API quiz_level 一致） */
-const difficultyOptions = ['基礎', '進階'];
+/** 難度選項；create-quiz 的 quiz_level 直接送「基礎」／「進階」字串 */
+const difficultyOptions = QUIZ_LEVEL_LABELS;
 
 /** 取得第 slotIndex 題的產生題目表單狀態（獨立、不連動） */
 function getSlotFormState(slotIndex) {
@@ -876,9 +877,8 @@ async function generateQuiz(slotIndex) {
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
-  const quizLevel = difficultyOptions.indexOf(filterDifficulty.value);
   try {
-    const data = await apiGenerateQuiz(ragId, sourceTabId, quizLevel >= 0 ? quizLevel : 0, unitName);
+    const data = await apiGenerateQuiz(ragId, sourceTabId, quizLevelStringForApi(filterDifficulty.value), unitName);
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const hintText = data.quiz_hint ?? data.hint ?? '';
@@ -1063,7 +1063,7 @@ async function confirmAnswer(item) {
             </div>
           </div>
           <div class="mb-3">
-            <div class="small text-secondary fw-medium mb-1">出題規範</div>
+            <div class="small mb-1">出題prompt</div>
             <div class="small lh-base text-break" style="white-space: pre-wrap;">{{ (currentState.systemInstruction ?? '').trim() || '—' }}</div>
           </div>
           <div
@@ -1152,7 +1152,7 @@ async function confirmAnswer(item) {
                 </div>
               </template>
               <div
-                class="pack-drop-target border border-dashed rounded p-2 d-flex align-items-center justify-content-center"
+                class="pack-drop-target btn btn-sm btn-outline-primary bg-white d-flex align-items-center justify-content-center"
                 style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                 role="button"
                 tabindex="0"
@@ -1213,14 +1213,25 @@ async function confirmAnswer(item) {
             </div>
           </div>
           <div class="mt-3">
-            <label class="form-label small text-secondary fw-medium mb-1">出題規範</label>
-            <textarea
-              v-model="currentState.systemInstruction"
-              class="form-control form-control-sm font-monospace small"
-              rows="5"
-              :placeholder="'留空則使用預設：' + DEFAULT_SYSTEM_INSTRUCTION"
-              style="max-width: 100%;"
-            />
+            <label class="form-label small text-secondary fw-medium mb-1">出題prompt</label>
+            <div class="small border rounded p-3 bg-body-tertiary">
+              【出題規範】<br>
+              請根據輸入的「參考內容」設計測驗題目。<br>
+              **請使用繁體中文 (Traditional Chinese) 出題與撰寫提示及參考答案。**<br>
+              <textarea
+                v-model="currentState.systemInstruction"
+                class="form-control form-control-sm font-monospace small my-3"
+                rows="5"
+                :placeholder="'留空則使用預設：' + DEFAULT_SYSTEM_INSTRUCTION"
+                style="max-width: 100%;"
+              />
+
+            【回傳格式】<br>
+            請以 JSON 格式回傳：<br>
+            { "quiz_content": "問題內容", <br>
+              "quiz_hint": "答案提示內容", <br>
+              "reference_answer": "參考答案內容" }<br>
+            </div>
           </div>
           <div class="mt-3 d-flex justify-content-end">
             <button
