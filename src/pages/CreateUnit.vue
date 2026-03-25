@@ -1318,6 +1318,7 @@ async function confirmAnswer(item) {
               <QuizCard
                 :card="currentState.cardList[slotIndex - 1]"
                 :slot-index="slotIndex"
+                :course-name="courseNameForPrompt"
                 @toggle-hint="toggleHint"
                 @confirm-answer="confirmAnswer"
                 @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"

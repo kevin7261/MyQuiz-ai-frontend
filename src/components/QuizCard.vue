@@ -2,7 +2,7 @@
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、參考答案(暫存)、回答區、批改結果。
+ * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、參考答案(暫存)、答案區、批改結果。
  * 未確定前可輸入答案並按「確定」送出評分。
  * 供 CreateUnit 頁、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
@@ -13,6 +13,8 @@ defineProps({
   card: { type: Object, required: true },
   /** 題號（從 1 開始，用於顯示「第 N 題」） */
   slotIndex: { type: Number, required: true },
+  /** 批改 prompt 內「課程名稱」占位（與出題單元頁 course 一致） */
+  courseName: { type: String, default: 'AIQuiz' },
 });
 
 const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']);
@@ -54,7 +56,7 @@ const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']
         <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ card.referenceAnswer }}</div>
       </div>
       <div class="mb-3">
-        <label :for="`quiz-answer-${card.id}`" class="form-label small text-secondary fw-medium mb-1">回答</label>
+        <label :for="`quiz-answer-${card.id}`" class="form-label small text-secondary fw-medium mb-1">答案</label>
         <template v-if="!card.confirmed">
           <textarea
             :id="`quiz-answer-${card.id}`"
@@ -62,7 +64,7 @@ const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']
             class="form-control"
             @input="emit('update:quiz_answer', $event.target.value)"
             rows="4"
-            placeholder="請輸入您的回答..."
+            placeholder="請輸入您的答案..."
             maxlength="2000"
           />
           <div class="form-text small">{{ card.quiz_answer.length }} / 2000</div>
@@ -73,6 +75,31 @@ const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']
         <template v-else>
           <div class="rounded bg-body-tertiary small mb-2 p-2">{{ card.quiz_answer }}</div>
         </template>
+      </div>
+      <div class="mb-3">
+        <label class="form-label small text-secondary fw-medium mb-1">批改prompt</label>
+        <div class="small border rounded p-3 bg-body-tertiary">
+          你是一位「{{ courseName }}」課程的教授，請批改這道題目。<br>
+          【評分規範】<br>
+          根據「測驗題目」與「課程內容」，評估「學生答案」的內容是否正確。<br>
+          測驗題目：{quiz_content}<br>
+          學生答案：{quiz_answer}<br>
+          課程內容：{context_text}<br>
+          【重要限制】<br>
+          請使用繁體中文 (Traditional Chinese) 撰寫評語 (quiz_comments)。<br>
+          【評分標準】<br>
+          0-5分，一定是整數 (quiz_grade)。<br>
+          0: 完全錯誤或未作答。<br>
+          1: 只有少量內容正確。<br>
+          2: 大幅缺漏，只有部分內容正確。<br>
+          3: 部分正確，但有大幅缺漏。<br>
+          4: 大致正確，略有不足。<br>
+          5: 完全正確且完整。<br>
+          【輸出 JSON】<br>
+          請以 JSON 格式回傳：<br>
+          { "quiz_grade": int,<br>
+          "quiz_comments": str[] }<br>
+        </div>
       </div>
       <!-- 批改結果區（由 useQuizGrading 格式化後顯示） -->
       <div class="border rounded bg-light p-3 mb-3">

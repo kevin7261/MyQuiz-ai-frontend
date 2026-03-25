@@ -245,7 +245,7 @@ onMounted(() => {
             </div>
             <template v-if="getSingleAnswer(item)">
               <div class="mb-3">
-                <label class="form-label small text-secondary fw-medium mb-1">回答</label>
+                <label class="form-label small text-secondary fw-medium mb-1">答案</label>
                 <div class="rounded bg-body-tertiary small mb-2 p-2">{{ getSingleAnswer(item).quiz_answer ?? getSingleAnswer(item).student_answer ?? '—' }}</div>
               </div>
               <div class="border rounded bg-light p-3 mb-3">

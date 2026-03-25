@@ -921,14 +921,14 @@ onMounted(() => {
                       <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
                     </div>
                     <div class="mb-3">
-                      <label :for="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label small text-secondary fw-medium mb-1">回答</label>
+                      <label :for="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label small text-secondary fw-medium mb-1">答案</label>
                       <template v-if="!currentState.cardList[slotIndex - 1].confirmed">
                         <textarea
                           :id="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`"
                           v-model="currentState.cardList[slotIndex - 1].quiz_answer"
                           class="form-control"
                           rows="4"
-                          placeholder="請輸入您的回答..."
+                          placeholder="請輸入您的答案..."
                           maxlength="2000"
                         />
                         <div class="form-text small">{{ currentState.cardList[slotIndex - 1].quiz_answer.length }} / 2000</div>
