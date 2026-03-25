@@ -1006,7 +1006,7 @@ onMounted(() => {
                       </div>
                     </div>
                     <div v-if="currentState.cardList[slotIndex - 1].referenceAnswer" class="mb-3">
-                      <div class="form-label small text-secondary fw-medium mb-1">參考答案</div>
+                      <div class="form-label small text-secondary fw-medium mb-1">參考答案(暫存)</div>
                       <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
                     </div>
                     <div class="mb-3">

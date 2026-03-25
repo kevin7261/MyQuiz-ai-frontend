@@ -248,7 +248,7 @@ onMounted(() => {
               </tbody>
             </table>
           </div>
-          <div class="mt-3">
+          <div class="mt-3 d-flex justify-content-end">
             <button
               type="button"
               class="btn btn-outline-primary btn-sm"
@@ -292,7 +292,7 @@ onMounted(() => {
               </div>
             </div>
             <div v-if="item.reference_answer" class="mb-3">
-              <div class="form-label small text-secondary fw-medium mb-1">參考答案</div>
+              <div class="form-label small text-secondary fw-medium mb-1">參考答案(暫存)</div>
               <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ item.reference_answer }}</div>
             </div>
             <template v-if="getSingleAnswer(item)">

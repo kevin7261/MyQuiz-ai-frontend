@@ -2,7 +2,7 @@
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、參考答案、回答區、批改結果。
+ * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、參考答案(暫存)、回答區、批改結果。
  * 未確定前可輸入答案並按「確定」送出評分。
  * 供 CreateUnit 頁、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
@@ -50,7 +50,7 @@ const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:answer']);
         </div>
       </div>
       <div v-if="card.referenceAnswer" class="mb-3">
-        <div class="form-label small text-secondary fw-medium mb-1">參考答案</div>
+        <div class="form-label small text-secondary fw-medium mb-1">參考答案(暫存)</div>
         <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ card.referenceAnswer }}</div>
       </div>
       <div class="mb-3">
