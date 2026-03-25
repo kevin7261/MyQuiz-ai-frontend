@@ -413,13 +413,15 @@ function syncRagItemToState(rag, state) {
   const ragAnswers = rag.answers ?? [];
   if (quizzes.length > 0) {
     const answersByQuizId = ragAnswers.reduce((acc, a) => {
-      const id = a.quiz_id;
+      const id = a.quiz_id != null && String(a.quiz_id).trim() !== '' ? String(a.quiz_id) : '';
+      if (!id) return acc;
       if (!acc[id]) acc[id] = [];
       acc[id].push(a);
       return acc;
     }, {});
     const quizzesWithAnswers = quizzes.map((q, i) => {
-      const byId = q.answers ?? answersByQuizId[q.quiz_id];
+      const qKey = q.quiz_id != null && String(q.quiz_id).trim() !== '' ? String(q.quiz_id) : '';
+      const byId = q.answers ?? (qKey ? answersByQuizId[qKey] : undefined);
       const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (ragAnswers[i] != null ? [ragAnswers[i]] : []);
       return { ...q, answers };
     });

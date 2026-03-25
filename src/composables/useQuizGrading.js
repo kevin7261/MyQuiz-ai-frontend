@@ -3,9 +3,13 @@
  *
  * 職責：送出評分請求、輪詢 job_id 取得結果、將回傳 JSON 格式化为易讀文字。
  * 會直接修改題目卡片 item（confirmed、gradingResult、gradingResponseJson）。
- * 供 CreateUnit 頁、ExamPage 等共用；Exam 可透過 options 覆寫 API 路徑為 /exam/quiz-grade。
+ * 供 CreateUnit 頁（RAG）、ExamPage（測驗）：RAG 為預設 body；Exam 傳 gradingMode: 'exam' 與 exam 路徑常數。
  */
-import { API_BASE, API_RAG_QUIZ_GRADE, API_RAG_QUIZ_GRADE_RESULT } from '../constants/api.js';
+import {
+  API_BASE,
+  API_RAG_QUIZ_GRADE,
+  API_RAG_QUIZ_GRADE_RESULT,
+} from '../constants/api.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
@@ -15,15 +19,34 @@ import { loggedFetch } from '../utils/loggedFetch.js';
  * 流程：POST 送出 → 若 202 則取 job_id → 每 2 秒 GET 輪詢結果 → 解析 status ready/error → 寫入 item
  *
  * @param {Object} item - 題目卡片物件，會被 mutate（confirmed、gradingResult、gradingResponseJson）
- * @param {Object} context - { sourceTabId, ragId }（RAG 情境為 rag_tab_id、rag_id；Exam 為 exam_tab_id、exam_id）
- * @param {Object} [options] - { quizGradeSubmissionPath, quizGradeResultPath } 可覆寫 API 路徑（預設為 RAG）
+ * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：{ examId, examTabId }（並設 options.gradingMode === 'exam'）
+ * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時 POST body 為 exam_*（對齊 POST /exam/quiz-grade）
  */
 export async function submitGrade(item, context, options = {}) {
-  const { sourceTabId, ragId } = context;
+  const isExam = options.gradingMode === 'exam';
+  const { sourceTabId, ragId, examId, examTabId } = context;
   const quizGradeSubmissionPath =
     options.quizGradeSubmissionPath ?? options.gradeSubmissionPath ?? API_RAG_QUIZ_GRADE;
   const quizGradeResultPath =
     options.quizGradeResultPath ?? options.gradeResultPath ?? API_RAG_QUIZ_GRADE_RESULT;
+
+  const gradeBody = isExam
+    ? {
+        exam_id: String(examId ?? ''),
+        exam_tab_id: examTabId != null ? String(examTabId) : '',
+        exam_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
+        quiz_content: item.quiz ?? '',
+        quiz_answer: item.quiz_answer.trim(),
+        quiz_answer_reference: item.referenceAnswer != null ? String(item.referenceAnswer) : '',
+      }
+    : {
+        rag_id: String(ragId),
+        rag_tab_id: sourceTabId,
+        rag_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
+        quiz_content: item.quiz ?? '',
+        quiz_answer: item.quiz_answer.trim(),
+        quiz_answer_reference: item.referenceAnswer != null ? String(item.referenceAnswer) : '',
+      };
 
   item.confirmed = true;
   item.gradingResult = '批改中...';
@@ -32,14 +55,7 @@ export async function submitGrade(item, context, options = {}) {
     const res = await loggedFetch(`${API_BASE}${quizGradeSubmissionPath}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        rag_id: String(ragId),
-        rag_tab_id: sourceTabId,
-        rag_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
-        quiz_content: item.quiz ?? '',
-        quiz_answer: item.quiz_answer.trim(),
-        quiz_answer_reference: item.referenceAnswer != null ? String(item.referenceAnswer) : '',
-      }),
+      body: JSON.stringify(gradeBody),
     });
     const text = await res.text();
     if (!res.ok) {
@@ -52,7 +68,14 @@ export async function submitGrade(item, context, options = {}) {
           msg = text;
         }
       }
-      const statusHint = res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n' : '');
+      const statusHint =
+        res.status === 400
+          ? '（例如請於系統設定設定 LLM API Key）\n\n'
+          : res.status === 502
+            ? '（後端逾時或服務喚醒中，請稍後再試）\n\n'
+            : res.status === 500
+              ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n'
+              : '';
       item.gradingResult = `評分失敗：${statusHint}${msg}`;
       return;
     }

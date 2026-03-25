@@ -210,6 +210,29 @@ export function normalizeRagListResponse(data) {
 }
 
 /**
+ * 將 GET /exam/exams 回傳正規化為 Exam 陣列（對齊 normalizeRagListResponse 思路）
+ * 支援：直接陣列、{ exams }、{ tests }、{ items }、{ data }、或單一 Exam 物件
+ * @param {unknown} data
+ * @returns {object[]}
+ */
+export function normalizeExamListResponse(data) {
+  if (Array.isArray(data)) return data;
+  const list = data?.exams ?? data?.tests ?? data?.items ?? data?.data;
+  if (Array.isArray(list) && list.length > 0) return list;
+  if (
+    data != null &&
+    typeof data === 'object' &&
+    (data.exam_tab_id != null ||
+      data.exam_id != null ||
+      data.test_tab_id != null ||
+      data.test_id != null)
+  ) {
+    return [data];
+  }
+  return [];
+}
+
+/**
  * 是否為「新增」用的 tab id（尚未寫入後端）
  * @param {string} [id]
  * @returns {boolean}

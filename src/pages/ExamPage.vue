@@ -7,8 +7,8 @@
  * 資料來源：
  * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（試驗／題目關聯由 GET /exam/exams 等提供即可）
  * - GET /rag/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／rag_list 時仍可用 rag_tab_id 合成單元）
- * - GET /exam/exams?local=&person_id=：local 與 GET /rag/rags 相同（依網址是否 localhost）；POST /exam/create-exam body 含 local
- * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；unit_name 可空由後端用第一筆 outputs）；評分：POST /exam/quiz-grade、GET /exam/quiz-grade-result/{job_id}；刪除：POST /exam/delete/{exam_tab_id}
+ * - GET /exam/exams?local=&person_id=：local 與 GET /rag/rags 相同；回傳每筆含 quizzes、answers（或 exam_quizzes／exam_answers）時，以 syncExamItemToTabState 灌入卡片（同 CreateUnit 由列表同步題目／作答／批改）
+ * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/create-quiz）；評分：POST /exam/quiz-grade、GET /exam/quiz-grade-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；刪除：POST /exam/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name；難度優先 quiz_level，否則 quiz_metadata.quiz_level。
  */
@@ -22,7 +22,7 @@ import {
   API_EXAM_TESTS,
   API_CREATE_EXAM,
   API_EXAM_DELETE,
-  API_TEST_GENERATE_QUIZ,
+  API_EXAM_CREATE_QUIZ,
   API_EXAM_QUIZ_GRADE,
   API_EXAM_QUIZ_GRADE_RESULT,
   isFrontendLocalHost,
@@ -37,9 +37,11 @@ import {
   normalizeQuizLevelLabel,
   quizLevelStringForApi,
   examQuizLevelFromRow,
+  normalizeExamListResponse,
 } from '../utils/rag.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { formatGradingResult } from '../utils/grading.js';
+import { submitGrade } from '../composables/useQuizGrading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
 defineProps({
@@ -307,12 +309,29 @@ watch(generateQuizUnits, (units) => {
   }
 }, { immediate: true });
 
-/** 由 GET /exam/exams 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片 */
+/** 與 RAG 的 quiz_id 對齊：合併 answers 時一律用字串當 key，避免 3 與 "3" 對不到 */
+function examQuizRowKey(q) {
+  if (!q || typeof q !== 'object') return '';
+  const v = q.exam_quiz_id ?? q.quiz_id;
+  return v != null && String(v).trim() !== '' ? String(v) : '';
+}
+
+function examAnswerRowKey(a) {
+  if (!a || typeof a !== 'object') return '';
+  const v = a.exam_quiz_id ?? a.quiz_id;
+  return v != null && String(v).trim() !== '' ? String(v) : '';
+}
+
+/** 由 GET /exam/exams 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片（欄位後備與 CreateUnit buildCardFromRagQuiz 對齊） */
 function buildCardFromExamQuiz(quiz, ragName) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
   const latestSubmitted =
-    latestAnswer?.quiz_answer ?? latestAnswer?.student_answer ?? null;
+    latestAnswer?.quiz_answer ??
+    latestAnswer?.student_answer ??
+    latestAnswer?.answer_text ??
+    latestAnswer?.content ??
+    null;
   const gradingResult = latestAnswer
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))
     : '';
@@ -321,12 +340,12 @@ function buildCardFromExamQuiz(quiz, ragName) {
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
   return {
     id: nextCardId(),
-    quiz: quiz.quiz_content ?? '',
-    hint: quiz.quiz_hint ?? '',
-    referenceAnswer: quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? '',
+    quiz: quiz.quiz_content ?? quiz.quiz ?? quiz.question ?? '',
+    hint: quiz.quiz_hint ?? quiz.hint ?? '',
+    referenceAnswer: quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? quiz.reference_answer ?? '',
     sourceFilename: quiz.file_name ?? null,
     ragName: (ragName || quiz.unit_name || quiz.rag_name || '').trim() || null,
-    quiz_answer: latestAnswer?.quiz_answer ?? latestAnswer?.student_answer ?? '',
+    quiz_answer: latestAnswer?.quiz_answer ?? latestAnswer?.student_answer ?? latestAnswer?.answer_text ?? latestAnswer?.content ?? '',
     hintVisible: false,
     confirmed: !!latestAnswer,
     gradingResult,
@@ -339,47 +358,58 @@ function buildCardFromExamQuiz(quiz, ragName) {
   };
 }
 
-/** 當切換到某個 Exam tab 或試題用 RAG 載入時，從該筆的 quizzes、answers 填入題目卡片（格式同 GET /rag/rags，與 CreateUnit 一致）；firstRagName 從 forExamRag.outputs / rag_metadata.outputs / rag_list 推導，與 CreateUnit 一致 */
+/**
+ * 從 GET /exam/exams 單筆 Exam 的 quizzes、answers 填入該 tab 的題目卡片（流程同 CreateUnit syncRagItemToState）。
+ * quizzes／answers 可能名為 exam_quizzes、exam_answers；與頂層 answers 合併時 ID 一律轉字串。
+ */
+function syncExamItemToTabState(exam) {
+  if (!exam || typeof exam !== 'object') return;
+  const tabId = getExamTabId(exam);
+  if (!tabId) return;
+  const state = getTabState(tabId);
+  const quizzes = exam.quizzes ?? exam.exam_quizzes ?? [];
+  const examAnswers = exam.answers ?? exam.exam_answers ?? [];
+  const units = generateQuizUnits.value;
+  const rag = forExamRag.value;
+  const out0 = rag?.outputs?.[0];
+  const meta0 = rag?.rag_metadata?.outputs?.[0];
+  const firstRagName = (
+    units[0]?.rag_name
+    ?? out0?.rag_name ?? out0?.unit_name
+    ?? meta0?.rag_name ?? meta0?.unit_name
+    ?? quizzes[0]?.unit_name ?? quizzes[0]?.rag_name
+    ?? ''
+  ).trim();
+  if (quizzes.length > 0) {
+    const answersByQuizId = examAnswers.reduce((acc, a) => {
+      const id = examAnswerRowKey(a);
+      if (!id) return acc;
+      if (!acc[id]) acc[id] = [];
+      acc[id].push(a);
+      return acc;
+    }, {});
+    const quizzesWithAnswers = quizzes.map((q, i) => {
+      const qKey = examQuizRowKey(q);
+      const byId = q.answers ?? (qKey ? answersByQuizId[qKey] : undefined);
+      const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (examAnswers[i] != null ? [examAnswers[i]] : []);
+      return { ...q, answers };
+    });
+    state.showQuizGeneratorBlock = true;
+    state.quizSlotsCount = quizzesWithAnswers.length;
+    state.cardList = quizzesWithAnswers.map((q) => buildCardFromExamQuiz(q, q.unit_name ?? q.rag_name ?? firstRagName));
+  } else {
+    state.quizSlotsCount = 0;
+    state.cardList = [];
+  }
+}
+
+/** 目前選中測驗或列表／試題 RAG 巢狀更新時，重新自伺服器資料灌入卡片（deep 與 CreateUnit 由 fetch 觸發更新一致） */
 watch(
-  () => [currentExamItem.value, forExamRag.value],
-  ([exam]) => {
-    if (!exam || typeof exam !== 'object') return;
-    const tabId = getExamTabId(exam);
-    if (!tabId) return;
-    const state = getTabState(tabId);
-    const quizzes = exam.quizzes ?? [];
-    const examAnswers = exam.answers ?? [];
-    const units = generateQuizUnits.value;
-    const out0 = forExamRag.value?.outputs?.[0];
-    const meta0 = forExamRag.value?.rag_metadata?.outputs?.[0];
-    const firstRagName = (
-      units[0]?.rag_name
-      ?? out0?.rag_name ?? out0?.unit_name
-      ?? meta0?.rag_name ?? meta0?.unit_name
-      ?? quizzes[0]?.unit_name ?? quizzes[0]?.rag_name
-      ?? ''
-    ).trim();
-    if (quizzes.length > 0) {
-      const answersByQuizId = examAnswers.reduce((acc, a) => {
-        const id = a.exam_quiz_id ?? a.quiz_id;
-        if (!acc[id]) acc[id] = [];
-        acc[id].push(a);
-        return acc;
-      }, {});
-      const quizzesWithAnswers = quizzes.map((q, i) => {
-        const byId = q.answers ?? answersByQuizId[q.exam_quiz_id ?? q.quiz_id];
-        const answers = (Array.isArray(byId) && byId.length > 0) ? byId : (examAnswers[i] != null ? [examAnswers[i]] : []);
-        return { ...q, answers };
-      });
-      state.showQuizGeneratorBlock = true;
-      state.quizSlotsCount = quizzesWithAnswers.length;
-      state.cardList = quizzesWithAnswers.map((q) => buildCardFromExamQuiz(q, q.unit_name ?? q.rag_name ?? firstRagName));
-    } else {
-      state.quizSlotsCount = 0;
-      state.cardList = [];
-    }
+  [currentExamItem, forExamRag],
+  () => {
+    syncExamItemToTabState(currentExamItem.value);
   },
-  { immediate: true }
+  { immediate: true, deep: true }
 );
 
 /** 取得當前使用者的 person_id（與 RAG 頁一致；後端若只回傳 user_id 則用 user_id 當 person_id） */
@@ -422,9 +452,7 @@ async function fetchExamTests() {
       throw new Error(msg);
     }
     const data = await res.json();
-    // 後端回傳 { exams: [...], count: N }，與 RAG 頁 normalizeRagListResponse 一致支援多種格式
-    const raw = Array.isArray(data) ? data : (data?.exams ?? data?.items ?? data?.data ?? []);
-    const list = Array.isArray(raw) ? raw : [];
+    const list = normalizeExamListResponse(data);
     // 保留完整欄位與 quizzes、answers（供 watch(currentExamItem) 預填題目卡片）
     examList.value = list.map((row) => ({
       ...row,
@@ -643,7 +671,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   };
 }
 
-/** 出題：POST /exam/create-quiz；body 與 OpenAPI 一致（四欄）；exam_id／exam_tab_id 二擇一。 */
+/** 出題：POST /exam/create-quiz；body 與 RAG POST /rag/create-quiz 同概念（四欄）；exam_id／exam_tab_id 二擇一。 */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const selectedUnit = findQuizUnitBySlotSelection(generateQuizUnits.value, slotState.generateQuizTabId);
@@ -680,7 +708,7 @@ async function generateQuiz(slotIndex) {
     unit_name: unitName,
   };
   try {
-    const res = await loggedFetch(`${API_BASE}${API_TEST_GENERATE_QUIZ}`, {
+    const res = await loggedFetch(`${API_BASE}${API_EXAM_CREATE_QUIZ}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
@@ -721,7 +749,7 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：POST /exam/quiz-grade；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, quiz_answer、quiz_answer_reference（選填可 ""）；回傳 202 + job_id；輪詢 GET /exam/quiz-grade-result/{job_id}；結果格式與 RAG 一致時為 { quiz_score: 0–5, quiz_comments: string[] } */
+/** 評分：與 CreateUnit 相同流程（submitGrade），路徑為 POST /exam/quiz-grade、GET /exam/quiz-grade-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
   if (!activeTabId.value) {
@@ -736,104 +764,17 @@ async function confirmAnswer(item) {
     item.gradingResult = '評分失敗：無法取得當前測驗的 exam_id。';
     return;
   }
-  item.confirmed = true;
-  item.gradingResult = '批改中...';
   gradingLoading.value = true;
   try {
-    const res = await loggedFetch(`${API_BASE}${API_EXAM_QUIZ_GRADE}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        exam_id: String(examId),
-        exam_tab_id: String(activeTabId.value),
-        exam_quiz_id: item.quiz_id != null ? String(item.quiz_id) : '',
-        quiz_content: item.quiz ?? '',
-        quiz_answer: item.quiz_answer.trim(),
-        quiz_answer_reference: item.referenceAnswer != null ? String(item.referenceAnswer) : '',
-      }),
-    });
-    const text = await res.text();
-    if (!res.ok) {
-      let msg = res.statusText;
-      if (text) {
-        try {
-          const errBody = JSON.parse(text);
-          msg = errBody.error != null ? errBody.error : (errBody.detail != null ? (typeof errBody.detail === 'string' ? errBody.detail : JSON.stringify(errBody.detail)) : text);
-        } catch (_) {
-          msg = text;
-        }
+    await submitGrade(
+      item,
+      { examId, examTabId: String(activeTabId.value) },
+      {
+        gradingMode: 'exam',
+        quizGradeSubmissionPath: API_EXAM_QUIZ_GRADE,
+        quizGradeResultPath: API_EXAM_QUIZ_GRADE_RESULT,
       }
-      const statusHint = res.status === 400 ? '（例如請於系統設定設定 LLM API Key）\n\n' : (res.status === 502 ? '（後端逾時或服務喚醒中，請稍後再試）\n\n' : (res.status === 500 ? '（後端 500 錯誤）\n\n' : ''));
-      item.gradingResult = `評分失敗：${statusHint}${msg}`;
-      return;
-    }
-    if (res.status !== 202) {
-      let parsed = null;
-      try { parsed = text ? JSON.parse(text) : null; } catch { /* ignore */ }
-      item.gradingResponseJson = parsed;
-      item.gradingResult = formatGradingResult(text) || '（無批改內容）';
-      return;
-    }
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (_) {
-      item.gradingResult = '評分失敗：無法解析 job_id';
-      return;
-    }
-    const jobId = data.job_id;
-    if (!jobId) {
-      item.gradingResult = '評分失敗：未取得 job_id';
-      return;
-    }
-    const maxPolls = 60;
-    const intervalMs = 2000;
-    const maxRetries = 3;
-    const retryDelayMs = 2000;
-    const friendlyUnavailable = '評分失敗：後端暫時無法連線，請稍後再試或重新送出。';
-    for (let i = 0; i < maxPolls; i++) {
-      await new Promise((r) => setTimeout(r, intervalMs));
-      let pollRes = null;
-      let pollText = '';
-      for (let r = 0; r <= maxRetries; r++) {
-        if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
-        try {
-          pollRes = await loggedFetch(`${API_BASE}${API_EXAM_QUIZ_GRADE_RESULT}/${encodeURIComponent(jobId)}`);
-          pollText = await pollRes.text();
-          if (pollRes.status !== 502 && pollRes.status !== 504) break;
-        } catch (_) { /* ignore */ }
-      }
-      if (!pollRes || pollRes.status === 502 || pollRes.status === 504) {
-        item.gradingResult = friendlyUnavailable;
-        return;
-      }
-      if (pollRes.status === 404) {
-        item.gradingResult = '評分任務不存在或已過期，請重新送出評分。';
-        return;
-      }
-      let pollData;
-      try {
-        pollData = JSON.parse(pollText);
-      } catch (_) {
-        item.gradingResult = friendlyUnavailable;
-        return;
-      }
-      if (pollData.status === 'ready') {
-        item.gradingResponseJson = pollData.result;
-        item.gradingResult = formatGradingResult(JSON.stringify(pollData.result)) || '（無批改內容）';
-        return;
-      }
-      if (pollData.status === 'error') {
-        const errMsg = pollData.error || '';
-        item.gradingResult = errMsg.includes('job not found')
-          ? '評分任務不存在或已過期，請重新送出評分。'
-          : `評分失敗：${pollData.error || '未知錯誤'}`;
-        return;
-      }
-    }
-    item.gradingResult = '評分逾時：請稍後再試或重新送出';
-  } catch (err) {
-    item.gradingResult = '評分失敗：後端逾時或服務喚醒中，請稍後再試。';
+    );
   } finally {
     gradingLoading.value = false;
   }
@@ -935,7 +876,7 @@ onMounted(() => {
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <template v-if="examList.length > 0">
-        <!-- 產生題目與作答：與建立 RAG 頁一模一樣（出題與評分）；資料來自 GET /rag/for-exam，使用 /exam/create-quiz、/exam/quiz-grade -->
+        <!-- 產生題目與作答：與建立 RAG 頁一致（出題與評分）；資料來自 GET /rag/for-exam，使用 POST /exam/create-quiz、submitGrade（/exam/quiz-grade） -->
         <div
           v-if="activeTabId"
           class="text-start page-block-spacing"

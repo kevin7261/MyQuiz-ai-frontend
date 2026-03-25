@@ -69,11 +69,15 @@ export const API_EXAM_TESTS = '/exam/exams';
 export const API_CREATE_EXAM = '/exam/create-exam';
 /** Exam：POST /exam/delete/{exam_tab_id} Delete Exam */
 export const API_EXAM_DELETE = '/exam/delete';
-/** Exam：POST /exam/create-quiz；body: exam_id 或 exam_tab_id（二擇一；可 ""／0 搭配另一欄）、quiz_level（「基礎」或「進階」字串）、unit_name（選填可 ""，與 outputs[].unit_name 一致，空則第一筆）；LLM Key 由 GET /system-settings/llm-api-key；試題 RAG 依連線讀 System_Setting rag_localhost／rag_deploy。寫入／回傳對應 public."Exam_Quiz"：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_metadata、updated_at、created_at（難度等可放 quiz_metadata 或 API 仍回傳 quiz_level） */
-export const API_TEST_GENERATE_QUIZ = '/exam/create-quiz';
-/** Exam：POST /exam/quiz-grade；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；後端由系統設定取 llm_api_key */
+/** Exam：POST /exam/create-quiz（Exam Create Quiz）；body 對齊 RAG 的 POST /rag/create-quiz：exam_id 或 exam_tab_id（二擇一；可 ""／0 搭配另一欄）、quiz_level（「基礎」或「進階」）、unit_name（選填可 ""）；LLM Key 由系統設定；試題 RAG 依連線讀 rag_localhost／rag_deploy。回傳對應 Exam_Quiz 等欄位 */
+export const API_EXAM_CREATE_QUIZ = '/exam/create-quiz';
+/** @deprecated 使用 API_EXAM_CREATE_QUIZ */
+export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
+/** @deprecated 使用 API_EXAM_CREATE_QUIZ */
+export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
+/** Exam：POST /exam/quiz-grade；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；後端由系統設定取 llm_api_key；回傳 202 + job_id；GET /exam/quiz-grade-result/{job_id} 輪詢；ready 時 result 含 quiz_score、quiz_comments（與 RAG 輪詢 result 對齊） */
 export const API_EXAM_QUIZ_GRADE = '/exam/quiz-grade';
-/** Exam：GET /exam/quiz-grade-result/{job_id} */
+/** Exam：GET /exam/quiz-grade-result/{job_id}（Get Grade Result）；ready 時 result 含 quiz_score、quiz_comments 等，對齊 RAG */
 export const API_EXAM_QUIZ_GRADE_RESULT = '/exam/quiz-grade-result';
 
 /**
