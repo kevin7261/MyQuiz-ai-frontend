@@ -3,19 +3,19 @@
    * RightView - 主畫面右側內容區
    *
    * 職責：
-   * - 依 currentView 渲染對應頁面：測驗、測驗分析、建立 RAG、學生測驗分析等
+   * - 依 currentView 渲染對應頁面：試卷、學生弱點分析、建立測試題庫、學生試卷分析等
    */
   import ExamPage from '../pages/ExamPage.vue';
-  import AnalysisPage from '../pages/AnalysisPage.vue';
+  import StudentWeaknessAnalysisPage from '../pages/StudentWeaknessAnalysisPage.vue';
   import CourseAnalysisPage from '../pages/CourseAnalysisPage.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
-  import CreateUnit from '../pages/CreateUnit.vue';
+  import CreateTestBankPage from '../pages/CreateTestBankPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
 
   export default {
     name: 'RightView',
-    components: { ExamPage, AnalysisPage, CourseAnalysisPage, ProfilePage, CreateUnit, UserManagementPage, SystemSettingsPage },
+    components: { ExamPage, StudentWeaknessAnalysisPage, CourseAnalysisPage, ProfilePage, CreateTestBankPage, UserManagementPage, SystemSettingsPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },
@@ -26,10 +26,10 @@
 <template>
   <main class="right-view flex-grow-1 overflow-hidden d-flex flex-column">
     <ExamPage v-if="currentView === 'work'" :tabId="tabId" />
-    <AnalysisPage v-else-if="currentView === 'analysis'" />
+    <StudentWeaknessAnalysisPage v-else-if="currentView === 'studentWeaknessAnalysis'" />
     <CourseAnalysisPage v-else-if="currentView === 'courseAnalysis'" />
     <ProfilePage v-else-if="currentView === 'profile'" />
-    <CreateUnit v-else-if="currentView === 'createRAG'" :tabId="tabId" />
+    <CreateTestBankPage v-else-if="currentView === 'createTestBank'" :tabId="tabId" />
     <UserManagementPage v-else-if="currentView === 'userManagement'" />
     <SystemSettingsPage v-else-if="currentView === 'systemSettings'" />
   </main>

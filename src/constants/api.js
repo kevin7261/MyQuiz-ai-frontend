@@ -25,14 +25,14 @@ export function isFrontendLocalHost() {
  */
 export const API_BASE = isFrontendLocalHost() ? API_BASE_LOCAL : API_BASE_PRODUCTION;
 
-/** 設定（profile）：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=系統開發者 2=課程管理者 3=學生）、llm_api_key（建立出題單元用；空字串表示清除）；回傳更新後使用者資訊（不含 password） */
+/** 設定（profile）：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=系統開發者 2=課程管理者 3=學生）、llm_api_key（建立測試題庫用；空字串表示清除）；回傳更新後使用者資訊（不含 password） */
 export const API_UPDATE_PROFILE = '/user/profile';
 
 /** RAG 出題：POST /rag/create-quiz；body: rag_id（必填）、rag_tab_id（選填，可 ""）、quiz_level（「基礎」或「進階」字串）、unit_name（選填，可 ""；與 build-rag-zip outputs[].unit_name 一致，空則後端用第一筆）；LLM Key 依 Rag.person_id 自 User；回傳 quiz_content、quiz_hint、quiz_answer_reference、rag_quiz_id 等 */
 export const API_GENERATE_QUIZ = '/rag/create-quiz';
 export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';
 export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
-/** 評分 API 表單欄位：測驗題目內容（與後端 quiz_content、Quiz 表一致） */
+/** 評分 API 表單欄位：試卷題目內容（與後端 quiz_content、Quiz 表一致） */
 export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
 /** RAG 評分：POST /rag/quiz-grade（Grade Submission）；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；回傳 202 + job_id；GET /rag/quiz-grade-result/{job_id}（Get Grade Result）輪詢；ready 時 result: { quiz_score, quiz_comments, rag_answer_id } */
@@ -60,7 +60,7 @@ export const API_PUT_RAG_FOR_EXAM_DEPLOY = '/system-settings/rag-for-exam-deploy
 
 /** 個人答題分析：GET /person-analysis/quizzes/{person_id}；僅含 Exam_Answer 有對應之題；列表格式與 GET /exam/exams、GET /rag/rags 每筆一致（quizzes／exam_quizzes、頂層 answers／exam_answers、每題可含 answers）；另帶 count、weakness_report（有 LLM Key 時） */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
-/** 學生測驗分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
+/** 學生試卷分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
 /** Exam API：GET /exam/exams List Exams（deleted=false；Exam.local 須與 query local 相符；未傳 local 時後端依連線判定；query: person_id 可選、local 建議與 create-unit 一致） */

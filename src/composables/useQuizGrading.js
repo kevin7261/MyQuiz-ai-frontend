@@ -3,7 +3,7 @@
  *
  * 職責：送出評分請求、輪詢 job_id 取得結果、將回傳 JSON 格式化为易讀文字。
  * 會直接修改題目卡片 item（confirmed、gradingResult、gradingResponseJson）。
- * 供 CreateUnit 頁（RAG）、ExamPage（測驗）：RAG 為預設 body；Exam 傳 gradingMode: 'exam' 與 exam 路徑常數。
+ * 供 CreateTestBankPage（RAG）、ExamPage（試卷）：RAG 為預設 body；Exam 傳 gradingMode: 'exam' 與 exam 路徑常數。
  */
 import {
   API_BASE,

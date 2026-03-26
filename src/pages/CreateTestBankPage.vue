@@ -1,15 +1,15 @@
 <script setup>
 /**
- * CreateUnit - 建立 RAG 頁面
+ * CreateTestBankPage - 建立測試題庫頁面
  *
- * 一個分頁（tab）對應後端一筆 RAG（rag_id + rag_tab_id）。流程：建立 RAG → 上傳 ZIP → 設定 rag_list（虛擬資料夾群組）→ Build RAG ZIP → 可設為測驗用 → 產生題目 → 作答與評分。
+ * 一個分頁（tab）對應後端一筆 RAG（rag_id + rag_tab_id）。流程：建立 RAG → 上傳 ZIP → 設定 rag_list（虛擬資料夾群組）→ Build RAG ZIP → 可設為試卷用 → 產生題目 → 作答與評分。
  *
  * API 對應：
  * - 列表：GET /rag/rags?local=（與 create-unit 的 local 一致）
  * - 建立 tab（按 +）：POST /rag/create-unit（rag_tab_id、person_id、rag_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/build-rag-zip（rag_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
- * - 測驗用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為測驗用」
+ * - 試卷用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為試卷用」
  * - 出題：POST /rag/create-quiz（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/quiz-grade、GET /rag/quiz-grade-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
  * 上述 API 不需 llm_api_key。
  */
@@ -246,7 +246,7 @@ watch(
   (v) => {
     // 畫面不顯示 rag_id／rag_tab_id，改由此處輸出供除錯
     // eslint-disable-next-line no-console -- 依需求於開發者工具查看
-    console.log('[CreateUnit] rag_id:', v.rag_id, 'rag_tab_id:', v.rag_tab_id);
+    console.log('[CreateTestBankPage] rag_id:', v.rag_id, 'rag_tab_id:', v.rag_tab_id);
   },
   { immediate: true }
 );
@@ -288,7 +288,7 @@ const fileMetadataToShow = computed(() => {
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
 
 /**
- * 建立流程 stepper：1 僅上傳、2 含建立出題單元、3 含題目測試
+ * 建立流程 stepper：1 僅上傳、2 含建立測試題庫、3 含題目測試
  * - 無 file_metadata／無 rag_metadata → 1
  * - 有 file_metadata／無 rag_metadata → 1–2
  * - 有 file_metadata／有 rag_metadata → 1–2–3
@@ -448,7 +448,7 @@ function syncRagItemToState(rag, state) {
 
 watch(currentRagItem, (rag) => syncRagItemToState(rag, currentState.value), { immediate: true });
 
-/** 由 /rag/rags 的 quiz（含 answers）組成一張題目卡片，供出題測試區塊顯示；批改結果從作答紀錄的 answer_metadata / answer_feedback_metadata 格式化 */
+/** 由 /rag/rags 的 quiz（含 answers）組成一張題目卡片，供測試問題區塊顯示；批改結果從作答紀錄的 answer_metadata / answer_feedback_metadata 格式化 */
 function buildCardFromRagQuiz(quiz, ragName) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
@@ -550,7 +550,7 @@ onMounted(() => {
   fetchCourseNameForPrompt();
 });
 
-/** 設為測驗用（PUT system-settings rag-for-exam-*） */
+/** 設為試卷用（PUT system-settings rag-for-exam-*） */
 async function setRagForExam() {
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
@@ -579,7 +579,7 @@ async function setRagForExam() {
   }
 }
 
-/** 取消測驗用（PUT rag_id 空字串） */
+/** 取消試卷用（PUT rag_id 空字串） */
 async function clearRagForExam() {
   if (!currentRagIsExamRag.value || isNewTabId(activeTabId.value)) return;
   const personId = getPersonId(authStore);
@@ -665,7 +665,7 @@ async function addNewTab() {
     clearZipFileInput();
     if (ragList.value.length === 0) showFormWhenNoData.value = true;
   } catch (err) {
-    createRagError.value = err.message || '建立出題單元失敗';
+    createRagError.value = err.message || '建立測試題庫失敗';
   } finally {
     createRagLoading.value = false;
   }
@@ -752,7 +752,7 @@ async function confirmUploadZip() {
   }
   const tabId = activeTabId.value;
   if (isNewTabId(tabId) || !tabId) {
-    state.zipError = '請先按 + 完成建立出題單元（此 tab 需先建立後端資料）';
+    state.zipError = '請先按 + 完成建立測試題庫（此 tab 需先建立後端資料）';
     return;
   }
   const personId = getPersonId(authStore);
@@ -968,7 +968,7 @@ async function confirmAnswer(item) {
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">建立出題單元</span>
+        <span class="navbar-brand mb-0">建立測試題庫</span>
       </div>
     </div>
     <RagTabsBar
@@ -1011,7 +1011,7 @@ async function confirmAnswer(item) {
               class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
               :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
             >2</span>
-            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立出題單元</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立測試題庫</span>
           </div>
           <div
             class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
@@ -1023,11 +1023,11 @@ async function confirmAnswer(item) {
               class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
               :class="createRagStepperPhase >= 3 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
             >3</span>
-            <span class="mt-2 small" :class="createRagStepperPhase >= 3 ? 'text-dark fw-medium' : 'text-muted'">出題測試</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 3 ? 'text-dark fw-medium' : 'text-muted'">測試問題</span>
           </div>
         </div>
       </div>
-      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立出題單元」內 -->
+      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立測試題庫」內 -->
       <div v-if="activeTabId && !hasUploadedFileMetadata" class="text-start page-block-spacing border rounded p-3">
         <div class="">
           <input
@@ -1105,9 +1105,9 @@ async function confirmAnswer(item) {
           <div class="mb-3">
             <div class="small mb-1">出題prompt</div>
             <div class="small border rounded p-3 bg-body-tertiary">
-              你是一個「{{ courseNameForPrompt }}」課程的教授，請給學生設計測驗題目：<br>
+              你是一個「{{ courseNameForPrompt }}」課程的教授，請給學生設計試卷題目：<br>
               【出題規範】<br>
-              請根據輸入的「參考內容」設計測驗題目。<br>
+              請根據輸入的「參考內容」設計試卷題目。<br>
               **請使用繁體中文 (Traditional Chinese) 出題與撰寫提示及參考答案。**<br>
               題目難度：{quiz_level}。<br>
               <span class="lh-base text-break text-danger">{{ (currentState.systemInstruction ?? '').trim() || '—' }}</span><br>
@@ -1130,7 +1130,7 @@ async function confirmAnswer(item) {
               :disabled="currentState.forExamLoading"
               @click="currentRagIsExamRag ? clearRagForExam() : setRagForExam()"
             >
-              {{ currentRagIsExamRag ? '取消設為測驗用' : '設為測驗用' }}
+              {{ currentRagIsExamRag ? '取消設為試卷用' : '設為試卷用' }}
             </button>
           </div>
           <div v-if="currentState.forExamError" class="alert alert-danger py-2 small mb-0 mt-2">
@@ -1228,16 +1228,16 @@ async function confirmAnswer(item) {
                 :disabled="!secondFoldersFull.length"
                 @click="addAllSecondFoldersAsGroups"
               >
-                每個單元建立出題單元
+                每個單元建立測試題庫
               </button>
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
-                title="在現有出題單元之後新增一個出題單元，內含全部單元（rag_list 以 + 連接）"
+                title="在現有測試題庫之後新增一個測試題庫，內含全部單元（rag_list 以 + 連接）"
                 @click="setAllSecondFoldersAsSingleGroup"
               >
-                每個單元建立一個出題單元
+                每個單元建立一個測試題庫
               </button>
             </div>
           </div>
@@ -1270,7 +1270,7 @@ async function confirmAnswer(item) {
             <label class="form-label small text-secondary fw-medium mb-1">出題prompt</label>
             <div class="small border rounded p-3 bg-body-tertiary">
               【出題規範】<br>
-              請根據輸入的「參考內容」設計測驗題目。<br>
+              請根據輸入的「參考內容」設計試卷題目。<br>
               請使用繁體中文 (Traditional Chinese) 出題與撰寫提示及參考答案。<br>
               題目難度：{quiz_level}。<br>
               <textarea
@@ -1302,13 +1302,13 @@ async function confirmAnswer(item) {
           </div>
         </template>
       </div>
-      <!-- 出題測試：有 rag_metadata（本機 Pack 或後端已帶入）即顯示 -->
+      <!-- 測試問題：有 rag_metadata（本機 Pack 或後端已帶入）即顯示 -->
       <div
         v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''"
         class="text-start page-block-spacing"
         :class="{ 'opacity-75': ragGenerateDisabled }"
       >
-        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">出題測試</div>
+        <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">測試問題</div>
 
         <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
         <div class="mb-4">
@@ -1424,7 +1424,7 @@ async function confirmAnswer(item) {
   border-color: var(--bs-info) !important;
 }
 
-/* 建立出題單元頁：流程 stepper（1–2–3） */
+/* 建立測試題庫頁：流程 stepper（1–2–3） */
 .create-rag-stepper-num {
   width: 2.25rem;
   height: 2.25rem;

@@ -3,8 +3,8 @@
    * LeftView - 主畫面左側選單
    *
    * 職責：
-   * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、主要導覽（測驗、測驗分析）
-   * - 左下角使用者名下拉：出題／學生測驗分析／使用者管理／系統設定、分隔線、設定、登出
+   * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、主要導覽（試卷、學生弱點分析）
+   * - 左下角使用者名下拉：出題／學生試卷分析／使用者管理／系統設定、分隔線、設定、登出
    * - 依 user_type 顯示允許的項目（canSeeNavLink）
    */
   import { ref, computed, onMounted } from 'vue';
@@ -29,7 +29,7 @@
         const t = props.userType;
         if (!canSeeNavLink(t, 'profile')) return false;
         return (
-          canSeeNavLink(t, 'create-unit') ||
+          canSeeNavLink(t, 'create-test-bank') ||
           canSeeNavLink(t, 'course-analysis') ||
           canSeeNavLink(t, 'users') ||
           canSeeNavLink(t, 'settings')
@@ -69,14 +69,14 @@
         to="/exam"
         class="nav-link"
         active-class="active"
-        >測驗</router-link
+        >試卷</router-link
       >
       <router-link
-        v-if="canSeeNavLink(userType, 'analysis')"
-        to="/main/analysis"
+        v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
+        to="/main/student-weakness-analysis"
         class="nav-link"
         active-class="active"
-        >測驗分析</router-link
+        >學生弱點分析</router-link
       >
     </nav>
     <div class="flex-shrink-0 px-3 pb-2 mt-auto">
@@ -90,12 +90,12 @@
           <span class="flex-grow-1 overflow-hidden text-truncate">{{ userName || '—' }}</span>
         </button>
         <ul class="dropdown-menu dropdown-menu-start shadow-sm w-100">
-          <li v-if="canSeeNavLink(userType, 'create-unit')">
-            <router-link class="dropdown-item" to="/main/create-unit" active-class="active">建立出題單元</router-link>
+          <li v-if="canSeeNavLink(userType, 'create-test-bank')">
+            <router-link class="dropdown-item" to="/main/create-test-bank" active-class="active">建立測試題庫</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'course-analysis')">
             <router-link class="dropdown-item" to="/main/course-analysis" active-class="active"
-              >學生測驗分析</router-link
+              >學生試卷分析</router-link
             >
           </li>
           <li v-if="canSeeNavLink(userType, 'users')">

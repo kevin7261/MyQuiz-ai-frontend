@@ -5,8 +5,8 @@
  * - / → 重導向至 /login
  * - /login → 登入頁（LoginView）
  * - /main → 重導向至 /exam（保留 query）
- * - /exam → 測驗/工作區（HomeView，等同 /main/work）
- * - /main/:view → 主區塊各功能（analysis、profile、create-unit 等），由 HomeView 依 view 渲染
+ * - /exam → 試卷/工作區（HomeView，等同 /main/work）
+ * - /main/:view → 主區塊各功能（student-weakness-analysis、profile、create-test-bank 等），由 HomeView 依 view 渲染
  *
  * 主區塊與 /exam 需登入、依 user_type 限制路由，見 main.js 的 router.beforeEach 與 permissions.js。
  */
@@ -15,15 +15,23 @@ import LoginView from '../views/LoginView.vue';
 import HomeView from '../views/HomeView.vue';
 
 /** 允許的 view 參數（對應 /main/:view 的網址片段，用於側邊選單） */
-const VALID_VIEWS = ['work', 'analysis', 'course-analysis', 'profile', 'create-unit', 'users', 'settings'];
+const VALID_VIEWS = [
+  'work',
+  'student-weakness-analysis',
+  'course-analysis',
+  'profile',
+  'create-test-bank',
+  'users',
+  'settings',
+];
 
 /** 各 view 對應的瀏覽器頁籤標題 */
 const VIEW_TITLES = {
-  work: 'Exam - AIQuiz',
-  'analysis': '測驗分析 - AIQuiz',
-  'course-analysis': '學生測驗分析 - AIQuiz',
+  work: '試卷 - AIQuiz',
+  'student-weakness-analysis': '學生弱點分析 - AIQuiz',
+  'course-analysis': '學生試卷分析 - AIQuiz',
   profile: '設定 - AIQuiz',
-  'create-unit': '建立出題單元 - AIQuiz',
+  'create-test-bank': '建立測試題庫 - AIQuiz',
   users: '使用者管理 - AIQuiz',
   settings: '系統設定 - AIQuiz',
 };
@@ -44,11 +52,19 @@ const routes = [
     path: '/exam',
     name: 'Exam',
     component: HomeView,
-    meta: { title: 'Exam - AIQuiz' },
+    meta: { title: '試卷 - AIQuiz' },
+  },
+  {
+    path: '/main/analysis',
+    redirect: '/main/student-weakness-analysis',
+  },
+  {
+    path: '/main/create-unit',
+    redirect: '/main/create-test-bank',
   },
   {
     path: '/main/create-rag',
-    redirect: '/main/create-unit',
+    redirect: '/main/create-test-bank',
   },
   {
     path: '/main/:view',
