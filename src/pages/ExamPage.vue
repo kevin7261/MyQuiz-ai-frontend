@@ -8,7 +8,7 @@
  * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（試卷／題目關聯由 GET /exam/exams 等提供即可）
  * - GET /rag/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／rag_list 時仍可用 rag_tab_id 合成單元）
  * - GET /exam/exams?local=&person_id=：local 與 GET /rag/rags 相同；回傳每筆含 quizzes、answers（或 exam_quizzes／exam_answers）時，以 syncExamItemToTabState 灌入卡片（同 CreateTestBankPage 由列表同步題目／作答／批改）
- * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/create-quiz）；評分：POST /exam/quiz-grade、GET /exam/quiz-grade-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；刪除：POST /exam/delete/{exam_tab_id}
+ * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/create-quiz）；評分：POST /exam/grade-quiz、GET /exam/grade-quiz-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；刪除：POST /exam/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name；難度優先 quiz_level，否則 quiz_metadata.quiz_level。
  */
@@ -749,7 +749,7 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：與 CreateTestBankPage 相同流程（submitGrade），路徑為 POST /exam/quiz-grade、GET /exam/quiz-grade-result/{job_id} */
+/** 評分：與 CreateTestBankPage 相同流程（submitGrade），路徑為 POST /exam/grade-quiz、GET /exam/grade-quiz-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
   if (!activeTabId.value) {
@@ -876,7 +876,7 @@ onMounted(() => {
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <template v-if="examList.length > 0">
-        <!-- 產生題目與作答：與建立 RAG 頁一致（出題與評分）；資料來自 GET /rag/for-exam，使用 POST /exam/create-quiz、submitGrade（/exam/quiz-grade） -->
+        <!-- 產生題目與作答：與建立 RAG 頁一致（出題與評分）；資料來自 GET /rag/for-exam，使用 POST /exam/create-quiz、submitGrade（/exam/grade-quiz） -->
         <div
           v-if="activeTabId"
           class="text-start page-block-spacing"

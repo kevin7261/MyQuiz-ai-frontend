@@ -20,7 +20,7 @@ import { loggedFetch } from '../utils/loggedFetch.js';
  *
  * @param {Object} item - 題目卡片物件，會被 mutate（confirmed、gradingResult、gradingResponseJson）
  * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：{ examId, examTabId }（並設 options.gradingMode === 'exam'）
- * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時 POST body 為 exam_*（對齊 POST /exam/quiz-grade）
+ * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時 POST body 為 exam_*（對齊 POST /exam/grade-quiz）
  */
 export async function submitGrade(item, context, options = {}) {
   const isExam = options.gradingMode === 'exam';

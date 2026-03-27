@@ -24,7 +24,7 @@
   const PATH_TO_VIEW = {
     work: 'work',
     'student-weakness-analysis': 'studentWeaknessAnalysis',
-    'course-analysis': 'courseAnalysis',
+    'student-answer-analysis': 'studentAnswerAnalysis',
     profile: 'profile',
     'create-test-bank': 'createTestBank',
     users: 'userManagement',
@@ -41,7 +41,7 @@
       const route = useRoute();
       const dataStore = useDataStore();
       const authStore = useAuthStore();
-      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | courseAnalysis | profile | createTestBank | userManagement | systemSettings */
+      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createTestBank | userManagement | systemSettings */
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
         return PATH_TO_VIEW[route.params.view] || 'work';

@@ -18,7 +18,7 @@ import HomeView from '../views/HomeView.vue';
 const VALID_VIEWS = [
   'work',
   'student-weakness-analysis',
-  'course-analysis',
+  'student-answer-analysis',
   'profile',
   'create-test-bank',
   'users',
@@ -29,7 +29,7 @@ const VALID_VIEWS = [
 const VIEW_TITLES = {
   work: '試卷 - AIQuiz',
   'student-weakness-analysis': '學生弱點分析 - AIQuiz',
-  'course-analysis': '學生試卷分析 - AIQuiz',
+  'student-answer-analysis': '學生作答分析 - AIQuiz',
   profile: '設定 - AIQuiz',
   'create-test-bank': '建立測試題庫 - AIQuiz',
   users: '使用者管理 - AIQuiz',
@@ -65,6 +65,10 @@ const routes = [
   {
     path: '/main/create-rag',
     redirect: '/main/create-test-bank',
+  },
+  {
+    path: '/main/course-analysis',
+    redirect: '/main/student-answer-analysis',
   },
   {
     path: '/main/:view',

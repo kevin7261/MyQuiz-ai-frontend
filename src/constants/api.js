@@ -35,9 +35,9 @@ export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
 /** 評分 API 表單欄位：試卷題目內容（與後端 quiz_content、Quiz 表一致） */
 export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
-/** RAG 評分：POST /rag/quiz-grade（Grade Submission）；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；回傳 202 + job_id；GET /rag/quiz-grade-result/{job_id}（Get Grade Result）輪詢；ready 時 result: { quiz_score, quiz_comments, rag_answer_id } */
-export const API_RAG_QUIZ_GRADE = '/rag/quiz-grade';
-export const API_RAG_QUIZ_GRADE_RESULT = '/rag/quiz-grade-result';
+/** RAG 評分：POST /rag/grade-quiz（Grade Submission）；body: rag_id, rag_tab_id, rag_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；回傳 202 + job_id；GET /rag/grade-quiz-result/{job_id}（Get Grade Result）輪詢；ready 時 result: { quiz_score, quiz_comments, rag_answer_id } */
+export const API_RAG_QUIZ_GRADE = '/rag/grade-quiz';
+export const API_RAG_QUIZ_GRADE_RESULT = '/rag/grade-quiz-result';
 
 /** Create Unit：POST /rag/create-unit；僅建立一筆 Rag；body 必填 rag_tab_id、person_id、rag_name，選填 local（預設 false；本機前端可傳 true）；system_prompt_instruction 請於 POST /rag/build-rag-zip 傳入；回傳 rag_id、rag_tab_id、person_id、rag_name、local、created_at */
 export const API_CREATE_UNIT = '/rag/create-unit';
@@ -60,7 +60,7 @@ export const API_PUT_RAG_FOR_EXAM_DEPLOY = '/system-settings/rag-for-exam-deploy
 
 /** 個人答題分析：GET /person-analysis/quizzes/{person_id}；僅含 Exam_Answer 有對應之題；列表格式與 GET /exam/exams、GET /rag/rags 每筆一致（quizzes／exam_quizzes、頂層 answers／exam_answers、每題可含 answers）；另帶 count、weakness_report（有 LLM Key 時） */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
-/** 學生試卷分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
+/** 學生作答分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
 /** Exam API：GET /exam/exams List Exams（deleted=false；Exam.local 須與 query local 相符；未傳 local 時後端依連線判定；query: person_id 可選、local 建議與 create-unit 一致） */
@@ -75,10 +75,10 @@ export const API_EXAM_CREATE_QUIZ = '/exam/create-quiz';
 export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /** @deprecated 使用 API_EXAM_CREATE_QUIZ */
 export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
-/** Exam：POST /exam/quiz-grade；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；後端由系統設定取 llm_api_key；回傳 202 + job_id；GET /exam/quiz-grade-result/{job_id} 輪詢；ready 時 result 含 quiz_score、quiz_comments（與 RAG 輪詢 result 對齊） */
-export const API_EXAM_QUIZ_GRADE = '/exam/quiz-grade';
-/** Exam：GET /exam/quiz-grade-result/{job_id}（Get Grade Result）；ready 時 result 含 quiz_score、quiz_comments 等，對齊 RAG */
-export const API_EXAM_QUIZ_GRADE_RESULT = '/exam/quiz-grade-result';
+/** Exam：POST /exam/grade-quiz；body: exam_id, exam_tab_id, exam_quiz_id, quiz_content, quiz_answer, quiz_answer_reference（選填可 ""）；後端由系統設定取 llm_api_key；回傳 202 + job_id；GET /exam/grade-quiz-result/{job_id} 輪詢；ready 時 result 含 quiz_score、quiz_comments（與 RAG 輪詢 result 對齊） */
+export const API_EXAM_QUIZ_GRADE = '/exam/grade-quiz';
+/** Exam：GET /exam/grade-quiz-result/{job_id}（Get Grade Result）；ready 時 result 含 quiz_score、quiz_comments 等，對齊 RAG */
+export const API_EXAM_QUIZ_GRADE_RESULT = '/exam/grade-quiz-result';
 
 /**
  * 系統設定 system-settings

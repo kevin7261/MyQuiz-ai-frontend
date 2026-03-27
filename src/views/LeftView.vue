@@ -4,7 +4,7 @@
    *
    * 職責：
    * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、主要導覽（試卷、學生弱點分析）
-   * - 左下角使用者名下拉：出題／學生試卷分析／使用者管理／系統設定、分隔線、設定、登出
+   * - 左下角使用者名下拉：出題／學生作答分析／使用者管理／系統設定、分隔線、設定、登出
    * - 依 user_type 顯示允許的項目（canSeeNavLink）
    */
   import { ref, computed, onMounted } from 'vue';
@@ -30,7 +30,7 @@
         if (!canSeeNavLink(t, 'profile')) return false;
         return (
           canSeeNavLink(t, 'create-test-bank') ||
-          canSeeNavLink(t, 'course-analysis') ||
+          canSeeNavLink(t, 'student-answer-analysis') ||
           canSeeNavLink(t, 'users') ||
           canSeeNavLink(t, 'settings')
         );
@@ -93,9 +93,9 @@
           <li v-if="canSeeNavLink(userType, 'create-test-bank')">
             <router-link class="dropdown-item" to="/main/create-test-bank" active-class="active">建立測試題庫</router-link>
           </li>
-          <li v-if="canSeeNavLink(userType, 'course-analysis')">
-            <router-link class="dropdown-item" to="/main/course-analysis" active-class="active"
-              >學生試卷分析</router-link
+          <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
+            <router-link class="dropdown-item" to="/main/student-answer-analysis" active-class="active"
+              >學生作答分析</router-link
             >
           </li>
           <li v-if="canSeeNavLink(userType, 'users')">
