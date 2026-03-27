@@ -8,7 +8,7 @@
  * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（試卷／題目關聯由 GET /exam/exams 等提供即可）
  * - GET /rag/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／unit_list 時仍可用 rag_tab_id 合成單元）
  * - GET /exam/exams?local=&person_id=：local 與 GET /rag/rags 相同；回傳每筆含 quizzes、answers（或 exam_quizzes／exam_answers）時，以 syncExamItemToTabState 灌入卡片（同 CreateTestBankPage 由列表同步題目／作答／批改）
- * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/create-quiz）；評分：POST /exam/grade-quiz、GET /exam/grade-quiz-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；題目讚／差：POST /exam/rate-quiz（quiz_rate：1、-1、0）；刪除：POST /exam/delete/{exam_tab_id}
+ * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/create-quiz）；評分：POST /exam/grade-quiz、GET /exam/grade-quiz-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；題目讚／差：POST /exam/rate-quiz（quiz_rate：1、-1、0）；分頁更名：PUT /exam/unit-name（body: exam_id、tab_name）；刪除：POST /exam/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name；難度優先 quiz_level，否則 quiz_metadata.quiz_level。
  */
@@ -42,6 +42,8 @@ import {
   normalizeExamListResponse,
 } from '../utils/rag.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
+import TabRenameModal from '../components/TabRenameModal.vue';
+import { apiUpdateExamTabName } from '../services/examApi.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { submitGrade } from '../composables/useQuizGrading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
@@ -111,6 +113,12 @@ const createExamLoading = ref(false);
 const createExamError = ref('');
 /** 當前選中的 tab = 該試卷的 test_tab_id / exam_tab_id */
 const activeTabId = ref(null);
+const examRenameModalOpen = ref(false);
+/** PUT /exam/unit-name 用 Exam 主鍵 */
+const examRenameDraftExamId = ref(null);
+const examRenameInitialName = ref('');
+const examRenameSaving = ref(false);
+const examRenameError = ref('');
 
 /** 每個 tab（test_tab_id）的狀態 */
 const tabStateMap = reactive({});
@@ -534,6 +542,46 @@ function getExamTabId(exam) {
   return String(exam.exam_tab_id ?? exam.test_tab_id ?? exam.id ?? '');
 }
 
+function getExamTabNameForEdit(exam) {
+  if (!exam || typeof exam !== 'object') return '';
+  const t = exam.tab_name ?? exam.exam_name ?? exam.test_name;
+  if (t != null && String(t).trim() !== '') return String(t).trim();
+  return '';
+}
+
+function openExamRenameModal(examTabId) {
+  const exam = examList.value.find((e) => getExamTabId(e) === String(examTabId));
+  const eid = exam?.exam_id ?? exam?.test_id;
+  examRenameDraftExamId.value =
+    eid != null && String(eid).trim() !== '' ? Number(eid) : null;
+  examRenameInitialName.value = getExamTabNameForEdit(exam) || getExamTabLabel(exam);
+  examRenameError.value = '';
+  examRenameModalOpen.value = true;
+}
+
+async function onExamRenameSave(name) {
+  if (!name) {
+    examRenameError.value = '請輸入名稱';
+    return;
+  }
+  const eid = examRenameDraftExamId.value;
+  if (eid == null || !Number.isFinite(eid) || eid < 1) {
+    examRenameError.value = '找不到此試卷（exam_id）';
+    return;
+  }
+  examRenameSaving.value = true;
+  examRenameError.value = '';
+  try {
+    await apiUpdateExamTabName(eid, name);
+    await fetchExamTests();
+    examRenameModalOpen.value = false;
+  } catch (err) {
+    examRenameError.value = err.message || '更新失敗';
+  } finally {
+    examRenameSaving.value = false;
+  }
+}
+
 /** 按 + 新增試卷：POST /exam/create-exam，body 含 exam_tab_id、person_id、tab_name、local（與 create-unit 一致） */
 async function addNewTab() {
   const personId = getCurrentPersonId();
@@ -846,6 +894,14 @@ onMounted(() => {
       :is-visible="isAnyLoading"
       loading-text="執行中..."
     />
+    <TabRenameModal
+      v-model="examRenameModalOpen"
+      :initial-name="examRenameInitialName"
+      :saving="examRenameSaving"
+      :error="examRenameError"
+      title="修改試卷分頁名稱"
+      @save="onExamRenameSave"
+    />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand mb-0">試卷</span>
@@ -886,14 +942,26 @@ onMounted(() => {
                   {{ getExamTabLabel(exam) }}
                 </span>
                 <button
+                  v-if="activeTabId === getExamTabId(exam)"
                   type="button"
-                  class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
-                  style="min-width: 1.25rem; line-height: 1;"
+                  class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                  title="重新命名分頁"
+                  aria-label="重新命名分頁"
+                  :disabled="deleteExamLoading || examRenameSaving"
+                  @click.stop="openExamRenameModal(getExamTabId(exam))"
+                >
+                  <i class="fa-solid fa-pen" aria-hidden="true" />
+                </button>
+                <button
+                  v-if="activeTabId === getExamTabId(exam)"
+                  type="button"
+                  class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                  title="刪除此試卷"
                   aria-label="刪除此試卷"
-                  :disabled="deleteExamLoading"
+                  :disabled="deleteExamLoading || examRenameSaving"
                   @click.stop="deleteExam(getExamTabId(exam))"
                 >
-                  ×
+                  <i class="fa-solid fa-trash-can" aria-hidden="true" />
                 </button>
               </div>
             </li>
@@ -1110,3 +1178,23 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 與 RagTabsBar 一致：頁籤筆／刪除同尺寸、略小 */
+.tab-nav-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  min-width: 0.875rem;
+  height: 0.875rem;
+  padding: 0 !important;
+  line-height: 1;
+}
+.tab-nav-action-btn :deep(.fa-solid) {
+  font-size: 0.6875rem;
+  line-height: 1;
+  width: 1em;
+  height: 1em;
+}
+</style>

@@ -1,7 +1,7 @@
 /**
  * RAG 相關 API 呼叫模組
  *
- * 集中封裝 create-unit、upload-zip、build-rag-zip、create-quiz、設為試題用（system-settings）、delete 等
+ * 集中封裝 create-unit、upload-zip、build-rag-zip、create-quiz、PUT unit-name（分頁更名）、設為試題用（system-settings）、delete 等
  * 使用 loggedFetch（會輸出回應內容），錯誤時以 parseFetchError 解析並 throw Error，供呼叫端 catch 顯示。
  */
 import {
@@ -9,6 +9,7 @@ import {
   API_CREATE_UNIT,
   API_UPLOAD_ZIP,
   API_RAG_DELETE,
+  API_RAG_UNIT_NAME,
   API_BUILD_RAG_ZIP,
   API_GENERATE_QUIZ,
   API_PUT_RAG_FOR_EXAM_DEPLOY,
@@ -97,6 +98,30 @@ export async function apiDeleteRag(ragTabId, personId) {
     const text = await res.text();
     throw new Error(parseFetchError(res, text));
   }
+}
+
+/**
+ * 更新 RAG 分頁名稱：PUT /rag/unit-name（以 rag_id 比對，僅 deleted=false）
+ * @param {string | number} ragId - Rag 主鍵
+ * @param {string} tabName
+ * @returns {Promise<object>} rag_id、rag_tab_id、person_id、tab_name、updated_at
+ */
+export async function apiUpdateRagTabName(ragId, tabName) {
+  const rid = Number(ragId);
+  if (!Number.isInteger(rid) || rid < 1) {
+    throw new Error('無效的 rag_id（須為正整數）');
+  }
+  const res = await loggedFetch(`${API_BASE}${API_RAG_UNIT_NAME}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rag_id: rid,
+      tab_name: String(tabName).trim(),
+    }),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
 }
 
 function ragForExamSettingPath() {

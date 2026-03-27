@@ -9,6 +9,7 @@
  * - 建立 tab（按 +）：POST /rag/create-unit（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/build-rag-zip（unit_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
+ * - 分頁更名：PUT /rag/unit-name（body: rag_id、tab_name）
  * - 試卷用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為試卷用」
  * - 出題：POST /rag/create-quiz（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/grade-quiz、GET /rag/grade-quiz-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
  * 上述 API 不需 llm_api_key。
@@ -26,6 +27,7 @@ import {
   apiCreateUnit,
   apiUploadZip,
   apiDeleteRag,
+  apiUpdateRagTabName,
   apiGetRagForExamSetting,
   apiSetRagForExam,
   parseRagIdFromRagForExamSettingPayload,
@@ -56,6 +58,7 @@ import { usePackTasks } from '../composables/usePackTasks.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import QuizCard from '../components/QuizCard.vue';
 import RagTabsBar from '../components/RagTabsBar.vue';
+import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 defineProps({
@@ -81,6 +84,12 @@ const authStore = useAuthStore();
 const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList();
 const createRagLoading = ref(false);
 const createRagError = ref('');
+const renameRagTabModalOpen = ref(false);
+/** 重新命名 API 用 Rag 主鍵（PUT /rag/unit-name） */
+const renameRagTabDraftRagId = ref(null);
+const renameRagTabInitialName = ref('');
+const renameRagTabSaving = ref(false);
+const renameRagTabError = ref('');
 const gradingLoading = ref(false);
 const deleteRagLoading = ref(false);
 /** 與左側標題相同：GET /system-settings/course-name 的 course_name，失敗時維持 AIQuiz */
@@ -687,6 +696,49 @@ function getRagTabLabel(rag) {
   return (label && label !== '') ? label : (fromMap ?? rag.file_metadata?.filename ?? rag.course_name ?? rag.filename ?? rag.created_at ?? deriveRagNameFromTabId(rag.rag_tab_id ?? '') ?? 'RAG');
 }
 
+/** 編輯分頁名稱用：優先後端 tab_name／rag_name，無則空 */
+function getRagTabNameForEdit(rag) {
+  if (!rag || typeof rag !== 'object') return '';
+  const t = rag.tab_name;
+  if (t != null && String(t).trim() !== '') return String(t).trim();
+  const r = rag.rag_name;
+  if (r != null && String(r).trim() !== '') return String(r).trim();
+  return '';
+}
+
+function openRenameRagTab(tabId) {
+  const rag = ragList.value.find((x) => String(x.rag_tab_id ?? x.id ?? '') === String(tabId));
+  const rid = rag?.rag_id;
+  renameRagTabDraftRagId.value =
+    rid != null && String(rid).trim() !== '' ? Number(rid) : null;
+  renameRagTabInitialName.value = getRagTabNameForEdit(rag) || getRagTabLabel(rag);
+  renameRagTabError.value = '';
+  renameRagTabModalOpen.value = true;
+}
+
+async function onRenameRagTabSave(name) {
+  if (!name) {
+    renameRagTabError.value = '請輸入名稱';
+    return;
+  }
+  const rid = renameRagTabDraftRagId.value;
+  if (rid == null || !Number.isFinite(rid) || rid < 1) {
+    renameRagTabError.value = '找不到此測試題庫（rag_id）';
+    return;
+  }
+  renameRagTabSaving.value = true;
+  renameRagTabError.value = '';
+  try {
+    await apiUpdateRagTabName(rid, name);
+    await fetchRagList();
+    renameRagTabModalOpen.value = false;
+  } catch (err) {
+    renameRagTabError.value = err.message || '更新失敗';
+  } finally {
+    renameRagTabSaving.value = false;
+  }
+}
+
 function resetZipState(state, tabId) {
   state.uploadedZipFile = null;
   state.zipFileName = '';
@@ -969,6 +1021,14 @@ async function confirmAnswer(item) {
       :is-visible="isAnyLoading"
       loading-text="執行中..."
     />
+    <TabRenameModal
+      v-model="renameRagTabModalOpen"
+      :initial-name="renameRagTabInitialName"
+      :saving="renameRagTabSaving"
+      :error="renameRagTabError"
+      title="修改測試題庫分頁名稱"
+      @save="onRenameRagTabSave"
+    />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand mb-0">建立測試題庫</span>
@@ -983,9 +1043,11 @@ async function confirmAnswer(item) {
       :rag-list-error="ragListError"
       :create-rag-error="createRagError"
       :delete-rag-loading="deleteRagLoading"
+      :rename-tab-loading="renameRagTabSaving"
       @update:active-tab-id="activeTabId = $event"
       @add-new-tab="addNewTab"
       @delete-rag="onDeleteRagTab"
+      @rename-tab="openRenameRagTab"
     />
 
     <!-- 內容區：可上下捲動 -->

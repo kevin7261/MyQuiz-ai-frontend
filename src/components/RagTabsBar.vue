@@ -4,7 +4,7 @@
  *
  * 顯示：後端 RAG 列表（ragItems）+ 尚未儲存的「新增」分頁（newTabItems）+ 「+」按鈕。
  * 點選分頁會 emit update:activeTabId；點「+」會 emit add-new-tab。
- * 已儲存的 ragItems 分頁右側有 ×，emit delete-rag（tab id）；試卷用 RAG（_isExamRag）改顯示綠色圓點、無刪除；newTabItems 無刪除鈕。
+ * 已儲存的 ragItems：僅當前選中分頁顯示筆（rename-tab）與刪除（delete-rag，垃圾桶圖示）；試卷用 RAG（_isExamRag）僅綠點、無刪除；newTabItems 無筆／刪除。
  * 若 RAG 列表與新分頁皆空，僅顯示「+ 新增」按鈕以建立第一個 RAG。
  * 下方可顯示 ragListError、createRagError 警告/錯誤訊息。
  */
@@ -25,9 +25,11 @@ defineProps({
   createRagError: { type: String, default: '' },
   /** 刪除 RAG 請求進行中（禁用各分頁 ×） */
   deleteRagLoading: { type: Boolean, default: false },
+  /** 重新命名請求進行中（禁用筆與 ×） */
+  renameTabLoading: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag']);
+const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 'rename-tab']);
 </script>
 
 <template>
@@ -67,6 +69,17 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag']);
               >
                 {{ item._label }}
               </span>
+              <button
+                v-if="activeTabId === item._tabId"
+                type="button"
+                class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                title="重新命名分頁"
+                aria-label="重新命名分頁"
+                :disabled="deleteRagLoading || renameTabLoading"
+                @click.stop="emit('rename-tab', item._tabId)"
+              >
+                <i class="fa-solid fa-pen" aria-hidden="true" />
+              </button>
               <span
                 v-if="item._isExamRag"
                 class="d-inline-flex align-items-center justify-content-center flex-shrink-0"
@@ -78,15 +91,15 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag']);
                 <span class="rounded-circle bg-success d-inline-block" style="width: 0.5rem; height: 0.5rem;" />
               </span>
               <button
-                v-else
+                v-else-if="activeTabId === item._tabId"
                 type="button"
-                class="btn btn-link btn-sm p-0 text-muted text-decoration-none"
-                style="min-width: 1.25rem; line-height: 1;"
+                class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                title="刪除此出題單元"
                 aria-label="刪除此出題單元"
-                :disabled="deleteRagLoading"
+                :disabled="deleteRagLoading || renameTabLoading"
                 @click.stop="emit('delete-rag', item._tabId)"
               >
-                ×
+                <i class="fa-solid fa-trash-can" aria-hidden="true" />
               </button>
             </div>
           </li>
@@ -124,3 +137,23 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag']);
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 頁籤筆／刪除：同外框與圖示字級（略小），避免與 .btn-sm 字級衝突故設在 .fa-solid） */
+.tab-nav-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  min-width: 0.875rem;
+  height: 0.875rem;
+  padding: 0 !important;
+  line-height: 1;
+}
+.tab-nav-action-btn :deep(.fa-solid) {
+  font-size: 0.6875rem;
+  line-height: 1;
+  width: 1em;
+  height: 1em;
+}
+</style>

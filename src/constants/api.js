@@ -47,6 +47,8 @@ export const API_RAG_LIST = '/rag/rags';
 export const API_UPLOAD_ZIP = '/rag/upload-zip';
 /** 刪除 RAG：POST /rag/delete/{rag_tab_id}；Header X-Person-Id */
 export const API_RAG_DELETE = '/rag/delete';
+/** 更新 RAG 分頁顯示名稱：PUT /rag/unit-name；body JSON：rag_id、tab_name；以 rag_id 比對，僅更新 deleted=false；回傳 rag_id、rag_tab_id、person_id、tab_name、updated_at */
+export const API_RAG_UNIT_NAME = '/rag/unit-name';
 /** 建 RAG ZIP：POST /rag/build-rag-zip；依已上傳 ZIP（rag_tab_id，路徑 {person_id}/{rag_tab_id}/upload 與 upload-zip 一致）與 unit_list 抽出資料夾重壓並存後端；body 必填 rag_tab_id、person_id、unit_list（逗號分隔多個輸出檔，加號為同檔內多資料夾）、system_prompt_instruction、chunk_size、chunk_overlap；LLM Key 依 person_id 自 User；回傳寫入 Rag.rag_metadata 並更新 chunk_size、chunk_overlap；不需 llm_api_key */
 export const API_BUILD_RAG_ZIP = '/rag/build-rag-zip';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
@@ -67,6 +69,8 @@ export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 export const API_EXAM_TESTS = '/exam/exams';
 /** Exam：POST /exam/create-exam；body 可選 exam_tab_id（未傳則後端產生）、person_id、tab_name、local（預設 false；本機前端應傳 true 與 create-unit 一致）；回傳 exam_id、exam_tab_id、person_id、tab_name、local、created_at */
 export const API_CREATE_EXAM = '/exam/create-exam';
+/** 更新試卷分頁顯示名稱：PUT /exam/unit-name；body JSON：exam_id、tab_name；以 exam_id 比對，僅更新 deleted=false；回傳 exam_id、exam_tab_id、person_id、tab_name、updated_at */
+export const API_EXAM_UNIT_NAME = '/exam/unit-name';
 /** Exam：POST /exam/delete/{exam_tab_id} Delete Exam */
 export const API_EXAM_DELETE = '/exam/delete';
 /** Exam：POST /exam/create-quiz（Exam Create Quiz）；body 對齊 RAG 的 POST /rag/create-quiz：exam_id 或 exam_tab_id（二擇一；可 ""／0 搭配另一欄）、quiz_level（「基礎」或「進階」）、unit_name（選填可 ""）；LLM Key 由系統設定；試題 RAG 依連線讀 rag_localhost／rag_deploy。回傳對應 Exam_Quiz 等欄位 */
