@@ -73,9 +73,7 @@ export async function submitGrade(item, context, options = {}) {
           ? '（例如請於系統設定設定 LLM API Key）\n\n'
           : res.status === 502
             ? '（後端逾時或服務喚醒中，請稍後再試）\n\n'
-            : res.status === 500
-              ? '（後端 500 錯誤，請檢查伺服器日誌或 API 設定）\n\n'
-              : '';
+            : '';
       item.gradingResult = `評分失敗：${statusHint}${msg}`;
       return;
     }
