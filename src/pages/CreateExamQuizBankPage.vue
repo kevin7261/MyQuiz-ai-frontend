@@ -1271,7 +1271,7 @@ async function confirmAnswer(item) {
                 </div>
               </template>
               <div
-                class="pack-drop-target btn btn-sm btn-outline-primary bg-white d-flex align-items-center justify-content-center"
+                class="pack-drop-target btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center"
                 style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                 role="button"
                 tabindex="0"
