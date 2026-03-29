@@ -3,7 +3,7 @@
  *
  * 職責：送出評分請求、輪詢 job_id 取得結果、將回傳 JSON 格式化为易讀文字。
  * 會直接修改題目卡片 item（confirmed、gradingResult、gradingResponseJson）。
- * 供 CreateTestBankPage（RAG）、ExamPage（試卷）：RAG 為預設 body；Exam 傳 gradingMode: 'exam' 與 exam 路徑常數。
+ * 供 CreateExamQuizBankPage（RAG）、ExamPage（測驗）：RAG 為預設 body；Exam 傳 gradingMode: 'exam' 與 exam 路徑常數。
  */
 import {
   API_BASE,
@@ -20,7 +20,7 @@ import { loggedFetch } from '../utils/loggedFetch.js';
  *
  * @param {Object} item - 題目卡片物件，會被 mutate（confirmed、gradingResult、gradingResponseJson）
  * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：{ examId, examTabId }（並設 options.gradingMode === 'exam'）
- * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時 POST body 為 exam_*（對齊 POST /exam/grade-quiz）
+ * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時 POST body 為 exam_*（對齊 POST /exam/tab/quiz/grade）
  */
 export async function submitGrade(item, context, options = {}) {
   const isExam = options.gradingMode === 'exam';

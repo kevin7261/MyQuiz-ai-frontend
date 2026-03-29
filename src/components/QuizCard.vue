@@ -4,7 +4,7 @@
  *
  * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、參考答案(暫存)、答案區、批改結果。
  * 未確定前可輸入答案並按「確定」送出評分。
- * 供 CreateTestBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
+ * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
  * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, generateLevel, id 等。
  */
@@ -13,7 +13,7 @@ defineProps({
   card: { type: Object, required: true },
   /** 題號（從 1 開始，用於顯示「第 N 題」） */
   slotIndex: { type: Number, required: true },
-  /** 批改 prompt 內「課程名稱」占位（與建立測試題庫頁 course 一致） */
+  /** 批改 prompt 內「課程名稱」占位（與建立測驗題庫頁 course 一致） */
   courseName: { type: String, default: 'AIQuiz' },
 });
 
@@ -81,8 +81,8 @@ const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']
         <div class="small border rounded p-3 bg-body-tertiary">
           你是一位「{{ courseName }}」課程的教授，請批改這道題目：<br>
           【評分規範】<br>
-          根據「試卷題目」與「課程內容」，評估「學生答案」的內容是否正確。<br>
-          試卷題目：{quiz_content}<br>
+          根據「測驗題目」與「課程內容」，評估「學生答案」的內容是否正確。<br>
+          測驗題目：{quiz_content}<br>
           學生答案：{quiz_answer}<br>
           課程內容：{context_text}<br>
           【重要限制】<br>

@@ -1,7 +1,7 @@
 /**
  * RAG 相關 API 呼叫模組
  *
- * 集中封裝 create-unit、upload-zip、build-rag-zip、create-quiz、PUT unit-name（分頁更名）、設為試題用（system-settings）、delete 等
+ * 集中封裝 tab/create、tab/upload-zip、tab/build-rag-zip、tab/quiz/create、PUT tab/tab-name（分頁更名）、設為試題用（system-settings）、tab/delete 等
  * 使用 loggedFetch（會輸出回應內容），錯誤時以 parseFetchError 解析並 throw Error，供呼叫端 catch 顯示。
  */
 import {
@@ -41,7 +41,7 @@ function parseJson(text) {
 }
 
 /**
- * Create Unit：POST /rag/create-unit（僅建立一筆 Rag；system_prompt_instruction 請於 build-rag-zip 傳入）
+ * Create Tab：POST /rag/tab/create（僅建立一筆 Rag；system_prompt_instruction 請於 tab/build-rag-zip 傳入）
  * @param {string} personId
  * @param {string} ragTabId
  * @param {string} tabName
@@ -64,7 +64,7 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
 }
 
 /**
- * 上傳教材檔：POST /rag/upload-zip（需先 create-unit）
+ * 上傳教材檔：POST /rag/tab/upload-zip（需先 tab/create）
  * @param {File} file - .zip、.pdf、.doc、.docx、.ppt、.pptx 等後端可解析格式
  * @param {string} ragTabId
  * @param {string} personId
@@ -85,7 +85,7 @@ export async function apiUploadZip(file, ragTabId, personId) {
 }
 
 /**
- * 刪除 RAG：POST /rag/delete/{rag_tab_id}
+ * 刪除 RAG：POST /rag/tab/delete/{rag_tab_id}
  * @param {string} ragTabId
  * @param {string} personId - 以 X-Person-Id header 傳送
  */
@@ -101,7 +101,7 @@ export async function apiDeleteRag(ragTabId, personId) {
 }
 
 /**
- * 更新 RAG 分頁名稱：PUT /rag/unit-name（以 rag_id 比對，僅 deleted=false）
+ * 更新 RAG 分頁名稱：PUT /rag/tab/tab-name（以 rag_id 比對，僅 deleted=false）
  * @param {string | number} ragId - Rag 主鍵
  * @param {string} tabName
  * @returns {Promise<object>} rag_id、rag_tab_id、person_id、tab_name、updated_at
@@ -182,7 +182,7 @@ export async function apiSetRagForExam(ragId) {
 }
 
 /**
- * 建 RAG ZIP：POST /rag/build-rag-zip
+ * 建 RAG ZIP：POST /rag/tab/build-rag-zip
  * @param {object} body - 含 rag_tab_id, person_id, unit_list, chunk_size, chunk_overlap, system_prompt_instruction 等
  * @returns {Promise<object | string>} 後端回傳的 JSON 或原始文字
  */
@@ -202,7 +202,7 @@ export async function apiBuildRagZip(body) {
 }
 
 /**
- * 產生題目：POST /rag/create-quiz（與 OpenAPI 範例一致：四欄皆送出，選填欄可為 ""）
+ * 產生題目：POST /rag/tab/quiz/create（與 OpenAPI 範例一致：四欄皆送出，選填欄可為 ""）
  * @param {string | number} ragId - Rag 表主鍵
  * @param {string | number | null | undefined} [ragTabId] - 選填；空則傳 ""
  * @param {string | number} quizLevel - 「基礎」／「進階」，或舊版 0／1

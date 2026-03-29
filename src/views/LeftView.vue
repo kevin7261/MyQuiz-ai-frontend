@@ -3,7 +3,7 @@
    * LeftView - 主畫面左側選單
    *
    * 職責：
-   * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、主要導覽（試卷、作答弱點分析）
+   * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、主要導覽（測驗、作答弱點分析）
    * - 左下角使用者名下拉：出題／學生作答分析／使用者管理／系統設定、分隔線、設定、登出
    * - 依 user_type 顯示允許的項目（canSeeNavLink）
    */
@@ -69,7 +69,7 @@
         to="/exam"
         class="nav-link"
         active-class="active"
-        >試卷</router-link
+        >測驗</router-link
       >
       <router-link
         v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
@@ -91,7 +91,7 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-start shadow-sm w-100">
           <li v-if="canSeeNavLink(userType, 'create-test-bank')">
-            <router-link class="dropdown-item" to="/main/create-test-bank" active-class="active">建立測試題庫</router-link>
+            <router-link class="dropdown-item" to="/main/create-test-bank" active-class="active">建立測驗題庫</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
             <router-link class="dropdown-item" to="/main/student-answer-analysis" active-class="active"

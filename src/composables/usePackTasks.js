@@ -1,5 +1,5 @@
 /**
- * Pack 虛擬資料夾（build-rag-zip 的 unit_list）Composable
+ * Pack 虛擬資料夾（POST /rag/tab/build-rag-zip 的 unit_list）Composable
  *
  * 職責：
  * - 從 currentState 與 fileMetadataToShow 衍生 secondFoldersFull、ragListDisplayGroups

@@ -1,17 +1,17 @@
 /**
  * RAG 相關純函數與常數
  *
- * 供 CreateTestBankPage、useRagTabState、usePackTasks、ragApi 等使用。
+ * 供 CreateExamQuizBankPage、useRagTabState、usePackTasks、ragApi 等使用。
  * 不依賴 Vue 或 API，僅為資料轉換與 ID 產生邏輯。
  */
 
 /** 建 RAG 時預設的系統提示（題目生成指令） */
 export const DEFAULT_SYSTEM_INSTRUCTION = '題目字數不超過200字';
-/** 題目難度選項與 create-quiz API 的 quiz_level 字串值 */
+/** 題目難度選項與 tab/quiz/create API 的 quiz_level 字串值 */
 export const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
 
 /**
- * POST /rag/create-quiz、/exam/create-quiz 的 quiz_level：固定為「基礎」或「進階」
+ * POST /rag/tab/quiz/create、/exam/tab/quiz/create 的 quiz_level：固定為「基礎」或「進階」
  * @param {unknown} selected - UI 選取值，或舊版 0／1
  * @returns {string}
  */
@@ -39,7 +39,7 @@ export function normalizeQuizLevelLabel(level) {
 }
 
 /**
- * public."Exam_Quiz" 列（或 POST /exam/create-quiz 回傳）：難度可能在 quiz_level 或 quiz_metadata.quiz_level
+ * public."Exam_Quiz" 列（或 POST /exam/tab/quiz/create 回傳）：難度可能在 quiz_level 或 quiz_metadata.quiz_level
  * @param {object | null | undefined} quiz
  * @returns {string | null}
  */
@@ -107,7 +107,7 @@ export function deriveRagName(o) {
 }
 
 /**
- * 「產生題目」單元下拉的 v-model：優先 unit_name（與 create-quiz 一致，build-rag-zip 前後較不易因 rag_tab_id 重算而失效）
+ * 「產生題目」單元下拉的 v-model：優先 unit_name（與 tab/quiz/create 一致，tab/build-rag-zip 前後較不易因 rag_tab_id 重算而失效）
  * @param {object} [opt]
  * @returns {string}
  */
@@ -155,7 +155,7 @@ export function findQuizUnitBySlotSelection(units, generateQuizTabId) {
 }
 
 /**
- * 將 GET /rag/rags 單筆的 rag_metadata 正規化為物件。
+ * 將 GET /rag/tabs 單筆的 rag_metadata 正規化為物件。
  * 後端常將 rag_metadata 存成 JSON 字串，若直接用 rag.rag_metadata.outputs 會讀不到。
  * @param {object} [rag]
  * @returns {object | null}
@@ -177,7 +177,7 @@ export function parseRagMetadataObject(rag) {
 }
 
 /**
- * Rag 表上的單元清單字串（build-rag-zip 的 unit_list；列表 API 可能為 unit_list，相容 rag_list）
+ * Rag 表上的單元清單字串（tab/build-rag-zip 的 unit_list；列表 API 可能為 unit_list，相容 rag_list）
  * @param {object} [rag]
  * @returns {string} trim 後字串，無則 ''
  */
@@ -211,7 +211,7 @@ export function serializePackTasksList(list) {
 }
 
 /**
- * 將 GET /rag/rags 回傳正規化為 RAG 陣列
+ * 將 GET /rag/tabs 回傳正規化為 RAG 陣列
  * 支援：直接陣列、{ rags }、{ items }、或單一 RAG 物件
  * @param {unknown} data - API 回傳的資料
  * @returns {object[]}
@@ -225,7 +225,7 @@ export function normalizeRagListResponse(data) {
 }
 
 /**
- * 將 GET /exam/exams 回傳正規化為 Exam 陣列（對齊 normalizeRagListResponse 思路）
+ * 將 GET /exam/tabs 回傳正規化為 Exam 陣列（對齊 normalizeRagListResponse 思路）
  * 支援：直接陣列、{ exams }、{ tests }、{ items }、{ data }、或單一 Exam 物件
  * @param {unknown} data
  * @returns {object[]}
@@ -249,7 +249,7 @@ export function normalizeExamListResponse(data) {
 
 /**
  * GET /person-analysis/quizzes、GET /course-analysis/quizzes 回傳的列表包裝：
- * 與 GET /exam/exams 一致時為 { exams }；與 GET /rag/rags 一致時為 { rags }
+ * 與 GET /exam/tabs 一致時為 { exams }；與 GET /rag/tabs 一致時為 { rags }
  * @param {unknown} data
  * @returns {object[]}
  */
@@ -281,7 +281,7 @@ export function examOrRagAnswerRowKey(a) {
 }
 
 /**
- * 單筆 Exam／Rag 列（與 GET /exam/exams、GET /rag/rags 每筆相同）：quizzes／exam_quizzes 與頂層 answers／exam_answers 合併為每題含 answers（與 ExamPage syncExamItemToTabState 一致）
+ * 單筆 Exam／Rag 列（與 GET /exam/tabs、GET /rag/tabs 每筆相同）：quizzes／exam_quizzes 與頂層 answers／exam_answers 合併為每題含 answers（與 ExamPage syncExamItemToTabState 一致）
  * @param {object | null | undefined} item
  * @returns {object[]}
  */

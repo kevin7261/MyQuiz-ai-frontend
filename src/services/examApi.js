@@ -1,5 +1,5 @@
 /**
- * Exam 相關 API（試卷分頁更名：PUT /exam/unit-name 等）
+ * Exam 相關 API（測驗分頁更名：PUT /exam/tab/tab-name 等）
  */
 import { API_BASE, API_EXAM_UNIT_NAME } from '../constants/api.js';
 import { parseFetchError } from '../utils/apiError.js';
@@ -14,7 +14,7 @@ function parseJson(text) {
 }
 
 /**
- * 更新試卷分頁名稱：PUT /exam/unit-name（以 exam_id 比對，僅 deleted=false）
+ * 更新測驗分頁名稱：PUT /exam/tab/tab-name（以 exam_id 比對，僅 deleted=false）
  * @param {string | number} examId - Exam 主鍵
  * @param {string} tabName
  * @returns {Promise<object>} exam_id、exam_tab_id、person_id、tab_name、updated_at

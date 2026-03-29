@@ -3,9 +3,9 @@
    * HomeView - 登入後的主畫面
    *
    * 職責：
-   * - 左側選單：試卷、作答弱點分析；其餘項目與登出在使用者名下拉選單
+   * - 左側選單：測驗、作答弱點分析；其餘項目與登出在使用者名下拉選單
    * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
-   * - /exam 對應 work（ExamPage），/main/:view 對應 student-weakness-analysis / create-test-bank 等
+   * - /exam 對應 work（ExamPage），/main/:view 對應 student-weakness-analysis / create-test-bank（建立測驗題庫頁）等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
    */
   import { computed, onMounted, watch } from 'vue';
@@ -26,7 +26,7 @@
     'student-weakness-analysis': 'studentWeaknessAnalysis',
     'student-answer-analysis': 'studentAnswerAnalysis',
     profile: 'profile',
-    'create-test-bank': 'createTestBank',
+    'create-test-bank': 'createExamQuizBank',
     users: 'userManagement',
     settings: 'systemSettings',
   };
@@ -41,7 +41,7 @@
       const route = useRoute();
       const dataStore = useDataStore();
       const authStore = useAuthStore();
-      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createTestBank | userManagement | systemSettings */
+      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | userManagement | systemSettings */
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
         return PATH_TO_VIEW[route.params.view] || 'work';

@@ -12,7 +12,7 @@ import { generateTabId, isNewTabId as checkIsNewTabId, DEFAULT_SYSTEM_INSTRUCTIO
 /**
  * @param {import('vue').Ref<string>} activeTabId - 目前選中的 RAG tab id
  * @param {import('vue').Ref<string[]>} newTabIds - 尚未寫入後端的「新增」tab id 列表
- * @param {import('vue').Ref<object[]>} ragList - GET /rag/rags 回傳的 RAG 列表
+ * @param {import('vue').Ref<object[]>} ragList - GET /rag/tabs 回傳的 RAG 列表
  * @param {object} authStore - Pinia auth store（用於 generateTabId(person_id)）
  * @param {object} [options] - defaultSystemInstruction 等
  */

@@ -2,7 +2,7 @@
 /**
  * AnswerWeaknessAnalysisPage - 作答弱點分析頁面
  *
- * 讀取 GET /person-analysis/quizzes/{person_id}；列表與 GET /exam/exams、GET /rag/rags 每筆一致（頂層 answers 與每題 quizzes 對齊合併）。
+ * 讀取 GET /person-analysis/quizzes/{person_id}；列表與 GET /exam/tabs、GET /rag/tabs 每筆一致（頂層 answers 與每題 quizzes 對齊合併）。
  * 另含 count、weakness_report；可顯示作答摘要、弱點報告、匯出 Excel。
  */
 import { ref, computed, onMounted } from 'vue';
@@ -54,7 +54,7 @@ function getDifficultyLabel(quizLevel) {
   return quizLevel != null && String(quizLevel).trim() !== '' ? String(quizLevel) : '—';
 }
 
-/** 每題可能多筆作答，與試卷頁一致取最後一筆（最新提交） */
+/** 每題可能多筆作答，與測驗頁一致取最後一筆（最新提交） */
 function getSingleAnswer(item) {
   const list = item?.answers;
   if (!Array.isArray(list) || list.length === 0) return null;
@@ -68,7 +68,7 @@ const weaknessReportSections = computed(() => {
   return Object.keys(obj);
 });
 
-/** 從單筆 answer 取得批改結果文字（與試卷頁顯示一致） */
+/** 從單筆 answer 取得批改結果文字（與測驗頁顯示一致） */
 function getGradingResultText(ans) {
   if (!ans) return '尚未批改';
   let data = ans.answer_metadata;
@@ -211,7 +211,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- 題目與答案詳情（樣式與試卷頁純顯示一致） -->
+        <!-- 題目與答案詳情（樣式與測驗頁純顯示一致） -->
         <div
           v-for="(item, idx) in items"
           :key="item.exam_quiz_id ?? idx"

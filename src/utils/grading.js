@@ -3,7 +3,7 @@
  *
  * 將評分 API 回傳的 JSON 轉成易讀的純文字，供題目卡片與分析頁顯示。
  * 批改 result 總分欄位為 quiz_score（滿分 5）；相容 quiz_grade、舊版 score。評語陣列欄位為 quiz_comments。
- * GET /exam/exams、/person-analysis/quizzes 等作答列可能將 quiz_comments 放在 quiz_grade_metadata 內（與頂層 quiz_grade 並存），會一併讀取。其餘為舊制 rubric 等仍相容顯示。
+ * GET /exam/tabs、/person-analysis/quizzes 等作答列可能將 quiz_comments 放在 quiz_grade_metadata 內（與頂層 quiz_grade 並存），會一併讀取。其餘為舊制 rubric 等仍相容顯示。
  */
 
 /** @param {Record<string, unknown>} data */
@@ -50,7 +50,7 @@ export function formatQuizGradeDisplay(value) {
 /**
  * 將評分 API 回傳的 JSON 字串格式化为易讀文字
  *
- * 新制 RAG／試卷批改：總分 quiz_score（0–5 滿分）、quiz_comments（字串陣列）；列表 API 作答列可將兩者放在 quiz_grade_metadata。RAG 輪詢 result 另含 rag_answer_id（不列入純文字批改區塊）。
+ * 新制 RAG／測驗批改：總分 quiz_score（0–5 滿分）、quiz_comments（字串陣列）；列表 API 作答列可將兩者放在 quiz_grade_metadata。RAG 輪詢 result 另含 rag_answer_id（不列入純文字批改區塊）。
  * 舊制：另含 level、rubric、strengths、weaknesses 等（總分仍為／5）。
  *
  * @param {string} [text] - API 回傳的 JSON 字串或一般文字

@@ -2,7 +2,7 @@
  * 工作分頁資料 Store（Pinia）
  *
  * 職責：
- * - 存放「工作分頁」列表（Exam 頁每個試卷分頁的 id 與 state 等）
+ * - 存放「工作分頁」列表（Exam 頁每個測驗分頁的 id 與 state 等）
  * - 提供新增、移除、取得、更新、依 id 順序重排，供 Exam 頁分頁列使用
  * - 啟用 persist，分頁順序與狀態在重新整理後保留
  *
@@ -33,7 +33,7 @@ export const useDataStore = defineStore(
     const workTabIds = computed(() => workTabs.value.map((t) => t.id));
 
     /**
-     * 新增一筆工作分頁（開新試卷分頁時呼叫）
+     * 新增一筆工作分頁（開新測驗分頁時呼叫）
      * @param {string} id - 分頁 id，若已存在則不重複新增
      */
     function addWorkTab(id) {

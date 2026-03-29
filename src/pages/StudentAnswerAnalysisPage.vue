@@ -2,7 +2,7 @@
 /**
  * StudentAnswerAnalysisPage - 學生作答分析頁面
  *
- * 讀取 GET /course-analysis/quizzes；列表格式與 GET /exam/exams、GET /rag/rags 每筆一致（頂層 answers 與 quizzes 合併）；weakness_report 固定 null。
+ * 讀取 GET /course-analysis/quizzes；列表格式與 GET /exam/tabs、GET /rag/tabs 每筆一致（頂層 answers 與 quizzes 合併）；weakness_report 固定 null。
  * 版面與作答弱點分析一致：摘要、批改結果、匯出 Excel。
  */
 import { ref, onMounted } from 'vue';
@@ -29,14 +29,14 @@ function getDifficultyLabel(quizLevel) {
   return quizLevel != null && String(quizLevel).trim() !== '' ? String(quizLevel) : '—';
 }
 
-/** 每題可能多筆作答，與試卷頁一致取最後一筆 */
+/** 每題可能多筆作答，與測驗頁一致取最後一筆 */
 function getSingleAnswer(item) {
   const list = item?.answers;
   if (!Array.isArray(list) || list.length === 0) return null;
   return list[list.length - 1];
 }
 
-/** 從單筆 answer 取得批改結果文字（與試卷頁顯示一致） */
+/** 從單筆 answer 取得批改結果文字（與測驗頁顯示一致） */
 function getGradingResultText(ans) {
   if (!ans) return '尚未批改';
   let data = ans.answer_metadata;

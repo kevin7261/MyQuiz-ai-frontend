@@ -1,17 +1,17 @@
 <script setup>
 /**
- * CreateTestBankPage - 建立測試題庫頁面
+ * CreateExamQuizBankPage - 建立測驗題庫頁面
  *
  * 一個分頁（tab）對應後端一筆 RAG（rag_id + rag_tab_id）。流程：建立 RAG → 上傳 ZIP → 設定 unit_list（虛擬資料夾群組）→ Build RAG ZIP → 可設為試卷用 → 產生題目 → 作答與評分。
  *
  * API 對應：
- * - 列表：GET /rag/rags?local=（與 create-unit 的 local 一致）
- * - 建立 tab（按 +）：POST /rag/create-unit（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
- * - 上傳 ZIP：POST /rag/upload-zip（Form: file、rag_tab_id、person_id）
- * - 建 RAG：POST /rag/build-rag-zip（unit_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
- * - 分頁更名：PUT /rag/unit-name（body: rag_id、tab_name）
+ * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）
+ * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
+ * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
+ * - 建 RAG：POST /rag/tab/build-rag-zip（unit_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
+ * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為試卷用」
- * - 出題：POST /rag/create-quiz（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/grade-quiz、GET /rag/grade-quiz-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
+ * - 出題：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/tab/quiz/grade、GET /rag/tab/quiz/grade-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, reactive } from 'vue';
@@ -70,7 +70,7 @@ function nextCardId() {
   return `card-${++cardIdSeq}`;
 }
 
-/** POST /rag/upload-zip 允許的副檔名（與後端可解析格式一致） */
+/** POST /rag/tab/upload-zip 允許的副檔名（與後端可解析格式一致） */
 const UPLOAD_ALLOWED_EXTENSIONS = ['.zip', '.pdf', '.doc', '.docx', '.ppt', '.pptx'];
 const UPLOAD_ACCEPT_ATTR = UPLOAD_ALLOWED_EXTENSIONS.join(',');
 function fileHasAllowedUploadExtension(file) {
@@ -85,7 +85,7 @@ const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList();
 const createRagLoading = ref(false);
 const createRagError = ref('');
 const renameRagTabModalOpen = ref(false);
-/** 重新命名 API 用 Rag 主鍵（PUT /rag/unit-name） */
+/** 重新命名 API 用 Rag 主鍵（PUT /rag/tab/tab-name） */
 const renameRagTabDraftRagId = ref(null);
 const renameRagTabInitialName = ref('');
 const renameRagTabSaving = ref(false);
@@ -206,7 +206,7 @@ const filterDifficulty = ref('基礎');
 const chunkSize = ref(1000);
 const chunkOverlap = ref(200);
 
-/** 當前 tab 對應的 RAG 項目（來自 GET /rag/rags），僅在非「新增」tab 時有值 */
+/** 當前 tab 對應的 RAG 項目（來自 GET /rag/tabs），僅在非「新增」tab 時有值 */
 const currentRagItem = computed(() => {
   const id = activeTabId.value;
   if (!id || isNewTabId(id)) return null;
@@ -255,7 +255,7 @@ watch(
   (v) => {
     // 畫面不顯示 rag_id／rag_tab_id，改由此處輸出供除錯
     // eslint-disable-next-line no-console -- 依需求於開發者工具查看
-    console.log('[CreateTestBankPage] rag_id:', v.rag_id, 'rag_tab_id:', v.rag_tab_id);
+    console.log('[CreateExamQuizBankPage] rag_id:', v.rag_id, 'rag_tab_id:', v.rag_tab_id);
   },
   { immediate: true }
 );
@@ -283,7 +283,7 @@ const isAnyLoading = computed(() =>
   anySlotLoading.value
 );
 
-/** 用於顯示 file_metadata：僅在上傳 ZIP 後才有（上傳回傳的 zipResponseJson，或 GET /rag/rags 該筆的 file_metadata）；未上傳則為 null */
+/** 用於顯示 file_metadata：僅在上傳 ZIP 後才有（上傳回傳的 zipResponseJson，或 GET /rag/tabs 該筆的 file_metadata）；未上傳則為 null */
 const fileMetadataToShow = computed(() => {
   const state = currentState.value;
   if (state.zipResponseJson != null) return state.zipResponseJson;
@@ -297,7 +297,7 @@ const fileMetadataToShow = computed(() => {
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
 
 /**
- * 建立流程 stepper：1 僅上傳、2 含建立測試題庫、3 含題目測試
+ * 建立流程 stepper：1 僅上傳、2 含建立測驗題庫、3 含題目測試
  * - 無 file_metadata／無 rag_metadata → 1
  * - 有 file_metadata／無 rag_metadata → 1–2
  * - 有 file_metadata／有 rag_metadata → 1–2–3
@@ -350,11 +350,11 @@ const ragItems = computed(() =>
 const newTabItems = computed(() =>
   newTabIds.value.map((tid) => ({
     id: tid,
-    label: '未命名測試題庫',
+    label: '未命名測驗題庫',
   }))
 );
 
-/** 從 /rag/rags 的 outputs（頂層或 rag_metadata 內）或 unit_list 推導 generateQuizUnits（與 ExamPage／build-rag-zip 一致） */
+/** 從 /rag/tabs 的 outputs（頂層或 rag_metadata 內）或 unit_list 推導 generateQuizUnits（與 ExamPage／tab/build-rag-zip 一致） */
 const generateQuizUnitsFromRag = computed(() => {
   const rag = currentRagItem.value;
   if (!rag || typeof rag !== 'object') return [];
@@ -458,7 +458,7 @@ function syncRagItemToState(rag, state) {
 
 watch(currentRagItem, (rag) => syncRagItemToState(rag, currentState.value), { immediate: true });
 
-/** 由 /rag/rags 的 quiz（含 answers）組成一張題目卡片，供測試問題區塊顯示；批改結果從作答紀錄的 answer_metadata / answer_feedback_metadata 格式化 */
+/** 由 /rag/tabs 的 quiz（含 answers）組成一張題目卡片，供測試問題區塊顯示；批改結果從作答紀錄的 answer_metadata / answer_feedback_metadata 格式化 */
 function buildCardFromRagQuiz(quiz, ragName) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
@@ -552,7 +552,7 @@ async function fetchCourseNameForPrompt() {
   }
 }
 
-/** 畫面一打開就抓 GET /rag/rags，每一筆 RAG 一個 tab；並清空檔案選擇讓上傳欄位一開始是空的 */
+/** 畫面一打開就抓 GET /rag/tabs，每一筆 RAG 一個 tab；並清空檔案選擇讓上傳欄位一開始是空的 */
 onMounted(() => {
   fetchRagList();
   refreshRagForExamSetting();
@@ -650,7 +650,7 @@ function onDeleteRagTab(tabId) {
   if (rag) deleteRag(rag, null);
 }
 
-/** create-unit 回傳的 created_at 與 tab 標籤用 name（key = rag_id） */
+/** tab/create 回傳的 created_at 與 tab 標籤用 name（key = rag_id） */
 const ragCreatedAtMap = ref({});
 
 /** 點「新增」：建立 RAG，成功後重整列表並切到新 tab */
@@ -663,7 +663,7 @@ async function addNewTab() {
   createRagError.value = '';
   createRagLoading.value = true;
   const ragTabId = generateTabId(personId);
-  const tabName = '未命名測試題庫';
+  const tabName = '未命名測驗題庫';
   try {
     const data = await apiCreateUnit(personId, ragTabId, tabName);
     if (data?.rag_id != null && data?.created_at != null) {
@@ -675,7 +675,7 @@ async function addNewTab() {
     clearZipFileInput();
     if (ragList.value.length === 0) showFormWhenNoData.value = true;
   } catch (err) {
-    createRagError.value = err.message || '建立測試題庫失敗';
+    createRagError.value = err.message || '建立測驗題庫失敗';
   } finally {
     createRagLoading.value = false;
   }
@@ -723,7 +723,7 @@ async function onRenameRagTabSave(name) {
   }
   const rid = renameRagTabDraftRagId.value;
   if (rid == null || !Number.isFinite(rid) || rid < 1) {
-    renameRagTabError.value = '找不到此測試題庫（rag_id）';
+    renameRagTabError.value = '找不到此測驗題庫（rag_id）';
     return;
   }
   renameRagTabSaving.value = true;
@@ -807,7 +807,7 @@ async function confirmUploadZip() {
   }
   const tabId = activeTabId.value;
   if (isNewTabId(tabId) || !tabId) {
-    state.zipError = '請先按 + 完成建立測試題庫（此 tab 需先建立後端資料）';
+    state.zipError = '請先按 + 完成建立測驗題庫（此 tab 需先建立後端資料）';
     return;
   }
   const personId = getPersonId(authStore);
@@ -843,7 +843,7 @@ async function confirmUploadZip() {
   }
 }
 
-/** 出題群組確定：build-rag-zip（按鈕文案「確定」） */
+/** 出題群組確定：tab/build-rag-zip（按鈕文案「確定」） */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
@@ -887,7 +887,7 @@ async function confirmPack() {
   }
 }
 
-/** 難度選項；create-quiz 的 quiz_level 直接送「基礎」／「進階」字串 */
+/** 難度選項；tab/quiz/create 的 quiz_level 直接送「基礎」／「進階」字串 */
 const difficultyOptions = QUIZ_LEVEL_LABELS;
 
 /** 取得第 slotIndex 題的產生題目表單狀態（獨立、不連動） */
@@ -988,7 +988,7 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：POST /rag/grade-quiz；body: rag_id、rag_tab_id、rag_quiz_id、quiz_content、quiz_answer、quiz_answer_reference（皆 string，選填可 ""）；回傳 202 + job_id；輪詢 GET /rag/grade-quiz-result/{job_id}；ready 時 result: { quiz_score, quiz_comments, rag_answer_id }。 */
+/** 評分：POST /rag/tab/quiz/grade；body: rag_id、rag_tab_id、rag_quiz_id、quiz_content、quiz_answer、quiz_answer_reference（皆 string，選填可 ""）；回傳 202 + job_id；輪詢 GET /rag/tab/quiz/grade-result/{job_id}；ready 時 result: { quiz_score, quiz_comments, rag_answer_id }。 */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
   const state = currentState.value;
@@ -1026,12 +1026,12 @@ async function confirmAnswer(item) {
       :initial-name="renameRagTabInitialName"
       :saving="renameRagTabSaving"
       :error="renameRagTabError"
-      title="修改測試題庫分頁名稱"
+      title="修改測驗題庫分頁名稱"
       @save="onRenameRagTabSave"
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">建立測試題庫</span>
+        <span class="navbar-brand mb-0">建立測驗題庫</span>
       </div>
     </div>
     <RagTabsBar
@@ -1076,7 +1076,7 @@ async function confirmAnswer(item) {
               class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold small"
               :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
             >2</span>
-            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立測試題庫</span>
+            <span class="mt-2 small" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立測驗題庫</span>
           </div>
           <div
             class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
@@ -1092,7 +1092,7 @@ async function confirmAnswer(item) {
           </div>
         </div>
       </div>
-      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立測試題庫」內 -->
+      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立測驗題庫」內 -->
       <div v-if="activeTabId && !hasUploadedFileMetadata" class="text-start page-block-spacing border rounded p-3">
         <div class="">
           <input
@@ -1293,16 +1293,16 @@ async function confirmAnswer(item) {
                 :disabled="!secondFoldersFull.length"
                 @click="addAllSecondFoldersAsGroups"
               >
-                每個單元建立測試題庫
+                每個單元建立測驗題庫
               </button>
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
-                title="在現有測試題庫之後新增一個測試題庫，內含全部單元（unit_list 以 + 連接）"
+                title="在現有測驗題庫之後新增一個測驗題庫，內含全部單元（unit_list 以 + 連接）"
                 @click="setAllSecondFoldersAsSingleGroup"
               >
-                每個單元建立一個測試題庫
+                每個單元建立一個測驗題庫
               </button>
             </div>
           </div>
@@ -1489,7 +1489,7 @@ async function confirmAnswer(item) {
   border-color: var(--bs-info) !important;
 }
 
-/* 建立測試題庫頁：流程 stepper（1–2–3） */
+/* 建立測驗題庫頁：流程 stepper（1–2–3） */
 .create-rag-stepper-num {
   width: 2.25rem;
   height: 2.25rem;

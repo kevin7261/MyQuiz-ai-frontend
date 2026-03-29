@@ -1,14 +1,14 @@
 <script setup>
 /**
- * ExamPage - 試卷頁面
+ * ExamPage - 測驗頁面
  *
- * 與 CreateTestBankPage 版面類似（分頁、題目卡片、出題/評分），但無 RAG 建立/上傳/Pack；題目來源為「試題用 RAG」與「試卷」。
+ * 與 CreateExamQuizBankPage 版面類似（分頁、題目卡片、出題/評分），但無 RAG 建立/上傳/Pack；題目來源為「試題用 RAG」與「測驗」。
  *
  * 資料來源：
- * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（試卷／題目關聯由 GET /exam/exams 等提供即可）
- * - GET /rag/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／unit_list 時仍可用 rag_tab_id 合成單元）
- * - GET /exam/exams?local=&person_id=：local 與 GET /rag/rags 相同；回傳每筆含 quizzes、answers（或 exam_quizzes／exam_answers）時，以 syncExamItemToTabState 灌入卡片（同 CreateTestBankPage 由列表同步題目／作答／批改）
- * 出題：POST /exam/create-quiz（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/create-quiz）；評分：POST /exam/grade-quiz、GET /exam/grade-quiz-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；題目讚／差：POST /exam/rate-quiz（quiz_rate：1、-1、0）；分頁更名：PUT /exam/unit-name（body: exam_id、tab_name）；刪除：POST /exam/delete/{exam_tab_id}
+ * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（測驗／題目關聯由 GET /exam/tabs 等提供即可）
+ * - GET /rag/tab/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／unit_list 時仍可用 rag_tab_id 合成單元）
+ * - GET /exam/tabs?local=&person_id=：local 與 GET /rag/tabs 相同；回傳每筆含 quizzes、answers（或 exam_quizzes／exam_answers）時，以 syncExamItemToTabState 灌入卡片（同 CreateExamQuizBankPage 由列表同步題目／作答／批改）
+ * 出題：POST /exam/tab/quiz/create（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/tab/quiz/create）；評分：POST /exam/tab/quiz/grade、GET /exam/tab/quiz/grade-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；題目讚／差：POST /exam/tab/quiz/rate（quiz_rate：1、-1、0）；分頁更名：PUT /exam/tab/tab-name（body: exam_id、tab_name）；刪除：POST /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name；難度優先 quiz_level，否則 quiz_metadata.quiz_level。
  */
@@ -95,7 +95,7 @@ function normalizeExamQuizRate(v) {
   return 0;
 }
 
-/** GET /rag/for-exam 回傳的試題用 RAG（for_exam=true，0 或 1 筆；格式同 file_metadata、quiz_metadata） */
+/** GET /rag/tab/for-exam 回傳的試題用 RAG（for_exam=true，0 或 1 筆；格式同 file_metadata、quiz_metadata） */
 const forExamRag = ref(null);
 const forExamLoading = ref(false);
 const forExamError = ref('');
@@ -105,16 +105,16 @@ const forExamState = reactive({
   systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
 });
 
-/** 試卷列表（GET /exam/exams 載入；按 + 呼叫 POST /exam/create-exam 新增） */
+/** 測驗列表（GET /exam/tabs 載入；按 + 呼叫 POST /exam/tab/create 新增） */
 const examList = ref([]);
 const examListLoading = ref(false);
 const examListError = ref('');
 const createExamLoading = ref(false);
 const createExamError = ref('');
-/** 當前選中的 tab = 該試卷的 test_tab_id / exam_tab_id */
+/** 當前選中的 tab = 該測驗的 test_tab_id / exam_tab_id */
 const activeTabId = ref(null);
 const examRenameModalOpen = ref(false);
-/** PUT /exam/unit-name 用 Exam 主鍵 */
+/** PUT /exam/tab/tab-name 用 Exam 主鍵 */
 const examRenameDraftExamId = ref(null);
 const examRenameInitialName = ref('');
 const examRenameSaving = ref(false);
@@ -156,14 +156,14 @@ const currentState = computed(() => {
 const filterDifficulty = ref('基礎');
 const difficultyOptions = QUIZ_LEVEL_LABELS;
 
-/** 當前選中 tab 對應的 Exam（來自 GET /exam/exams 列表），格式同 GET /rag/rags 每筆含 quizzes、answers */
+/** 當前選中 tab 對應的 Exam（來自 GET /exam/tabs 列表），格式同 GET /rag/tabs 每筆含 quizzes、answers */
 const currentExamItem = computed(() => {
   const id = activeTabId.value;
   if (!id) return null;
   return examList.value.find((exam) => getExamTabId(exam) === id) ?? null;
 });
 
-/** 從試題用 RAG 推導 generateQuizUnits；格式同 /rag/build-rag-zip；後端可能用 unit_name 取代 rag_name */
+/** 從試題用 RAG 推導 generateQuizUnits；格式同 /rag/tab/build-rag-zip；後端可能用 unit_name 取代 rag_name */
 const generateQuizUnits = computed(() => {
   const rag = forExamRag.value;
   if (!rag || typeof rag !== 'object') return [];
@@ -187,7 +187,7 @@ const generateQuizUnits = computed(() => {
       unit_name,
     };
   };
-  // 與 build-rag-zip 相同：頂層 outputs
+  // 與 /rag/tab/build-rag-zip 相同：頂層 outputs
   const topOutputs = rag.outputs;
   if (Array.isArray(topOutputs) && topOutputs.length > 0) {
     return topOutputs.map(mapOutput);
@@ -225,14 +225,14 @@ const generateQuizUnits = computed(() => {
   return [];
 });
 
-/** 試題用 RAG 的 rag_tab_id（GET /rag/for-exam 回傳），供產生題目與評分使用 */
+/** 試題用 RAG 的 rag_tab_id（GET /rag/tab/for-exam 回傳），供產生題目與評分使用 */
 const sourceTabId = computed(() => {
   const rag = forExamRag.value;
   if (!rag) return '';
   return String(rag.rag_tab_id ?? rag.id ?? '').trim();
 });
 
-/** 試題用 RAG 的 rag_id、rag_tab_id（GET /rag/for-exam 回傳） */
+/** 試題用 RAG 的 rag_id、rag_tab_id（GET /rag/tab/for-exam 回傳） */
 const forExamRagIdAndTabId = computed(() => {
   const rag = forExamRag.value;
   if (!rag) return { rag_id: '未載入', rag_tab_id: '未載入' };
@@ -241,7 +241,7 @@ const forExamRagIdAndTabId = computed(() => {
   return { rag_id: rid != null ? String(rid) : '—', rag_tab_id: tid ? String(tid) : '—' };
 });
 
-/** 當前試卷顯示用（exam_tab_id、名稱；列表可能為 tab_name 或舊欄位 exam_name） */
+/** 當前測驗顯示用（exam_tab_id、名稱；列表可能為 tab_name 或舊欄位 exam_name） */
 const currentExamDisplay = computed(() => {
   const exam = currentExamItem.value;
   const id = activeTabId.value;
@@ -253,7 +253,7 @@ const currentExamDisplay = computed(() => {
   };
 });
 
-/** 原「基本資訊」區塊改為載入完成後於 console 輸出（切換試卷 tab、for-exam／列表載入就緒時） */
+/** 原「基本資訊」區塊改為載入完成後於 console 輸出（切換測驗 tab、for-exam／列表載入就緒時） */
 watch(
   [
     () => activeTabId.value,
@@ -267,9 +267,9 @@ watch(
   () => {
     if (examList.value.length === 0 || !activeTabId.value) return;
     if (examListLoading.value || forExamLoading.value) return;
-    // eslint-disable-next-line no-console -- 除錯：目前選中試卷與試題用 RAG 摘要
-    console.log('[試卷] 基本資訊', {
-      當前試卷: { ...currentExamDisplay.value },
+    // eslint-disable-next-line no-console -- 除錯：目前選中測驗與試題用 RAG 摘要
+    console.log('[測驗] 基本資訊', {
+      當前測驗: { ...currentExamDisplay.value },
       試題用RAG: { ...forExamRagIdAndTabId.value },
       system_prompt_instruction:
         forExamRag.value && forExamRag.value.system_prompt_instruction != null
@@ -279,7 +279,7 @@ watch(
   }
 );
 
-/** 可出題：以 GET /rag/for-exam 為準（含 rag_tab_id 且能組出至少一個單元，見 generateQuizUnits） */
+/** 可出題：以 GET /rag/tab/for-exam 為準（含 rag_tab_id 且能組出至少一個單元，見 generateQuizUnits） */
 const canGenerateExamQuiz = computed(() => {
   if (!activeTabId.value) return false;
   if (!sourceTabId.value || generateQuizUnits.value.length === 0) return false;
@@ -300,7 +300,7 @@ watch(forExamRag, (rag) => {
   }
 }, { immediate: true });
 
-/** 當登入者（person_id 或 user_id）可用時再載入 GET /exam/exams；與 RAG 頁一致，且覆蓋重新打開頁面時 Pinia 還原較晚的情況 */
+/** 當登入者（person_id 或 user_id）可用時再載入 GET /exam/tabs；與 RAG 頁一致，且覆蓋重新打開頁面時 Pinia 還原較晚的情況 */
 watch(
   () => getCurrentPersonId(),
   (id) => {
@@ -309,14 +309,14 @@ watch(
   { immediate: true }
 );
 
-/** 有試卷列表時預設選第一個 tab */
+/** 有測驗列表時預設選第一個 tab */
 watch(examList, (list) => {
   if (list.length > 0 && activeTabId.value == null) {
     activeTabId.value = getExamTabId(list[0]) || list[0];
   }
 }, { immediate: true });
 
-/** 單元下拉預設不選；清單變動時重新對齊選取（與建立測試題庫頁一致） */
+/** 單元下拉預設不選；清單變動時重新對齊選取（與建立測驗題庫頁一致） */
 watch(generateQuizUnits, (units) => {
   const state = currentState.value;
   reconcileQuizUnitSelectSlot(state, units);
@@ -339,7 +339,7 @@ function examAnswerRowKey(a) {
   return v != null && String(v).trim() !== '' ? String(v) : '';
 }
 
-/** 由 GET /exam/exams 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片（欄位後備與 CreateTestBankPage buildCardFromRagQuiz 對齊） */
+/** 由 GET /exam/tabs 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片（欄位後備與 CreateExamQuizBankPage buildCardFromRagQuiz 對齊） */
 function buildCardFromExamQuiz(quiz, ragName) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
@@ -379,7 +379,7 @@ function buildCardFromExamQuiz(quiz, ragName) {
 }
 
 /**
- * 從 GET /exam/exams 單筆 Exam 的 quizzes、answers 填入該 tab 的題目卡片（流程同 CreateTestBankPage syncRagItemToState）。
+ * 從 GET /exam/tabs 單筆 Exam 的 quizzes、answers 填入該 tab 的題目卡片（流程同 CreateExamQuizBankPage syncRagItemToState）。
  * quizzes／answers 可能名為 exam_quizzes、exam_answers；與頂層 answers 合併時 ID 一律轉字串。
  */
 function syncExamItemToTabState(exam) {
@@ -423,7 +423,7 @@ function syncExamItemToTabState(exam) {
   }
 }
 
-/** 目前選中試卷或列表／試題 RAG 巢狀更新時，重新自伺服器資料灌入卡片（deep 與 CreateTestBankPage 由 fetch 觸發更新一致） */
+/** 目前選中測驗或列表／試題 RAG 巢狀更新時，重新自伺服器資料灌入卡片（deep 與 CreateExamQuizBankPage 由 fetch 觸發更新一致） */
 watch(
   [currentExamItem, forExamRag],
   () => {
@@ -443,7 +443,7 @@ function getCurrentPersonId() {
   return null;
 }
 
-/** 載入試卷列表：GET /exam/exams；Exam.local 須與 query local 相符（與 /rag/rags?local= 一致） */
+/** 載入測驗列表：GET /exam/tabs；Exam.local 須與 query local 相符（與 /rag/tabs?local= 一致） */
 async function fetchExamTests() {
   examListLoading.value = true;
   examListError.value = '';
@@ -487,14 +487,14 @@ async function fetchExamTests() {
       };
     });
   } catch (err) {
-    examListError.value = err.message || '無法載入試卷列表';
+    examListError.value = err.message || '無法載入測驗列表';
     examList.value = [];
   } finally {
     examListLoading.value = false;
   }
 }
 
-/** 載入試題用 RAG：GET /rag/for-exam，不需參數；回傳 for_exam=true 且 deleted=false 的 RAG，0 或 1 筆 */
+/** 載入試題用 RAG：GET /rag/tab/for-exam，不需參數；回傳 for_exam=true 且 deleted=false 的 RAG，0 或 1 筆 */
 async function fetchForExamRag() {
   forExamLoading.value = true;
   forExamError.value = '';
@@ -512,7 +512,7 @@ async function fetchForExamRag() {
       throw new Error(msg);
     }
     const data = await res.json();
-    // GET /rag/for-exam 回傳格式與 /rag/build-rag-zip 相同：頂層含 outputs、rag_tab_id、file_metadata、llm_api_key 等
+    // GET /rag/tab/for-exam 回傳格式與 /rag/tab/build-rag-zip 相同：頂層含 outputs、rag_tab_id、file_metadata、llm_api_key 等
     forExamRag.value = data != null && typeof data === 'object'
       ? { ...data, apikey: data.apikey ?? data.llm_api_key }
       : null;
@@ -524,19 +524,19 @@ async function fetchForExamRag() {
   }
 }
 
-/** 試卷 tab 顯示名稱：優先 tab_name，其次 exam_name／test_name／exam_tab_id */
+/** 測驗 tab 顯示名稱：優先 tab_name，其次 exam_name／test_name／exam_tab_id */
 function getExamTabLabel(exam) {
-  if (exam == null) return '試卷';
+  if (exam == null) return '測驗';
   if (typeof exam === 'string') return exam;
   const tabId = exam.exam_tab_id ?? exam.test_tab_id ?? exam.id ?? '';
   const raw = exam.tab_name ?? exam.exam_name ?? exam.test_name;
   const name = raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
   const fromTabId = deriveNameFromTabId(tabId);
   const created = exam.created_at ?? '';
-  return name || fromTabId || tabId || created || '試卷';
+  return name || fromTabId || tabId || created || '測驗';
 }
 
-/** 取得試卷的 tab id（exam_tab_id 或 test_tab_id） */
+/** 取得測驗的 tab id（exam_tab_id 或 test_tab_id） */
 function getExamTabId(exam) {
   if (exam == null || typeof exam !== 'object') return '';
   return String(exam.exam_tab_id ?? exam.test_tab_id ?? exam.id ?? '');
@@ -566,7 +566,7 @@ async function onExamRenameSave(name) {
   }
   const eid = examRenameDraftExamId.value;
   if (eid == null || !Number.isFinite(eid) || eid < 1) {
-    examRenameError.value = '找不到此試卷（exam_id）';
+    examRenameError.value = '找不到此測驗（exam_id）';
     return;
   }
   examRenameSaving.value = true;
@@ -582,17 +582,17 @@ async function onExamRenameSave(name) {
   }
 }
 
-/** 按 + 新增試卷：POST /exam/create-exam，body 含 exam_tab_id、person_id、tab_name、local（與 create-unit 一致） */
+/** 按 + 新增測驗：POST /exam/tab/create，body 含 exam_tab_id、person_id、tab_name、local（與 RAG tab/create 一致） */
 async function addNewTab() {
   const personId = getCurrentPersonId();
   if (!personId) {
-    createExamError.value = '請先登入以建立試卷';
+    createExamError.value = '請先登入以建立測驗';
     return;
   }
   createExamError.value = '';
   createExamLoading.value = true;
   const examTabId = generateTabId(personId);
-  const tabName = '未命名試卷';
+  const tabName = '未命名測驗';
   const local = isFrontendLocalHost();
   try {
     const res = await loggedFetch(`${API_BASE}${API_CREATE_EXAM}`, {
@@ -628,13 +628,13 @@ async function addNewTab() {
     examList.value = [...examList.value, item];
     activeTabId.value = tabIdVal;
   } catch (err) {
-    createExamError.value = err.message || '建立試卷失敗';
+    createExamError.value = err.message || '建立測驗失敗';
   } finally {
     createExamLoading.value = false;
   }
 }
 
-/** 刪除試卷：POST /exam/delete/{exam_tab_id}，成功後從列表移除並切到其他 tab */
+/** 刪除測驗：POST /exam/tab/delete/{exam_tab_id}，成功後從列表移除並切到其他 tab */
 const deleteExamLoading = ref(false);
 const gradingLoading = ref(false);
 
@@ -661,7 +661,7 @@ const isAnyLoading = computed(() =>
 const deleteExamError = ref('');
 async function deleteExam(examTabId) {
   if (!examTabId) return;
-  if (!confirm('確定要刪除此試卷嗎？')) return;
+  if (!confirm('確定要刪除此測驗嗎？')) return;
   deleteExamError.value = '';
   deleteExamLoading.value = true;
   try {
@@ -685,7 +685,7 @@ async function deleteExam(examTabId) {
       activeTabId.value = examList.value.length > 0 ? getExamTabId(examList.value[0]) : null;
     }
   } catch (err) {
-    deleteExamError.value = err.message || '刪除試卷失敗';
+    deleteExamError.value = err.message || '刪除測驗失敗';
   } finally {
     deleteExamLoading.value = false;
   }
@@ -740,7 +740,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   };
 }
 
-/** 出題：POST /exam/create-quiz；body 與 RAG POST /rag/create-quiz 同概念（四欄）；exam_id／exam_tab_id 二擇一。 */
+/** 出題：POST /exam/tab/quiz/create；body 與 RAG POST /rag/tab/quiz/create 同概念（四欄）；exam_id／exam_tab_id 二擇一。 */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const selectedUnit = findQuizUnitBySlotSelection(generateQuizUnits.value, slotState.generateQuizTabId);
@@ -760,11 +760,11 @@ async function generateQuiz(slotIndex) {
     return;
   }
   if (!hasValidExamId && !examTabIdStr) {
-    slotState.error = '尚未建立試卷（請按 + 新增試卷）或無法取得 exam_id／exam_tab_id';
+    slotState.error = '尚未建立測驗（請按 + 新增測驗）或無法取得 exam_id／exam_tab_id';
     return;
   }
   if (!generateQuizUnits.value.length) {
-    slotState.error = '請確認已載入試題用 RAG（GET /rag/for-exam）且具 outputs';
+    slotState.error = '請確認已載入試題用 RAG（GET /rag/tab/for-exam）且具 outputs';
     return;
   }
   slotState.loading = true;
@@ -820,7 +820,7 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 題目讚(1)／差(-1)；再點同一顆送 quiz_rate=0 取消。POST /exam/rate-quiz */
+/** 題目讚(1)／差(-1)；再點同一顆送 quiz_rate=0 取消。POST /exam/tab/quiz/rate */
 async function rateExamQuiz(item, direction) {
   if (!item || typeof item !== 'object') return;
   const examQuizId = item.quiz_id ?? item.exam_quiz_id;
@@ -850,19 +850,19 @@ async function rateExamQuiz(item, direction) {
   }
 }
 
-/** 評分：與 CreateTestBankPage 相同流程（submitGrade），路徑為 POST /exam/grade-quiz、GET /exam/grade-quiz-result/{job_id} */
+/** 評分：與 CreateExamQuizBankPage 相同流程（submitGrade），路徑為 POST /exam/tab/quiz/grade、GET /exam/tab/quiz/grade-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
   if (!activeTabId.value) {
     item.confirmed = true;
-    item.gradingResult = '評分需要試卷 tab：請選擇試卷或按 + 新增試卷。';
+    item.gradingResult = '評分需要測驗 tab：請選擇測驗或按 + 新增測驗。';
     return;
   }
   const exam = currentExamItem.value;
   const examId = exam?.exam_id ?? exam?.test_id;
   if (examId == null) {
     item.confirmed = true;
-    item.gradingResult = '評分失敗：無法取得當前試卷的 exam_id。';
+    item.gradingResult = '評分失敗：無法取得當前測驗的 exam_id。';
     return;
   }
   gradingLoading.value = true;
@@ -881,7 +881,7 @@ async function confirmAnswer(item) {
   }
 }
 
-/** 與建立 RAG 頁一致：畫面一打開就抓 GET /exam/exams；watch(person_id) 在還原後再抓一次以帶 person_id */
+/** 與建立 RAG 頁一致：畫面一打開就抓 GET /exam/tabs；watch(person_id) 在還原後再抓一次以帶 person_id */
 onMounted(() => {
   fetchForExamRag();
   fetchExamTests();
@@ -899,12 +899,12 @@ onMounted(() => {
       :initial-name="examRenameInitialName"
       :saving="examRenameSaving"
       :error="examRenameError"
-      title="修改試卷分頁名稱"
+      title="修改測驗分頁名稱"
       @save="onExamRenameSave"
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand mb-0">試卷</span>
+        <span class="navbar-brand mb-0">測驗</span>
       </div>
     </div>
     <!-- 固定 tab 頁籤列（與建立 RAG 頁一致，僅內容區可上下滑） -->
@@ -956,8 +956,8 @@ onMounted(() => {
                   v-if="activeTabId === getExamTabId(exam)"
                   type="button"
                   class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
-                  title="刪除此試卷"
-                  aria-label="刪除此試卷"
+                  title="刪除此測驗"
+                  aria-label="刪除此測驗"
                   :disabled="deleteExamLoading || examRenameSaving"
                   @click.stop="deleteExam(getExamTabId(exam))"
                 >
@@ -997,7 +997,7 @@ onMounted(() => {
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <template v-if="examList.length > 0">
-        <!-- 產生題目與作答：與建立 RAG 頁一致（出題與評分）；資料來自 GET /rag/for-exam，使用 POST /exam/create-quiz、submitGrade（/exam/grade-quiz） -->
+        <!-- 產生題目與作答：與建立 RAG 頁一致（出題與評分）；資料來自 GET /rag/tab/for-exam，使用 POST /exam/tab/quiz/create、submitGrade（/exam/tab/quiz/grade） -->
         <div
           v-if="activeTabId"
           class="text-start page-block-spacing"
