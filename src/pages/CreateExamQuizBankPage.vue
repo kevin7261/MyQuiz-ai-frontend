@@ -2,7 +2,7 @@
 /**
  * CreateExamQuizBankPage - 建立測驗題庫頁面
  *
- * 一個分頁（tab）對應後端一筆 RAG（rag_id + rag_tab_id）。流程：建立 RAG → 上傳 ZIP → 設定 unit_list（虛擬資料夾群組）→ Build RAG ZIP → 可設為試卷用 → 產生題目 → 作答與評分。
+ * 一個分頁（tab）對應後端一筆 RAG（rag_id + rag_tab_id）。流程：建立 RAG → 上傳 ZIP → 設定 unit_list（虛擬資料夾群組）→ Build RAG ZIP → 可設為測驗用 → 產生題目 → 作答與評分。
  *
  * API 對應：
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）
@@ -10,7 +10,7 @@
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/tab/build-rag-zip（unit_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
- * - 試卷用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為試卷用」
+ * - 測驗用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為測驗用」
  * - 出題：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/tab/quiz/grade、GET /rag/tab/quiz/grade-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
  * 上述 API 不需 llm_api_key。
  */
@@ -560,7 +560,7 @@ onMounted(() => {
   fetchCourseNameForPrompt();
 });
 
-/** 設為試卷用（PUT system-settings rag-for-exam-*） */
+/** 設為測驗用（PUT system-settings rag-for-exam-*） */
 async function setRagForExam() {
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
@@ -589,7 +589,7 @@ async function setRagForExam() {
   }
 }
 
-/** 取消試卷用（PUT rag_id 空字串） */
+/** 取消測驗用（PUT rag_id 空字串） */
 async function clearRagForExam() {
   if (!currentRagIsExamRag.value || isNewTabId(activeTabId.value)) return;
   const personId = getPersonId(authStore);
@@ -1195,7 +1195,7 @@ async function confirmAnswer(item) {
               :disabled="currentState.forExamLoading"
               @click="currentRagIsExamRag ? clearRagForExam() : setRagForExam()"
             >
-              {{ currentRagIsExamRag ? '取消設為試卷用' : '設為試卷用' }}
+              {{ currentRagIsExamRag ? '取消設為測驗用' : '設為測驗用' }}
             </button>
           </div>
           <div v-if="currentState.forExamError" class="alert alert-danger py-2 small mb-0 mt-2">

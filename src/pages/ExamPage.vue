@@ -917,7 +917,7 @@ onMounted(() => {
           <div class="w-100 d-flex justify-content-center py-2">
             <button
               type="button"
-              class="btn btn-sm btn-outline-primary bg-white"
+              class="btn btn-sm btn-outline-primary"
               :disabled="createExamLoading"
               @click="addNewTab"
             >
@@ -968,7 +968,7 @@ onMounted(() => {
             <li class="nav-item ms-2 d-flex align-items-center">
               <button
                 type="button"
-                class="btn btn-sm btn-outline-primary bg-white mb-2"
+                class="btn btn-sm btn-outline-primary mb-2"
                 :disabled="createExamLoading"
                 @click="addNewTab"
               >
