@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue';
+
 /**
  * QuizCard - 單一題目卡片
  *
@@ -6,18 +8,34 @@
  * 未確定前可輸入答案並按「確定」送出評分。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
- * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, generateLevel, id 等。
+ * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id 等。
  */
-defineProps({
+const props = defineProps({
   /** 題目資料（含題目、提示、答案、批改結果等） */
   card: { type: Object, required: true },
   /** 題號（從 1 開始，用於顯示「第 N 題」） */
   slotIndex: { type: Number, required: true },
   /** 批改 prompt 內「課程名稱」占位（與建立測驗題庫頁 course 一致） */
   courseName: { type: String, default: 'AIQuiz' },
+  /** 目前分頁／試題用 RAG 的 rag_id；與 card.rag_id 皆有值且不同時，停用答案輸入與確定 */
+  currentRagId: { type: [String, Number], default: null },
 });
 
 const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']);
+
+/** 兩邊 rag_id 皆已知且不一致 → 不可在此 RAG 下作答 */
+const answerInputDisabled = computed(() => {
+  const cur =
+    props.currentRagId != null && String(props.currentRagId).trim() !== ''
+      ? String(props.currentRagId).trim()
+      : '';
+  const q =
+    props.card?.rag_id != null && String(props.card.rag_id).trim() !== ''
+      ? String(props.card.rag_id).trim()
+      : '';
+  if (!cur || !q) return false;
+  return cur !== q;
+});
 </script>
 
 <template>
@@ -56,20 +74,24 @@ const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']
         <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ card.referenceAnswer }}</div>
       </div>
       <div class="mb-3">
-        <label :for="`quiz-answer-${card.id}`" class="form-label small text-secondary fw-medium mb-1">答案</label>
+        <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
+          <label :for="`quiz-answer-${card.id}`" class="form-label small text-secondary fw-medium mb-0">答案</label>
+          <span class="form-text small text-secondary text-end flex-shrink-0 mb-0">{{ card.quiz_answer.length }} / 2000</span>
+        </div>
         <template v-if="!card.confirmed">
           <textarea
             :id="`quiz-answer-${card.id}`"
             :value="card.quiz_answer"
             class="form-control"
+            :disabled="answerInputDisabled"
             @input="emit('update:quiz_answer', $event.target.value)"
             rows="4"
             placeholder="請輸入您的答案..."
             maxlength="2000"
           />
-          <div class="form-text small">{{ card.quiz_answer.length }} / 2000</div>
+          <div v-if="answerInputDisabled" class="form-text small text-warning">此題 rag_id 與目前 RAG 不同，無法作答。</div>
           <div class="d-flex justify-content-end mt-2">
-            <button type="button" class="btn btn-sm btn-primary" @click="emit('confirm-answer', card)">確定</button>
+            <button type="button" class="btn btn-sm btn-primary" :disabled="answerInputDisabled" @click="emit('confirm-answer', card)">確定</button>
           </div>
         </template>
         <template v-else>

@@ -340,7 +340,7 @@ function examAnswerRowKey(a) {
 }
 
 /** 由 GET /exam/tabs 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片（欄位後備與 CreateExamQuizBankPage buildCardFromRagQuiz 對齊） */
-function buildCardFromExamQuiz(quiz, ragName) {
+function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
   const latestSubmitted =
@@ -355,6 +355,8 @@ function buildCardFromExamQuiz(quiz, ragName) {
   const generateLevel = examQuizLevelFromRow(quiz);
   const quizId = quiz.exam_quiz_id ?? quiz.quiz_id ?? null;
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
+  const rid = quiz.rag_id ?? quiz.ragId ?? fallbackRagId;
+  const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
   return {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? quiz.quiz ?? quiz.question ?? '',
@@ -362,6 +364,7 @@ function buildCardFromExamQuiz(quiz, ragName) {
     referenceAnswer: quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? quiz.reference_answer ?? '',
     sourceFilename: quiz.file_name ?? null,
     ragName: (ragName || quiz.unit_name || quiz.rag_name || '').trim() || null,
+    rag_id: ragIdStr,
     quiz_answer: latestAnswer?.quiz_answer ?? latestAnswer?.student_answer ?? latestAnswer?.answer_text ?? latestAnswer?.content ?? '',
     hintVisible: false,
     quiz_rate: normalizeExamQuizRate(quiz.quiz_rate),
@@ -416,7 +419,8 @@ function syncExamItemToTabState(exam) {
     });
     state.showQuizGeneratorBlock = true;
     state.quizSlotsCount = quizzesWithAnswers.length;
-    state.cardList = quizzesWithAnswers.map((q) => buildCardFromExamQuiz(q, q.unit_name ?? q.rag_name ?? firstRagName));
+    const fallbackRid = rag?.rag_id ?? rag?.id;
+    state.cardList = quizzesWithAnswers.map((q) => buildCardFromExamQuiz(q, q.unit_name ?? q.rag_name ?? firstRagName, fallbackRid));
   } else {
     state.quizSlotsCount = 0;
     state.cardList = [];
@@ -713,11 +717,12 @@ function openNextQuizSlot() {
   }
 }
 
-function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed, quizId) {
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed, quizId, ragId) {
   const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
   }
+  const ragIdStr = ragId != null && String(ragId).trim() !== '' ? String(ragId) : null;
   state.cardList[slotIndex - 1] = {
     id: nextCardId(),
     quiz: quizContent ?? '',
@@ -725,6 +730,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     referenceAnswer: referenceAnswer ?? '',
     sourceFilename: sourceFilename ?? null,
     ragName: ragName ?? null,
+    rag_id: ragIdStr,
     quiz_answer: '',
     hintVisible: false,
     quiz_rate: 0,
@@ -795,6 +801,8 @@ async function generateQuiz(slotIndex) {
     const quizId = data.exam_quiz_id != null ? Number(data.exam_quiz_id) : (data.quiz_id != null ? Number(data.quiz_id) : null);
     const resolvedLevel =
       examQuizLevelFromRow(data) ?? normalizeQuizLevelLabel(filterDifficulty.value) ?? filterDifficulty.value;
+    const fr = forExamRag.value;
+    const cardRagId = data.rag_id ?? data.ragId ?? fr?.rag_id ?? fr?.id;
     setCardAtSlot(
       slotIndex,
       quizContent,
@@ -805,7 +813,8 @@ async function generateQuiz(slotIndex) {
       data,
       resolvedLevel,
       (forExamState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
-      quizId
+      quizId,
+      cardRagId
     );
     const newCard = currentState.value.cardList[slotIndex - 1];
     if (newCard) newCard.quiz_rate = normalizeExamQuizRate(data.quiz_rate);
@@ -850,9 +859,36 @@ async function rateExamQuiz(item, direction) {
   }
 }
 
+/** 試題用 RAG 的 rag_id（與題卡 card.rag_id 比對；皆有值且不同則不可作答） */
+function forExamRagIdForCards() {
+  const rag = forExamRag.value;
+  const v = rag?.rag_id ?? rag?.id;
+  return v != null && String(v).trim() !== '' ? v : null;
+}
+
+function examCardAnswerDisabled(card) {
+  if (!card || card.confirmed) return false;
+  const cur = forExamRagIdForCards();
+  if (cur == null) return false;
+  const q = card.rag_id != null && String(card.rag_id).trim() !== '' ? String(card.rag_id).trim() : '';
+  if (!q) return false;
+  return String(cur).trim() !== q;
+}
+
 /** 評分：與 CreateExamQuizBankPage 相同流程（submitGrade），路徑為 POST /exam/tab/quiz/grade、GET /exam/tab/quiz/grade-result/{job_id} */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
+  const curR = forExamRagIdForCards();
+  const cardR = item?.rag_id;
+  if (
+    curR != null &&
+    cardR != null &&
+    String(curR).trim() !== '' &&
+    String(cardR).trim() !== '' &&
+    String(curR).trim() !== String(cardR).trim()
+  ) {
+    return;
+  }
   if (!activeTabId.value) {
     item.confirmed = true;
     item.gradingResult = '評分需要測驗 tab：請選擇測驗或按 + 新增測驗。';
@@ -1071,19 +1107,32 @@ onMounted(() => {
                       <div class="rounded bg-body-tertiary border p-2 small" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
                     </div>
                     <div class="mb-3">
-                      <label :for="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label small text-secondary fw-medium mb-1">答案</label>
+                      <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
+                        <label :for="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label small text-secondary fw-medium mb-0">答案</label>
+                        <span class="form-text small text-secondary text-end flex-shrink-0 mb-0">{{ currentState.cardList[slotIndex - 1].quiz_answer.length }} / 2000</span>
+                      </div>
                       <template v-if="!currentState.cardList[slotIndex - 1].confirmed">
                         <textarea
                           :id="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`"
                           v-model="currentState.cardList[slotIndex - 1].quiz_answer"
                           class="form-control"
+                          :disabled="examCardAnswerDisabled(currentState.cardList[slotIndex - 1])"
                           rows="4"
                           placeholder="請輸入您的答案..."
                           maxlength="2000"
                         />
-                        <div class="form-text small">{{ currentState.cardList[slotIndex - 1].quiz_answer.length }} / 2000</div>
+                        <div v-if="examCardAnswerDisabled(currentState.cardList[slotIndex - 1])" class="form-text small text-warning">
+                          此題 rag_id 與目前試題用 RAG 不同，無法作答。
+                        </div>
                         <div class="d-flex justify-content-end mt-2">
-                          <button type="button" class="btn btn-sm btn-primary" @click="confirmAnswer(currentState.cardList[slotIndex - 1])">確定</button>
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-primary"
+                            :disabled="examCardAnswerDisabled(currentState.cardList[slotIndex - 1])"
+                            @click="confirmAnswer(currentState.cardList[slotIndex - 1])"
+                          >
+                            確定
+                          </button>
                         </div>
                       </template>
                       <template v-else>

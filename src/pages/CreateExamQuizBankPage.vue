@@ -215,6 +215,14 @@ const currentRagItem = computed(() => {
   ) ?? null;
 });
 
+/** 與評分／題卡比對用：目前分頁 RAG 的 rag_id（與 confirmAnswer 取法一致） */
+const currentRagIdForQuizCards = computed(() => {
+  const state = currentState.value;
+  const rag = currentRagItem.value;
+  const v = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
+  return v != null && String(v).trim() !== '' ? v : null;
+});
+
 /** GET /system-settings/rag-for-exam-* 的 rag_id（列表未帶 for_exam 時仍可比對） */
 const ragForExamSettingRagId = ref(null);
 
@@ -449,7 +457,8 @@ function syncRagItemToState(rag, state) {
     const firstRagName = (parsePackTasksList(getRagUnitListString(rag))[0]?.[0] ?? out0?.rag_name ?? quizzes[0]?.rag_name ?? '').trim();
     state.showQuizGeneratorBlock = true;
     state.quizSlotsCount = quizzesWithAnswers.length;
-    state.cardList = quizzesWithAnswers.map((q) => buildCardFromRagQuiz(q, q.rag_name ?? firstRagName));
+    const ragIdFallback = rag.rag_id ?? rag.id;
+    state.cardList = quizzesWithAnswers.map((q) => buildCardFromRagQuiz(q, q.rag_name ?? firstRagName, ragIdFallback));
   } else {
     state.quizSlotsCount = 0;
     state.cardList = [];
@@ -459,7 +468,7 @@ function syncRagItemToState(rag, state) {
 watch(currentRagItem, (rag) => syncRagItemToState(rag, currentState.value), { immediate: true });
 
 /** 由 /rag/tabs 的 quiz（含 answers）組成一張題目卡片，供測試問題區塊顯示；批改結果從作答紀錄的 answer_metadata / answer_feedback_metadata 格式化 */
-function buildCardFromRagQuiz(quiz, ragName) {
+function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
   const latestSubmitted =
@@ -468,6 +477,8 @@ function buildCardFromRagQuiz(quiz, ragName) {
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))
     : '';
   const generateLevel = normalizeQuizLevelLabel(quiz.quiz_level);
+  const rid = quiz.rag_id ?? quiz.ragId ?? ragIdFallback;
+  const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
   return {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? '',
@@ -475,6 +486,7 @@ function buildCardFromRagQuiz(quiz, ragName) {
     referenceAnswer: quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? '',
     sourceFilename: quiz.file_name ?? null,
     ragName: (ragName || quiz.rag_name || '').trim() || null,
+    rag_id: ragIdStr,
     quiz_answer: latestAnswer?.quiz_answer ?? latestAnswer?.student_answer ?? '',
     hintVisible: false,
     confirmed: !!latestAnswer,
@@ -915,11 +927,12 @@ function openNextQuizSlot() {
 }
 
 /** 將第 slotIndex 題設為指定卡片（每題獨立，不連動） */
-function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed) {
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed, ragId) {
   const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
   }
+  const ragIdStr = ragId != null && String(ragId).trim() !== '' ? String(ragId) : null;
   const card = {
     id: nextCardId(),
     quiz: quizContent ?? '',
@@ -927,6 +940,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     referenceAnswer: referenceAnswer ?? '',
     sourceFilename: sourceFilename ?? null,
     ragName: ragName ?? null,
+    rag_id: ragIdStr,
     quiz_answer: '',
     hintVisible: false,
     confirmed: false,
@@ -976,7 +990,18 @@ async function generateQuiz(slotIndex) {
     const targetFilename = data.unit_filename ?? data.target_filename ?? selectedUnit?.filename ?? '';
     const referenceAnswerText =
       data.quiz_answer_reference ?? data.quiz_reference_answer ?? data.quiz_answer ?? data.answer ?? '';
-    setCardAtSlot(slotIndex, quizContent, hintText, targetFilename, referenceAnswerText, ragName, data, filterDifficulty.value, (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION);
+    setCardAtSlot(
+      slotIndex,
+      quizContent,
+      hintText,
+      targetFilename,
+      referenceAnswerText,
+      ragName,
+      data,
+      filterDifficulty.value,
+      (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
+      ragId
+    );
   } catch (err) {
     slotState.error = err.message || '產生題目失敗';
   } finally {
@@ -992,9 +1017,20 @@ function toggleHint(item) {
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
   const state = currentState.value;
-  const sourceTabId = String(state.zipTabId ?? '').trim();
   const rag = currentRagItem.value;
-  const ragId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
+  const activeRagId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
+  const cardRag = item?.rag_id;
+  if (
+    activeRagId != null &&
+    cardRag != null &&
+    String(activeRagId).trim() !== '' &&
+    String(cardRag).trim() !== '' &&
+    String(activeRagId).trim() !== String(cardRag).trim()
+  ) {
+    return;
+  }
+  const sourceTabId = String(state.zipTabId ?? '').trim();
+  const ragId = activeRagId;
   if (!sourceTabId) {
     item.confirmed = true;
     item.gradingResult = '評分需要 rag_tab_id：請先上傳教材 ZIP 取得 rag_tab_id 後再進行評分。';
@@ -1384,6 +1420,7 @@ async function confirmAnswer(item) {
                 :card="currentState.cardList[slotIndex - 1]"
                 :slot-index="slotIndex"
                 :course-name="courseNameForPrompt"
+                :current-rag-id="currentRagIdForQuizCards"
                 @toggle-hint="toggleHint"
                 @confirm-answer="confirmAnswer"
                 @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
