@@ -48,7 +48,6 @@ import {
   QUIZ_LEVEL_LABELS,
   normalizeQuizLevelLabel,
   quizLevelStringForApi,
-  unitSelectValue,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
 } from '../utils/rag.js';
@@ -57,6 +56,7 @@ import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import QuizCard from '../components/QuizCard.vue';
+import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import RagTabsBar from '../components/RagTabsBar.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -1434,18 +1434,13 @@ async function confirmAnswer(item) {
                 </div>
                 <div class="card-body text-start pt-3">
                   <div class="d-flex flex-wrap align-items-end gap-3">
-                    <div>
-                      <label class="form-label small text-secondary fw-medium mb-1">單元</label>
-                      <select v-model="getSlotFormState(slotIndex).generateQuizTabId" class="form-select form-select-sm">
-                        <option value="">— 請選擇單元 —</option>
-                        <option
-                          v-for="(opt, i) in generateQuizUnits"
-                          :key="unitSelectValue(opt) || 'u-' + i"
-                          :value="unitSelectValue(opt)"
-                        >
-                          {{ opt.rag_name }}
-                        </option>
-                      </select>
+                    <div class="flex-grow-1 min-w-0" style="min-width: 10rem">
+                      <label class="form-label small text-secondary fw-medium mb-1" :for="`rag-quiz-unit-${slotIndex}-toggle`">單元</label>
+                      <UnitSelectDropdown
+                        v-model="getSlotFormState(slotIndex).generateQuizTabId"
+                        :options="generateQuizUnits"
+                        :menu-id="`rag-quiz-unit-${slotIndex}`"
+                      />
                     </div>
                     <div>
                       <label class="form-label small text-secondary fw-medium mb-1 d-block">難度</label>

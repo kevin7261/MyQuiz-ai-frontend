@@ -32,7 +32,6 @@ import { parseFetchError } from '../utils/apiError.js';
 import {
   parseRagMetadataObject,
   getRagUnitListString,
-  unitSelectValue,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
   QUIZ_LEVEL_LABELS,
@@ -42,6 +41,7 @@ import {
   normalizeExamListResponse,
 } from '../utils/rag.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
+import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import { apiUpdateExamTabName } from '../services/examApi.js';
 import { formatGradingResult } from '../utils/grading.js';
@@ -1154,18 +1154,13 @@ onMounted(() => {
                   </div>
                   <div class="card-body text-start pt-3">
                     <div class="d-flex flex-wrap align-items-end gap-3">
-                      <div>
-                        <label class="form-label small text-secondary fw-medium mb-1">單元</label>
-                        <select v-model="getSlotFormState(slotIndex).generateQuizTabId" class="form-select form-select-sm">
-                          <option value="">— 請選擇單元 —</option>
-                          <option
-                            v-for="(opt, i) in generateQuizUnits"
-                            :key="unitSelectValue(opt) || 'u-' + i"
-                            :value="unitSelectValue(opt)"
-                          >
-                            {{ opt.rag_name }}
-                          </option>
-                        </select>
+                      <div class="flex-grow-1 min-w-0" style="min-width: 10rem">
+                        <label class="form-label small text-secondary fw-medium mb-1" :for="`exam-quiz-unit-${slotIndex}-toggle`">單元</label>
+                        <UnitSelectDropdown
+                          v-model="getSlotFormState(slotIndex).generateQuizTabId"
+                          :options="generateQuizUnits"
+                          :menu-id="`exam-quiz-unit-${slotIndex}`"
+                        />
                       </div>
                       <div>
                         <label class="form-label small text-secondary fw-medium mb-1 d-block">難度</label>
