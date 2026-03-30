@@ -455,9 +455,6 @@ async function fetchExamTests() {
     const personId = getCurrentPersonId();
     const params = new URLSearchParams();
     params.set('local', String(isFrontendLocalHost()));
-    if (personId) {
-      params.set('person_id', personId);
-    }
     const url = `${API_BASE}${API_EXAM_TESTS}?${params}`;
     const headers = {};
     if (personId) {

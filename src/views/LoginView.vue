@@ -44,11 +44,15 @@
         error.value = '';
         loading.value = true;
         try {
-          const res = await loggedFetch(`${API_BASE}/user/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ person_id: personId.value, password: password.value }),
-          });
+          const res = await loggedFetch(
+            `${API_BASE}/user/login`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ person_id: personId.value, password: password.value }),
+            },
+            { personId: personId.value }
+          );
           const text = await res.text();
           if (!res.ok) {
             let msg = '登入失敗';
