@@ -29,6 +29,7 @@
     'create-test-bank': 'createExamQuizBank',
     users: 'userManagement',
     settings: 'systemSettings',
+    logs: 'logList',
   };
   const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 
@@ -41,7 +42,7 @@
       const route = useRoute();
       const dataStore = useDataStore();
       const authStore = useAuthStore();
-      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | userManagement | systemSettings */
+      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | userManagement | systemSettings | logList */
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
         return PATH_TO_VIEW[route.params.view] || 'work';

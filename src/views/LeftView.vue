@@ -32,7 +32,8 @@
           canSeeNavLink(t, 'create-test-bank') ||
           canSeeNavLink(t, 'student-answer-analysis') ||
           canSeeNavLink(t, 'users') ||
-          canSeeNavLink(t, 'settings')
+          canSeeNavLink(t, 'settings') ||
+          canSeeNavLink(t, 'logs')
         );
       });
 
@@ -103,6 +104,9 @@
           </li>
           <li v-if="canSeeNavLink(userType, 'settings')">
             <router-link class="dropdown-item" to="/main/settings" active-class="active">系統設定</router-link>
+          </li>
+          <li v-if="canSeeNavLink(userType, 'logs')">
+            <router-link class="dropdown-item" to="/main/logs" active-class="active">系統 Log</router-link>
           </li>
           <li v-if="showDividerBeforeProfile">
             <hr class="dropdown-divider" />

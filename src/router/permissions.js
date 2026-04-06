@@ -1,10 +1,12 @@
 /**
  * 依 user_type 限制可進入的路由（與側邊欄顯示）
  *
- * 1=系統開發者、2=課程管理者：全部頁面
+ * 1=系統開發者、2=課程管理者：除「系統 Log」外之全部頁面
  * 3=學生：僅測驗（/exam）、作答弱點分析（/main/student-weakness-analysis）、設定（/main/profile）
+ * 「系統 Log」（/main/logs）：僅 user_type=1
  */
 
+export const DEVELOPER_USER_TYPE = 1;
 export const RESTRICTED_USER_TYPE = 3;
 
 /** 學生可進入的 view 參數（/main/:view）以及測驗對應的內部鍵 work */
@@ -26,8 +28,9 @@ export function routeViewKey(to) {
  */
 export function userMayAccessRoute(user, to) {
   if (!user) return false;
-  if (Number(user.user_type) !== RESTRICTED_USER_TYPE) return true;
   const key = routeViewKey(to);
+  if (key === 'logs' && Number(user.user_type) !== DEVELOPER_USER_TYPE) return false;
+  if (Number(user.user_type) !== RESTRICTED_USER_TYPE) return true;
   if (key == null) return true;
   return STUDENT_ALLOWED_VIEWS.has(key);
 }
@@ -38,6 +41,7 @@ export function userMayAccessRoute(user, to) {
  * @param {string} viewKey — work | student-weakness-analysis | create-test-bank 等（與 URL 片段相同）
  */
 export function canSeeNavLink(userType, viewKey) {
+  if (viewKey === 'logs') return Number(userType) === DEVELOPER_USER_TYPE;
   if (Number(userType) !== RESTRICTED_USER_TYPE) return true;
   return STUDENT_ALLOWED_VIEWS.has(viewKey);
 }

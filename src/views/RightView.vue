@@ -12,10 +12,11 @@
   import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
+  import LogListPage from '../pages/LogListPage.vue';
 
   export default {
     name: 'RightView',
-    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, UserManagementPage, SystemSettingsPage },
+    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, UserManagementPage, SystemSettingsPage, LogListPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },
@@ -32,6 +33,7 @@
     <CreateExamQuizBankPage v-else-if="currentView === 'createExamQuizBank'" :tabId="tabId" />
     <UserManagementPage v-else-if="currentView === 'userManagement'" />
     <SystemSettingsPage v-else-if="currentView === 'systemSettings'" />
+    <LogListPage v-else-if="currentView === 'logList'" />
   </main>
 </template>
 

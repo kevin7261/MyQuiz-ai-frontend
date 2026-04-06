@@ -8,7 +8,7 @@
  * - /exam → 測驗/工作區（HomeView，等同 /main/work）
  * - /main/:view → 主區塊各功能（student-weakness-analysis、profile、create-test-bank 等），由 HomeView 依 view 渲染
  *
- * 主區塊與 /exam 需登入、依 user_type 限制路由，見 main.js 的 router.beforeEach 與 permissions.js。
+ * 主區塊與 /exam 需登入、依 user_type 限制路由（/main/logs 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
  */
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
@@ -23,6 +23,7 @@ const VALID_VIEWS = [
   'create-test-bank',
   'users',
   'settings',
+  'logs',
 ];
 
 /** 各 view 對應的瀏覽器頁籤標題 */
@@ -34,6 +35,7 @@ const VIEW_TITLES = {
   'create-test-bank': '建立測驗題庫 - AIQuiz',
   users: '使用者管理 - AIQuiz',
   settings: '系統設定 - AIQuiz',
+  logs: '系統 Log - AIQuiz',
 };
 
 const routes = [

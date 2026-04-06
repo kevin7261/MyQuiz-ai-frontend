@@ -57,12 +57,14 @@ function mergePersonIdQuery(urlString, overridePersonId) {
 /**
  * @param {RequestInfo | URL} input
  * @param {RequestInit} [init]
- * @param {{ personId?: string | null }} [fetchOptions] - 例如 POST /user/login 時 store 尚無 user，傳表單 person_id
+ * @param {{ personId?: string | null, omitPersonIdQuery?: boolean }} [fetchOptions] - 例如 POST /user/login 時 store 尚無 user，傳表單 person_id；omitPersonIdQuery 為 true 時不自動附加 person_id（例如 GET /log/logs 自行組 query）
  * @returns {Promise<Response>}
  */
 export async function loggedFetch(input, init, fetchOptions) {
   const mergedInput =
-    typeof input === 'string' ? mergePersonIdQuery(input, fetchOptions?.personId) : input;
+    typeof input === 'string' && !fetchOptions?.omitPersonIdQuery
+      ? mergePersonIdQuery(input, fetchOptions?.personId)
+      : input;
 
   const method = (init && init.method) || 'GET';
   const url = typeof mergedInput === 'string' ? mergedInput : String(mergedInput.url);
