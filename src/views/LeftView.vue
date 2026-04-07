@@ -74,7 +74,7 @@
       >
       <router-link
         v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
-        to="/main/student-weakness-analysis"
+        to="/student-weakness-analysis"
         class="nav-link"
         active-class="active"
         >作答弱點分析</router-link
@@ -92,27 +92,27 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-start shadow-sm w-100">
           <li v-if="canSeeNavLink(userType, 'create-test-bank')">
-            <router-link class="dropdown-item" to="/main/create-test-bank" active-class="active">建立測驗題庫</router-link>
+            <router-link class="dropdown-item" to="/create-test-bank" active-class="active">建立測驗題庫</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
-            <router-link class="dropdown-item" to="/main/student-answer-analysis" active-class="active"
+            <router-link class="dropdown-item" to="/student-answer-analysis" active-class="active"
               >學生作答分析</router-link
             >
           </li>
           <li v-if="canSeeNavLink(userType, 'users')">
-            <router-link class="dropdown-item" to="/main/users" active-class="active">使用者管理</router-link>
+            <router-link class="dropdown-item" to="/users" active-class="active">使用者管理</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'settings')">
-            <router-link class="dropdown-item" to="/main/settings" active-class="active">系統設定</router-link>
+            <router-link class="dropdown-item" to="/settings" active-class="active">系統設定</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'logs')">
-            <router-link class="dropdown-item" to="/main/logs" active-class="active">系統 Log</router-link>
+            <router-link class="dropdown-item" to="/logs" active-class="active">系統 Log</router-link>
           </li>
           <li v-if="showDividerBeforeProfile">
             <hr class="dropdown-divider" />
           </li>
           <li v-if="canSeeNavLink(userType, 'profile')">
-            <router-link class="dropdown-item" to="/main/profile" active-class="active">設定</router-link>
+            <router-link class="dropdown-item" to="/profile" active-class="active">設定</router-link>
           </li>
           <li>
             <hr class="dropdown-divider" />

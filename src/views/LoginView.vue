@@ -3,7 +3,7 @@
    * LoginView - 登入頁
    *
    * 以 person_id（使用者 ID）與 password 呼叫 POST /user/login。
-   * 成功時：解析回傳的 user 物件、寫入 authStore.setUser、導向 /main（由 router 再導向 /exam）。
+   * 成功時：解析回傳的 user 物件、寫入 authStore.setUser、導向 /exam。
    * 失敗時：顯示後端 detail 或錯誤訊息於 error。
    * 載入中顯示 LoadingOverlay。
    */
@@ -69,7 +69,7 @@
           // 後端可能回傳 { user: {...} } 或直接回傳使用者物件
           const userData = data.user != null ? data.user : data;
           authStore.setUser(userData);
-          router.push('/main'); // 會再 redirect 到 /exam
+          router.push('/exam');
         } catch (e) {
           error.value = e.message || '無法連線，請確認後端已啟動';
         } finally {

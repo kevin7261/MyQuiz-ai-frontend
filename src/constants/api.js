@@ -28,6 +28,18 @@ export const API_BASE = isFrontendLocalHost() ? API_BASE_LOCAL : API_BASE_PRODUC
 /** 設定（profile）：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=開發者 2=管理者 3=學生）、llm_api_key（建立測驗題庫用；空字串表示清除）；回傳更新後使用者資訊（不含 password） */
 export const API_UPDATE_PROFILE = '/user/profile';
 
+/**
+ * 使用者列表與新增（Upload User）：GET /user/users；POST /user/users
+ * POST body：person_id、name、user_type；query person_id 須與 body.person_id 一致（loggedFetch 第三參數 personId）
+ */
+export const API_USER_USERS = '/user/users';
+
+/**
+ * 批次新增學生：POST /user/users/batch；body 為陣列 [{ person_id, name }]；後端 user_type 固定 3（學生）。
+ * query person_id 為呼叫者（必填）；由 loggedFetch 自動帶入目前登入者，勿覆寫為新使用者 ID。
+ */
+export const API_USER_BATCH = '/user/users/batch';
+
 /** RAG 出題：POST /rag/tab/quiz/create；body: rag_id（必填）、rag_tab_id（選填，可 ""）、quiz_level（「基礎」或「進階」字串）、unit_name（選填，可 ""；與 POST /rag/tab/build-rag-zip 回傳 outputs[].unit_name 一致，空則後端用第一筆）；LLM Key 依 Rag.person_id 自 User；回傳 quiz_content、quiz_hint、quiz_answer_reference、rag_quiz_id 等 */
 export const API_GENERATE_QUIZ = '/rag/tab/quiz/create';
 export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';

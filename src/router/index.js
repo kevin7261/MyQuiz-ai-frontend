@@ -4,17 +4,17 @@
  * 路由結構：
  * - / → 重導向至 /login
  * - /login → 登入頁（LoginView）
- * - /main → 重導向至 /exam（保留 query）
- * - /exam → 測驗/工作區（HomeView，等同 /main/work）
- * - /main/:view → 主區塊各功能（student-weakness-analysis、profile、create-test-bank 等），由 HomeView 依 view 渲染
+ * - /exam → 測驗/工作區（HomeView，內部 currentView 為 work）
+ * - /:view → 主區塊各功能（student-weakness-analysis、profile、create-test-bank、users 等），由 HomeView 依 view 渲染
+ * - /main、/main/:view → 舊網址相容，重導向至 /exam 或 /:view
  *
- * 主區塊與 /exam 需登入、依 user_type 限制路由（/main/logs 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
+ * 主區塊與 /exam 需登入、依 user_type 限制路由（/logs 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
  */
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
 import HomeView from '../views/HomeView.vue';
 
-/** 允許的 view 參數（對應 /main/:view 的網址片段，用於側邊選單） */
+/** 允許的 view 參數（對應 /:view 的網址片段，用於側邊選單） */
 const VALID_VIEWS = [
   'work',
   'student-weakness-analysis',
@@ -47,33 +47,54 @@ const routes = [
     meta: { title: '登入 - AIQuiz' },
   },
   {
-    path: '/main',
-    redirect: (to) => ({ path: '/exam', query: to.query }),
-  },
-  {
     path: '/exam',
     name: 'Exam',
     component: HomeView,
     meta: { title: '測驗 - AIQuiz' },
   },
+  // 舊網址相容（書籤）：/main/... → 新路徑
+  {
+    path: '/main',
+    redirect: (to) => ({ path: '/exam', query: to.query }),
+  },
   {
     path: '/main/analysis',
-    redirect: '/main/student-weakness-analysis',
+    redirect: '/student-weakness-analysis',
   },
   {
     path: '/main/create-unit',
-    redirect: '/main/create-test-bank',
+    redirect: '/create-test-bank',
   },
   {
     path: '/main/create-rag',
-    redirect: '/main/create-test-bank',
+    redirect: '/create-test-bank',
   },
   {
     path: '/main/course-analysis',
-    redirect: '/main/student-answer-analysis',
+    redirect: '/student-answer-analysis',
   },
   {
     path: '/main/:view',
+    redirect: (to) => ({ path: `/${to.params.view}`, query: to.query }),
+  },
+  {
+    path: '/analysis',
+    redirect: '/student-weakness-analysis',
+  },
+  {
+    path: '/create-unit',
+    redirect: '/create-test-bank',
+  },
+  {
+    path: '/create-rag',
+    redirect: '/create-test-bank',
+  },
+  {
+    path: '/course-analysis',
+    redirect: '/student-answer-analysis',
+  },
+  {
+    path: '/:view',
     name: 'Main',
     component: HomeView,
     meta: { title: 'AIQuiz' },
