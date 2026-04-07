@@ -10,22 +10,26 @@ export const DEVELOPER_USER_TYPE = 1;
 export const MANAGER_USER_TYPE = 2;
 export const RESTRICTED_USER_TYPE = 3;
 
-/** 使用者管理與畫面顯示用：1 開發者、2 管理者、3 學生 */
+/** 使用者管理與畫面顯示用：1 開發者、2 管理者、3 學生；其餘見 userTypeLabel →「未知」 */
 export const USER_TYPE_LABELS = Object.freeze({
   [DEVELOPER_USER_TYPE]: '開發者',
   [MANAGER_USER_TYPE]: '管理者',
   [RESTRICTED_USER_TYPE]: '學生',
 });
 
+/** 非 1／2／3 的 user_type 顯示文字 */
+export const UNKNOWN_USER_TYPE_LABEL = '未知';
+
 /**
+ * user_type 顯示：1 開發者、2 管理者、3 學生；空值為 —；無法解析或非上述數值為「未知」
  * @param {number | string | null | undefined} userType
  * @returns {string}
  */
 export function userTypeLabel(userType) {
   if (userType == null || userType === '') return '—';
   const n = Number(userType);
-  if (Number.isNaN(n)) return String(userType);
-  return USER_TYPE_LABELS[n] ?? String(userType);
+  if (Number.isNaN(n)) return UNKNOWN_USER_TYPE_LABEL;
+  return USER_TYPE_LABELS[n] ?? UNKNOWN_USER_TYPE_LABEL;
 }
 
 /** 學生可進入的 view 參數（/:view）以及測驗對應的內部鍵 work */

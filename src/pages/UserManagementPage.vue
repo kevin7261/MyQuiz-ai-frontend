@@ -14,7 +14,6 @@ import { API_BASE, API_USER_USERS, API_USER_BATCH, API_USER_DELETE } from '../co
 import { useAuthStore } from '../stores/authStore.js';
 import {
   userTypeLabel,
-  DEVELOPER_USER_TYPE,
   MANAGER_USER_TYPE,
   RESTRICTED_USER_TYPE,
   USER_TYPE_LABELS,
@@ -67,15 +66,6 @@ function isCurrentUserRow(u) {
   const row = u?.person_id;
   if (me == null || row == null) return false;
   return String(me).trim() === String(row).trim();
-}
-
-/**
- * 列表「類型」欄：開發者不顯示文字，其餘顯示標籤
- * @param {{ user_type?: number | string | null }} u
- */
-function displayUserTypeForTable(u) {
-  if (Number(u?.user_type) === DEVELOPER_USER_TYPE) return '—';
-  return userTypeLabel(u?.user_type);
 }
 
 /**
@@ -542,7 +532,7 @@ onMounted(() => {
                 <button type="button" class="btn btn-sm btn-primary" @click="openSingleModal">
                   新增一筆使用者
                 </button>
-                <button type="button" class="btn btn-sm btn-outline-primary" @click="openBatchModal">
+                <button type="button" class="btn btn-sm btn-primary" @click="openBatchModal">
                   批次新增學生
                 </button>
               </div>
@@ -562,7 +552,7 @@ onMounted(() => {
                   <tr v-for="(u, idx) in users" :key="userRowKey(u, idx)">
                     <td class="small">{{ u.person_id ?? '—' }}</td>
                     <td class="small">{{ u.name ?? '—' }}</td>
-                    <td class="small">{{ displayUserTypeForTable(u) }}</td>
+                    <td class="small">{{ userTypeLabel(u.user_type) }}</td>
                     <td class="small text-center align-middle">
                       <button
                         v-if="u.person_id != null && String(u.person_id).trim() !== '' && !isCurrentUserRow(u)"
