@@ -36,6 +36,7 @@ import {
   is504OrNetworkError,
 } from '../services/ragApi.js';
 import { formatGradingResult } from '../utils/grading.js';
+import { formatFileSize } from '../utils/formatFileSize.js';
 import { submitGrade } from '../composables/useQuizGrading.js';
 import {
   generateTabId,
@@ -327,6 +328,37 @@ const uploadedZipDisplayName = computed(() => {
   const z = currentState.value.zipFileName;
   if (z != null && String(z).trim() !== '') return String(z).trim();
   return '（已上傳）';
+});
+
+/** 上傳教材檔大小（後端為 MB）：優先 file_metadata.file_size，否則 Rag 表頂層 file_size */
+const uploadZipFileSizeDisplay = computed(() => {
+  const meta = fileMetadataToShow.value;
+  const rag = currentRagItem.value;
+  let raw;
+  if (meta && typeof meta === 'object' && meta.file_size != null) raw = meta.file_size;
+  else if (rag && typeof rag === 'object' && rag.file_size != null) raw = rag.file_size;
+  return formatFileSize(raw, 'MB');
+});
+
+/** 建置後 outputs[] 每項的 file_size（MB；頂層或 rag_metadata 內），僅在至少一項有大小時顯示 */
+const ragBuildOutputSizeSummary = computed(() => {
+  const rag = currentRagItem.value;
+  if (!rag || !hasRagMetadata.value) return '';
+  const metaObj = parseRagMetadataObject(rag);
+  const outputs =
+    Array.isArray(rag.outputs) && rag.outputs.length > 0
+      ? rag.outputs
+      : Array.isArray(metaObj?.outputs) && metaObj.outputs.length > 0
+        ? metaObj.outputs
+        : null;
+  if (!outputs) return '';
+  const parts = outputs.map((o) => {
+    const sz = formatFileSize(o.file_size, 'MB');
+    if (!sz) return null;
+    const label = deriveRagName(o) || String(o.unit_name || o.rag_name || '').trim() || '—';
+    return `${label} ${sz}`;
+  }).filter(Boolean);
+  return parts.length ? parts.join(' · ') : '';
 });
 
 const {
@@ -1184,6 +1216,7 @@ async function confirmAnswer(item) {
         <div class="mb-3">
           <div class="small text-secondary fw-medium mb-1">上傳檔案名稱</div>
           <div class="small text-break">{{ uploadedZipDisplayName }}</div>
+          <div v-if="uploadZipFileSizeDisplay" class="small text-muted mt-1">檔案大小：{{ uploadZipFileSizeDisplay }}</div>
         </div>
 
         <template v-if="hasRagMetadata">
@@ -1191,6 +1224,10 @@ async function confirmAnswer(item) {
             <div class="small text-secondary fw-medium mb-1">出題單元</div>
             <div v-if="ragListReadonlyGroups.length" class="small text-break">{{ ragListReadonlyInlineText }}</div>
             <div v-else class="small text-muted">—</div>
+          </div>
+          <div v-if="ragBuildOutputSizeSummary" class="mb-3">
+            <div class="small text-secondary fw-medium mb-1">建置輸出檔大小</div>
+            <div class="small text-break">{{ ragBuildOutputSizeSummary }}</div>
           </div>
           <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
             <div>
@@ -1343,7 +1380,7 @@ async function confirmAnswer(item) {
           </div>
 
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
-            <div style="width: 100px;">
+            <div style="min-width: 180px; flex: 1 1 180px; max-width: 280px;">
               <label class="form-label small text-secondary fw-medium mb-1">分段長度（字元）</label>
               <input
                 v-model.number="chunkSize"
@@ -1354,7 +1391,7 @@ async function confirmAnswer(item) {
                 placeholder="1000"
               >
             </div>
-            <div style="width: 100px;">
+            <div style="min-width: 180px; flex: 1 1 180px; max-width: 280px;">
               <label class="form-label small text-secondary fw-medium mb-1">分段重疊（字元）</label>
               <input
                 v-model.number="chunkOverlap"

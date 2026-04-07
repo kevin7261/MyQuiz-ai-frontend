@@ -6,7 +6,7 @@
  *
  * 資料來源：
  * - 不呼叫 GET /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy（測驗／題目關聯由 GET /exam/tabs 等提供即可）
- * - GET /rag/tab/for-exam：試題用 RAG 完整 payload（outputs 等欄位可為 rag_name 或 unit_name；無 outputs／unit_list 時仍可用 rag_tab_id 合成單元）
+ * - GET /rag/tab/for-exam：試題用 RAG 完整 payload（含 file_size、file_metadata；outputs／rag_metadata.outputs 每項可含 file_size；無 outputs／unit_list 時仍可用 rag_tab_id 合成單元）
  * - GET /exam/tabs?local=&person_id=：local 與 GET /rag/tabs 相同；回傳每筆含 quizzes、answers（或 exam_quizzes／exam_answers）時，以 syncExamItemToTabState 灌入卡片（同 CreateExamQuizBankPage 由列表同步題目／作答／批改）
  * 出題：POST /exam/tab/quiz/create（exam_id 或 exam_tab_id 二擇一；對齊 RAG 的 POST /rag/tab/quiz/create）；評分：POST /exam/tab/quiz/grade、GET /exam/tab/quiz/grade-result/{job_id}（與 RAG 輪詢流程相同，見 useQuizGrading）；題目讚／差：POST /exam/tab/quiz/rate（quiz_rate：1、-1、0）；分頁更名：PUT /exam/tab/tab-name（body: exam_id、tab_name）；刪除：POST /exam/tab/delete/{exam_tab_id}
  *
@@ -29,9 +29,11 @@ import {
   isFrontendLocalHost,
 } from '../constants/api.js';
 import { parseFetchError } from '../utils/apiError.js';
+import { formatFileSize } from '../utils/formatFileSize.js';
 import {
   parseRagMetadataObject,
   getRagUnitListString,
+  deriveRagName,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
   QUIZ_LEVEL_LABELS,
@@ -241,6 +243,47 @@ const forExamRagIdAndTabId = computed(() => {
   return { rag_id: rid != null ? String(rid) : '—', rag_tab_id: tid ? String(tid) : '—' };
 });
 
+/** 試題用教材上傳檔：file_metadata 與 Rag 表 file_size（MB；GET /rag/tab/for-exam） */
+const forExamUploadInfoLine = computed(() => {
+  const rag = forExamRag.value;
+  if (!rag || typeof rag !== 'object') return '';
+  const meta = rag.file_metadata;
+  const name =
+    meta && typeof meta === 'object'
+      ? meta.filename ?? meta.rag_filename ?? meta.original_filename
+      : null;
+  const nameStr = name != null && String(name).trim() !== '' ? String(name).trim() : '';
+  const sizeRaw =
+    meta && typeof meta === 'object' && meta.file_size != null ? meta.file_size : rag.file_size;
+  const sizeStr = formatFileSize(sizeRaw, 'MB');
+  if (!nameStr && !sizeStr) return '';
+  const parts = [];
+  if (nameStr) parts.push(`檔名：${nameStr}`);
+  if (sizeStr) parts.push(`大小：${sizeStr}`);
+  return parts.join(' · ');
+});
+
+/** 建置輸出檔大小（outputs 每項 file_size 為 MB） */
+const forExamOutputsSizeLine = computed(() => {
+  const rag = forExamRag.value;
+  if (!rag || typeof rag !== 'object') return '';
+  const metaObj = parseRagMetadataObject(rag);
+  const outputs =
+    Array.isArray(rag.outputs) && rag.outputs.length > 0
+      ? rag.outputs
+      : Array.isArray(metaObj?.outputs) && metaObj.outputs.length > 0
+        ? metaObj.outputs
+        : null;
+  if (!outputs) return '';
+  const parts = outputs.map((o) => {
+    const sz = formatFileSize(o.file_size, 'MB');
+    if (!sz) return null;
+    const label = deriveRagName(o) || String(o.unit_name || o.rag_name || '').trim() || '—';
+    return `${label} ${sz}`;
+  }).filter(Boolean);
+  return parts.length ? `建置輸出：${parts.join(' · ')}` : '';
+});
+
 /** 當前測驗顯示用（exam_tab_id、名稱；列表可能為 tab_name 或舊欄位 exam_name） */
 const currentExamDisplay = computed(() => {
   const exam = currentExamItem.value;
@@ -271,6 +314,8 @@ watch(
     console.log('[測驗] 基本資訊', {
       當前測驗: { ...currentExamDisplay.value },
       試卷題庫: { ...forExamRagIdAndTabId.value },
+      file_size:
+        forExamRag.value?.file_metadata?.file_size ?? forExamRag.value?.file_size ?? '—',
       system_prompt_instruction:
         forExamRag.value && forExamRag.value.system_prompt_instruction != null
           ? forExamRag.value.system_prompt_instruction
@@ -515,7 +560,7 @@ async function fetchForExamRag() {
       throw new Error(msg);
     }
     const data = await res.json();
-    // GET /rag/tab/for-exam 回傳格式與 /rag/tab/build-rag-zip 相同：頂層含 outputs、rag_tab_id、file_metadata、llm_api_key 等
+    // GET /rag/tab/for-exam：頂層含 file_size、file_metadata、outputs／rag_metadata、rag_tab_id、llm_api_key 等
     forExamRag.value = data != null && typeof data === 'object'
       ? { ...data, apikey: data.apikey ?? data.llm_api_key }
       : null;
@@ -1034,6 +1079,18 @@ onMounted(() => {
           v-if="activeTabId"
           class="text-start page-block-spacing"
         >
+          <div
+            v-if="forExamUploadInfoLine || forExamOutputsSizeLine"
+            class="small text-muted mb-3 border rounded px-3 py-2 bg-body-tertiary"
+          >
+            <div v-if="forExamUploadInfoLine">{{ forExamUploadInfoLine }}</div>
+            <div
+              v-if="forExamOutputsSizeLine"
+              :class="{ 'mt-1': forExamUploadInfoLine }"
+            >
+              {{ forExamOutputsSizeLine }}
+            </div>
+          </div>
           <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
           <div class="mb-4">
             <template v-for="(slotIndex) in currentState.quizSlotsCount" :key="slotIndex">
