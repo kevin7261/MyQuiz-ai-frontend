@@ -7,17 +7,22 @@
  * 批次：POST /user/users/batch；body 為 [{ person_id, name }]；query 為呼叫者 person_id（loggedFetch 預設）。
  * Excel 匯入後即檢查檔內重複與與列表重複；有則禁用「批次新增學生」按鈕。單筆送出前亦會檢查重複。
  * 單筆 Modal：輸入 ID 時即時比對列表；須 ID、姓名、類型皆填且未重複才可按「新增使用者」。
+ * 刪除：POST /user/users/delete，body 為被刪 person_id；query 為呼叫者（loggedFetch 預設）。
  */
 import { ref, computed, onMounted } from 'vue';
-import { API_BASE, API_USER_USERS, API_USER_BATCH } from '../constants/api.js';
+import { API_BASE, API_USER_USERS, API_USER_BATCH, API_USER_DELETE } from '../constants/api.js';
+import { useAuthStore } from '../stores/authStore.js';
 import {
   userTypeLabel,
+  DEVELOPER_USER_TYPE,
   MANAGER_USER_TYPE,
   RESTRICTED_USER_TYPE,
   USER_TYPE_LABELS,
 } from '../router/permissions.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { loggedFetch } from '../utils/loggedFetch.js';
+
+const authStore = useAuthStore();
 
 const EXCEL_ACCEPT_ATTR = '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel';
 
@@ -50,6 +55,68 @@ const excelParseError = ref('');
 const batchSaving = ref(false);
 const batchSubmitError = ref('');
 const batchSubmitSummary = ref({ ok: 0, fail: 0 });
+
+const deletingPersonId = ref(null);
+const deleteUserError = ref('');
+
+/**
+ * @param {{ person_id?: string | null } | null | undefined} u
+ */
+function isCurrentUserRow(u) {
+  const me = authStore.user?.person_id ?? authStore.user?.user_id;
+  const row = u?.person_id;
+  if (me == null || row == null) return false;
+  return String(me).trim() === String(row).trim();
+}
+
+/**
+ * 列表「類型」欄：開發者不顯示文字，其餘顯示標籤
+ * @param {{ user_type?: number | string | null }} u
+ */
+function displayUserTypeForTable(u) {
+  if (Number(u?.user_type) === DEVELOPER_USER_TYPE) return '—';
+  return userTypeLabel(u?.user_type);
+}
+
+/**
+ * @param {{ person_id?: unknown, user_id?: unknown }} u
+ * @param {number} idx
+ */
+function userRowKey(u, idx) {
+  const p = u?.person_id != null ? String(u.person_id) : '';
+  const id = u?.user_id != null ? String(u.user_id) : '';
+  if (p || id) return `${p}::${id}`;
+  return `row-${idx}`;
+}
+
+/**
+ * @param {{ person_id?: string | null, user_id?: number } | null | undefined} u
+ */
+async function deleteUser(u) {
+  const raw = u?.person_id;
+  if (raw == null || String(raw).trim() === '') return;
+  const targetPid = String(raw).trim();
+  if (!window.confirm(`確定要刪除使用者「${targetPid}」？（軟刪除）`)) return;
+  deletingPersonId.value = targetPid;
+  deleteUserError.value = '';
+  try {
+    const res = await loggedFetch(`${API_BASE}${API_USER_DELETE}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ person_id: targetPid }),
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      deleteUserError.value = formatApiError(res, text);
+      return;
+    }
+    await fetchUsers();
+  } catch (e) {
+    deleteUserError.value = e.message || '刪除失敗';
+  } finally {
+    deletingPersonId.value = null;
+  }
+}
 
 /** 目前列表中的 person_id（trim 後），供重複檢查 */
 function existingPersonIdSet() {
@@ -462,6 +529,7 @@ onMounted(() => {
       </div>
     </div>
     <div v-if="error" class="alert alert-warning py-2 small mx-4 mb-3" role="alert">{{ error }}</div>
+    <div v-if="deleteUserError" class="alert alert-danger py-2 small mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
     <div class="flex-grow-1 overflow-auto bg-white px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
@@ -484,18 +552,32 @@ onMounted(() => {
               <table class="table table-bordered table-hover table-sm">
                 <thead class="table-light">
                   <tr>
-                    <th class="small fw-medium">user_id</th>
                     <th class="small fw-medium">person_id</th>
                     <th class="small fw-medium">name</th>
                     <th class="small fw-medium">類型</th>
+                    <th class="small fw-medium text-center" style="width: 3rem;" aria-label="操作" />
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="u in users" :key="u.user_id">
-                    <td class="small">{{ u.user_id }}</td>
+                  <tr v-for="(u, idx) in users" :key="userRowKey(u, idx)">
                     <td class="small">{{ u.person_id ?? '—' }}</td>
                     <td class="small">{{ u.name ?? '—' }}</td>
-                    <td class="small">{{ userTypeLabel(u.user_type) }}</td>
+                    <td class="small">{{ displayUserTypeForTable(u) }}</td>
+                    <td class="small text-center align-middle">
+                      <button
+                        v-if="u.person_id != null && String(u.person_id).trim() !== '' && !isCurrentUserRow(u)"
+                        type="button"
+                        class="btn btn-link btn-sm text-danger text-decoration-none p-0 lh-1"
+                        :disabled="deletingPersonId != null"
+                        :title="`刪除 ${String(u.person_id).trim()}`"
+                        :aria-label="`刪除使用者 ${String(u.person_id).trim()}`"
+                        @click="deleteUser(u)"
+                      >
+                        <i class="fa-solid fa-xmark" aria-hidden="true" />
+                        <span class="visually-hidden">刪除</span>
+                      </button>
+                      <span v-else class="text-muted">—</span>
+                    </td>
                   </tr>
                   <tr v-if="!loading && users.length === 0">
                     <td colspan="4" class="text-muted text-center small">尚無使用者</td>

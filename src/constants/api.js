@@ -40,6 +40,12 @@ export const API_USER_USERS = '/user/users';
  */
 export const API_USER_BATCH = '/user/users/batch';
 
+/**
+ * 軟刪除使用者：POST /user/users/delete；body { person_id } 為欲刪除者；
+ * query person_id 為呼叫者（必填），由 loggedFetch 自動帶入，勿覆寫為被刪者。
+ */
+export const API_USER_DELETE = '/user/users/delete';
+
 /** RAG 出題：POST /rag/tab/quiz/create；body: rag_id（必填）、rag_tab_id（選填，可 ""）、quiz_level（「基礎」或「進階」字串）、unit_name（選填，可 ""；與 POST /rag/tab/build-rag-zip 回傳 outputs[].unit_name 一致，空則後端用第一筆）；LLM Key 依 Rag.person_id 自 User；回傳 quiz_content、quiz_hint、quiz_answer_reference、rag_quiz_id 等 */
 export const API_GENERATE_QUIZ = '/rag/tab/quiz/create';
 export const API_RESPONSE_QUIZ_CONTENT = 'quiz_content';

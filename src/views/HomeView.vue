@@ -27,7 +27,7 @@
     'student-answer-analysis': 'studentAnswerAnalysis',
     profile: 'profile',
     'create-test-bank': 'createExamQuizBank',
-    users: 'userManagement',
+    'manage-users': 'userManagement',
     settings: 'systemSettings',
     logs: 'logList',
   };

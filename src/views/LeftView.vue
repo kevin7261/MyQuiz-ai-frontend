@@ -100,7 +100,7 @@
             >
           </li>
           <li v-if="canSeeNavLink(userType, 'users')">
-            <router-link class="dropdown-item" to="/users" active-class="active">使用者管理</router-link>
+            <router-link class="dropdown-item" to="/manage-users" active-class="active">使用者管理</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'settings')">
             <router-link class="dropdown-item" to="/settings" active-class="active">系統設定</router-link>
