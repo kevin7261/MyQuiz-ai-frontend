@@ -2,11 +2,12 @@
 /**
  * UserManagementPage - 使用者管理頁面
  *
- * 呼叫 GET /user/users 取得使用者列表（users、count），以表格顯示 user_id、person_id、name、user_type。
+ * 呼叫 GET /user/users 取得使用者列表（users、count），以表格顯示 user_id、person_id、name、類型（user_type）；列順序依 user_id 升冪。
  * 僅讀取與顯示，不提供新增/編輯/刪除（若後端有 API 可再擴充）。
  */
 import { ref, onMounted } from 'vue';
 import { API_BASE } from '../constants/api.js';
+import { userTypeLabel } from '../router/permissions.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
@@ -32,7 +33,14 @@ async function fetchUsers() {
       throw new Error(msg);
     }
     const data = JSON.parse(text);
-    users.value = Array.isArray(data.users) ? data.users : [];
+    const list = Array.isArray(data.users) ? data.users : [];
+    users.value = [...list].sort((a, b) => {
+      const na = Number(a.user_id);
+      const nb = Number(b.user_id);
+      const ka = Number.isNaN(na) ? Number.POSITIVE_INFINITY : na;
+      const kb = Number.isNaN(nb) ? Number.POSITIVE_INFINITY : nb;
+      return ka - kb;
+    });
     count.value = typeof data.count === 'number' ? data.count : users.value.length;
   } catch (e) {
     error.value = e.message || '無法載入使用者列表';
@@ -74,7 +82,7 @@ onMounted(() => {
                 <th class="small fw-medium">user_id</th>
                 <th class="small fw-medium">person_id</th>
                 <th class="small fw-medium">name</th>
-                <th class="small fw-medium">user_type</th>
+                <th class="small fw-medium">類型</th>
               </tr>
             </thead>
             <tbody>
@@ -82,7 +90,7 @@ onMounted(() => {
                 <td class="small">{{ u.user_id }}</td>
                 <td class="small">{{ u.person_id ?? '—' }}</td>
                 <td class="small">{{ u.name ?? '—' }}</td>
-                <td class="small">{{ u.user_type ?? '—' }}</td>
+                <td class="small">{{ userTypeLabel(u.user_type) }}</td>
               </tr>
               <tr v-if="!loading && users.length === 0">
                 <td colspan="4" class="text-muted text-center small">尚無使用者</td>

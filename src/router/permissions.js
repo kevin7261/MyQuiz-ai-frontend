@@ -1,13 +1,32 @@
 /**
  * 依 user_type 限制可進入的路由（與側邊欄顯示）
  *
- * 1=系統開發者、2=課程管理者：除「系統 Log」外之全部頁面
+ * 1=開發者、2=管理者：除「系統 Log」外之全部頁面
  * 3=學生：僅測驗（/exam）、作答弱點分析（/main/student-weakness-analysis）、設定（/main/profile）
  * 「系統 Log」（/main/logs）：僅 user_type=1
  */
 
 export const DEVELOPER_USER_TYPE = 1;
+export const MANAGER_USER_TYPE = 2;
 export const RESTRICTED_USER_TYPE = 3;
+
+/** 使用者管理與畫面顯示用：1 開發者、2 管理者、3 學生 */
+export const USER_TYPE_LABELS = Object.freeze({
+  [DEVELOPER_USER_TYPE]: '開發者',
+  [MANAGER_USER_TYPE]: '管理者',
+  [RESTRICTED_USER_TYPE]: '學生',
+});
+
+/**
+ * @param {number | string | null | undefined} userType
+ * @returns {string}
+ */
+export function userTypeLabel(userType) {
+  if (userType == null || userType === '') return '—';
+  const n = Number(userType);
+  if (Number.isNaN(n)) return String(userType);
+  return USER_TYPE_LABELS[n] ?? String(userType);
+}
 
 /** 學生可進入的 view 參數（/main/:view）以及測驗對應的內部鍵 work */
 export const STUDENT_ALLOWED_VIEWS = new Set(['work', 'student-weakness-analysis', 'profile']);
