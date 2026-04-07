@@ -279,7 +279,7 @@ const anySlotLoading = computed(() => {
   return false;
 });
 
-/** 任一非同步操作執行中時為 true，用於全螢幕遮罩 */
+/** 任一非同步載入或處理進行中時為 true，用於全螢幕遮罩 */
 const isAnyLoading = computed(() =>
   ragListLoading.value ||
   createRagLoading.value ||
@@ -578,7 +578,7 @@ async function setRagForExam() {
   const ragId = rag.rag_id ?? rag.id;
   if (ragId == null || ragId === '') {
     const state = getTabState(activeTabId.value);
-    state.forExamError = '無法取得 rag_id（請先建立並上傳 ZIP）';
+    state.forExamError = '無法取得題庫編號，請先建立分頁並上傳教材檔';
     return;
   }
   const personId = getPersonId(authStore);
@@ -668,7 +668,7 @@ const ragCreatedAtMap = ref({});
 async function addNewTab() {
   const personId = getPersonId(authStore);
   if (!personId) {
-    createRagError.value = '請先登入以取得 person_id';
+    createRagError.value = '請先登入';
     return;
   }
   createRagError.value = '';
@@ -694,7 +694,7 @@ async function addNewTab() {
 
 /** 取得 RAG 顯示名稱（用於 tab 標籤）；以 tab_name／rag_name 為主，預設為 rag_tab_id 底線後的時間 */
 function getRagTabLabel(rag) {
-  if (rag == null) return 'RAG';
+  if (rag == null) return '題庫';
   if (typeof rag === 'string') return ragCreatedAtMap.value[rag] ?? String(rag);
   if (typeof rag !== 'object') return String(rag);
   const id = rag.rag_id ?? rag.rag_tab_id ?? rag.id;
@@ -704,7 +704,7 @@ function getRagTabLabel(rag) {
     : (rag.rag_name != null && String(rag.rag_name).trim() !== '')
       ? String(rag.rag_name).trim()
       : deriveRagNameFromTabId(rag.rag_tab_id ?? rag.id ?? '');
-  return (label && label !== '') ? label : (fromMap ?? rag.file_metadata?.filename ?? rag.course_name ?? rag.filename ?? rag.created_at ?? deriveRagNameFromTabId(rag.rag_tab_id ?? '') ?? 'RAG');
+  return (label && label !== '') ? label : (fromMap ?? rag.file_metadata?.filename ?? rag.course_name ?? rag.filename ?? rag.created_at ?? deriveRagNameFromTabId(rag.rag_tab_id ?? '') ?? '題庫');
 }
 
 /** 編輯分頁名稱用：優先後端 tab_name／rag_name，無則空 */
@@ -734,7 +734,7 @@ async function onRenameRagTabSave(name) {
   }
   const rid = renameRagTabDraftRagId.value;
   if (rid == null || !Number.isFinite(rid) || rid < 1) {
-    renameRagTabError.value = '找不到此測驗題庫（rag_id）';
+    renameRagTabError.value = '找不到此測驗題庫，請重新整理頁面後再試';
     return;
   }
   renameRagTabSaving.value = true;
@@ -818,12 +818,12 @@ async function confirmUploadZip() {
   }
   const tabId = activeTabId.value;
   if (isNewTabId(tabId) || !tabId) {
-    state.zipError = '請先按 + 完成建立測驗題庫（此 tab 需先建立後端資料）';
+    state.zipError = '請先按「+ 新增」建立測驗題庫分頁，再上傳檔案';
     return;
   }
   const personId = getPersonId(authStore);
   if (!personId) {
-    state.zipError = '請先登入以取得 person_id';
+    state.zipError = '請先登入';
     return;
   }
   state.zipLoading = true;
@@ -845,7 +845,7 @@ async function confirmUploadZip() {
     await fetchRagList();
   } catch (err) {
     state.zipError = is504OrNetworkError(err)
-      ? '後端正在啟動中（約需 1 分鐘），請稍後再試一次'
+      ? '服務正在啟動（約需一分鐘），請稍後再試'
       : err.message || '上傳失敗';
     state.zipSecondFolders = [];
     state.zipResponseJson = null;
@@ -861,11 +861,11 @@ async function confirmPack() {
   const unitList = state.packTasks?.trim();
   const personId = getPersonId(authStore);
   if (!fileId) {
-    state.packError = '請先上傳 ZIP 取得 rag_tab_id';
+    state.packError = '請先上傳教材檔，完成後再建立題庫';
     return;
   }
   if (!personId) {
-    state.packError = '請先登入以取得 person_id';
+    state.packError = '請先登入';
     return;
   }
   if (!isPackTasksListReady(state.packTasksList ?? [])) {
@@ -873,7 +873,7 @@ async function confirmPack() {
     return;
   }
   if (!unitList) {
-    state.packError = '請輸入單元清單 unit_list（例：220222+220301 或 220222,220301+220302）';
+    state.packError = '請輸入單元清單（例：220222+220301 或 220222,220301+220302）';
     return;
   }
   state.packLoading = true;
@@ -971,11 +971,11 @@ async function generateQuiz(slotIndex) {
   const ragName = selectedUnit.rag_name?.trim() || unitName;
   const ragId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
   if (ragId == null) {
-    slotState.error = '無法取得 rag_id（請先上傳 ZIP 或確認已載入 RAG）';
+    slotState.error = '無法取得題庫編號，請先上傳教材或重新整理頁面';
     return;
   }
   if (!generateQuizUnits.value.length) {
-    slotState.error = '請先按出題群組區「確定」取得 RAG 壓縮檔（outputs），或重新載入列表';
+    slotState.error = '請先在「出題單元」區按「確定」完成題庫建立，或重新整理頁面';
     return;
   }
   slotState.loading = true;
@@ -1032,12 +1032,12 @@ async function confirmAnswer(item) {
   const ragId = activeRagId;
   if (!sourceTabId) {
     item.confirmed = true;
-    item.gradingResult = '評分需要 rag_tab_id：請先上傳教材 ZIP 取得 rag_tab_id 後再進行評分。';
+    item.gradingResult = '請先上傳教材並完成題庫建立，再進行批改。';
     return;
   }
   if (ragId == null) {
     item.confirmed = true;
-    item.gradingResult = '評分失敗：無法取得 rag_id，請先上傳 ZIP 或確認已載入 RAG。';
+    item.gradingResult = '無法批改：請先上傳教材或重新整理頁面後再試。';
     return;
   }
   gradingLoading.value = true;
@@ -1054,7 +1054,7 @@ async function confirmAnswer(item) {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="isAnyLoading"
-      loading-text="執行中..."
+      loading-text="請稍候，正在載入或處理..."
     />
     <TabRenameModal
       v-model="renameRagTabModalOpen"
@@ -1194,16 +1194,16 @@ async function confirmAnswer(item) {
           </div>
           <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
             <div>
-              <div class="small text-secondary fw-medium mb-1">chunk size</div>
+              <div class="small text-secondary fw-medium mb-1">分段長度（字元）</div>
               <div class="small">{{ chunkSize }}</div>
             </div>
             <div>
-              <div class="small text-secondary fw-medium mb-1">chunk overlap</div>
+              <div class="small text-secondary fw-medium mb-1">分段重疊（字元）</div>
               <div class="small">{{ chunkOverlap }}</div>
             </div>
           </div>
           <div class="mb-3">
-            <div class="small mb-1">出題prompt</div>
+            <div class="small mb-1">出題說明（給 AI）</div>
             <div class="small border rounded p-3 bg-body-tertiary">
               你是一個「{{ courseNameForPrompt }}」課程的教授，請給學生設計試卷題目：<br>
               【出題規範】<br>
@@ -1334,7 +1334,7 @@ async function confirmAnswer(item) {
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
-                title="在現有測驗題庫之後新增一個測驗題庫，內含全部單元（unit_list 以 + 連接）"
+                title="在現有題庫之後再新增一組，內含全部單元（群組內以 + 連接）"
                 @click="setAllSecondFoldersAsSingleGroup"
               >
                 每個單元建立一個測驗題庫
@@ -1344,7 +1344,7 @@ async function confirmAnswer(item) {
 
           <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
             <div style="width: 100px;">
-              <label class="form-label small text-secondary fw-medium mb-1">chunk size</label>
+              <label class="form-label small text-secondary fw-medium mb-1">分段長度（字元）</label>
               <input
                 v-model.number="chunkSize"
                 type="number"
@@ -1355,7 +1355,7 @@ async function confirmAnswer(item) {
               >
             </div>
             <div style="width: 100px;">
-              <label class="form-label small text-secondary fw-medium mb-1">chunk overlap</label>
+              <label class="form-label small text-secondary fw-medium mb-1">分段重疊（字元）</label>
               <input
                 v-model.number="chunkOverlap"
                 type="number"
@@ -1367,7 +1367,7 @@ async function confirmAnswer(item) {
             </div>
           </div>
           <div class="mt-3">
-            <label class="form-label small text-secondary fw-medium mb-1">出題prompt</label>
+            <label class="form-label small text-secondary fw-medium mb-1">出題說明（給 AI）</label>
             <div class="small border rounded p-3 bg-body-tertiary">
               【出題規範】<br>
               請根據輸入的「參考內容」設計試卷題目。<br>

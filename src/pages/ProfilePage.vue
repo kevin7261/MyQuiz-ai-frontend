@@ -107,7 +107,7 @@ async function saveProfile() {
     message.value = '已儲存';
     messageType.value = 'success';
   } catch (e) {
-    message.value = e.message || '無法連線，請確認後端已啟動';
+    message.value = e.message || '無法連線，請檢查網路或稍後再試';
     messageType.value = 'danger';
   } finally {
     loading.value = false;
@@ -119,7 +119,7 @@ async function saveProfile() {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
-      loading-text="執行中..."
+      loading-text="儲存設定中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
@@ -139,14 +139,14 @@ async function saveProfile() {
               <input :value="displayName" type="text" class="form-control form-control-sm" placeholder="名稱" readonly disabled>
             </div>
             <div v-if="canEditLlmApiKey" class="mb-4">
-              <label class="form-label small text-secondary fw-medium mb-1">建立測驗題庫使用的 LLM API Key</label>
+              <label class="form-label small text-secondary fw-medium mb-1">建立測驗題庫用的 AI 服務 API 金鑰</label>
               <div class="d-flex flex-wrap align-items-center gap-2">
                 <div class="flex-grow-1" style="min-width: 0">
                   <input
                     v-model="llmApiKey"
                     type="text"
                     class="form-control form-control-sm"
-                    placeholder="選填，建立測驗題庫時呼叫 LLM 使用"
+                    placeholder="選填，建立測驗題庫時由系統呼叫 AI 使用"
                     autocomplete="off"
                   >
                 </div>

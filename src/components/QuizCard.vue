@@ -89,7 +89,7 @@ const answerInputDisabled = computed(() => {
             placeholder="請輸入您的答案..."
             maxlength="2000"
           />
-          <div v-if="answerInputDisabled" class="form-text small text-warning">此題 rag_id 與目前 RAG 不同，無法作答。</div>
+          <div v-if="answerInputDisabled" class="form-text small text-warning">此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
           <div class="d-flex justify-content-end mt-2">
             <button type="button" class="btn btn-sm btn-primary" :disabled="answerInputDisabled" @click="emit('confirm-answer', card)">確定</button>
           </div>
@@ -99,7 +99,7 @@ const answerInputDisabled = computed(() => {
         </template>
       </div>
       <div class="mb-3">
-        <label class="form-label small text-secondary fw-medium mb-1">批改prompt</label>
+        <label class="form-label small text-secondary fw-medium mb-1">批改規則（預覽）</label>
         <div class="small border rounded p-3 bg-body-tertiary">
           你是一位「{{ courseName }}」課程的教授，請批改這道題目：<br>
           【評分規範】<br>
@@ -117,8 +117,8 @@ const answerInputDisabled = computed(() => {
           3: 部分正確，但有大幅缺漏。<br>
           4: 大致正確，略有不足。<br>
           5: 完全正確且完整。<br>
-          【輸出 JSON】<br>
-          請以 JSON 格式回傳：<br>
+          【回傳格式】<br>
+          請以指定格式回傳（含分數與評語欄位）：<br>
           { "quiz_grade": int,<br>
           "quiz_comments": str[] }<br>
         </div>

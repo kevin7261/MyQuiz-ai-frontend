@@ -137,7 +137,7 @@ onMounted(() => {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
-      loading-text="執行中..."
+      loading-text="載入作答與弱點分析中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">

@@ -16,7 +16,7 @@
  * @returns {string} 可顯示給使用者的錯誤訊息
  */
 export function parseFetchError(res, text) {
-  let msg = res?.statusText ?? 'Request failed';
+  let msg = res?.statusText ?? '無法完成請求';
   if (text && typeof text === 'string') {
     try {
       const err = JSON.parse(text);
@@ -26,7 +26,7 @@ export function parseFetchError(res, text) {
         msg = typeof d === 'string' ? d : JSON.stringify(d);
       } else if (e != null) {
         msg = typeof e === 'string' ? e : String(e);
-      } else if (msg === (res?.statusText ?? 'Request failed')) {
+      } else if (msg === (res?.statusText ?? '無法完成請求')) {
         msg = text;
       }
     } catch (_) {

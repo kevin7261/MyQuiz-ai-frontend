@@ -106,7 +106,7 @@
             <router-link class="dropdown-item" to="/settings" active-class="active">系統設定</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'logs')">
-            <router-link class="dropdown-item" to="/logs" active-class="active">系統 Log</router-link>
+            <router-link class="dropdown-item" to="/logs" active-class="active">系統紀錄</router-link>
           </li>
           <li v-if="showDividerBeforeProfile">
             <hr class="dropdown-divider" />

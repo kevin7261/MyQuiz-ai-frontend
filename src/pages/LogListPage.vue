@@ -20,6 +20,13 @@ function normalizeRows(data) {
   return [];
 }
 
+const COLUMN_LABELS = {
+  log_id: '紀錄編號',
+  person_id: '使用者 ID',
+  created_at: '建立時間',
+  updated_at: '更新時間',
+};
+
 const columns = computed(() => {
   const r = rows.value[0];
   if (!r || typeof r !== 'object') return [];
@@ -28,6 +35,10 @@ const columns = computed(() => {
   const rest = keys.filter((k) => !priority.includes(k)).sort();
   return [...priority.filter((k) => keys.includes(k)), ...rest];
 });
+
+function columnHeaderLabel(key) {
+  return COLUMN_LABELS[key] ?? key;
+}
 
 function cellDisplay(val) {
   if (val == null) return '—';
@@ -42,7 +53,7 @@ async function fetchLogs() {
     const res = await loggedFetch(`${API_BASE}${API_LIST_LOGS}`, { method: 'GET' });
     const text = await res.text();
     if (!res.ok) {
-      let msg = `伺服器錯誤 (${res.status})`;
+      let msg = `服務暫時無法回應（${res.status}）`;
       try {
         const body = JSON.parse(text);
         if (body.detail) msg += ` — ${typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail)}`;
@@ -54,7 +65,7 @@ async function fetchLogs() {
     const data = text ? JSON.parse(text) : {};
     rows.value = normalizeRows(data);
   } catch (e) {
-    error.value = e.message || '無法載入 Log';
+    error.value = e.message || '無法載入紀錄，請稍後再試';
     rows.value = [];
   } finally {
     loading.value = false;
@@ -71,7 +82,7 @@ onMounted(() => {
     <LoadingOverlay :is-visible="loading" loading-text="載入中..." />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center align-items-center gap-2">
-        <span class="navbar-brand mb-0">系統 Log</span>
+        <span class="navbar-brand mb-0">系統紀錄</span>
         <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="loading" @click="fetchLogs">重新載入</button>
       </div>
     </div>
@@ -83,7 +94,7 @@ onMounted(() => {
             <table class="table table-bordered table-hover table-sm">
               <thead class="table-light">
                 <tr>
-                  <th v-for="col in columns" :key="col" class="small fw-medium">{{ col }}</th>
+                  <th v-for="col in columns" :key="col" class="small fw-medium">{{ columnHeaderLabel(col) }}</th>
                 </tr>
               </thead>
               <tbody>

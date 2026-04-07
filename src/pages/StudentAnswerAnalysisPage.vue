@@ -54,7 +54,7 @@ async function fetchQuizAnswers() {
   try {
     const url = `${API_BASE}${API_COURSE_ANALYSIS_QUIZZES}`;
     const res = await loggedFetch(url, { method: 'GET' });
-    if (!res.ok) throw new Error(res.statusText || '無法載入課程答題資料');
+    if (!res.ok) throw new Error(res.statusText || '無法載入作答資料');
     const data = await res.json();
     const exams = normalizeAnalysisQuizzesListResponse(data);
     items.value = exams.flatMap((exam) => {
@@ -82,7 +82,7 @@ function getSummaryRows() {
 }
 
 async function onDownloadExcel() {
-  const headers = ['題號', 'person_id', '單元', '難度', '分數', '時間'];
+  const headers = ['題號', '使用者 ID', '單元', '難度', '分數', '時間'];
   await downloadSummaryExcel(headers, getSummaryRows(), '學生作答分析-作答紀錄摘要.xlsx');
 }
 
@@ -95,7 +95,7 @@ onMounted(() => {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
-      loading-text="執行中..."
+      loading-text="載入作答資料中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
@@ -122,7 +122,7 @@ onMounted(() => {
               <thead class="table-light">
                 <tr>
                   <th class="fw-medium">題號</th>
-                  <th class="fw-medium">person_id</th>
+                  <th class="fw-medium">使用者 ID</th>
                   <th class="fw-medium">單元</th>
                   <th class="fw-medium">難度</th>
                   <th class="fw-medium">分數</th>
@@ -164,7 +164,7 @@ onMounted(() => {
           <div class="card-body text-start">
             <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
               <div>
-                <label class="form-label small text-secondary fw-medium mb-1">person_id</label>
+                <label class="form-label small text-secondary fw-medium mb-1">使用者 ID</label>
                 <div class="form-control form-control-sm bg-body-secondary border small" style="min-height: 31px;">{{ item.person_id ?? '—' }}</div>
               </div>
               <div>

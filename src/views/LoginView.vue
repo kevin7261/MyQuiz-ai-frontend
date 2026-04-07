@@ -71,7 +71,7 @@
           authStore.setUser(userData);
           router.push('/exam');
         } catch (e) {
-          error.value = e.message || '無法連線，請確認後端已啟動';
+          error.value = e.message || '無法連線，請檢查網路或稍後再試';
         } finally {
           loading.value = false;
         }
@@ -86,7 +86,7 @@
   <div class="d-flex flex-column justify-content-center align-items-center h-100 my-bgcolor-gray-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
-      loading-text="執行中..."
+      loading-text="登入中..."
     />
     <div class="card shadow-sm my-login-card">
       <div class="card-body p-4">

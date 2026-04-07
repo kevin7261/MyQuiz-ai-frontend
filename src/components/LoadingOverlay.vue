@@ -10,7 +10,7 @@
     props: {
       /** 是否顯示遮罩（為 false 時不渲染） */
       isVisible: { type: Boolean, default: false, required: true },
-      /** 主文字，例如「載入中...」「執行中...」 */
+      /** 主文字，依頁面情境（例如「登入中...」「載入名單中...」） */
       loadingText: { type: String, default: '載入中...' },
       /** 進度 0–100；-1 表示不顯示進度（需搭配 showProgress） */
       progress: {
@@ -33,7 +33,7 @@
   >
     <div class="text-center my-bgcolor-white rounded shadow my-loading-overlay-panel p-4">
       <div class="spinner-border text-primary my-loading-spinner mb-3" role="status">
-        <span class="visually-hidden">載入中...</span>
+        <span class="visually-hidden">{{ loadingText }}</span>
       </div>
       <div class="my-title-lg-black">{{ loadingText }}</div>
       <div class="mt-3" v-if="showProgress && progress >= 0">

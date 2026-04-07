@@ -96,7 +96,7 @@ async function deleteUser(u) {
   const raw = u?.person_id;
   if (raw == null || String(raw).trim() === '') return;
   const targetPid = String(raw).trim();
-  if (!window.confirm(`確定要刪除使用者「${targetPid}」？（軟刪除）`)) return;
+  if (!window.confirm(`確定要刪除使用者「${targetPid}」？（刪除後無法復原）`)) return;
   deletingPersonId.value = targetPid;
   deleteUserError.value = '';
   try {
@@ -277,7 +277,7 @@ async function setExcelPreviewFromFile(file) {
  * @param {string} text
  */
 function formatApiError(res, text) {
-  let msg = `伺服器錯誤 (${res.status})`;
+  let msg = `服務暫時無法回應（${res.status}）`;
   try {
     const body = JSON.parse(text);
     if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
@@ -307,7 +307,7 @@ async function fetchUsers() {
     });
     count.value = typeof data.count === 'number' ? data.count : users.value.length;
   } catch (e) {
-    error.value = e.message || '無法載入使用者列表';
+    error.value = e.message || '無法載入使用者名單，請稍後再試';
     users.value = [];
     count.value = 0;
   } finally {
@@ -397,7 +397,7 @@ async function submitSingleUser() {
   const pid = singlePersonId.value.trim();
   const name = singleName.value.trim();
   if (!pid) {
-    singleSubmitError.value = '請填寫 ID（person_id）';
+    singleSubmitError.value = '請填寫登入 ID';
     return;
   }
   if (!name) {
@@ -410,7 +410,7 @@ async function submitSingleUser() {
     return;
   }
   if (existingPersonIdSet().has(pid)) {
-    singleSubmitError.value = '此 person_id 已存在於使用者列表，無法新增。';
+    singleSubmitError.value = '此登入 ID 已存在，無法新增。';
     return;
   }
   singleSaving.value = true;
@@ -521,7 +521,7 @@ onMounted(() => {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
-      loading-text="執行中..."
+      loading-text="載入名單中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
@@ -552,8 +552,8 @@ onMounted(() => {
               <table class="table table-bordered table-hover table-sm">
                 <thead class="table-light">
                   <tr>
-                    <th class="small fw-medium">person_id</th>
-                    <th class="small fw-medium">name</th>
+                    <th class="small fw-medium">登入 ID</th>
+                    <th class="small fw-medium">姓名</th>
                     <th class="small fw-medium">類型</th>
                     <th class="small fw-medium text-center" style="width: 3rem;" aria-label="操作" />
                   </tr>
@@ -617,7 +617,7 @@ onMounted(() => {
             </div>
             <div class="modal-body pt-2">
               <div class="mb-3">
-                <label for="user-single-id" class="form-label small text-secondary mb-1">ID（person_id）</label>
+                <label for="user-single-id" class="form-label small text-secondary mb-1">登入 ID</label>
                 <input
                   id="user-single-id"
                   v-model="singlePersonId"
@@ -631,7 +631,7 @@ onMounted(() => {
                   @input="clearSingleSubmitError"
                 >
                 <div v-if="singlePersonIdDuplicate" class="invalid-feedback d-block small">
-                  此 person_id 已存在於使用者列表
+                  此登入 ID 已存在
                 </div>
               </div>
               <div class="mb-3">
@@ -710,7 +710,7 @@ onMounted(() => {
             </div>
             <div class="modal-body pt-2">
               <p class="small text-secondary mb-2">
-                Excel 第一行為表頭，須含 <strong>ID</strong>、<strong>姓名</strong>。匯入後若 <strong>檔內 person_id 重複</strong>或<strong>與現有使用者重複</strong>，將無法送出；後端將每位新增為「{{ USER_TYPE_LABELS[RESTRICTED_USER_TYPE] }}」。
+                Excel 第一行為表頭，須含 <strong>ID</strong>、<strong>姓名</strong>。若檔內 <strong>登入 ID 重複</strong>或<strong>與現有使用者重複</strong>，將無法送出；匯入的每位將新增為「{{ USER_TYPE_LABELS[RESTRICTED_USER_TYPE] }}」。
               </p>
               <input
                 ref="excelFileInputRef"
@@ -756,28 +756,28 @@ onMounted(() => {
                     </tr>
                   </tbody>
                 </table>
-                <p class="small text-secondary mt-2 mb-0">共 {{ excelPreviewRows.length }} 筆預覽（有效 ID：{{ batchPayloadNormalized.length }} 筆）</p>
+                <p class="small text-secondary mt-2 mb-0">共 {{ excelPreviewRows.length }} 筆預覽（有效登入 ID：{{ batchPayloadNormalized.length }} 筆）</p>
               </div>
               <div
                 v-if="excelPreviewRows.length > 0 && batchPayloadNormalized.length === 0"
                 class="alert alert-warning py-2 small mt-3 mb-0"
                 role="alert"
               >
-                沒有有效的 person_id，請檢查 Excel。
+                沒有有效的登入 ID，請檢查 Excel。
               </div>
               <div
                 v-if="batchDuplicateIdsInFile.length > 0"
                 class="alert alert-danger py-2 small mt-3 mb-0"
                 role="alert"
               >
-                Excel 內 person_id 重複：{{ batchDuplicateIdsInFile.join('、') }}，請修正檔案後再試。
+                Excel 內登入 ID 重複：{{ batchDuplicateIdsInFile.join('、') }}，請修正檔案後再試。
               </div>
               <div
                 v-if="batchIdsClashingExisting.length > 0"
                 class="alert alert-danger py-2 small mt-3 mb-0"
                 role="alert"
               >
-                以下 person_id 已存在於系統：{{ batchIdsClashingExisting.join('、') }}，請從檔案移除後再試。
+                以下登入 ID 已存在於系統：{{ batchIdsClashingExisting.join('、') }}，請從檔案移除後再試。
               </div>
               <div v-if="batchSubmitSummary.ok > 0 || batchSubmitSummary.fail > 0" class="small mt-3 text-secondary">
                 本次結果：成功 {{ batchSubmitSummary.ok }} 筆，失敗 {{ batchSubmitSummary.fail }} 筆

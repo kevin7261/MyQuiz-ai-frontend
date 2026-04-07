@@ -84,9 +84,9 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
                 v-if="item._isExamRag"
                 class="d-inline-flex align-items-center justify-content-center flex-shrink-0"
                 style="min-width: 1.25rem; line-height: 1;"
-                title="試卷用 RAG"
+                title="試卷用題庫"
                 role="img"
-                aria-label="試卷用 RAG，無法由此刪除群組"
+                aria-label="試卷用題庫，無法由此刪除"
               >
                 <span class="rounded-circle bg-success d-inline-block" style="width: 0.5rem; height: 0.5rem;" />
               </span>

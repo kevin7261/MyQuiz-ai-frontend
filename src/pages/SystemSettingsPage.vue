@@ -35,9 +35,9 @@ const BLOCKS = [
     getUrl: API_GET_LLM_API_KEY,
     putUrl: API_PUT_SYSTEM_SETTING_LLM_API_KEY,
     bodyKey: 'llm_api_key',
-    label: 'LLM API Key',
-    placeholder: '選填，用於呼叫 LLM',
-    getSuccessMessage: (value) => (value ? 'LLM API Key 已儲存' : 'LLM API Key 已清除'),
+    label: 'AI 服務 API 金鑰',
+    placeholder: '選填，供系統呼叫 AI 服務',
+    getSuccessMessage: (value) => (value ? 'API 金鑰已儲存' : 'API 金鑰已清除'),
   },
 ];
 
@@ -88,7 +88,7 @@ async function fetchSettings() {
       state[block.id].value = val != null ? String(val) : '';
     }
   } catch (e) {
-    state[BLOCKS[0].id].message = e.message || '無法連線，請確認後端已啟動';
+    state[BLOCKS[0].id].message = e.message || '無法連線，請檢查網路或稍後再試';
     state[BLOCKS[0].id].messageType = 'danger';
   } finally {
     fetchLoading.value = false;
@@ -131,7 +131,7 @@ async function save(block) {
     state[block.id].message = block.getSuccessMessage(state[block.id].value);
     state[block.id].messageType = 'success';
   } catch (e) {
-    state[block.id].message = e.message || '無法連線，請確認後端已啟動';
+    state[block.id].message = e.message || '無法連線，請檢查網路或稍後再試';
     state[block.id].messageType = 'danger';
   } finally {
     state[block.id].loading = false;
@@ -143,7 +143,7 @@ async function save(block) {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="fetchLoading || BLOCKS.some((b) => state[b.id].loading)"
-      loading-text="執行中..."
+      loading-text="載入或儲存設定中..."
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
@@ -188,7 +188,7 @@ async function save(block) {
               </div>
             </template>
             <div class="mb-4">
-              <label class="form-label small text-secondary fw-medium mb-1">API_BASE</label>
+              <label class="form-label small text-secondary fw-medium mb-1">服務位址（僅供查閱）</label>
               <div
                 class="form-control form-control-sm bg-body-secondary font-monospace text-break py-2"
                 role="status"

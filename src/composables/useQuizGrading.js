@@ -70,11 +70,11 @@ export async function submitGrade(item, context, options = {}) {
       }
       const statusHint =
         res.status === 400
-          ? '（例如請於系統設定設定 LLM API Key）\n\n'
+          ? '（請至「系統設定」確認已填寫 AI 服務 API 金鑰）\n\n'
           : res.status === 502
-            ? '（後端逾時或服務喚醒中，請稍後再試）\n\n'
+            ? '（服務忙碌或暫時無法回應，請稍後再試）\n\n'
             : '';
-      item.gradingResult = `評分失敗：${statusHint}${msg}`;
+      item.gradingResult = `批改失敗：${statusHint}${msg}`;
       return;
     }
     if (res.status !== 202) {
@@ -88,19 +88,19 @@ export async function submitGrade(item, context, options = {}) {
     try {
       data = JSON.parse(text);
     } catch (_) {
-      item.gradingResult = '評分失敗：無法解析 job_id';
+      item.gradingResult = '批改失敗：無法取得處理編號，請稍後再試';
       return;
     }
     const jobId = data.job_id;
     if (!jobId) {
-      item.gradingResult = '評分失敗：未取得 job_id';
+      item.gradingResult = '批改失敗：系統未回傳處理編號，請稍後再試';
       return;
     }
     const maxPolls = 60;
     const intervalMs = 2000;
     const maxRetries = 3;
     const retryDelayMs = 2000;
-    const friendlyUnavailable = '評分失敗：後端暫時無法連線，可能是服務喚醒中，請稍後再試或重新送出。';
+    const friendlyUnavailable = '批改失敗：暫時無法連線，請稍後再試或重新送出。';
 
     for (let i = 0; i < maxPolls; i++) {
       await new Promise((r) => setTimeout(r, intervalMs));
@@ -121,7 +121,7 @@ export async function submitGrade(item, context, options = {}) {
         return;
       }
       if (pollRes.status === 404) {
-        item.gradingResult = '評分任務不存在或已過期（伺服器可能曾休眠或重啟），請重新送出評分。';
+        item.gradingResult = '批改工作已失效或逾時，請重新送出批改。';
         return;
       }
       let pollData;
@@ -151,13 +151,13 @@ export async function submitGrade(item, context, options = {}) {
         const errMsg = pollData.error || '';
         const isJobNotFound = errMsg.includes('job not found');
         item.gradingResult = isJobNotFound
-          ? '評分任務不存在或已過期（伺服器可能曾休眠或重啟），請重新送出評分。'
-          : `評分失敗：${pollData.error || '未知錯誤'}`;
+          ? '批改工作已失效或逾時，請重新送出批改。'
+          : `批改失敗：${pollData.error || '未知錯誤'}`;
         return;
       }
     }
-    item.gradingResult = '評分逾時：請稍後再試或重新送出';
+    item.gradingResult = '批改逾時：請稍後再試或重新送出';
   } catch (err) {
-    item.gradingResult = '評分失敗：後端逾時或服務喚醒中，請稍後再試。';
+    item.gradingResult = '批改失敗：連線逾時或服務忙碌，請稍後再試。';
   }
 }

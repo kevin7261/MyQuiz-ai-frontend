@@ -270,7 +270,7 @@ watch(
     // eslint-disable-next-line no-console -- 除錯：目前選中測驗與試題用 RAG 摘要
     console.log('[測驗] 基本資訊', {
       當前測驗: { ...currentExamDisplay.value },
-      試題用RAG: { ...forExamRagIdAndTabId.value },
+      試卷題庫: { ...forExamRagIdAndTabId.value },
       system_prompt_instruction:
         forExamRag.value && forExamRag.value.system_prompt_instruction != null
           ? forExamRag.value.system_prompt_instruction
@@ -520,7 +520,7 @@ async function fetchForExamRag() {
       ? { ...data, apikey: data.apikey ?? data.llm_api_key }
       : null;
   } catch (err) {
-    forExamError.value = err.message || '無法載入試題用 RAG';
+    forExamError.value = err.message || '無法載入試卷題庫，請稍後再試或聯絡管理員';
     forExamRag.value = null;
   } finally {
     forExamLoading.value = false;
@@ -569,7 +569,7 @@ async function onExamRenameSave(name) {
   }
   const eid = examRenameDraftExamId.value;
   if (eid == null || !Number.isFinite(eid) || eid < 1) {
-    examRenameError.value = '找不到此測驗（exam_id）';
+    examRenameError.value = '找不到此測驗，請重新整理頁面後再試';
     return;
   }
   examRenameSaving.value = true;
@@ -652,7 +652,7 @@ const anySlotLoading = computed(() => {
   return false;
 });
 
-/** 任一非同步操作執行中時為 true，用於全螢幕遮罩 */
+/** 任一非同步載入或處理進行中時為 true，用於全螢幕遮罩 */
 const isAnyLoading = computed(() =>
   forExamLoading.value ||
   examListLoading.value ||
@@ -759,15 +759,15 @@ async function generateQuiz(slotIndex) {
   const eidNum = Number(examIdRaw);
   const hasValidExamId = Number.isFinite(eidNum) && eidNum >= 1;
   if (!canGenerateExamQuiz.value) {
-    slotState.error = '目前沒有可用RAG';
+    slotState.error = '尚無可用題庫，請先到「建立測驗題庫」完成教材並設為試卷用';
     return;
   }
   if (!hasValidExamId && !examTabIdStr) {
-    slotState.error = '尚未建立測驗（請按 + 新增測驗）或無法取得 exam_id／exam_tab_id';
+    slotState.error = '請先按「+ 新增」建立測驗，或重新整理頁面後再試';
     return;
   }
   if (!generateQuizUnits.value.length) {
-    slotState.error = '請確認已載入試題用 RAG（GET /rag/tab/for-exam）且具 outputs';
+    slotState.error = '題庫尚未就緒，請確認已在「建立測驗題庫」完成設定並設為試卷用，或稍後再試';
     return;
   }
   slotState.loading = true;
@@ -852,7 +852,7 @@ async function rateExamQuiz(item, direction) {
     item.quiz_rate = normalizeExamQuizRate(data.quiz_rate ?? nextRate);
   } catch (err) {
     item.quiz_rate = previousRate;
-    item.rateError = err.message || '評分失敗';
+    item.rateError = err.message || '無法紀錄評價';
   }
 }
 
@@ -888,14 +888,14 @@ async function confirmAnswer(item) {
   }
   if (!activeTabId.value) {
     item.confirmed = true;
-    item.gradingResult = '評分需要測驗 tab：請選擇測驗或按 + 新增測驗。';
+    item.gradingResult = '請先選擇一個測驗分頁，或按「+ 新增」建立測驗。';
     return;
   }
   const exam = currentExamItem.value;
   const examId = exam?.exam_id ?? exam?.test_id;
   if (examId == null) {
     item.confirmed = true;
-    item.gradingResult = '評分失敗：無法取得當前測驗的 exam_id。';
+    item.gradingResult = '無法送出批改，請重新整理頁面或切換測驗後再試。';
     return;
   }
   gradingLoading.value = true;
@@ -924,7 +924,7 @@ onMounted(() => {
   <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="isAnyLoading"
-      loading-text="執行中..."
+      loading-text="請稍候，正在載入或處理..."
     />
     <TabRenameModal
       v-model="examRenameModalOpen"
@@ -1116,7 +1116,7 @@ onMounted(() => {
                           maxlength="2000"
                         />
                         <div v-if="examCardAnswerDisabled(currentState.cardList[slotIndex - 1])" class="form-text small text-warning">
-                          此題 rag_id 與目前試題用 RAG 不同，無法作答。
+                          此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。
                         </div>
                         <div class="d-flex justify-content-end mt-2">
                           <button
