@@ -545,7 +545,7 @@ onMounted(() => {
                     <th class="my-font-size-sm fw-medium">登入 ID</th>
                     <th class="my-font-size-sm fw-medium">姓名</th>
                     <th class="my-font-size-sm fw-medium">類型</th>
-                    <th class="my-font-size-sm fw-medium text-center" style="width: 3rem;" aria-label="操作" />
+                    <th class="my-font-size-sm fw-medium text-center" style="width: 3rem;" />
                   </tr>
                 </thead>
                 <tbody>
@@ -560,7 +560,6 @@ onMounted(() => {
                         class="btn btn-link btn-sm text-danger text-decoration-none p-0 lh-1"
                         :disabled="deletingPersonId != null"
                         :title="`刪除 ${String(u.person_id).trim()}`"
-                        :aria-label="`刪除使用者 ${String(u.person_id).trim()}`"
                         @click="deleteUser(u)"
                       >
                         <i class="fa-solid fa-xmark" aria-hidden="true" />
@@ -600,7 +599,6 @@ onMounted(() => {
               <button
                 type="button"
                 class="btn-close"
-                aria-label="關閉"
                 :disabled="singleSaving"
                 @click="closeSingleModal"
               />
@@ -693,7 +691,6 @@ onMounted(() => {
               <button
                 type="button"
                 class="btn-close"
-                aria-label="關閉"
                 :disabled="batchSaving"
                 @click="closeBatchModal"
               />
@@ -799,7 +796,6 @@ onMounted(() => {
 <style scoped>
 .zip-drop-zone {
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
   border-width: 2px;
   border-color: rgba(0, 0, 0, 0.2);
   background: rgba(0, 0, 0, 0.02);

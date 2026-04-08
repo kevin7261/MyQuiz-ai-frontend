@@ -76,7 +76,6 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
                 type="button"
                 class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
                 title="重新命名分頁"
-                aria-label="重新命名分頁"
                 :disabled="relaxButtonDisables ? false : deleteRagLoading || renameTabLoading"
                 @click.stop="emit('rename-tab', item._tabId)"
               >
@@ -88,7 +87,6 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
                 style="min-width: 1.25rem; line-height: 1;"
                 title="試卷用題庫"
                 role="img"
-                aria-label="試卷用題庫，無法由此刪除"
               >
                 <span class="rounded-circle bg-success d-inline-block" style="width: 0.5rem; height: 0.5rem;" />
               </span>
@@ -97,7 +95,6 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
                 type="button"
                 class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
                 title="刪除此出題單元"
-                aria-label="刪除此出題單元"
                 :disabled="relaxButtonDisables ? false : deleteRagLoading || renameTabLoading"
                 @click.stop="emit('delete-rag', item._tabId)"
               >

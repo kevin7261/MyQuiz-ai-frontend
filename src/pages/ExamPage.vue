@@ -969,7 +969,6 @@ onMounted(() => {
                   type="button"
                   class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
                   title="重新命名分頁"
-                  aria-label="重新命名分頁"
                   :disabled="deleteExamLoading || examRenameSaving"
                   @click.stop="openExamRenameModal(getExamTabId(exam))"
                 >
@@ -980,7 +979,6 @@ onMounted(() => {
                   type="button"
                   class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
                   title="刪除此測驗"
-                  aria-label="刪除此測驗"
                   :disabled="deleteExamLoading || examRenameSaving"
                   @click.stop="deleteExam(getExamTabId(exam))"
                 >
@@ -1057,7 +1055,7 @@ onMounted(() => {
                         <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
                           {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                         </button>
-                        <div class="btn-group btn-group-sm" role="group" aria-label="題目回饋">
+                        <div class="btn-group btn-group-sm" role="group">
                           <button
                             type="button"
                             class="btn btn-outline-secondary"
@@ -1149,7 +1147,7 @@ onMounted(() => {
                       </div>
                       <div>
                         <label class="form-label my-font-size-sm text-secondary fw-medium mb-1 d-block">難度</label>
-                        <div class="btn-group btn-group-sm" role="group" aria-label="難度">
+                        <div class="btn-group btn-group-sm" role="group">
                           <template v-for="(opt, di) in difficultyOptions" :key="opt">
                             <input
                               :id="'exam-quiz-diff-' + slotIndex + '-' + di"

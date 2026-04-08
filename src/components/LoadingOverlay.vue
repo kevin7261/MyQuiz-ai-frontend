@@ -79,7 +79,6 @@
 
 .loading-overlay-progress-bar {
   width: var(--loading-overlay-progress-pct, 0);
-  transition: width 0.3s ease;
   font-size: var(--my-font-size-xs);
   color: var(--my-color-white);
 }

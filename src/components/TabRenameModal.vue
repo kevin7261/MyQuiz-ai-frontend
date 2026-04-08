@@ -64,7 +64,6 @@ function onSave() {
             <button
               type="button"
               class="btn-close"
-              aria-label="關閉"
               :disabled="saving"
               @click="close"
             />

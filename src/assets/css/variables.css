@@ -2,9 +2,9 @@
  * 設計權杖 — 僅保留目前前端實際用到的變數：
  * - body 預設字體／字級／色（common.css；內文色用 --my-color-black、底用 #fff 字面量）
  * - 字級 rem 僅在此定義 --my-font-size-*；其餘 CSS／元件只許 font-size: var(--my-font-size-*)
- * - 字重：不設變數；全站僅 400／600，且只許出現在 common 固定規則（.my-type-*／.my-text-*、表頭等），禁止自訂 font-weight
- * - common：字階 .my-type-*-{400|600}；字階＋字色 .my-text-*-{400|600}-*；底／字色 .my-bgcolor-*、.my-color-*
- * - 表格：common .my-table（併 .table）定義儲存格內距與表頭混色；勿疊 .table-sm；select：--my-select-*
+ * - 字重：僅 --my-font-weight-regular（400）、--my-font-weight-semibold（600）；common 內用 var(--my-font-weight-*)，禁止字面量 400／600
+ * - common：字階 .my-type-*-{400|600}（僅字級字重）；字色 .my-color-*；底 .my-bgcolor-*
+ * - 表格：common .my-table（併 .table）表頭混色等；儲存格內距依 Bootstrap；勿疊 .table-sm；select：--my-select-*
  * - /design、LoadingOverlay、LoginView 另以各元件 scoped 樣式或 Bootstrap 補齊非權杖行為
  * - 捲軸樣式（common.css 全域）；下拉選單權杖 --my-dropdown-*
  * - 撰寫 CSS 時：同一規則內最後先 padding 再 margin；Vue／HTML 的 Bootstrap class 亦同（p-* 後 m-*）
@@ -19,6 +19,10 @@
   --my-font-size-md: 1rem;
   --my-font-size-lg: 1.125rem;
   --my-font-size-xl: 1.25rem;
+
+  /* 字重：全站僅此兩級；表頭／字階強調用 semibold */
+  --my-font-weight-regular: 400;
+  --my-font-weight-semibold: 600;
 
   /* 中性四色；white 為淺字／淺底（對齊參考截圖淺灰白字，約 #e0e0e0） */
   --my-color-black: #18191a;

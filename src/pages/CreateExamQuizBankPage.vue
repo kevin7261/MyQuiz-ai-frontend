@@ -1131,7 +1131,7 @@ async function confirmAnswer(item) {
       <!-- 無資料時不顯示表單，點「+」後才顯示；有資料時顯示對應 tab 表單 -->
       <template v-if="ragList.length > 0 || showFormWhenNoData">
       <!-- 建立流程 stepper：依 file_metadata / rag_metadata 亮起 1～3 步 -->
-      <div v-if="activeTabId" class="create-rag-stepper text-start page-block-spacing" aria-label="建立流程">
+      <div v-if="activeTabId" class="create-rag-stepper text-start page-block-spacing">
         <div class="d-flex align-items-start justify-content-between gap-2 gap-sm-3 w-100">
           <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
             <span
@@ -1218,7 +1218,7 @@ async function confirmAnswer(item) {
       <div
         v-if="fileMetadataToShow != null"
         class="text-start page-block-spacing border rounded p-3"
-        :class="{ 'opacity-75 pe-none': !hasRagMetadata && packGroupsEditBlocked }"
+        :class="{ 'pe-none text-muted': !hasRagMetadata && packGroupsEditBlocked }"
       >
         <div class="mb-3">
           <div class="my-font-size-sm text-secondary fw-medium mb-1">上傳檔案名稱</div>
@@ -1329,9 +1329,8 @@ async function confirmAnswer(item) {
                     >
                       {{ tag }}
                       <span
-                        class="ms-1 opacity-75"
+                        class="ms-1 text-muted"
                         style="cursor: pointer;"
-                        aria-label="移除標籤"
                         @click.stop="removeFromRagList(gi, ti)"
                       >×</span>
                     </div>
@@ -1342,7 +1341,6 @@ async function confirmAnswer(item) {
                     type="button"
                     class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
                     style="min-width: 1.5rem;"
-                    aria-label="刪除此出題單元"
                     @click.stop="removeRagListGroup(gi)"
                   >
                     ×
@@ -1350,7 +1348,7 @@ async function confirmAnswer(item) {
                 </div>
               </template>
               <div
-                class="d-flex align-items-center justify-content-center pack-drop-target btn btn-sm btn-outline-primary"
+                class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center pack-drop-target"
                 style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                 role="button"
                 tabindex="0"
@@ -1450,7 +1448,7 @@ async function confirmAnswer(item) {
       <div
         v-if="currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== ''"
         class="text-start page-block-spacing"
-        :class="{ 'opacity-75': ragGenerateDisabled }"
+        :class="{ 'text-muted': ragGenerateDisabled }"
       >
         <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">測試問題</div>
 
@@ -1487,7 +1485,7 @@ async function confirmAnswer(item) {
                     </div>
                     <div>
                       <label class="form-label my-font-size-sm text-secondary fw-medium mb-1 d-block">難度</label>
-                      <div class="btn-group btn-group-sm" role="group" aria-label="難度">
+                      <div class="btn-group btn-group-sm" role="group">
                         <template v-for="(opt, di) in difficultyOptions" :key="opt">
                           <input
                             :id="'rag-quiz-diff-' + slotIndex + '-' + di"
@@ -1542,7 +1540,6 @@ async function confirmAnswer(item) {
 <style scoped>
 .zip-drop-zone {
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
   border-width: 2px;
   border-color: rgba(0, 0, 0, 0.2);
   background: rgba(0, 0, 0, 0.02);
@@ -1557,7 +1554,9 @@ async function confirmAnswer(item) {
 }
 .zip-drop-zone-disabled {
   cursor: not-allowed;
-  opacity: 0.7;
+  border-color: color-mix(in srgb, var(--bs-body-color) 22%, var(--bs-border-color));
+  background-color: color-mix(in srgb, var(--bs-body-bg) 88%, var(--bs-secondary-bg));
+  color: var(--bs-secondary-color);
 }
 .pack-drop-target.pack-drop-active {
   background-color: rgba(13, 202, 240, 0.15) !important;

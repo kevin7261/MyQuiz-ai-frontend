@@ -156,7 +156,7 @@ onMounted(() => {
       <div v-else-if="items.length === 0" class="alert alert-info mt-0">尚無答題紀錄。</div>
 
       <template v-else>
-        <div v-if="weaknessReport" class="bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded text-start p-4 page-block-spacing">
+        <div v-if="weaknessReport" class="my-callout-primary-soft rounded text-start p-4 page-block-spacing">
           <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">學習弱點分析報告</div>
           <template v-if="weaknessReportParsed">
             <div

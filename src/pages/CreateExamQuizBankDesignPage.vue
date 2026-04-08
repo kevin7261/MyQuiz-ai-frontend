@@ -1086,8 +1086,7 @@ onMounted(() => {
             <template v-if="DESIGN_SHOW_ALL_UI_BLOCKS || ragList.length > 0 || showFormWhenNoData">
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || activeTabId"
-                class="create-rag-stepper text-start page-block-spacing mb-4"
-                aria-label="建立流程"
+                class="create-rag-stepper text-start mb-4"
               >
                 <div class="d-flex align-items-start justify-content-between gap-2 gap-sm-3 w-100">
                   <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
@@ -1126,7 +1125,7 @@ onMounted(() => {
 
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || (activeTabId && !hasUploadedFileMetadata)"
-                class="text-start page-block-spacing border rounded p-3 mb-4 bg-body-tertiary bg-opacity-25"
+                class="text-start border rounded p-3 mb-4 bg-body-tertiary"
               >
                 <p class="my-font-size-sm text-secondary mb-3">支援與正式版相同的副檔名；此處僅更新畫面狀態。</p>
                 <input
@@ -1176,8 +1175,8 @@ onMounted(() => {
 
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || fileMetadataToShow != null"
-                class="text-start page-block-spacing border rounded p-3 mb-4"
-                :class="{ 'opacity-75 pe-none': !hasRagMetadata && packGroupsEditBlocked }"
+                class="text-start border rounded p-3 mb-4"
+                :class="{ 'pe-none text-muted': !hasRagMetadata && packGroupsEditBlocked }"
               >
                 <div class="mb-3">
                   <div class="my-font-size-sm text-secondary fw-medium mb-1">上傳檔案名稱</div>
@@ -1271,7 +1270,7 @@ onMounted(() => {
                           </div>
                         </div>
                         <div
-                          class="d-flex align-items-center justify-content-center btn btn-sm btn-outline-primary rounded-pill"
+                          class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center rounded-pill"
                           style="min-width: 140px; min-height: 2.5rem;"
                         >
                           + 新增出題單元
@@ -1347,9 +1346,8 @@ onMounted(() => {
                             >
                               {{ tag }}
                               <span
-                                class="ms-1 opacity-75"
+                                class="ms-1 text-muted"
                                 style="cursor: pointer;"
-                                aria-label="移除標籤"
                                 @click.stop="removeFromRagList(gi, ti)"
                               >×</span>
                             </div>
@@ -1360,7 +1358,6 @@ onMounted(() => {
                             type="button"
                             class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
                             style="min-width: 1.5rem;"
-                            aria-label="刪除此出題單元"
                             @click.stop="removeRagListGroup(gi)"
                           >
                             ×
@@ -1368,7 +1365,7 @@ onMounted(() => {
                         </div>
                       </template>
                       <div
-                        class="d-flex align-items-center justify-content-center pack-drop-target btn btn-sm btn-outline-primary rounded-pill"
+                        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center pack-drop-target rounded-pill"
                         style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                         role="button"
                         tabindex="0"
@@ -1467,8 +1464,8 @@ onMounted(() => {
 
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || (currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== '')"
-                class="text-start page-block-spacing mb-5"
-                :class="{ 'opacity-75': ragGenerateDisabled }"
+                class="text-start mb-5"
+                :class="{ 'text-muted': ragGenerateDisabled }"
               >
                 <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">測試問題</div>
 
@@ -1503,7 +1500,7 @@ onMounted(() => {
                             </div>
                             <div>
                               <label class="form-label my-font-size-sm text-secondary fw-medium mb-1 d-block">難度</label>
-                              <div class="d-flex flex-wrap gap-2" role="group" aria-label="難度">
+                              <div class="d-flex flex-wrap gap-2" role="group">
                                 <template v-for="(opt, di) in difficultyOptions" :key="opt">
                                   <input
                                     :id="'rag-quiz-diff-d-' + slotIndex + '-' + di"
@@ -1559,7 +1556,6 @@ onMounted(() => {
 }
 .zip-drop-zone {
   cursor: pointer;
-  transition: border-color 0.15s, background-color 0.15s;
   border-color: rgba(0, 0, 0, 0.2) !important;
   background: rgba(0, 0, 0, 0.02);
 }

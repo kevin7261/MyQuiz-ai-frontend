@@ -1,12 +1,12 @@
 /**
  * 全域與共用 class：
  * 全站：html/body/#app、連結無底線、捲軸
- * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重無變數，僅 400／600 且只經 .my-type-*／.my-text-* 等固定規則
- * 字階 .my-type-{xl|…|xs}-{400|600}；字階＋字色 .my-text-*-{400|600}-*；底／字色 .my-bgcolor-*、.my-color-*；按鈕 .my-btn-pill／.my-btn-{sm|lg}＋語意色 class＋.my-border-color-*＋.my-btn-hover-*／.my-btn-border；表格 .my-table；Bootstrap 下拉 .my-dropdown-*
+ * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)（variables.css）
+ * 字階 .my-type-{xl|…|xs}-{400|600}（僅字級字重）；字色另併 .my-color-*；底 .my-bgcolor-*；按鈕 Bootstrap `.rounded-pill`＋`.btn-sm`（大字亦 btn-sm）＋語意填色 .my-bgcolor-*／.my-color-*＋.my-btn-hover-*，內距整串置末：小 `.px-3 .py-2`、大 `.px-4 .py-3`；填色鈕無邊框，描邊式用 .my-btn-border；描邊語意色加 .my-border-color-*；圓形圖示鈕用 Bootstrap `.btn` `.btn-sm` `.btn-link` `.rounded-circle`；表格 .my-table；Bootstrap 下拉 .my-dropdown-*
  * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）
  * 權杖下拉：.my-dropdown-menu；.my-dropdown-caret 隱藏 ::after，箭頭 FA .my-dropdown-toggle-caret
  * .page-block-spacing：多個業務頁主要區塊（非權杖對照）
- * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin（HTML class 亦同：p-* 後接 m-*）
+ * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin（HTML class：含 .btn 且用 Bootstrap 內距工具時，`.px-3 .py-2` 或 `.px-4 .py-3` 置於整串最末；btn 置首）
  */
 @import "./variables.css";
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600&family=Roboto:wght@400;600&display=swap");
@@ -28,7 +28,7 @@ body {
 body {
   font-family: var(--my-font-family-primary);
   font-size: var(--my-font-size-md);
-  font-weight: 400;
+  font-weight: var(--my-font-weight-regular);
   color: var(--my-color-black);
   background-color: #ffffff;
 }
@@ -54,13 +54,26 @@ button:focus,
   text-decoration: none !important;
 }
 
+/* 停用微過渡（hover／focus 即時切換；collapse／modal／offcanvas 等結構動畫維持 Bootstrap 預設） */
+.btn,
+.nav-link,
+.page-link,
+.navbar-toggler,
+.form-control,
+.form-select,
+.progress-bar {
+  -webkit-transition: none !important;
+  -moz-transition: none !important;
+  transition: none !important;
+}
+
 #app {
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* Bootstrap reboot 預設 code 為 $code-color（粉紅）；深色權杖下改繼承父層，才會吃到 .my-color-*／.my-text-* */
+/* Bootstrap reboot 預設 code 為 $code-color（粉紅）；深色權杖下改繼承父層，才會吃到 .my-color-*／.my-type-* */
 [data-bs-theme="dark"] code {
   color: inherit;
 }
@@ -92,105 +105,43 @@ button:focus,
 /* —— 字階：五級 × 字重 400／600＝10；class 第三段為字重數字（勿用 regular／semibold 等別名） —— */
 .my-type-xl-400 {
   font-size: var(--my-font-size-xl);
-  font-weight: 400;
+  font-weight: var(--my-font-weight-regular);
 }
 .my-type-xl-600 {
   font-size: var(--my-font-size-xl);
-  font-weight: 600;
+  font-weight: var(--my-font-weight-semibold);
 }
 .my-type-lg-400 {
   font-size: var(--my-font-size-lg);
-  font-weight: 400;
+  font-weight: var(--my-font-weight-regular);
 }
 .my-type-lg-600 {
   font-size: var(--my-font-size-lg);
-  font-weight: 600;
+  font-weight: var(--my-font-weight-semibold);
 }
 .my-type-md-400 {
   font-size: var(--my-font-size-md);
-  font-weight: 400;
+  font-weight: var(--my-font-weight-regular);
 }
 .my-type-md-600 {
   font-size: var(--my-font-size-md);
-  font-weight: 600;
+  font-weight: var(--my-font-weight-semibold);
 }
 .my-type-sm-400 {
   font-size: var(--my-font-size-sm);
-  font-weight: 400;
+  font-weight: var(--my-font-weight-regular);
 }
 .my-type-sm-600 {
   font-size: var(--my-font-size-sm);
-  font-weight: 600;
+  font-weight: var(--my-font-weight-semibold);
 }
 .my-type-xs-400 {
   font-size: var(--my-font-size-xs);
-  font-weight: 400;
+  font-weight: var(--my-font-weight-regular);
 }
 .my-type-xs-600 {
   font-size: var(--my-font-size-xs);
-  font-weight: 600;
-}
-
-/* —— 字階＋字色：字重段同 .my-type-*（僅 400｜600） —— */
-.my-text-xl-400-white {
-  font-size: var(--my-font-size-xl);
-  font-weight: 400;
-  color: var(--my-color-white);
-}
-.my-text-xl-400-gray-light {
-  font-size: var(--my-font-size-xl);
-  font-weight: 400;
-  color: var(--my-color-gray-light);
-}
-.my-text-xl-600-white {
-  font-size: var(--my-font-size-xl);
-  font-weight: 600;
-  color: var(--my-color-white);
-}
-.my-text-lg-400-white {
-  font-size: var(--my-font-size-lg);
-  font-weight: 400;
-  color: var(--my-color-white);
-}
-.my-text-lg-600-white {
-  font-size: var(--my-font-size-lg);
-  font-weight: 600;
-  color: var(--my-color-white);
-}
-.my-text-md-400-gray-light {
-  font-size: var(--my-font-size-md);
-  font-weight: 400;
-  color: var(--my-color-gray-light);
-}
-.my-text-md-600-white {
-  font-size: var(--my-font-size-md);
-  font-weight: 600;
-  color: var(--my-color-white);
-}
-.my-text-md-600-gray-light {
-  font-size: var(--my-font-size-md);
-  font-weight: 600;
-  color: var(--my-color-gray-light);
-}
-.my-text-sm-400-white {
-  font-size: var(--my-font-size-sm);
-  font-weight: 400;
-  color: var(--my-color-white);
-}
-.my-text-sm-600-white {
-  font-size: var(--my-font-size-sm);
-  font-weight: 600;
-  color: var(--my-color-white);
-}
-.my-text-xs-400-gray-light {
-  font-size: var(--my-font-size-xs);
-  font-weight: 400;
-  color: var(--my-color-gray-light);
-}
-.my-text-xs-600-gray-light {
-  font-size: var(--my-font-size-xs);
-  font-weight: 600;
-  color: var(--my-color-gray-light);
+  font-weight: var(--my-font-weight-semibold);
 }
 
 /* —— 字色（對應 --my-color-*） —— */
@@ -259,28 +210,25 @@ button:focus,
   border-color: var(--my-color-blue);
 }
 
+/* 僅底／字色；填色鈕無邊框故不設 border-color（描邊式用 .my-btn-border＋其 hover） */
 .my-btn-hover-red:hover,
 .my-btn-hover-red:active {
   background-color: var(--my-color-red-hover);
-  border-color: var(--my-color-red-hover);
   color: var(--my-color-white);
 }
 .my-btn-hover-yellow:hover,
 .my-btn-hover-yellow:active {
   background-color: var(--my-color-yellow-hover);
-  border-color: var(--my-color-yellow-hover);
   color: var(--my-color-black);
 }
 .my-btn-hover-green:hover,
 .my-btn-hover-green:active {
   background-color: var(--my-color-green-hover);
-  border-color: var(--my-color-green-hover);
   color: var(--my-color-white);
 }
 .my-btn-hover-blue:hover,
 .my-btn-hover-blue:active {
   background-color: var(--my-color-blue-hover);
-  border-color: var(--my-color-blue-hover);
   color: var(--my-color-white);
 }
 
@@ -298,19 +246,20 @@ button:focus,
   box-shadow: var(--my-shadow-card);
 }
 
-/* —— 權杖下拉選單：toggle 併用 .btn + .my-btn-pill／.my-btn-{sm|lg}＋語意色／.my-btn-border；項目內距／字級同 .my-btn-sm —— */
+.my-callout-primary-soft {
+  border: 1px solid color-mix(in srgb, var(--bs-primary) 42%, var(--bs-border-color));
+  background-color: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-body-bg));
+}
+
+/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕與 04 一致＋ .dropdown-toggle .my-dropdown-caret；標籤後接 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
 .my-dropdown-caret.dropdown-toggle::after {
   display: none;
 }
 
 .my-dropdown-toggle-caret {
-  font-size: var(--my-font-size-sm);
+  flex-shrink: 0;
+  font-size: var(--my-font-size-xs);
   line-height: 1;
-  transition: transform 0.15s ease-in-out;
-}
-
-.my-dropdown-caret.dropdown-toggle.show .my-dropdown-toggle-caret {
-  transform: rotate(180deg);
 }
 
 .my-dropdown-menu.dropdown-menu {
@@ -319,9 +268,6 @@ button:focus,
 }
 
 .my-dropdown-menu .dropdown-item {
-  padding: 0.375rem 1rem;
-  font-size: var(--my-font-size-sm);
-  line-height: 1.5;
   color: var(--my-dropdown-item-color);
 }
 
@@ -343,19 +289,13 @@ button:focus,
 
 .my-dropdown-menu .dropdown-divider {
   border-top-color: var(--my-border-subtle);
-  opacity: 1;
 }
 
-/* —— 表格：色由權杖混色；儲存格內距在此（併 Bootstrap .table，勿再疊 .table-sm 以免過緊） —— */
+/* —— 表格：色由權杖混色；內距字級依 Bootstrap .table（併 Bootstrap .table，勿再疊 .table-sm 以免過緊） —— */
 .my-table {
   width: 100%;
   border-collapse: collapse;
   color: inherit;
-}
-
-/* 覆寫 Bootstrap .table 儲存格 padding（需與 .table 同時出現才生效） */
-.table.my-table > :not(caption) > * > * {
-  padding: 0.5625rem 1rem;
 }
 
 .my-table th,
@@ -366,8 +306,7 @@ button:focus,
 }
 
 .my-table thead th {
-  font-weight: 600;
-  font-size: var(--my-font-size-sm);
+  font-weight: var(--my-font-weight-semibold);
   background-color: color-mix(in srgb, var(--my-color-gray-light) 22%, var(--my-select-bg));
   border-bottom: 1px solid var(--my-border-subtle);
 }
@@ -400,8 +339,7 @@ button:focus,
     var(--my-select-padding-inline-start);
   font-family: inherit;
   font-size: var(--my-font-size-md);
-  font-weight: 400;
-  line-height: 1.5;
+  font-weight: var(--my-font-weight-regular);
   color: var(--my-select-color);
   background-color: var(--my-select-bg);
   border: 1px solid var(--my-select-border-color);
@@ -418,11 +356,10 @@ button:focus,
   pointer-events: none;
   color: var(--my-select-caret-color);
   font-size: var(--my-select-caret-size);
-  line-height: 1;
 }
 
 .my-form-select-wrap:has(.my-form-select:disabled) .my-form-select-caret {
-  opacity: 0.5;
+  color: color-mix(in srgb, var(--my-select-caret-color) 50%, var(--my-select-bg));
 }
 
 .my-form-select:focus {
@@ -432,34 +369,21 @@ button:focus,
 }
 
 .my-form-select:disabled {
-  opacity: 0.65;
   cursor: not-allowed;
+  color: color-mix(in srgb, var(--my-select-color) 68%, var(--my-select-bg));
+  background-color: color-mix(in srgb, var(--my-select-bg) 92%, var(--my-select-border-color));
+  border-color: color-mix(in srgb, var(--my-select-border-color) 72%, var(--my-select-bg));
 }
 
-/* —— 按鈕殼（與 Bootstrap .btn 併用）：語意填色用 HTML .my-bgcolor-*／.my-color-*／.my-border-color-*＋.my-btn-hover-*；描邊用 .my-btn-border —— */
-.my-btn-pill {
-  border-radius: 50rem;
-  box-sizing: border-box;
-  border-width: 1px;
-  border-style: solid;
-}
-
-.my-btn-sm {
-  padding: 0.375rem 1rem;
-  font-size: var(--my-font-size-sm);
-  line-height: 1.5;
-}
-
-.my-btn-lg {
-  padding: 0.5625rem 1.5rem;
-  font-size: var(--my-font-size-lg);
-  line-height: 1.5;
+/* —— 膠囊按鈕（與 Bootstrap .btn .rounded-pill 併用）：填色鈕無邊框；僅 .my-btn-border 為描邊式；語意填色用 .my-bgcolor-*／.my-color-*＋.my-btn-hover-*；描邊同色時另加 .my-border-color-* —— */
+.btn.rounded-pill:not(.my-btn-border) {
+  border: none;
 }
 
 .my-btn-border {
   color: var(--my-color-black);
   background-color: transparent;
-  border-color: var(--my-border-muted);
+  border: 1px solid var(--my-border-muted);
 }
 
 .my-btn-border:hover,
@@ -497,7 +421,6 @@ button:focus,
   background-clip: padding-box;
   border: var(--my-scrollbar-thumb-inset) solid transparent;
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-  transition: background-color 0.2s ease;
 }
 
 ::-webkit-scrollbar-thumb:hover {
