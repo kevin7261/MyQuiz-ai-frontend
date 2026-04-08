@@ -2,11 +2,11 @@
  * 全域與共用 class：
  * 全站：html/body/#app、連結無底線、捲軸
  * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)（variables.css）
- * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊標題 .my-font-lg-600；字色另併 .my-color-*；底 .my-bgcolor-*；業務頁淺底主區併 .my-bgcolor-page-block、rounded-3、p-3 p-lg-4、mb-4；深底稿頁併 .my-bgcolor-gray-dark、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-yellow`／`.my-button-green`／`.my-button-blue`（底＋字＋hover 一鍵）；描邊 `.my-button-white-border`、無框 `.my-button-white-borderless`（同色階；深底 `--my-color-white`；祖先 `.bg-white` 內 `--my-color-blue`）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓鈕）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
+ * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊標題 .my-font-lg-600；字色另併 .my-color-*；底 .my-bgcolor-*；業務頁淺底主區併 .my-bgcolor-page-block、rounded-3、p-3 p-lg-4、mb-4；深底稿頁併 .my-bgcolor-gray-dark、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-yellow`／`.my-button-green`／`.my-button-blue`（底＋字＋hover 一鍵）；描邊 `.my-button-white-border`、無框 `.my-button-white-borderless`（同色階；深底 `--my-color-white`；祖先 `.bg-white` 內 `--my-color-blue`）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-white-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
  * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）
  * 權杖下拉：.my-dropdown-menu；.my-dropdown-caret 隱藏 ::after，箭頭 FA .my-dropdown-toggle-caret
  * .my-page-block-spacing：多個業務頁主要區塊（非權杖對照）
- * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin。HTML／Vue 的 `class` 字串：`p-*`／`px-*`／`py-*` 等內距與 `m-*`／`mx-*` 等外距類別必須整串置末，且其後不得再出現任何 class（先 p 後 m；陣列 :class 時將 py／mb 等獨立為末段字串）；含 .btn 時 `.btn` 置首，次 `.rounded-pill` 等
+ * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin。HTML／Vue 的 `class` 字串：`p-*`／`px-*`／`py-*` 等內距與 `m-*`／`mx-*` 等外距類別必須整串置末，且其後不得再出現任何 class（先 p 後 m；陣列 :class 時將 py／mb 等獨立為末段字串）；含 .btn 時 `.btn` 置首，次 `.rounded-pill`／`.rounded-circle` 等，再 `d-flex`／`d-inline-flex` → `justify-content-*` → `align-items-*`（無 .btn 時此 flex 組合可置字串最前）
  */
 @import "./variables.css";
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600&family=Roboto:wght@400;600&display=swap");
@@ -242,7 +242,7 @@ code {
   opacity: 0.55;
 }
 
-/* 32×32 圓形圖示鈕：分頁「+」併 .my-button-white-borderless；稿頁複製鈕併 .my-design-page-copy-btn（見元件） */
+/* 32×32 圓形圖示鈕：分頁「+」、稿頁複製等併 .my-button-white-borderless；淺底複製另見 DesignPageCopyBtn scoped */
 .btn.my-btn-circle {
   width: 32px;
   height: 32px;
@@ -250,6 +250,96 @@ code {
   min-height: 32px;
   padding: 0;
   box-sizing: border-box;
+}
+
+/* nav-tabs（建立測驗題庫分頁列、ExamPage）：Bootstrap 在 :hover／:focus 會套四邊 border-color，取消左右垂直線 */
+.nav.nav-tabs .nav-link {
+  border-left: none !important;
+  border-right: none !important;
+}
+.nav.nav-tabs .nav-link:hover,
+.nav.nav-tabs .nav-link:focus,
+.nav.nav-tabs .nav-link:focus-visible {
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* RAG 分頁列（建立測驗題庫頁、DesignPage 參考）：取消 active 塊狀底、選中僅底線；深色稿 .my-rag-tabs-bar--design */
+.my-rag-tabs-bar .nav-tabs {
+  border-bottom: none !important;
+}
+.my-rag-tabs-bar .nav-tabs .nav-link {
+  border-top: none !important;
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+.my-rag-tabs-bar .nav-tabs .nav-link.active,
+.my-rag-tabs-bar .nav-tabs .nav-link.active:hover,
+.my-rag-tabs-bar .nav-tabs .nav-link.active:focus,
+.my-rag-tabs-bar .nav-tabs .nav-link.active:focus-visible {
+  background-color: transparent !important;
+  border-top-color: transparent !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  border-bottom-color: var(--my-color-blue) !important;
+}
+.my-rag-tabs-bar--design .nav-tabs .nav-link {
+  color: var(--my-color-gray-light);
+}
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active {
+  color: var(--my-color-white);
+}
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active,
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active:hover,
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active:focus,
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active:focus-visible {
+  border-bottom-color: var(--my-color-blue) !important;
+}
+/* 深色稿：底線用淡白（勿用 Bootstrap 預設 border-color，在黑底會發灰／像髒線） */
+.my-rag-tabs-bar--design.my-bgcolor-black {
+  border-bottom: 1px solid color-mix(in srgb, var(--my-color-white) 22%, transparent) !important;
+}
+/* 選中分頁藍線須疊在外層底線之上（否則會被整條 border 遮住） */
+.my-rag-tabs-bar--design .nav-tabs .nav-link {
+  position: relative;
+  z-index: 0;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0;
+  border-bottom-width: 2px !important;
+  border-bottom-style: solid !important;
+}
+.my-rag-tabs-bar--design .nav-tabs .nav-link:not(.active) {
+  border-bottom-color: transparent !important;
+}
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active,
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active:hover,
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active:focus,
+.my-rag-tabs-bar--design .nav-tabs .nav-link.active:focus-visible {
+  z-index: 1;
+  margin-bottom: -1px;
+  padding-bottom: calc(0.25rem + 1px);
+}
+.my-rag-tabs-bar--design .nav-tabs {
+  margin-bottom: 0 !important;
+}
+.my-rag-tabs-bar--design .nav-item {
+  margin-bottom: 0 !important;
+}
+.my-tab-nav-action-btn {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 0.875rem;
+  min-width: 0.875rem;
+  height: 0.875rem;
+  padding: 0 !important;
+  line-height: 1;
+}
+.my-tab-nav-action-btn .fa-solid {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+  width: 1em;
+  height: 1em;
 }
 
 .my-callout-primary-soft {
@@ -267,7 +357,7 @@ code {
   background-color: color-mix(in srgb, var(--my-color-black) 45%, transparent);
 }
 
-/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕 `.btn` `.rounded-pill` `.my-button-blue` 或 `.my-button-white-border`／`.my-button-white-borderless`＋ .dropdown-toggle .my-dropdown-caret；標籤後 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
+/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕與 05 中號同：`my-font-md-400` `px-3 py-2`，併 `d-flex` `justify-content-between` `dropdown-toggle` `my-dropdown-caret`＋ `my-button-blue` 或 `my-button-white-borderless`；標籤後 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
 .my-dropdown-caret.dropdown-toggle::after {
   display: none;
 }

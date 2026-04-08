@@ -1,8 +1,8 @@
 <template>
   <button
     type="button"
-    class="btn rounded-circle d-flex align-items-center justify-content-center my-btn-circle my-font-md-400 bg-transparent border-0 flex-shrink-0 lh-1 shadow-none my-design-page-copy-btn"
-    :class="onLightBg ? 'my-design-page-copy-btn--light' : 'my-design-page-copy-btn--dark'"
+    class="btn rounded-circle d-flex justify-content-center align-items-center my-btn-circle my-font-md-400 my-button-white-borderless lh-1 shadow-none flex-shrink-0 my-design-page-copy-btn"
+    :class="{ 'my-design-page-copy-btn--light': onLightBg }"
     @click.prevent="onCopy"
   >
     <i class="fa-regular fa-copy" aria-hidden="true"></i>
@@ -26,25 +26,14 @@ async function onCopy() {
 </script>
 
 <style scoped>
-/* 權杖色；勿用 Bootstrap link-*／語意 text-* */
-.my-design-page-copy-btn--dark {
-  color: var(--my-color-gray-light);
-}
-
-.my-design-page-copy-btn--dark:hover,
-.my-design-page-copy-btn--dark:focus-visible,
-.my-design-page-copy-btn--dark:active {
-  color: var(--my-color-white);
-  background-color: color-mix(in srgb, var(--my-color-white) 12%, transparent);
-}
-
-.my-design-page-copy-btn--light {
+/* 淺底色票格：蓋過 .btn.my-button-white-borderless 預設淺字 */
+.btn.my-button-white-borderless.my-design-page-copy-btn--light {
   color: var(--my-color-black);
 }
 
-.my-design-page-copy-btn--light:hover,
-.my-design-page-copy-btn--light:focus-visible,
-.my-design-page-copy-btn--light:active {
+.btn.my-button-white-borderless.my-design-page-copy-btn--light:hover,
+.btn.my-button-white-borderless.my-design-page-copy-btn--light:focus-visible,
+.btn.my-button-white-borderless.my-design-page-copy-btn--light:active {
   color: var(--my-color-black);
   background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
 }

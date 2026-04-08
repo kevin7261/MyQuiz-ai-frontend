@@ -39,7 +39,7 @@
       <div class="mt-3" v-if="showProgress && progress >= 0">
         <div class="progress my-loading-overlay-progress">
           <div
-            class="d-flex align-items-center justify-content-center progress-bar bg-primary my-loading-overlay-progress-bar my-font-sm-400"
+            class="d-flex justify-content-center align-items-center progress-bar bg-primary my-loading-overlay-progress-bar my-font-sm-400"
             role="progressbar"
             :style="{ '--my-loading-overlay-progress-pct': progress + '%' }"
             :aria-valuenow="progress"

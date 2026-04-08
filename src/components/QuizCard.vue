@@ -44,8 +44,17 @@ const answerInputDisabled = computed(() => {
 </script>
 
 <template>
-  <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-    <div class="my-font-lg-600 border-bottom pb-2 mb-3">第 {{ slotIndex }} 題</div>
+  <div
+    class="rounded-3 p-3 p-lg-4 mb-4"
+    :class="[
+      designUi ? 'my-bgcolor-gray-dark' : 'my-bgcolor-page-block',
+      { 'mt-4': slotIndex > 1 },
+    ]"
+  >
+    <div
+      class="my-font-lg-600 border-bottom pb-2 mb-3"
+      :class="designUi ? 'my-color-white' : ''"
+    >第 {{ slotIndex }} 題</div>
     <div class="text-start">
       <!-- 單元與難度（唯讀顯示） -->
       <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
@@ -78,7 +87,7 @@ const answerInputDisabled = computed(() => {
           type="button"
           :class="[
             designUi
-              ? 'btn rounded-pill d-inline-flex align-items-center justify-content-center my-font-sm-400 my-button-white-border px-3 py-0'
+              ? 'btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border px-3 py-0'
               : 'btn btn-outline-secondary py-0',
           ]"
           @click="emit('toggle-hint', card)"
@@ -130,7 +139,7 @@ const answerInputDisabled = computed(() => {
               :class="[
                 'btn rounded-pill flex-shrink-0 px-3 py-2',
                 designUi
-                  ? 'd-flex align-items-center justify-content-center my-button-blue'
+                  ? 'd-flex justify-content-center align-items-center my-button-blue'
                   : 'btn-primary',
               ]"
               :disabled="answerInputDisabled"

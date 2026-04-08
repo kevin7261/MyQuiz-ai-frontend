@@ -71,25 +71,43 @@ module.exports = defineConfig({
 
     /**
      * 🔀 開發環境 API 代理（避開 CORS）
-     * 僅轉發 /api、/rag、以及「後端 API」路徑 /user/…（例如 /user/login）。
-     * 絕對不可用「前綴 /user」匹配整段路徑，否則 /users、/user-management 等 SPA 會被轉到後端而 404。
+     * 使用物件格式（webpack-dev-server v4 最穩定的寫法）。
+     * 每個 key 為前綴；SPA 路由 /exam（無後綴斜線）不會被 /exam/tab 吃掉。
+     * /user/ 需加斜線，避免誤匹配 SPA 的 /user-management、/users 等前端路由。
      */
-    proxy: [
-      {
-        context: '/api',
+    proxy: {
+      '/api': {
         target: 'https://aiquiz-backend-z4mo.onrender.com',
         changeOrigin: true,
       },
-      {
-        context: '/rag',
+      '/rag': {
         target: 'https://aiquiz-backend-z4mo.onrender.com',
         changeOrigin: true,
       },
-      {
-        context: (pathname) => pathname.startsWith('/user/'),
+      '/user/': {
         target: 'https://aiquiz-backend-z4mo.onrender.com',
         changeOrigin: true,
       },
-    ],
+      '/exam/tab': {
+        target: 'https://aiquiz-backend-z4mo.onrender.com',
+        changeOrigin: true,
+      },
+      '/system-settings/': {
+        target: 'https://aiquiz-backend-z4mo.onrender.com',
+        changeOrigin: true,
+      },
+      '/person-analysis/': {
+        target: 'https://aiquiz-backend-z4mo.onrender.com',
+        changeOrigin: true,
+      },
+      '/course-analysis/': {
+        target: 'https://aiquiz-backend-z4mo.onrender.com',
+        changeOrigin: true,
+      },
+      '/log/': {
+        target: 'https://aiquiz-backend-z4mo.onrender.com',
+        changeOrigin: true,
+      },
+    },
   },
 });

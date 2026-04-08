@@ -7,7 +7,7 @@
 
 /** 正式環境後端（非本機開啟前端時使用） */
 const API_BASE_PRODUCTION = 'https://aiquiz-backend-z4mo.onrender.com';
-/** 本機開發後端 */
+/** 本機直連後端（生產建置在本機開啟、或未走 vue 代理時） */
 const API_BASE_LOCAL = 'http://127.0.0.1:8000';
 
 /**
@@ -21,9 +21,42 @@ export function isFrontendLocalHost() {
 }
 
 /**
- * 後端 API 基底網址：本機前端網址時連本機後端，否則連 Render 預設後端。
+ * 後端 API 基底網址：
+ * - 可設 .env 的 VUE_APP_API_BASE 強制覆寫（勿結尾 /）。
+ * - npm run serve 且網址為 localhost／127.0.0.1：使用目前頁面 origin，請求經 vue.config.js proxy 轉發（不必另啟本機 8000）。
+ * - 生產建置在本機開啟：連 127.0.0.1:8000。
+ * - 其餘（含區網 IP 開發站）：連 Render 預設後端。
  */
-export const API_BASE = isFrontendLocalHost() ? API_BASE_LOCAL : API_BASE_PRODUCTION;
+function isValidHttpOrigin(value) {
+  if (value == null || String(value).trim() === '' || String(value) === 'null') return false;
+  try {
+    const u = new URL(String(value));
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function resolveApiBase() {
+  const fromEnv = typeof process !== 'undefined' && process.env && process.env.VUE_APP_API_BASE;
+  if (fromEnv != null && String(fromEnv).trim() !== '') {
+    const trimmed = String(fromEnv).replace(/\/$/, '');
+    if (isValidHttpOrigin(trimmed)) return trimmed;
+  }
+  if (typeof window === 'undefined') return API_BASE_PRODUCTION;
+  if (isFrontendLocalHost()) {
+    if (process.env.NODE_ENV === 'development') {
+      const o = window.location.origin;
+      // file:// 等情境下 origin 可能為字串 "null"，無法作為 fetch 基底
+      if (isValidHttpOrigin(o)) return String(o).replace(/\/$/, '');
+      return API_BASE_LOCAL;
+    }
+    return API_BASE_LOCAL;
+  }
+  return API_BASE_PRODUCTION;
+}
+
+export const API_BASE = resolveApiBase();
 
 /** 設定（profile）：PATCH /user/profile；以 person_id 識別（body 或 Header X-Person-Id，二擇一）；body 可傳 name、user_type（1=開發者 2=管理者 3=學生）、llm_api_key（建立測驗題庫用；空字串表示清除）；回傳更新後使用者資訊（不含 password） */
 export const API_UPDATE_PROFILE = '/user/profile';

@@ -39,7 +39,7 @@ function getPersonIdForQuery() {
  * @returns {string}
  */
 function mergePersonIdQuery(urlString, overridePersonId) {
-  if (typeof urlString !== 'string' || !urlString.startsWith(API_BASE)) return urlString;
+  if (typeof urlString !== 'string' || !API_BASE || !urlString.startsWith(API_BASE)) return urlString;
 
   let personId = null;
   if (overridePersonId != null && String(overridePersonId).trim() !== '') {
@@ -49,7 +49,16 @@ function mergePersonIdQuery(urlString, overridePersonId) {
   }
   if (!personId) return urlString;
 
-  const u = new URL(urlString);
+  let u;
+  try {
+    u = new URL(urlString);
+  } catch {
+    try {
+      u = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : undefined);
+    } catch {
+      return urlString;
+    }
+  }
   u.searchParams.set('person_id', personId);
   return u.toString();
 }
@@ -69,7 +78,18 @@ export async function loggedFetch(input, init, fetchOptions) {
   const method = (init && init.method) || 'GET';
   const url = typeof mergedInput === 'string' ? mergedInput : String(mergedInput.url);
 
-  let res = await fetch(mergedInput, init);
+  let res;
+  try {
+    res = await fetch(mergedInput, init);
+  } catch (e) {
+    const msg = e?.message ?? String(e);
+    if (e?.name === 'TypeError' && msg.includes('Failed to fetch')) {
+      throw new Error(
+        '無法連線至後端。若使用 npm run serve，請用 http://localhost:8080 或 http://127.0.0.1:8080 開啟（會經開發伺服器代理）；若要直連本機 API，請在 .env 設定 VUE_APP_API_BASE=http://127.0.0.1:8000 並啟動後端。'
+      );
+    }
+    throw e;
+  }
   while (res.status === 500) {
     await new Promise((r) => setTimeout(r, RETRY_500_DELAY_MS));
     res = await fetch(mergedInput, init);

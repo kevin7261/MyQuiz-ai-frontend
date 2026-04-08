@@ -525,7 +525,7 @@ onMounted(() => {
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
           <div class="text-start my-page-block-spacing">
             <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
-            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
               <p class="my-font-sm-400 text-secondary mb-0">
                 共 {{ count }} 筆使用者
               </p>

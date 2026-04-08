@@ -10,5 +10,5 @@ defineProps({
 </script>
 
 <template>
-  <CreateExamQuizBankPage :tab-id="tabId" />
+  <CreateExamQuizBankPage :tab-id="tabId" :design-page-layout="true" />
 </template>

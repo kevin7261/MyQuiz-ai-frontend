@@ -14,7 +14,7 @@
  * - 出題：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/tab/quiz/grade、GET /rag/tab/quiz/grade-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
  * 上述 API 不需 llm_api_key。
  */
-import { ref, computed, watch, onMounted, reactive } from 'vue';
+import { ref, computed, watch, onMounted, reactive, nextTick } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_BASE,
@@ -60,13 +60,18 @@ import { usePackTasks } from '../composables/usePackTasks.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import QuizCard from '../components/QuizCard.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
-import RagTabsBar from '../components/RagTabsBar.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 
-defineProps({
+const props = defineProps({
   tabId: { type: String, required: true },
+  /** 與 DesignPage 相同外殼（黑底、欄寬、分頁列深色）；由 CreateExamQuizBankDesignPage 傳入 */
+  designPageLayout: { type: Boolean, default: false },
 });
+
+const contentBlockClass = computed(() =>
+  props.designPageLayout ? 'my-bgcolor-gray-dark' : 'my-bgcolor-page-block'
+);
 
 let cardIdSeq = 0;
 function nextCardId() {
@@ -84,7 +89,10 @@ function fileHasAllowedUploadExtension(file) {
 
 const authStore = useAuthStore();
 
-const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList();
+const ragListFetchEnabled = computed(() => !props.designPageLayout);
+const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList({
+  fetchEnabled: ragListFetchEnabled,
+});
 const createRagLoading = ref(false);
 const createRagError = ref('');
 const renameRagTabModalOpen = ref(false);
@@ -102,6 +110,58 @@ const showFormWhenNoData = ref(false);
 const newTabIds = ref([]);
 
 const { getTabState, currentState, isNewTabId } = useRagTabState(activeTabId, newTabIds, ragList, authStore, { defaultSystemInstruction: DEFAULT_SYSTEM_INSTRUCTION });
+
+/** 介面稿：本機假資料分頁 id（不呼叫 GET /rag/tabs，由父層灌入單筆示範 RAG） */
+const DESIGN_MOCK_TAB_ID = 'design-mock-tab';
+
+const showCreateBankMainForm = computed(
+  () => ragList.value.length > 0 || showFormWhenNoData.value || props.designPageLayout
+);
+const showStepperSection = computed(() => props.designPageLayout || !!activeTabId.value);
+
+/** 供 /create-test-bank_design 顯示與正式頁相同結構的單筆 RAG（純前端，無 API） */
+function buildDesignMockRag() {
+  return {
+    rag_tab_id: DESIGN_MOCK_TAB_ID,
+    rag_id: 999001,
+    tab_name: '示範測驗題庫',
+    unit_list: '第一章+第二章',
+    file_metadata: {
+      filename: '範例教材.zip',
+      file_size: 2.5,
+      second_folders: ['第一章', '第二章'],
+    },
+    rag_metadata: '{"demo":true}',
+    chunk_size: 1000,
+    chunk_overlap: 200,
+    outputs: [
+      { rag_tab_id: DESIGN_MOCK_TAB_ID, rag_name: '示範單元甲', unit_name: '示範單元甲', filename: '甲.zip' },
+      { rag_tab_id: DESIGN_MOCK_TAB_ID, rag_name: '示範單元乙', unit_name: '示範單元乙', filename: '乙.zip' },
+    ],
+    quizzes: [
+      {
+        quiz_content: '（示範）請說明本單元的學習目標。',
+        quiz_hint: '可參考教材章節開頭的學習重點。',
+        quiz_answer_reference: '能簡要說出該單元欲培養的核心概念或能力。',
+        rag_name: '示範單元甲',
+        rag_id: 999001,
+        quiz_level: '基礎',
+      },
+    ],
+    answers: [],
+    for_exam: false,
+  };
+}
+
+watch(
+  () => props.designPageLayout,
+  (isDesign) => {
+    if (isDesign) {
+      ragList.value = [buildDesignMockRag()];
+    }
+  },
+  { immediate: true }
+);
 
 function checkRagHasMetadata(rag) {
   if (!rag || typeof rag !== 'object') return false;
@@ -264,6 +324,7 @@ const currentRagIdAndTabId = computed(() => {
 watch(
   currentRagIdAndTabId,
   (v) => {
+    if (props.designPageLayout) return;
     // 畫面不顯示 rag_id／rag_tab_id，改由此處輸出供除錯
     // eslint-disable-next-line no-console -- 依需求於開發者工具查看
     console.log('[CreateExamQuizBankPage] rag_id:', v.rag_id, 'rag_tab_id:', v.rag_tab_id);
@@ -306,6 +367,11 @@ const fileMetadataToShow = computed(() => {
 
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
+
+/** 介面稿一律顯示上傳區（與下方「已上傳」區塊並列，方便對照正式頁所有元件） */
+const showUploadFileSection = computed(
+  () => props.designPageLayout || (!!activeTabId.value && !hasUploadedFileMetadata.value)
+);
 
 /**
  * 建立流程 stepper：1 僅上傳、2 含建立測驗題庫、3 含題目測試
@@ -501,6 +567,31 @@ function syncRagItemToState(rag, state) {
 
 watch(currentRagItem, (rag) => syncRagItemToState(rag, currentState.value), { immediate: true });
 
+/** 介面稿：在示範 RAG 同步後多開一題槽，同時顯示題卡與「產生題目」表單 */
+watch(
+  () => [
+    props.designPageLayout,
+    currentRagItem.value?.rag_tab_id,
+    activeTabId.value,
+    currentState.value?.quizSlotsCount,
+  ],
+  async () => {
+    if (!props.designPageLayout) return;
+    const rag = currentRagItem.value;
+    if (!rag || String(rag.rag_tab_id ?? '') !== DESIGN_MOCK_TAB_ID) return;
+    await nextTick();
+    const id = activeTabId.value;
+    if (!id) return;
+    const st = getTabState(id);
+    const target = Math.max(Number(st.quizSlotsCount) || 0, 2);
+    st.quizSlotsCount = target;
+    while (st.cardList.length < target) st.cardList.push(null);
+    if (st.cardList.length >= 2) st.cardList[1] = null;
+    getSlotFormState(2);
+  },
+  { flush: 'post', immediate: true }
+);
+
 /** 由 /rag/tabs 的 quiz（含 answers）組成一張題目卡片，供測試問題區塊顯示；批改結果從作答紀錄的 answer_metadata / answer_feedback_metadata 格式化 */
 function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
@@ -576,6 +667,7 @@ watch(chunkOverlap, (v) => {
 }, { flush: 'post' });
 
 async function refreshRagForExamSetting() {
+  if (props.designPageLayout) return;
   try {
     const data = await apiGetRagForExamSetting();
     ragForExamSettingRagId.value = parseRagIdFromRagForExamSettingPayload(data);
@@ -607,6 +699,7 @@ onMounted(() => {
 
 /** 設為測驗用（PUT system-settings rag-for-exam-*） */
 async function setRagForExam() {
+  if (props.designPageLayout) return;
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
   const ragId = rag.rag_id ?? rag.id;
@@ -636,6 +729,7 @@ async function setRagForExam() {
 
 /** 取消測驗用（PUT rag_id 空字串） */
 async function clearRagForExam() {
+  if (props.designPageLayout) return;
   if (!currentRagIsExamRag.value || isNewTabId(activeTabId.value)) return;
   const personId = getPersonId(authStore);
   if (!personId) {
@@ -658,6 +752,7 @@ async function clearRagForExam() {
 
 /** 刪除 RAG */
 async function deleteRag(rag, e) {
+  if (props.designPageLayout) return;
   if (e) e.stopPropagation();
   const fileId = rag?.rag_tab_id ?? rag?.id ?? rag;
   if (fileId == null || fileId === '') return;
@@ -700,6 +795,19 @@ const ragCreatedAtMap = ref({});
 
 /** 點「新增」：建立 RAG，成功後重整列表並切到新 tab */
 async function addNewTab() {
+  if (props.designPageLayout) {
+    createRagError.value = '';
+    createRagLoading.value = false;
+    const personId = getPersonId(authStore);
+    const ragTabId = personId ? generateTabId(personId) : `new-design-${Date.now()}`;
+    if (!newTabIds.value.includes(ragTabId)) {
+      newTabIds.value = [...newTabIds.value, ragTabId];
+    }
+    activeTabId.value = ragTabId;
+    clearZipFileInput();
+    showFormWhenNoData.value = true;
+    return;
+  }
   const personId = getPersonId(authStore);
   if (!personId) {
     createRagError.value = '請先登入';
@@ -764,6 +872,16 @@ function openRenameRagTab(tabId) {
 async function onRenameRagTabSave(name) {
   if (!name) {
     renameRagTabError.value = '請輸入名稱';
+    return;
+  }
+  if (props.designPageLayout) {
+    const rid = renameRagTabDraftRagId.value;
+    const rag = ragList.value.find(
+      (x) => x != null && Number(x.rag_id) === Number(rid)
+    );
+    if (rag && typeof rag === 'object') rag.tab_name = String(name).trim();
+    renameRagTabModalOpen.value = false;
+    renameRagTabError.value = '';
     return;
   }
   const rid = renameRagTabDraftRagId.value;
@@ -845,6 +963,38 @@ function openZipFileDialog() {
 
 /** 上傳 ZIP */
 async function confirmUploadZip() {
+  if (props.designPageLayout) {
+    const state = currentState.value;
+    if (!state.uploadedZipFile) {
+      state.zipError = '請先選擇要上傳的檔案';
+      return;
+    }
+    const tabId = activeTabId.value;
+    if (isNewTabId(tabId) || !tabId) {
+      state.zipError = '請先按「＋」建立測驗題庫分頁，再上傳檔案';
+      return;
+    }
+    state.zipLoading = true;
+    state.zipError = '';
+    try {
+      const name = state.uploadedZipFile?.name || '本機檔案.zip';
+      const rag = currentRagItem.value;
+      const rid = rag?.rag_id ?? rag?.id ?? 999001;
+      state.zipResponseJson = {
+        filename: name,
+        file_size: 0.5,
+        second_folders: ['示範章節甲', '示範章節乙'],
+        rag_id: rid,
+        rag_tab_id: tabId,
+      };
+      state.zipTabId = String(tabId);
+      state.zipFileName = name;
+      state.zipSecondFolders = state.zipResponseJson.second_folders;
+    } finally {
+      state.zipLoading = false;
+    }
+    return;
+  }
   const state = currentState.value;
   if (!state.uploadedZipFile) {
     state.zipError = '請先選擇要上傳的檔案';
@@ -890,6 +1040,39 @@ async function confirmUploadZip() {
 
 /** 出題群組確定：tab/build-rag-zip（按鈕文案「確定」） */
 async function confirmPack() {
+  if (props.designPageLayout) {
+    const state = currentState.value;
+    const fileId = String(state.zipTabId ?? '').trim();
+    const unitList = state.packTasks?.trim();
+    if (!fileId) {
+      state.packError = '請先上傳教材檔，完成後再建立題庫';
+      return;
+    }
+    if (!isPackTasksListReady(state.packTasksList ?? [])) {
+      state.packError = '請至少建立一個出題單元，且每個出題單元至少包含一個單元';
+      return;
+    }
+    if (!unitList) {
+      state.packError = '請輸入單元清單（例：220222+220301 或 220222,220301+220302）';
+      return;
+    }
+    state.packLoading = true;
+    state.packError = '';
+    try {
+      const mock = buildDesignMockRag();
+      state.packResponseJson = {
+        rag_tab_id: fileId,
+        outputs: mock.outputs,
+      };
+      state.ragMetadata =
+        typeof state.packResponseJson === 'string'
+          ? state.packResponseJson
+          : JSON.stringify(state.packResponseJson, null, 2);
+    } finally {
+      state.packLoading = false;
+    }
+    return;
+  }
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
   const unitList = state.packTasks?.trim();
@@ -989,6 +1172,38 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 
 /** 產生題目 */
 async function generateQuiz(slotIndex) {
+  if (props.designPageLayout) {
+    const state = currentState.value;
+    const slotState = getSlotFormState(slotIndex);
+    const selectedUnit = findQuizUnitBySlotSelection(generateQuizUnits.value, slotState.generateQuizTabId);
+    if (!selectedUnit) {
+      slotState.error = '請先選擇單元';
+      return;
+    }
+    const unitName = String(selectedUnit.unit_name ?? selectedUnit.rag_name ?? '').trim();
+    const ragName = selectedUnit.rag_name?.trim() || unitName;
+    const ragId = currentRagItem.value?.rag_id ?? currentRagItem.value?.id ?? state?.zipResponseJson?.rag_id ?? 999001;
+    slotState.loading = true;
+    slotState.error = '';
+    try {
+      setCardAtSlot(
+        slotIndex,
+        '（示範）此為介面稿預覽題目，不會呼叫後端出題 API。',
+        '可參考教材中與「' + unitName + '」相關的段落。',
+        selectedUnit?.filename ?? '',
+        '（示範參考答案）',
+        ragName,
+        { demo: true },
+        filterDifficulty.value,
+        (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
+        ragId,
+        null
+      );
+    } finally {
+      slotState.loading = false;
+    }
+    return;
+  }
   const state = currentState.value;
   const slotState = getSlotFormState(slotIndex);
   const rag = currentRagItem.value;
@@ -1054,6 +1269,10 @@ function toggleHint(item) {
 /** 評分：POST /rag/tab/quiz/grade；body: rag_id、rag_tab_id、rag_quiz_id、quiz_content、quiz_answer、quiz_answer_reference（皆 string，選填可 ""）；回傳 202 + job_id；輪詢 GET /rag/tab/quiz/grade-result/{job_id}；ready 時 result: { quiz_score, quiz_comments, rag_answer_id }。 */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
+  if (props.designPageLayout) {
+    applyDesignMockGrading(item);
+    return;
+  }
   const state = currentState.value;
   const rag = currentRagItem.value;
   const activeRagId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
@@ -1087,10 +1306,23 @@ async function confirmAnswer(item) {
   }
 }
 
+/** 介面稿：本地預覽批改結果（不呼叫評分 API） */
+function applyDesignMockGrading(item) {
+  const preview = JSON.stringify({
+    quiz_score: 4,
+    quiz_comments: ['示範：介面稿不連線後端。', '內容大致正確，可再補充例證。'],
+  });
+  item.confirmed = true;
+  item.gradingResult = formatGradingResult(preview) || preview;
+}
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+  <div
+    class="d-flex flex-column h-100 position-relative"
+    :class="designPageLayout ? 'overflow-hidden my-bgcolor-black' : 'bg-body-secondary'"
+    :data-bs-theme="designPageLayout ? 'dark' : undefined"
+  >
     <LoadingOverlay
       :is-visible="isAnyLoading"
       loading-text="請稍候，正在載入或處理..."
@@ -1103,42 +1335,196 @@ async function confirmAnswer(item) {
       title="修改測驗題庫分頁名稱"
       @save="onRenameRagTabSave"
     />
-    <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
+    <header v-if="designPageLayout" class="flex-shrink-0 my-bgcolor-black py-3 px-3 px-md-4">
+      <div class="container-fluid px-0">
+        <div class="row justify-content-center">
+          <div class="col-12 col-xl-10 col-xxl-8">
+            <p class="my-font-xl-600 my-color-white text-break mb-0">建立測驗題庫（介面稿）</p>
+          </div>
+        </div>
+      </div>
+    </header>
+    <div v-else class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand my-font-xl-400 mb-0">建立測驗題庫</span>
       </div>
     </div>
-    <RagTabsBar
-      :rag-items="ragItems"
-      :new-tab-items="newTabItems"
-      :active-tab-id="activeTabId"
-      :rag-list-loading="ragListLoading"
-      :create-rag-loading="createRagLoading"
-      :rag-list-error="ragListError"
-      :create-rag-error="createRagError"
-      :delete-rag-loading="deleteRagLoading"
-      :rename-tab-loading="renameRagTabSaving"
-      @update:active-tab-id="activeTabId = $event"
-      @add-new-tab="addNewTab"
-      @delete-rag="onDeleteRagTab"
-      @rename-tab="openRenameRagTab"
-    />
+    <div
+      class="flex-shrink-0 my-rag-tabs-bar"
+      :class="
+        designPageLayout ? 'my-rag-tabs-bar--design my-bgcolor-black border-bottom' : 'bg-white'
+      "
+    >
+      <div
+        class="d-flex justify-content-center w-100 px-4"
+        :class="
+          designPageLayout
+            ? 'align-items-end pb-0'
+            : 'align-items-center border-bottom border-secondary-subtle'
+        "
+      >
+        <template v-if="ragListLoading">
+          <span
+            class="my-font-sm-400"
+            :class="designPageLayout ? 'my-color-gray-light' : 'text-secondary'"
+            >載入中...</span>
+        </template>
+        <template v-else-if="ragItems.length === 0 && newTabItems.length === 0">
+          <div
+            class="w-100 d-flex justify-content-center"
+            :class="designPageLayout ? 'py-0' : 'py-2'"
+          >
+            <button
+              type="button"
+              class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle"
+              title="新增分頁"
+              :aria-label="createRagLoading ? '建立中' : '新增分頁'"
+              :aria-busy="createRagLoading"
+              :disabled="designPageLayout ? false : createRagLoading"
+              @click="addNewTab"
+            >
+              <i
+                class="fa-solid"
+                :class="createRagLoading ? 'fa-spinner fa-spin' : 'fa-plus'"
+                aria-hidden="true"
+              />
+            </button>
+          </div>
+        </template>
+        <template v-else>
+          <ul class="nav nav-tabs border-bottom-0">
+            <li v-for="item in ragItems" :key="'rag-' + item._tabId" class="nav-item">
+              <div
+                role="tab"
+                class="nav-link d-flex align-items-center gap-1"
+                :class="{ active: activeTabId === item._tabId }"
+                :aria-current="activeTabId === item._tabId ? 'page' : undefined"
+              >
+                <span
+                  class="flex-grow-1 text-start"
+                  style="cursor: pointer"
+                  @click="activeTabId = item._tabId"
+                >
+                  {{ item._label }}
+                </span>
+                <button
+                  v-if="activeTabId === item._tabId"
+                  type="button"
+                  :class="[
+                    'btn btn-link text-decoration-none my-tab-nav-action-btn p-0',
+                    designPageLayout ? 'my-color-gray-light' : 'text-muted',
+                  ]"
+                  title="重新命名分頁"
+                  :disabled="designPageLayout ? false : deleteRagLoading || renameRagTabSaving"
+                  @click.stop="openRenameRagTab(item._tabId)"
+                >
+                  <i class="fa-solid fa-pen" aria-hidden="true" />
+                </button>
+                <span
+                  v-if="item._isExamRag"
+                  class="d-inline-flex justify-content-center align-items-center flex-shrink-0"
+                  style="min-width: 1.25rem; line-height: 1"
+                  title="試卷用題庫"
+                  role="img"
+                >
+                  <span
+                    class="rounded-circle d-inline-block"
+                    :class="designPageLayout ? 'my-bgcolor-blue' : 'bg-success'"
+                    style="width: 0.5rem; height: 0.5rem"
+                  />
+                </span>
+                <button
+                  v-else-if="activeTabId === item._tabId"
+                  type="button"
+                  :class="[
+                    'btn btn-link text-decoration-none my-tab-nav-action-btn p-0',
+                    designPageLayout ? 'my-color-gray-light' : 'text-muted',
+                  ]"
+                  title="刪除此出題單元"
+                  :disabled="designPageLayout ? false : deleteRagLoading || renameRagTabSaving"
+                  @click.stop="onDeleteRagTab(item._tabId)"
+                >
+                  <i class="fa-solid fa-xmark" aria-hidden="true" />
+                </button>
+              </div>
+            </li>
+            <li v-for="item in newTabItems" :key="'new-' + item.id" class="nav-item">
+              <button
+                type="button"
+                class="nav-link"
+                :class="{ active: activeTabId === item.id }"
+                :aria-current="activeTabId === item.id ? 'page' : undefined"
+                @click="activeTabId = item.id"
+              >
+                {{ item.label }}
+              </button>
+            </li>
+            <li class="nav-item d-flex align-items-center ms-2">
+              <button
+                type="button"
+                title="新增分頁"
+                :aria-label="createRagLoading ? '建立中' : '新增分頁'"
+                :aria-busy="createRagLoading"
+                :class="[
+                  'btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle',
+                  designPageLayout ? '' : 'mb-2',
+                ]"
+                :disabled="designPageLayout ? false : createRagLoading"
+                @click="addNewTab"
+              >
+                <i
+                  class="fa-solid"
+                  :class="createRagLoading ? 'fa-spinner fa-spin' : 'fa-plus'"
+                  aria-hidden="true"
+                />
+              </button>
+            </li>
+          </ul>
+        </template>
+      </div>
+      <div v-if="ragListError" class="alert alert-warning my-font-sm-400 py-2 mx-4 mb-3">
+        {{ ragListError }}
+      </div>
+      <div v-if="createRagError" class="alert alert-danger my-font-sm-400 py-2 mx-4 mb-3">
+        {{ createRagError }}
+      </div>
+    </div>
 
-    <!-- 內容區：可上下捲動 -->
-    <div class="flex-grow-1 overflow-auto bg-white px-4 py-5">
-      <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-      <!-- 無資料時不顯示表單，點「+」後才顯示；有資料時顯示對應 tab 表單 -->
-      <template v-if="ragList.length > 0 || showFormWhenNoData">
+    <!-- 內容區：可上下捲動（介面稿與 DesignPage 同寬：container-fluid + col-xl-10 col-xxl-8） -->
+    <div
+      class="flex-grow-1 overflow-auto"
+      :class="designPageLayout ? '' : 'bg-white px-4 py-5'"
+    >
+      <div :class="designPageLayout ? 'container-fluid px-3 px-md-4 py-4' : ''">
+        <div class="row justify-content-center">
+          <div
+            :class="
+              designPageLayout ? 'col-12 col-xl-10 col-xxl-8' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
+            "
+          >
+            <div :class="{ 'my-create-exam-design-inner': designPageLayout }">
+      <!-- 無資料時不顯示表單，點「+」後才顯示；介面稿無列表時仍顯示示範表單 -->
+      <template v-if="showCreateBankMainForm">
       <!-- 建立流程 stepper：依 file_metadata / rag_metadata 亮起 1～3 步 -->
-      <div v-if="activeTabId" class="my-create-rag-stepper text-start my-page-block-spacing">
-        <div class="d-flex align-items-start justify-content-between gap-2 gap-sm-3 w-100">
+      <div v-if="showStepperSection" class="my-create-rag-stepper text-start my-page-block-spacing">
+        <div class="d-flex justify-content-between align-items-start gap-2 gap-sm-3 w-100">
           <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
             <span
-              class="my-create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 my-font-sm-600"
+              class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
               :class="createRagStepperPhase >= 1 ? 'my-create-rag-stepper-num--on' : 'my-create-rag-stepper-num--off'"
             >1</span>
-            <span class="mt-2" :class="createRagStepperPhase >= 1 ? 'text-dark my-font-sm-600' : 'text-muted my-font-sm-400'">上傳檔案</span>
+            <span
+              class="mt-2"
+              :class="
+                createRagStepperPhase >= 1
+                  ? designPageLayout
+                    ? 'my-color-white my-font-sm-600'
+                    : 'text-dark my-font-sm-600'
+                  : designPageLayout
+                    ? 'my-color-gray-light my-font-sm-400'
+                    : 'text-muted my-font-sm-400'
+              "
+            >上傳檔案</span>
           </div>
           <div
             class="my-create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
@@ -1147,10 +1533,21 @@ async function confirmAnswer(item) {
           />
           <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
             <span
-              class="my-create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 my-font-sm-600"
+              class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
               :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-num--on' : 'my-create-rag-stepper-num--off'"
             >2</span>
-            <span class="mt-2" :class="createRagStepperPhase >= 2 ? 'text-dark my-font-sm-600' : 'text-muted my-font-sm-400'">建立測驗題庫</span>
+            <span
+              class="mt-2"
+              :class="
+                createRagStepperPhase >= 2
+                  ? designPageLayout
+                    ? 'my-color-white my-font-sm-600'
+                    : 'text-dark my-font-sm-600'
+                  : designPageLayout
+                    ? 'my-color-gray-light my-font-sm-400'
+                    : 'text-muted my-font-sm-400'
+              "
+            >建立測驗題庫</span>
           </div>
           <div
             class="my-create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
@@ -1159,16 +1556,27 @@ async function confirmAnswer(item) {
           />
           <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
             <span
-              class="my-create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 my-font-sm-600"
+              class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
               :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-num--on' : 'my-create-rag-stepper-num--off'"
             >3</span>
-            <span class="mt-2" :class="createRagStepperPhase >= 3 ? 'text-dark my-font-sm-600' : 'text-muted my-font-sm-400'">測試問題</span>
+            <span
+              class="mt-2"
+              :class="
+                createRagStepperPhase >= 3
+                  ? designPageLayout
+                    ? 'my-color-white my-font-sm-600'
+                    : 'text-dark my-font-sm-600'
+                  : designPageLayout
+                    ? 'my-color-gray-light my-font-sm-400'
+                    : 'text-muted my-font-sm-400'
+              "
+            >測試問題</span>
           </div>
         </div>
       </div>
-      <!-- 尚無 file_metadata 時才顯示上傳區；檔名改顯示於「建立測驗題庫」內 -->
-      <div v-if="activeTabId && !hasUploadedFileMetadata" class="text-start my-page-block-spacing">
-        <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
+      <!-- 尚無 file_metadata 時顯示上傳區；介面稿固定一併顯示以利對照元件 -->
+      <div v-if="showUploadFileSection" class="text-start my-page-block-spacing">
+        <div class="rounded-3 p-3 p-lg-4 mb-4" :class="contentBlockClass">
           <input
             ref="zipFileInputRef"
             type="file"
@@ -1220,7 +1628,7 @@ async function confirmAnswer(item) {
         class="text-start my-page-block-spacing"
         :class="{ 'pe-none text-muted': !hasRagMetadata && packGroupsEditBlocked }"
       >
-        <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
+        <div class="rounded-3 p-3 p-lg-4 mb-4" :class="contentBlockClass">
         <div class="mb-3">
           <div class="my-font-sm-600 text-secondary mb-1">上傳檔案名稱</div>
           <div class="my-font-sm-400 text-break">{{ uploadedZipDisplayName }}</div>
@@ -1353,7 +1761,7 @@ async function confirmAnswer(item) {
                 </div>
               </template>
               <div
-                class="btn btn-outline-primary d-flex align-items-center justify-content-center my-pack-drop-target"
+                class="btn btn-outline-primary d-flex justify-content-center align-items-center my-pack-drop-target"
                 style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                 role="button"
                 tabindex="0"
@@ -1456,8 +1864,11 @@ async function confirmAnswer(item) {
         class="text-start my-page-block-spacing"
         :class="{ 'text-muted': ragGenerateDisabled }"
       >
-        <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
-        <div class="my-font-lg-600 border-bottom pb-2 mb-4">測試問題</div>
+        <div class="rounded-3 p-3 p-lg-4 mb-4" :class="contentBlockClass">
+        <div
+          class="my-font-lg-600 border-bottom pb-2 mb-4"
+          :class="designPageLayout ? 'my-color-white' : ''"
+        >測試問題</div>
 
         <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
         <div class="mb-4">
@@ -1469,6 +1880,8 @@ async function confirmAnswer(item) {
                 :slot-index="slotIndex"
                 :course-name="courseNameForPrompt"
                 :current-rag-id="currentRagIdForQuizCards"
+                :design-ui="designPageLayout"
+                :skip-rag-mismatch-guard="designPageLayout"
                 @toggle-hint="toggleHint"
                 @confirm-answer="confirmAnswer"
                 @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
@@ -1476,8 +1889,11 @@ async function confirmAnswer(item) {
             </template>
             <template v-else>
               <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
-              <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-                <div class="my-font-lg-600 border-bottom pb-2 mb-3">第 {{ slotIndex }} 題</div>
+              <div class="rounded-3 p-3 p-lg-4 mb-4" :class="[contentBlockClass, { 'mt-4': slotIndex > 1 }]">
+                <div
+                  class="my-font-lg-600 border-bottom pb-2 mb-3"
+                  :class="designPageLayout ? 'my-color-white' : ''"
+                >第 {{ slotIndex }} 題</div>
                 <div class="text-start pt-3">
                   <div class="d-flex flex-wrap align-items-end gap-3">
                     <div class="flex-grow-1 min-w-0" style="min-width: 10rem">
@@ -1486,6 +1902,7 @@ async function confirmAnswer(item) {
                         v-model="getSlotFormState(slotIndex).generateQuizTabId"
                         :options="generateQuizUnits"
                         :menu-id="`rag-quiz-unit-${slotIndex}`"
+                        :design-ui="designPageLayout"
                       />
                     </div>
                     <div>
@@ -1537,6 +1954,8 @@ async function confirmAnswer(item) {
       </div>
 
       </template>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1595,5 +2014,14 @@ async function confirmAnswer(item) {
 }
 .my-create-rag-stepper-line--on {
   background-color: var(--my-color-blue);
+}
+
+/* 介面稿頁：與 DesignPage 深色主區可讀性一致（標籤／輔助內文） */
+.my-create-exam-design-inner .text-secondary,
+.my-create-exam-design-inner .text-muted {
+  color: var(--my-color-gray-light) !important;
+}
+.my-create-exam-design-inner .text-body {
+  color: var(--my-color-white) !important;
 }
 </style>

@@ -12,7 +12,7 @@ const props = defineProps({
   placeholder: { type: String, default: '— 請選擇單元 —' },
   /** 用於觸發鈕 id（會加上 -toggle），須在頁面內唯一 */
   menuId: { type: String, required: true },
-  /** 與 UI 元件參考（DesignPage）07 · 下拉選單一致 */
+  /** 與 UI 元件參考（DesignPage）08 · 下拉選單一致（觸發鈕同 05 中號） */
   designUi: { type: Boolean, default: false },
 });
 
@@ -40,9 +40,9 @@ function select(val) {
     <button
       :id="toggleId"
       :class="[
-        'dropdown-toggle w-100 d-flex align-items-center justify-content-between my-unit-select-dd-toggle',
+        'dropdown-toggle w-100 d-flex justify-content-between align-items-center my-unit-select-dd-toggle',
         designUi
-          ? 'btn rounded-pill my-dropdown-caret my-button-blue px-3 py-2'
+          ? 'btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-blue flex-shrink-0 px-3 py-2'
           : 'btn btn-outline-secondary',
       ]"
       type="button"

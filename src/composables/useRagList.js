@@ -7,7 +7,7 @@
  * 以 watch（immediate）依登入身分載入列表：Pinia 還原較晚時 loggedFetch 會在 user 就緒後再帶 person_id query；
  * 頁面 onMounted 勿再呼叫 fetchRagList，以免與 immediate 重複一次。
  */
-import { ref, watch } from 'vue';
+import { ref, watch, unref } from 'vue';
 import { API_BASE, API_RAG_LIST, isFrontendLocalHost } from '../constants/api.js';
 import { normalizeRagListResponse } from '../utils/rag.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
@@ -23,8 +23,18 @@ function listReloadKeyFromUser(user) {
   return '';
 }
 
-export function useRagList() {
+/**
+ * @param {object} [options]
+ * @param {import('vue').Ref<boolean> | import('vue').ComputedRef<boolean> | boolean} [options.fetchEnabled=true] — 為 false 時不呼叫 GET /rag/tabs（介面稿頁傳入 computed(() => false) 並由父層灌入列表）
+ */
+export function useRagList(options = {}) {
   const authStore = useAuthStore();
+  const fetchEnabledOption = options.fetchEnabled;
+  function isFetchEnabled() {
+    if (fetchEnabledOption === undefined) return true;
+    return unref(fetchEnabledOption) !== false;
+  }
+
   /** RAG 項目陣列（正規化後） */
   const ragList = ref([]);
   /** 是否正在載入 */
@@ -34,6 +44,7 @@ export function useRagList() {
 
   /** 拉取 RAG 列表並更新 ragList / ragListLoading / ragListError */
   async function fetchRagList() {
+    if (!isFetchEnabled()) return;
     ragListLoading.value = true;
     ragListError.value = '';
     try {
@@ -52,8 +63,13 @@ export function useRagList() {
   }
 
   watch(
-    () => listReloadKeyFromUser(authStore.user),
+    () => [listReloadKeyFromUser(authStore.user), isFetchEnabled()],
     () => {
+      if (!isFetchEnabled()) {
+        ragListLoading.value = false;
+        ragListError.value = '';
+        return;
+      }
       fetchRagList();
     },
     { immediate: true }

@@ -932,7 +932,7 @@ onMounted(() => {
     </div>
     <!-- 固定 tab 頁籤列（與建立 RAG 頁一致，僅內容區可上下滑） -->
     <div class="flex-shrink-0 bg-white">
-      <div class="d-flex align-items-center justify-content-center w-100 border-bottom border-secondary-subtle px-4">
+      <div class="d-flex justify-content-center align-items-center w-100 border-bottom border-secondary-subtle px-4">
         <template v-if="examListLoading || forExamLoading">
           <span class="my-font-sm-400 text-secondary">—</span>
         </template>
@@ -940,7 +940,7 @@ onMounted(() => {
           <div class="w-100 d-flex justify-content-center py-2">
             <button
               type="button"
-              class="btn rounded-circle d-flex align-items-center justify-content-center my-font-md-400 my-button-white-borderless my-btn-circle"
+              class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle"
               title="新增測驗分頁"
               :aria-label="createExamLoading ? '建立中' : '新增測驗分頁'"
               :aria-busy="createExamLoading"
@@ -996,7 +996,7 @@ onMounted(() => {
             <li class="nav-item d-flex align-items-center ms-2">
               <button
                 type="button"
-                class="btn rounded-circle d-flex align-items-center justify-content-center my-font-md-400 my-button-white-borderless my-btn-circle mb-2"
+                class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle mb-2"
                 title="新增測驗分頁"
                 :aria-label="createExamLoading ? '建立中' : '新增測驗分頁'"
                 :aria-busy="createExamLoading"
@@ -1063,7 +1063,7 @@ onMounted(() => {
                       </div>
                     </div>
                     <div class="mb-3">
-                      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                      <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
                         <button type="button" class="btn btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
                           {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                         </button>
@@ -1217,7 +1217,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-/* 與 RagTabsBar 一致：頁籤筆／刪除同尺寸、略小 */
+/* 與建立測驗題庫分頁列一致：頁籤筆／刪除同尺寸、略小 */
 .my-tab-nav-action-btn {
   display: inline-flex;
   align-items: center;
