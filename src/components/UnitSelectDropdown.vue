@@ -12,6 +12,8 @@ const props = defineProps({
   placeholder: { type: String, default: '— 請選擇單元 —' },
   /** 用於觸發鈕 id（會加上 -toggle），須在頁面內唯一 */
   menuId: { type: String, required: true },
+  /** 與 UI 元件參考（DesignPage）06 · 下拉選單一致 */
+  designUi: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -37,17 +39,31 @@ function select(val) {
   <div class="dropdown w-100">
     <button
       :id="toggleId"
-      class="btn btn-outline-secondary dropdown-toggle btn-sm w-100 d-flex align-items-center justify-content-between unit-select-dd-toggle"
+      :class="[
+        'dropdown-toggle w-100 d-flex align-items-center justify-content-between unit-select-dd-toggle',
+        designUi
+          ? 'btn rounded-pill my-dropdown-caret my-bgcolor-blue my-color-white my-btn-hover-blue px-3 py-2'
+          : 'btn btn-outline-secondary',
+      ]"
       type="button"
       data-bs-toggle="dropdown"
       aria-expanded="false"
       :disabled="disabled"
       :title="buttonLabel"
     >
-      <span class="text-truncate text-start flex-grow-1 min-w-0 me-2">{{ buttonLabel }}</span>
+      <span
+        class="text-truncate text-start flex-grow-1 min-w-0"
+        :class="designUi ? 'pe-2' : 'me-2'"
+      >{{ buttonLabel }}</span>
+      <i
+        v-if="designUi"
+        class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0"
+        aria-hidden="true"
+      />
     </button>
     <ul
-      class="dropdown-menu dropdown-menu-start shadow-sm w-100 unit-select-dd-menu"
+      class="dropdown-menu dropdown-menu-start w-100 unit-select-dd-menu"
+      :class="designUi ? 'my-dropdown-menu' : 'shadow-sm'"
       :aria-labelledby="toggleId"
     >
       <li>

@@ -529,10 +529,10 @@ onMounted(() => {
                 共 {{ count }} 筆使用者
               </p>
               <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-sm btn-primary" @click="openSingleModal">
+                <button type="button" class="btn btn-primary" @click="openSingleModal">
                   新增一筆使用者
                 </button>
-                <button type="button" class="btn btn-sm btn-primary" @click="openBatchModal">
+                <button type="button" class="btn btn-primary" @click="openBatchModal">
                   批次新增學生
                 </button>
               </div>
@@ -557,7 +557,7 @@ onMounted(() => {
                       <button
                         v-if="u.person_id != null && String(u.person_id).trim() !== '' && !isCurrentUserRow(u)"
                         type="button"
-                        class="btn btn-link btn-sm text-danger text-decoration-none p-0 lh-1"
+                        class="btn btn-link text-danger text-decoration-none p-0 lh-1"
                         :disabled="deletingPersonId != null"
                         :title="`刪除 ${String(u.person_id).trim()}`"
                         @click="deleteUser(u)"
@@ -654,12 +654,12 @@ onMounted(() => {
               </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="singleSaving" @click="closeSingleModal">
+              <button type="button" class="btn btn-outline-secondary" :disabled="singleSaving" @click="closeSingleModal">
                 取消
               </button>
               <button
                 type="button"
-                class="btn btn-primary btn-sm"
+                class="btn btn-primary"
                 :disabled="!singleSubmitEnabled"
                 @click="submitSingleUser"
               >
@@ -774,12 +774,12 @@ onMounted(() => {
               </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn btn-outline-secondary btn-sm" :disabled="batchSaving" @click="closeBatchModal">
+              <button type="button" class="btn btn-outline-secondary" :disabled="batchSaving" @click="closeBatchModal">
                 關閉
               </button>
               <button
                 type="button"
-                class="btn btn-primary btn-sm"
+                class="btn btn-primary"
                 :disabled="!batchSubmitEnabled"
                 @click="submitBatchUsers"
               >

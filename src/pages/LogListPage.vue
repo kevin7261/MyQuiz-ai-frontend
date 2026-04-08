@@ -83,7 +83,7 @@ onMounted(() => {
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center align-items-center gap-2">
         <span class="navbar-brand mb-0">系統紀錄</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary" :disabled="loading" @click="fetchLogs">重新載入</button>
+        <button type="button" class="btn btn-outline-secondary" :disabled="loading" @click="fetchLogs">重新載入</button>
       </div>
     </div>
     <div v-if="error" class="alert alert-warning py-2 my-font-size-sm mx-4 mb-0 mt-2" role="alert">{{ error }}</div>

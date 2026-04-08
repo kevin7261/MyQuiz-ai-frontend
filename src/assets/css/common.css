@@ -2,11 +2,11 @@
  * 全域與共用 class：
  * 全站：html/body/#app、連結無底線、捲軸
  * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)（variables.css）
- * 字階 .my-type-{xl|…|xs}-{400|600}（僅字級字重）；字色另併 .my-color-*；底 .my-bgcolor-*；按鈕 Bootstrap `.rounded-pill`＋`.btn-sm`（大字亦 btn-sm）＋語意填色 .my-bgcolor-*／.my-color-*＋.my-btn-hover-*，內距整串置末：小 `.px-3 .py-2`、大 `.px-4 .py-3`；填色鈕無邊框，描邊式用 .my-btn-border；描邊語意色加 .my-border-color-*；圓形圖示鈕用 Bootstrap `.btn` `.btn-sm` `.btn-link` `.rounded-circle`；表格 .my-table；Bootstrap 下拉 .my-dropdown-*
+ * 字階 .my-type-{xl|…|xs}-{400|600}（僅字級字重）；字色另併 .my-color-*；底 .my-bgcolor-*；按鈕 Bootstrap `.btn` 後接 `.rounded-pill`（勿用 `.btn-sm`）＋語意填色 .my-bgcolor-*／.my-color-*＋.my-btn-hover-*，內距整串置末：更小 `.px-2 .py-1`＋`.my-font-size-xs`、小 `.px-3 .py-2`、大 `.px-4 .py-3`；填色鈕無邊框，描邊式用 .my-btn-border；描邊語意色加 .my-border-color-*；圓形圖示鈕用 Bootstrap `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；Bootstrap 下拉 .my-dropdown-*
  * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）
  * 權杖下拉：.my-dropdown-menu；.my-dropdown-caret 隱藏 ::after，箭頭 FA .my-dropdown-toggle-caret
  * .page-block-spacing：多個業務頁主要區塊（非權杖對照）
- * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin（HTML class：含 .btn 且用 Bootstrap 內距工具時，`.px-3 .py-2` 或 `.px-4 .py-3` 置於整串最末；btn 置首）
+ * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin（HTML class：含 .btn 時 `.btn` 置首，次 `.rounded-pill`；內距 `.px-2 .py-1`、`.px-3 .py-2` 或 `.px-4 .py-3` 置於整串最末）
  */
 @import "./variables.css";
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600&family=Roboto:wght@400;600&display=swap");
@@ -100,6 +100,12 @@ button:focus,
 }
 .my-font-size-xl {
   font-size: var(--my-font-size-xl);
+}
+
+/* 併 .btn 時覆寫 Bootstrap --bs-btn-font-size，膠囊鈕上的 .my-font-size-xs 才生效 */
+.btn.my-font-size-xs {
+  --bs-btn-font-size: var(--my-font-size-xs);
+  font-size: var(--my-font-size-xs);
 }
 
 /* —— 字階：五級 × 字重 400／600＝10；class 第三段為字重數字（勿用 regular／semibold 等別名） —— */
@@ -210,24 +216,24 @@ button:focus,
   border-color: var(--my-color-blue);
 }
 
-/* 僅底／字色；填色鈕無邊框故不設 border-color（描邊式用 .my-btn-border＋其 hover） */
-.my-btn-hover-red:hover,
-.my-btn-hover-red:active {
+/* 僅底／字色；填色鈕無邊框故不設 border-color（描邊式用 .my-btn-border＋其 hover）；併 .btn 提高權重，避免 Bootstrap .btn:active 蓋掉 hover 色 */
+.btn.my-btn-hover-red:hover,
+.btn.my-btn-hover-red:active {
   background-color: var(--my-color-red-hover);
   color: var(--my-color-white);
 }
-.my-btn-hover-yellow:hover,
-.my-btn-hover-yellow:active {
+.btn.my-btn-hover-yellow:hover,
+.btn.my-btn-hover-yellow:active {
   background-color: var(--my-color-yellow-hover);
   color: var(--my-color-black);
 }
-.my-btn-hover-green:hover,
-.my-btn-hover-green:active {
+.btn.my-btn-hover-green:hover,
+.btn.my-btn-hover-green:active {
   background-color: var(--my-color-green-hover);
   color: var(--my-color-white);
 }
-.my-btn-hover-blue:hover,
-.my-btn-hover-blue:active {
+.btn.my-btn-hover-blue:hover,
+.btn.my-btn-hover-blue:active {
   background-color: var(--my-color-blue-hover);
   color: var(--my-color-white);
 }
@@ -251,7 +257,7 @@ button:focus,
   background-color: color-mix(in srgb, var(--bs-primary) 12%, var(--bs-body-bg));
 }
 
-/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕與 04 一致＋ .dropdown-toggle .my-dropdown-caret；標籤後接 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
+/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕與 04 一致（`.btn` 後 `.rounded-pill`）＋ .dropdown-toggle .my-dropdown-caret；標籤後接 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
 .my-dropdown-caret.dropdown-toggle::after {
   display: none;
 }
@@ -380,26 +386,26 @@ button:focus,
   border: none;
 }
 
-.my-btn-border {
+.btn.my-btn-border {
   color: var(--my-color-black);
   background-color: transparent;
   border: 1px solid var(--my-border-muted);
 }
 
-.my-btn-border:hover,
-.my-btn-border:active {
+.btn.my-btn-border:hover,
+.btn.my-btn-border:active {
   color: var(--my-color-black);
   background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
   border-color: var(--my-border-subtle);
 }
 
-[data-bs-theme="dark"] .my-btn-border {
+[data-bs-theme="dark"] .btn.my-btn-border {
   color: var(--my-color-white);
   border-color: var(--my-border-muted);
 }
 
-[data-bs-theme="dark"] .my-btn-border:hover,
-[data-bs-theme="dark"] .my-btn-border:active {
+[data-bs-theme="dark"] .btn.my-btn-border:hover,
+[data-bs-theme="dark"] .btn.my-btn-border:active {
   color: var(--my-color-white);
   background-color: color-mix(in srgb, var(--my-color-white) 12%, transparent);
   border-color: var(--my-border-subtle);

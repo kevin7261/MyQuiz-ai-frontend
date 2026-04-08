@@ -36,6 +36,16 @@ defineProps({
   tabId: { type: String, required: true },
 });
 
+/** UI 元件參考（DesignPage）04 · 按鈕 */
+const btnBlueSm =
+  'btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue px-3 py-2 flex-shrink-0';
+const btnBorderSm =
+  'btn rounded-pill d-flex align-items-center justify-content-center my-btn-border px-3 py-2 flex-shrink-0';
+const btnGreenSm =
+  'btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green px-3 py-2 flex-shrink-0';
+/** 難度 segmented control（btn-group）：描邊式、勿用 rounded-pill 以便左右相接 */
+const btnBorderGroup = 'btn my-btn-border';
+
 let cardIdSeq = 0;
 function nextCardId() {
   return `design-card-${++cardIdSeq}`;
@@ -1039,7 +1049,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+  <div class="h-100 d-flex flex-column overflow-hidden my-bgcolor-black position-relative" data-bs-theme="dark">
     <LoadingOverlay
       :is-visible="isAnyLoading"
       loading-text="請稍候，正在載入或處理..."
@@ -1053,14 +1063,16 @@ onMounted(() => {
       @save="onRenameRagTabSave"
     />
 
-    <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
-      <div class="container-fluid d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
-        <div class="text-center text-md-start flex-grow-1">
-          <span class="navbar-brand mb-0">建立測驗題庫</span>
+    <header class="flex-shrink-0 py-3 px-3 px-md-4 my-bgcolor-black">
+      <div class="container-fluid px-0">
+        <div class="row justify-content-center">
+          <div class="col-12 col-xl-10 col-xxl-8 d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <p class="my-type-xl-600 my-color-white text-break mb-0">建立測驗題庫</p>
+            <span class="my-type-xs-400 my-color-gray-light">Prototype</span>
+          </div>
         </div>
-        <span class="badge rounded-pill bg-secondary">Prototype</span>
       </div>
-    </div>
+    </header>
 
     <RagTabsBar
       :rag-items="ragItems"
@@ -1073,16 +1085,17 @@ onMounted(() => {
       :delete-rag-loading="deleteRagLoading"
       :rename-tab-loading="renameRagTabSaving"
       :relax-button-disables="DESIGN_PROTOTYPE_NO_DISABLE"
+      design-chrome
       @update:active-tab-id="activeTabId = $event"
       @add-new-tab="addNewTab"
       @delete-rag="onDeleteRagTab"
       @rename-tab="openRenameRagTab"
     />
 
-    <div class="flex-grow-1 overflow-auto bg-white min-height-0">
+    <div class="flex-grow-1 overflow-auto min-height-0 my-bgcolor-black">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div class="col-12 col-xl-10 col-xxl-8">
             <template v-if="DESIGN_SHOW_ALL_UI_BLOCKS || ragList.length > 0 || showFormWhenNoData">
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || activeTabId"
@@ -1092,98 +1105,122 @@ onMounted(() => {
                   <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
                     <span
                       class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold my-font-size-sm"
-                      :class="createRagStepperPhase >= 1 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
+                      :class="
+                        createRagStepperPhase >= 1
+                          ? 'my-bgcolor-blue my-color-white'
+                          : 'my-bgcolor-gray-dark my-color-gray-light my-border-subtle'
+                      "
                     >1</span>
-                    <span class="mt-2 my-font-size-sm" :class="createRagStepperPhase >= 1 ? 'text-dark fw-medium' : 'text-muted'">上傳檔案</span>
+                    <span
+                      class="mt-2 my-font-size-sm"
+                      :class="createRagStepperPhase >= 1 ? 'my-type-sm-600 my-color-white' : 'my-color-gray-light'"
+                    >上傳檔案</span>
                   </div>
                   <div
                     class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
-                    :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-line--on' : ''"
+                    :class="createRagStepperPhase >= 2 ? 'my-bgcolor-blue' : 'my-bgcolor-gray-dark'"
                     aria-hidden="true"
                   />
                   <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
                     <span
                       class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold my-font-size-sm"
-                      :class="createRagStepperPhase >= 2 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
+                      :class="
+                        createRagStepperPhase >= 2
+                          ? 'my-bgcolor-blue my-color-white'
+                          : 'my-bgcolor-gray-dark my-color-gray-light my-border-subtle'
+                      "
                     >2</span>
-                    <span class="mt-2 my-font-size-sm" :class="createRagStepperPhase >= 2 ? 'text-dark fw-medium' : 'text-muted'">建立測驗題庫</span>
+                    <span
+                      class="mt-2 my-font-size-sm"
+                      :class="createRagStepperPhase >= 2 ? 'my-type-sm-600 my-color-white' : 'my-color-gray-light'"
+                    >建立測驗題庫</span>
                   </div>
                   <div
                     class="create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
-                    :class="createRagStepperPhase >= 3 ? 'create-rag-stepper-line--on' : ''"
+                    :class="createRagStepperPhase >= 3 ? 'my-bgcolor-blue' : 'my-bgcolor-gray-dark'"
                     aria-hidden="true"
                   />
                   <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
                     <span
                       class="create-rag-stepper-num rounded-circle d-inline-flex align-items-center justify-content-center flex-shrink-0 fw-semibold my-font-size-sm"
-                      :class="createRagStepperPhase >= 3 ? 'create-rag-stepper-num--on' : 'create-rag-stepper-num--off'"
+                      :class="
+                        createRagStepperPhase >= 3
+                          ? 'my-bgcolor-blue my-color-white'
+                          : 'my-bgcolor-gray-dark my-color-gray-light my-border-subtle'
+                      "
                     >3</span>
-                    <span class="mt-2 my-font-size-sm" :class="createRagStepperPhase >= 3 ? 'text-dark fw-medium' : 'text-muted'">測試問題</span>
+                    <span
+                      class="mt-2 my-font-size-sm"
+                      :class="createRagStepperPhase >= 3 ? 'my-type-sm-600 my-color-white' : 'my-color-gray-light'"
+                    >測試問題</span>
                   </div>
                 </div>
               </div>
 
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || (activeTabId && !hasUploadedFileMetadata)"
-                class="text-start border rounded p-3 mb-4 bg-body-tertiary"
+                class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark text-start mb-4"
               >
-                <p class="my-font-size-sm text-secondary mb-3">支援與正式版相同的副檔名；此處僅更新畫面狀態。</p>
-                <input
-                  ref="zipFileInputRef"
-                  type="file"
-                  :accept="UPLOAD_ACCEPT_ATTR"
-                  class="d-none"
-                  @change="onZipChange"
-                >
-                <div
-                  class="zip-drop-zone rounded border border-dashed border-2 p-5 text-center position-relative"
-                  :class="{ 'zip-drop-zone-over': isZipDragOver }"
-                  @dragover="onZipDragOver"
-                  @dragenter="onZipDragOver"
-                  @dragleave="onZipDragLeave"
-                  @drop="onZipDrop"
-                  @click="openZipFileDialog()"
-                >
-                  <template v-if="currentState.zipLoading">
-                    <span class="text-secondary my-font-size-sm">上傳中...</span>
-                  </template>
-                  <template v-else>
-                    <template v-if="currentState.zipFileName">
-                      <span class="my-font-size-sm text-body fw-medium">{{ currentState.zipFileName }}</span>
-                      <div class="mt-1 my-font-size-sm text-muted">點擊可重新選擇檔案</div>
-                    </template>
-                    <span v-else class="my-font-size-sm text-secondary">拖曳檔案到這裡，或點擊選擇檔案</span>
-                    <div class="mt-2 my-font-size-sm text-muted">
-                      可解析的檔案副檔名：.zip、.pdf、.doc、.docx、.ppt、.pptx
-                    </div>
-                  </template>
-                </div>
-                <div v-if="currentState.zipError" class="alert alert-danger mt-2 mb-0 py-2 my-font-size-sm">
-                  {{ currentState.zipError }}
-                </div>
-                <div class="d-flex justify-content-end mt-2">
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-primary rounded-pill px-3"
-                    :disabled="protoBtnDisabled(currentState.zipLoading || !currentState.zipFileName)"
-                    @click.stop="confirmUploadZip"
+                <div class="card-body p-3 p-lg-4">
+                  <p class="my-font-size-sm my-color-gray-light mb-3">支援與正式版相同的副檔名；此處僅更新畫面狀態。</p>
+                  <input
+                    ref="zipFileInputRef"
+                    type="file"
+                    :accept="UPLOAD_ACCEPT_ATTR"
+                    class="d-none"
+                    @change="onZipChange"
                   >
-                    確定上傳
-                  </button>
+                  <div
+                    class="zip-drop-zone rounded-4 border-2 border-dashed my-border-subtle p-5 text-center position-relative my-color-white"
+                    :class="{ 'my-border-color-blue': isZipDragOver }"
+                    @dragover="onZipDragOver"
+                    @dragenter="onZipDragOver"
+                    @dragleave="onZipDragLeave"
+                    @drop="onZipDrop"
+                    @click="openZipFileDialog()"
+                  >
+                    <template v-if="currentState.zipLoading">
+                      <span class="my-font-size-sm my-color-gray-light">上傳中...</span>
+                    </template>
+                    <template v-else>
+                      <template v-if="currentState.zipFileName">
+                        <span class="my-font-size-sm my-type-sm-600 my-color-white">{{ currentState.zipFileName }}</span>
+                        <div class="mt-1 my-font-size-sm my-color-gray-light">點擊可重新選擇檔案</div>
+                      </template>
+                      <span v-else class="my-font-size-sm my-color-gray-light">拖曳檔案到這裡，或點擊選擇檔案</span>
+                      <div class="mt-2 my-font-size-sm my-color-gray-light">
+                        可解析的檔案副檔名：.zip、.pdf、.doc、.docx、.ppt、.pptx
+                      </div>
+                    </template>
+                  </div>
+                  <div v-if="currentState.zipError" class="alert alert-danger mt-2 mb-0 py-2 my-font-size-sm">
+                    {{ currentState.zipError }}
+                  </div>
+                  <div class="d-flex justify-content-end mt-2">
+                    <button
+                      type="button"
+                      :class="btnBlueSm"
+                      :disabled="protoBtnDisabled(currentState.zipLoading || !currentState.zipFileName)"
+                      @click.stop="confirmUploadZip"
+                    >
+                      確定上傳
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || fileMetadataToShow != null"
-                class="text-start border rounded p-3 mb-4"
-                :class="{ 'pe-none text-muted': !hasRagMetadata && packGroupsEditBlocked }"
+                class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark text-start mb-4"
+                :class="{ 'pe-none my-color-gray-light': !hasRagMetadata && packGroupsEditBlocked }"
               >
+                <div class="card-body p-3 p-lg-4">
                 <div class="mb-3">
-                  <div class="my-font-size-sm text-secondary fw-medium mb-1">上傳檔案名稱</div>
-                  <div class="my-font-size-sm text-break">{{ uploadedZipDisplayName || '（示意）教材.zip' }}</div>
+                  <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">上傳檔案名稱</div>
+                  <div class="my-font-size-sm my-color-white text-break">{{ uploadedZipDisplayName || '（示意）教材.zip' }}</div>
                   <div
                     v-if="DESIGN_SHOW_ALL_UI_BLOCKS || uploadZipFileSizeDisplay"
-                    class="my-font-size-sm text-muted mt-1"
+                    class="my-font-size-sm my-color-gray-light mt-1"
                   >
                     檔案大小：{{ uploadZipFileSizeDisplay || '（示意）約 1.0 MB' }}
                   </div>
@@ -1191,33 +1228,33 @@ onMounted(() => {
 
                 <template v-if="hasRagMetadata">
                   <div class="mb-3">
-                    <div class="my-font-size-sm text-secondary fw-medium mb-1">出題單元</div>
-                    <div v-if="ragListReadonlyGroups.length" class="my-font-size-sm text-break">{{ ragListReadonlyInlineText }}</div>
-                    <div v-else class="my-font-size-sm text-muted">—</div>
+                    <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">出題單元</div>
+                    <div v-if="ragListReadonlyGroups.length" class="my-font-size-sm my-color-white text-break">{{ ragListReadonlyInlineText }}</div>
+                    <div v-else class="my-font-size-sm my-color-gray-light">—</div>
                   </div>
                   <div v-if="DESIGN_SHOW_ALL_UI_BLOCKS || ragBuildOutputSizeSummary" class="mb-3">
-                    <div class="my-font-size-sm text-secondary fw-medium mb-1">建置輸出檔大小</div>
-                    <div class="my-font-size-sm text-break">{{ ragBuildOutputSizeSummary || '（示意）單元 A 0.5 MB' }}</div>
+                    <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">建置輸出檔大小</div>
+                    <div class="my-font-size-sm my-color-white text-break">{{ ragBuildOutputSizeSummary || '（示意）單元 A 0.5 MB' }}</div>
                   </div>
                   <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
                     <div>
-                      <div class="my-font-size-sm text-secondary fw-medium mb-1">分段長度（字元）</div>
-                      <div class="my-font-size-sm">{{ chunkSize }}</div>
+                      <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">分段長度（字元）</div>
+                      <div class="my-font-size-sm my-color-white">{{ chunkSize }}</div>
                     </div>
                     <div>
-                      <div class="my-font-size-sm text-secondary fw-medium mb-1">分段重疊（字元）</div>
-                      <div class="my-font-size-sm">{{ chunkOverlap }}</div>
+                      <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">分段重疊（字元）</div>
+                      <div class="my-font-size-sm my-color-white">{{ chunkOverlap }}</div>
                     </div>
                   </div>
                   <div class="mb-3">
-                    <div class="my-font-size-sm mb-1">出題說明（給 AI）</div>
-                    <div class="my-font-size-sm border rounded p-3 bg-body-tertiary">
+                    <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">出題說明（給 AI）</div>
+                    <div class="my-font-size-sm border rounded p-3 my-border-subtle my-bgcolor-black my-color-white">
                       你是一個「{{ courseNameForPrompt }}」課程的教授，請給學生設計試卷題目：<br>
                       【出題規範】<br>
                       請根據輸入的「參考內容」設計試卷題目。<br>
                       **請使用繁體中文 (Traditional Chinese) 出題與撰寫提示及參考答案。**<br>
                       題目難度：{quiz_level}。<br>
-                      <span class="lh-base text-break text-danger">{{ (currentState.systemInstruction ?? '').trim() || '—' }}</span><br>
+                      <span class="lh-base text-break my-color-red">{{ (currentState.systemInstruction ?? '').trim() || '—' }}</span><br>
                       【回傳格式】<br>
                       請以 JSON 格式回傳：<br>
                       { "quiz_content": "問題內容", <br>
@@ -1231,7 +1268,7 @@ onMounted(() => {
                   >
                     <button
                       type="button"
-                      :class="currentRagIsExamRag ? 'btn btn-sm btn-outline-secondary rounded-pill px-3' : 'btn btn-sm btn-success rounded-pill px-3'"
+                      :class="currentRagIsExamRag ? btnBorderSm : btnGreenSm"
                       :disabled="protoBtnDisabled(currentState.forExamLoading)"
                       @click="currentRagIsExamRag ? clearRagForExam() : setRagForExam()"
                     >
@@ -1244,20 +1281,20 @@ onMounted(() => {
 
                   <div
                     v-if="DESIGN_SHOW_ALL_UI_BLOCKS"
-                    class="border-top border-secondary-subtle pt-4 mt-4"
+                    class="border-top border-secondary pt-4 mt-4"
                   >
-                    <div class="my-font-size-sm text-secondary fw-medium mb-3">
+                    <div class="my-font-size-sm my-type-sm-600 my-color-gray-light mb-3">
                       （介面示意）建置題庫「前」：出題單元編排與打包（與上方已建置唯讀區並列供參考）
                     </div>
                     <div class="mb-3">
-                      <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">資料夾</label>
+                      <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">資料夾</label>
                       <div class="d-flex flex-wrap gap-2 p-2 rounded border bg-body-secondary">
                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-2 rounded-pill">第一章</span>
                         <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2 py-2 rounded-pill">第二章</span>
                       </div>
                     </div>
                     <div class="mb-2">
-                      <label class="form-label my-font-size-sm text-secondary fw-medium mb-0">出題單元</label>
+                      <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-0">出題單元</label>
                       <div class="d-flex flex-wrap align-items-start gap-2">
                         <div
                           class="border rounded p-2 d-flex align-items-center gap-1 bg-body-secondary"
@@ -1265,45 +1302,45 @@ onMounted(() => {
                         >
                           <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1">
                             <span class="badge bg-primary px-2 py-2 rounded-pill">第一章</span>
-                            <span class="text-muted my-font-size-sm">+</span>
+                            <span class="my-font-size-sm my-color-gray-light">+</span>
                             <span class="badge bg-primary px-2 py-2 rounded-pill">第二章</span>
                           </div>
                         </div>
                         <div
-                          class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center rounded-pill"
+                          :class="[btnBorderSm, 'pack-drop-target']"
                           style="min-width: 140px; min-height: 2.5rem;"
                         >
                           + 新增出題單元
                         </div>
                       </div>
                       <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill">每個資料夾各新增一組出題單元</button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill">新增一組出題單元（合併全部資料夾）</button>
+                        <button type="button" :class="btnBorderSm">每個資料夾各新增一組出題單元</button>
+                        <button type="button" :class="btnBorderSm">新增一組出題單元（合併全部資料夾）</button>
                       </div>
                     </div>
                     <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
                       <div class="flex-grow-1" style="min-width: 180px; flex: 1 1 180px; max-width: 280px;">
-                        <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">分段長度（字元）</label>
+                        <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">分段長度（字元）</label>
                         <div class="form-control form-control-sm bg-body-secondary">1000</div>
                       </div>
                       <div class="flex-grow-1" style="min-width: 180px; flex: 1 1 180px; max-width: 280px;">
-                        <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">分段重疊（字元）</label>
+                        <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">分段重疊（字元）</label>
                         <div class="form-control form-control-sm bg-body-secondary">200</div>
                       </div>
                     </div>
                     <div class="mt-3 mb-2">
-                      <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">出題說明（給 AI）</label>
-                      <div class="my-font-size-sm border rounded p-3 bg-body-tertiary text-secondary">（示意）建立題庫前可在此編輯提示詞…</div>
+                      <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">出題說明（給 AI）</label>
+                      <div class="my-font-size-sm border rounded p-3 my-border-subtle my-bgcolor-black my-color-gray-light">（示意）建立題庫前可在此編輯提示詞…</div>
                     </div>
                     <div class="mt-3 d-flex justify-content-end">
-                      <button type="button" class="btn btn-sm btn-primary rounded-pill px-3">確定</button>
+                      <button type="button" :class="btnBlueSm">確定</button>
                     </div>
                   </div>
                 </template>
 
                 <template v-else>
                   <div v-if="secondFoldersFull.length" class="mb-3">
-                    <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">資料夾</label>
+                    <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">資料夾</label>
                     <div class="d-flex flex-wrap gap-2 p-2 rounded border bg-body-secondary">
                       <div
                         v-for="(name, i) in secondFoldersFull"
@@ -1322,7 +1359,7 @@ onMounted(() => {
                   </div>
 
                   <div class="mb-2">
-                    <label class="form-label my-font-size-sm text-secondary fw-medium mb-0">出題單元</label>
+                    <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-0">出題單元</label>
                     <div class="d-flex flex-wrap align-items-start gap-2">
                       <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
                         <div
@@ -1346,17 +1383,17 @@ onMounted(() => {
                             >
                               {{ tag }}
                               <span
-                                class="ms-1 text-muted"
+                                class="ms-1 my-color-gray-light"
                                 style="cursor: pointer;"
                                 @click.stop="removeFromRagList(gi, ti)"
                               >×</span>
                             </div>
-                            <span v-if="!group.length" class="text-muted my-font-size-sm">拖入此處</span>
+                            <span v-if="!group.length" class="my-font-size-sm my-color-gray-light">拖入此處</span>
                           </div>
                           <button
                             v-if="(currentState.packTasksList || []).length > 0"
                             type="button"
-                            class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
+                            class="btn btn-link p-0 ms-1 my-color-gray-light text-decoration-none flex-shrink-0"
                             style="min-width: 1.5rem;"
                             @click.stop="removeRagListGroup(gi)"
                           >
@@ -1365,7 +1402,7 @@ onMounted(() => {
                         </div>
                       </template>
                       <div
-                        class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center pack-drop-target rounded-pill"
+                        :class="[btnBorderSm, 'pack-drop-target']"
                         style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                         role="button"
                         tabindex="0"
@@ -1383,7 +1420,7 @@ onMounted(() => {
                     <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
                       <button
                         type="button"
-                        class="btn btn-sm btn-outline-secondary rounded-pill"
+                        :class="btnBorderSm"
                         :disabled="protoBtnDisabled(!secondFoldersFull.length)"
                         @click="addAllSecondFoldersAsGroups"
                       >
@@ -1391,7 +1428,7 @@ onMounted(() => {
                       </button>
                       <button
                         type="button"
-                        class="btn btn-sm btn-outline-secondary rounded-pill"
+                        :class="btnBorderSm"
                         :disabled="protoBtnDisabled(!secondFoldersFull.length)"
                         title="在現有出題單元之後再追加一組；該組包含全部資料夾，打包時以 + 連成同一題庫"
                         @click="setAllSecondFoldersAsSingleGroup"
@@ -1403,7 +1440,7 @@ onMounted(() => {
 
                   <div class="d-flex flex-wrap align-items-end gap-2 mb-2">
                     <div class="flex-grow-1" style="min-width: 180px; flex: 1 1 180px; max-width: 280px;">
-                      <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">分段長度（字元）</label>
+                      <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">分段長度（字元）</label>
                       <input
                         v-model.number="chunkSize"
                         type="number"
@@ -1414,7 +1451,7 @@ onMounted(() => {
                       >
                     </div>
                     <div class="flex-grow-1" style="min-width: 180px; flex: 1 1 180px; max-width: 280px;">
-                      <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">分段重疊（字元）</label>
+                      <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">分段重疊（字元）</label>
                       <input
                         v-model.number="chunkOverlap"
                         type="number"
@@ -1426,8 +1463,8 @@ onMounted(() => {
                     </div>
                   </div>
                   <div class="mt-3">
-                    <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">出題說明（給 AI）</label>
-                    <div class="my-font-size-sm border rounded p-3 bg-body-tertiary">
+                    <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1">出題說明（給 AI）</label>
+                    <div class="my-font-size-sm border rounded p-3 my-border-subtle my-bgcolor-black my-color-white">
                       【出題規範】<br>
                       請根據輸入的「參考內容」設計試卷題目。<br>
                       請使用繁體中文 (Traditional Chinese) 出題與撰寫提示及參考答案。<br>
@@ -1449,7 +1486,7 @@ onMounted(() => {
                   <div class="mt-3 d-flex justify-content-end">
                     <button
                       type="button"
-                      class="btn btn-sm btn-primary rounded-pill px-3"
+                      :class="btnBlueSm"
                       :disabled="protoBtnDisabled(packGroupsEditBlocked || !isPackTasksListReady(currentState.packTasksList ?? []))"
                       @click="confirmPack"
                     >
@@ -1460,16 +1497,16 @@ onMounted(() => {
                     {{ currentState.packError }}
                   </div>
                 </template>
+                </div>
               </div>
 
               <div
                 v-if="DESIGN_SHOW_ALL_UI_BLOCKS || (currentState.ragMetadata != null && String(currentState.ragMetadata).trim() !== '')"
                 class="text-start mb-5"
-                :class="{ 'text-muted': ragGenerateDisabled }"
               >
-                <div class="fs-5 fw-semibold mb-4 pb-2 border-bottom">測試問題</div>
+                <div class="my-type-md-600 my-color-white mb-4 pb-2 my-border-bottom-muted">測試問題</div>
 
-                <div class="mb-4">
+                <div class="mb-4" :class="{ 'my-color-gray-light': ragGenerateDisabled }">
                   <template v-for="slotIndex in currentState.quizSlotsCount" :key="slotIndex">
                     <template v-if="currentState.cardList[slotIndex - 1]">
                       <QuizCard
@@ -1478,29 +1515,31 @@ onMounted(() => {
                         :course-name="courseNameForPrompt"
                         :current-rag-id="currentRagIdForQuizCards"
                         :skip-rag-mismatch-guard="DESIGN_PROTOTYPE_NO_DISABLE"
+                        design-ui
                         @toggle-hint="toggleHint"
                         @confirm-answer="confirmAnswer"
                         @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
                       />
                     </template>
                     <template v-else>
-                      <div class="card mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-                        <div class="card-header py-2 bg-body-tertiary">
-                          <span class="fs-6 fw-semibold mb-0">第 {{ slotIndex }} 題</span>
+                      <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark mb-4" :class="{ 'mt-4': slotIndex > 1 }">
+                        <div class="card-header py-2 my-bgcolor-black my-border-bottom-muted">
+                          <span class="my-type-sm-600 my-color-white mb-0">第 {{ slotIndex }} 題</span>
                         </div>
                         <div class="card-body text-start pt-3">
                           <div class="d-flex flex-wrap align-items-end gap-3">
                             <div class="flex-grow-1 min-w-0" style="min-width: 10rem">
-                              <label class="form-label my-font-size-sm text-secondary fw-medium mb-1" :for="`rag-quiz-unit-${slotIndex}-toggle`">單元</label>
+                              <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1" :for="`rag-quiz-unit-${slotIndex}-toggle`">單元</label>
                               <UnitSelectDropdown
                                 v-model="getSlotFormState(slotIndex).generateQuizTabId"
                                 :options="generateQuizUnits"
                                 :menu-id="`rag-quiz-unit-design-${slotIndex}`"
+                                design-ui
                               />
                             </div>
                             <div>
-                              <label class="form-label my-font-size-sm text-secondary fw-medium mb-1 d-block">難度</label>
-                              <div class="d-flex flex-wrap gap-2" role="group">
+                              <label class="form-label my-font-size-sm my-type-sm-600 my-color-gray-light mb-1 d-block">難度</label>
+                              <div class="btn-group btn-group-sm" role="group" aria-label="題目難度">
                                 <template v-for="(opt, di) in difficultyOptions" :key="opt">
                                   <input
                                     :id="'rag-quiz-diff-d-' + slotIndex + '-' + di"
@@ -1512,7 +1551,7 @@ onMounted(() => {
                                     autocomplete="off"
                                   >
                                   <label
-                                    class="btn btn-sm btn-outline-primary rounded-pill"
+                                    :class="btnBorderGroup"
                                     :for="'rag-quiz-diff-d-' + slotIndex + '-' + di"
                                   >{{ opt }}</label>
                                 </template>
@@ -1520,7 +1559,7 @@ onMounted(() => {
                             </div>
                             <button
                               type="button"
-                              class="btn btn-sm btn-primary rounded-pill px-3"
+                              :class="btnBlueSm"
                               :disabled="protoBtnDisabled(getSlotFormState(slotIndex).loading || !String(getSlotFormState(slotIndex).generateQuizTabId || '').trim())"
                               @click="generateQuiz(slotIndex)"
                             >
@@ -1536,7 +1575,7 @@ onMounted(() => {
                   </template>
 
                   <div class="mb-0 pt-2 d-flex justify-content-center">
-                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" @click="openNextQuizSlot">
+                    <button type="button" :class="btnBlueSm" @click="openNextQuizSlot">
                       新增題目
                     </button>
                   </div>
@@ -1556,34 +1595,15 @@ onMounted(() => {
 }
 .zip-drop-zone {
   cursor: pointer;
-  border-color: rgba(0, 0, 0, 0.2) !important;
-  background: rgba(0, 0, 0, 0.02);
-}
-.zip-drop-zone:hover {
-  border-color: var(--bs-primary) !important;
-  background: rgba(13, 110, 253, 0.04);
-}
-.zip-drop-zone-over {
-  border-color: var(--bs-primary) !important;
-  background: rgba(13, 110, 253, 0.08) !important;
 }
 .pack-drop-target.pack-drop-active {
-  background-color: rgba(13, 202, 240, 0.15) !important;
-  border-color: var(--bs-info) !important;
+  border-color: var(--my-color-blue) !important;
+  background-color: color-mix(in srgb, var(--my-color-blue) 18%, transparent) !important;
 }
 .create-rag-stepper-num {
   width: 2.25rem;
   height: 2.25rem;
   line-height: 1;
-}
-.create-rag-stepper-num--on {
-  background-color: var(--bs-primary);
-  color: var(--bs-white);
-}
-.create-rag-stepper-num--off {
-  background-color: var(--bs-secondary-bg);
-  color: var(--bs-secondary-color);
-  border: 1px solid var(--bs-border-color);
 }
 .create-rag-stepper-line {
   flex: 1 1 1rem;
@@ -1591,10 +1611,6 @@ onMounted(() => {
   height: 2px;
   margin-top: 1.125rem;
   align-self: flex-start;
-  background-color: var(--bs-border-color);
   border-radius: 1px;
-}
-.create-rag-stepper-line--on {
-  background-color: var(--bs-primary);
 }
 </style>

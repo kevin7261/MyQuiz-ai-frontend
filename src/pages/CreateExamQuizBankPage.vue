@@ -1205,7 +1205,7 @@ async function confirmAnswer(item) {
           <div class="d-flex justify-content-end mt-2">
             <button
               type="button"
-              class="btn btn-sm btn-primary"
+              class="btn btn-primary"
               :disabled="currentState.zipLoading || !currentState.zipFileName"
               @click.stop="confirmUploadZip"
             >
@@ -1270,7 +1270,7 @@ async function confirmAnswer(item) {
           >
             <button
               type="button"
-              :class="currentRagIsExamRag ? 'btn btn-sm btn-outline-secondary' : 'btn btn-sm btn-success'"
+              :class="currentRagIsExamRag ? 'btn btn-outline-secondary' : 'btn btn-success'"
               :disabled="currentState.forExamLoading"
               @click="currentRagIsExamRag ? clearRagForExam() : setRagForExam()"
             >
@@ -1339,7 +1339,7 @@ async function confirmAnswer(item) {
                   <button
                     v-if="(currentState.packTasksList || []).length > 0"
                     type="button"
-                    class="btn btn-link btn-sm p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
+                    class="btn btn-link p-0 ms-1 text-muted text-decoration-none flex-shrink-0"
                     style="min-width: 1.5rem;"
                     @click.stop="removeRagListGroup(gi)"
                   >
@@ -1348,7 +1348,7 @@ async function confirmAnswer(item) {
                 </div>
               </template>
               <div
-                class="btn btn-sm btn-outline-primary d-flex align-items-center justify-content-center pack-drop-target"
+                class="btn btn-outline-primary d-flex align-items-center justify-content-center pack-drop-target"
                 style="min-width: 140px; min-height: 2.5rem; cursor: pointer;"
                 role="button"
                 tabindex="0"
@@ -1366,7 +1366,7 @@ async function confirmAnswer(item) {
             <div class="mt-2 d-flex flex-wrap gap-2 align-items-center">
               <button
                 type="button"
-                class="btn btn-sm btn-outline-secondary"
+                class="btn btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
                 @click="addAllSecondFoldersAsGroups"
               >
@@ -1374,7 +1374,7 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn btn-sm btn-outline-secondary"
+                class="btn btn-outline-secondary"
                 :disabled="!secondFoldersFull.length"
                 title="在現有出題單元之後再追加一組；該組包含全部資料夾，打包時以 + 連成同一題庫"
                 @click="setAllSecondFoldersAsSingleGroup"
@@ -1432,7 +1432,7 @@ async function confirmAnswer(item) {
           <div class="mt-3 d-flex justify-content-end">
             <button
               type="button"
-              class="btn btn-sm btn-primary"
+              class="btn btn-primary"
               :disabled="packGroupsEditBlocked || !isPackTasksListReady(currentState.packTasksList ?? [])"
               @click="confirmPack"
             >
@@ -1502,7 +1502,7 @@ async function confirmAnswer(item) {
                     </div>
                     <button
                       type="button"
-                      class="btn btn-sm btn-primary"
+                      class="btn btn-primary"
                       :disabled="getSlotFormState(slotIndex).loading || !String(getSlotFormState(slotIndex).generateQuizTabId || '').trim()"
                       @click="generateQuiz(slotIndex)"
                     >
@@ -1521,7 +1521,7 @@ async function confirmAnswer(item) {
           <div class="mb-0 pt-2 d-flex justify-content-center">
             <button
               type="button"
-              class="btn btn-sm btn-primary"
+              class="btn btn-primary"
               @click="openNextQuizSlot"
             >
               新增題目

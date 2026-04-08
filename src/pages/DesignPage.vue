@@ -25,7 +25,7 @@ const designSampleChoice = ref('選項一');
         <div class="row justify-content-center">
           <div class="col-12 col-xl-10 col-xxl-8">
           <section class="mb-5">
-            <h2 class="my-type-md-600 my-color-gray-light text-break mb-3">01 · 字階</h2>
+            <h2 class="my-type-md-600 my-color-white text-break mb-3">01 · 字階</h2>
             <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark">
               <div class="card-body p-3 p-lg-4">
                 <div class="row g-4 align-items-start">
@@ -34,35 +34,35 @@ const designSampleChoice = ref('選項一');
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-xl-400 my-color-white">第一級 · 一般</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-xl-400</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-xl-400</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-xl-400" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-lg-400 my-color-white">第二級 · 一般</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-lg-400</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-lg-400</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-lg-400" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
-                        <dt class="my-type-md-400 my-color-gray-light">第三級 · 一般</dt>
+                        <dt class="my-type-md-400 my-color-white">第三級 · 一般</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-md-400</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-md-400</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-md-400" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-sm-400 my-color-white">第四級 · 一般</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-sm-400</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-sm-400</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-sm-400" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1">
-                        <dt class="my-type-xs-400 my-color-gray-light">第五級 · 一般</dt>
+                        <dt class="my-type-xs-400 my-color-white">第五級 · 一般</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-xs-400</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-xs-400</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-xs-400" />
                         </dd>
                       </div>
@@ -73,35 +73,35 @@ const designSampleChoice = ref('選項一');
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-xl-600 my-color-white">第一級 · 強調</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-xl-600</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-xl-600</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-xl-600" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-lg-600 my-color-white">第二級 · 強調</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-lg-600</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-lg-600</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-lg-600" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-md-600 my-color-white">第三級 · 強調</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-md-600</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-md-600</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-md-600" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1 my-border-bottom-faint pb-3 mb-3">
                         <dt class="my-type-sm-600 my-color-white">第四級 · 強調</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-sm-600</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-sm-600</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-sm-600" />
                         </dd>
                       </div>
                       <div class="d-flex flex-column gap-1">
-                        <dt class="my-type-xs-600 my-color-gray-light">第五級 · 強調</dt>
+                        <dt class="my-type-xs-600 my-color-white">第五級 · 強調</dt>
                         <dd class="my-font-size-sm d-flex align-items-center gap-2 mb-0 w-100">
-                          <span class="font-monospace my-color-gray-light text-break flex-grow-1 min-w-0">.my-type-xs-600</span>
+                          <span class="font-monospace my-color-white text-break flex-grow-1 min-w-0">.my-type-xs-600</span>
                           <DesignPageCopyBtn class="ms-auto" text=".my-type-xs-600" />
                         </dd>
                       </div>
@@ -113,7 +113,7 @@ const designSampleChoice = ref('選項一');
           </section>
 
           <section class="mb-5">
-            <h2 class="my-type-md-600 my-color-gray-light text-break mb-3">02 · 語意色</h2>
+            <h2 class="my-type-md-600 my-color-white text-break mb-3">02 · 語意色</h2>
             <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark">
               <div class="card-body p-3 p-lg-4">
                 <div class="row g-3">
@@ -155,7 +155,7 @@ const designSampleChoice = ref('選項一');
           </section>
 
           <section class="mb-5">
-            <h2 class="my-type-md-600 my-color-gray-light text-break mb-3">03 · 灰階 · 背景</h2>
+            <h2 class="my-type-md-600 my-color-white text-break mb-3">03 · 灰階 · 背景</h2>
             <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark">
               <div class="card-body p-3 p-lg-4">
                 <div class="row g-3">
@@ -197,129 +197,204 @@ const designSampleChoice = ref('選項一');
           </section>
 
           <section class="mb-5">
-            <h2 class="my-type-md-600 my-color-gray-light text-break mb-3">04 · 按鈕</h2>
+            <h2 class="my-type-md-600 my-color-white text-break mb-3">04 · 按鈕</h2>
             <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark">
               <div class="card-body p-3 p-lg-4">
                 <div class="d-flex flex-column gap-3">
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-red my-color-white my-btn-hover-red flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red flex-shrink-0 design-page-btn-04 my-font-size-xs px-2 py-1"
                     >
                       紅色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-red my-color-white my-btn-hover-red px-3 py-2</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-red my-color-white my-btn-hover-red px-3 py-2" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red my-font-size-xs px-2 py-1</code>
+                    <DesignPageCopyBtn
+                      class="ms-auto align-self-end align-self-md-center"
+                      text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red my-font-size-xs px-2 py-1"
+                    />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-yellow my-color-black my-btn-hover-yellow flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow flex-shrink-0 design-page-btn-04 my-font-size-xs px-2 py-1"
                     >
                       黃色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-yellow my-color-black my-btn-hover-yellow px-3 py-2</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-yellow my-color-black my-btn-hover-yellow px-3 py-2" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow my-font-size-xs px-2 py-1</code>
+                    <DesignPageCopyBtn
+                      class="ms-auto align-self-end align-self-md-center"
+                      text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow my-font-size-xs px-2 py-1"
+                    />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-green my-color-white my-btn-hover-green flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green flex-shrink-0 design-page-btn-04 my-font-size-xs px-2 py-1"
                     >
                       綠色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-green my-color-white my-btn-hover-green px-3 py-2</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-green my-color-white my-btn-hover-green px-3 py-2" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green my-font-size-xs px-2 py-1</code>
+                    <DesignPageCopyBtn
+                      class="ms-auto align-self-end align-self-md-center"
+                      text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green my-font-size-xs px-2 py-1"
+                    />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 my-font-size-xs px-2 py-1"
                     >
                       藍色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue px-3 py-2</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue px-3 py-2" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue my-font-size-xs px-2 py-1</code>
+                    <DesignPageCopyBtn
+                      class="ms-auto align-self-end align-self-md-center"
+                      text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue my-font-size-xs px-2 py-1"
+                    />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-btn-border flex-shrink-0 design-page-btn-04 my-font-size-xs px-2 py-1"
                     >
-                    邊框
+                      邊框
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-btn-border px-3 py-2</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-btn-border px-3 py-2" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-btn-border my-font-size-xs px-2 py-1</code>
+                    <DesignPageCopyBtn
+                      class="ms-auto align-self-end align-self-md-center"
+                      text="btn rounded-pill d-flex align-items-center justify-content-center my-btn-border my-font-size-xs px-2 py-1"
+                    />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-red my-color-white my-btn-hover-red flex-shrink-0 design-page-btn-04 px-4 py-3"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red flex-shrink-0 design-page-btn-04 px-3 py-2"
                     >
                       紅色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-red my-color-white my-btn-hover-red px-4 py-3</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-red my-color-white my-btn-hover-red px-4 py-3" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red px-3 py-2</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red px-3 py-2" />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-yellow my-color-black my-btn-hover-yellow flex-shrink-0 design-page-btn-04 px-4 py-3"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow flex-shrink-0 design-page-btn-04 px-3 py-2"
                     >
                       黃色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-yellow my-color-black my-btn-hover-yellow px-4 py-3</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-yellow my-color-black my-btn-hover-yellow px-4 py-3" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow px-3 py-2</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow px-3 py-2" />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-green my-color-white my-btn-hover-green flex-shrink-0 design-page-btn-04 px-4 py-3"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green flex-shrink-0 design-page-btn-04 px-3 py-2"
                     >
                       綠色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-green my-color-white my-btn-hover-green px-4 py-3</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-green my-color-white my-btn-hover-green px-4 py-3" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green px-3 py-2</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green px-3 py-2" />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-4 py-3"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2"
                     >
                       藍色
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue px-4 py-3</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue px-4 py-3" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue px-3 py-2</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue px-3 py-2" />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <button
                       type="button"
-                      class="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-btn-border flex-shrink-0 design-page-btn-04 px-4 py-3"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2"
                     >
                     邊框
                     </button>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-btn-border px-4 py-3</code>
-                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn d-flex align-items-center justify-content-center rounded-pill btn-sm my-btn-border px-4 py-3" />
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-btn-border px-3 py-2</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-btn-border px-3 py-2" />
+                  </div>
+                  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red flex-shrink-0 design-page-btn-04 px-4 py-3"
+                    >
+                      紅色
+                    </button>
+                    <code
+                      class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red px-4 py-3</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-red my-color-white my-btn-hover-red px-4 py-3" />
+                  </div>
+                  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow flex-shrink-0 design-page-btn-04 px-4 py-3"
+                    >
+                      黃色
+                    </button>
+                    <code
+                      class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow px-4 py-3</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-yellow my-color-black my-btn-hover-yellow px-4 py-3" />
+                  </div>
+                  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green flex-shrink-0 design-page-btn-04 px-4 py-3"
+                    >
+                      綠色
+                    </button>
+                    <code
+                      class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green px-4 py-3</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-green my-color-white my-btn-hover-green px-4 py-3" />
+                  </div>
+                  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-4 py-3"
+                    >
+                      藍色
+                    </button>
+                    <code
+                      class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue px-4 py-3</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue px-4 py-3" />
+                  </div>
+                  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex align-items-center justify-content-center my-btn-border flex-shrink-0 design-page-btn-04 px-4 py-3"
+                    >
+                    邊框
+                    </button>
+                    <code
+                      class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
+                      >btn rounded-pill d-flex align-items-center justify-content-center my-btn-border px-4 py-3</code>
+                    <DesignPageCopyBtn class="ms-auto align-self-end align-self-md-center" text="btn rounded-pill d-flex align-items-center justify-content-center my-btn-border px-4 py-3" />
                   </div>
                 </div>
               </div>
@@ -327,7 +402,7 @@ const designSampleChoice = ref('選項一');
           </section>
 
           <section class="mb-5">
-            <h2 class="my-type-md-600 my-color-gray-light text-break mb-3">05 · 表格</h2>
+            <h2 class="my-type-md-600 my-color-white text-break mb-3">05 · 表格</h2>
             <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark">
               <div class="card-body p-3 p-lg-4">
                 <div class="rounded-4 overflow-auto my-border-subtle">
@@ -394,14 +469,14 @@ const designSampleChoice = ref('選項一');
           </section>
 
           <section class="pb-4">
-            <h2 class="my-type-md-600 my-color-gray-light text-break mb-3">06 · 下拉選單</h2>
+            <h2 class="my-type-md-600 my-color-white text-break mb-3">06 · 下拉選單</h2>
             <div class="card border-0 rounded-4 my-shadow-card my-bgcolor-gray-dark">
               <div class="card-body p-3 p-lg-4">
                 <div class="mb-4">
                   <div class="dropdown">
                     <button
                       id="design-page-choice-dropdown-btn"
-                      class="btn d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      class="btn rounded-pill d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2"
                       type="button"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
@@ -424,7 +499,7 @@ const designSampleChoice = ref('選項一');
                 </div>
                 <div class="dropdown">
                   <button
-                    class="btn d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret rounded-pill btn-sm my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2"
+                    class="btn rounded-pill d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2"
                     type="button"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
@@ -446,20 +521,20 @@ const designSampleChoice = ref('選項一');
                     <span class="my-color-gray-light flex-shrink-0 small">觸發（填色 · 同 04 藍）</span>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2</code>
+                      >btn rounded-pill d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2</code>
                     <DesignPageCopyBtn
                       class="ms-auto align-self-end align-self-md-center"
-                      text="btn d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret rounded-pill btn-sm my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      text="btn rounded-pill d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-bgcolor-blue my-color-white my-btn-hover-blue flex-shrink-0 design-page-btn-04 px-3 py-2"
                     />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <span class="my-color-gray-light flex-shrink-0 small">觸發（描邊 · 同 04）</span>
                     <code
                       class="user-select-all my-font-size-sm font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 p-2 rounded-2 my-bgcolor-black"
-                      >btn d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret rounded-pill btn-sm my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2</code>
+                      >btn rounded-pill d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2</code>
                     <DesignPageCopyBtn
                       class="ms-auto align-self-end align-self-md-center"
-                      text="btn d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret rounded-pill btn-sm my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2"
+                      text="btn rounded-pill d-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-btn-border flex-shrink-0 design-page-btn-04 px-3 py-2"
                     />
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">

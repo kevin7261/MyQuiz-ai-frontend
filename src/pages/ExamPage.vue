@@ -940,7 +940,7 @@ onMounted(() => {
           <div class="w-100 d-flex justify-content-center py-2">
             <button
               type="button"
-              class="btn btn-sm btn-outline-primary"
+              class="btn btn-outline-primary"
               :disabled="createExamLoading"
               @click="addNewTab"
             >
@@ -967,7 +967,7 @@ onMounted(() => {
                 <button
                   v-if="activeTabId === getExamTabId(exam)"
                   type="button"
-                  class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                  class="btn btn-link p-0 text-muted text-decoration-none tab-nav-action-btn"
                   title="重新命名分頁"
                   :disabled="deleteExamLoading || examRenameSaving"
                   @click.stop="openExamRenameModal(getExamTabId(exam))"
@@ -977,7 +977,7 @@ onMounted(() => {
                 <button
                   v-if="activeTabId === getExamTabId(exam)"
                   type="button"
-                  class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                  class="btn btn-link p-0 text-muted text-decoration-none tab-nav-action-btn"
                   title="刪除此測驗"
                   :disabled="deleteExamLoading || examRenameSaving"
                   @click.stop="deleteExam(getExamTabId(exam))"
@@ -989,7 +989,7 @@ onMounted(() => {
             <li class="nav-item ms-2 d-flex align-items-center">
               <button
                 type="button"
-                class="btn btn-sm btn-outline-primary mb-2"
+                class="btn btn-outline-primary mb-2"
                 :disabled="createExamLoading"
                 @click="addNewTab"
               >
@@ -1052,7 +1052,7 @@ onMounted(() => {
                     </div>
                     <div class="mb-3">
                       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
-                        <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
+                        <button type="button" class="btn btn-outline-secondary py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
                           {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                         </button>
                         <div class="btn-group btn-group-sm" role="group">
@@ -1110,7 +1110,7 @@ onMounted(() => {
                         <div class="d-flex justify-content-end mt-2">
                           <button
                             type="button"
-                            class="btn btn-sm btn-primary"
+                            class="btn btn-primary"
                             :disabled="examCardAnswerDisabled(currentState.cardList[slotIndex - 1])"
                             @click="confirmAnswer(currentState.cardList[slotIndex - 1])"
                           >
@@ -1164,7 +1164,7 @@ onMounted(() => {
                       </div>
                       <button
                         type="button"
-                        class="btn btn-sm btn-primary"
+                        class="btn btn-primary"
                         :disabled="getSlotFormState(slotIndex).loading || generateQuizBlocked || !String(getSlotFormState(slotIndex).generateQuizTabId || '').trim()"
                         @click="generateQuiz(slotIndex)"
                       >
@@ -1183,7 +1183,7 @@ onMounted(() => {
             <div class="mb-0 pt-2 d-flex flex-column align-items-center">
               <button
                 type="button"
-                class="btn btn-sm btn-primary"
+                class="btn btn-primary"
                 :disabled="generateQuizBlocked"
                 @click="openNextQuizSlot"
               >

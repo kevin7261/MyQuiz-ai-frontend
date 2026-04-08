@@ -29,24 +29,39 @@ defineProps({
   renameTabLoading: { type: Boolean, default: false },
   /** 為 true 時不因載入狀態禁用「+ 新增」與分頁操作按鈕（介面稿頁用） */
   relaxButtonDisables: { type: Boolean, default: false },
+  /** 與 UI 元件參考深色底＋04 藍色按鈕一致（建立測驗題庫設計稿用） */
+  designChrome: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 'rename-tab']);
 </script>
 
 <template>
-  <div class="flex-shrink-0 bg-white">
-    <div class="d-flex align-items-center justify-content-center px-4 w-100 border-bottom border-secondary-subtle">
+  <div
+    class="flex-shrink-0"
+    :class="[
+      designChrome ? 'rag-tabs-bar--design my-bgcolor-black border-bottom my-border-bottom-muted' : 'bg-white',
+    ]"
+  >
+    <div
+      class="d-flex justify-content-center px-4 w-100"
+      :class="[
+        designChrome ? 'align-items-end pb-0' : 'align-items-center border-bottom border-secondary-subtle',
+      ]"
+    >
       <!-- 載入中僅顯示文字 -->
       <template v-if="ragListLoading">
-        <span class="my-font-size-sm text-secondary">載入中...</span>
+        <span class="my-font-size-sm" :class="designChrome ? 'my-color-gray-light' : 'text-secondary'">載入中...</span>
       </template>
       <!-- 無任何分頁時只顯示「+ 新增」建立按鈕（上下留白，避免貼齊底線） -->
       <template v-else-if="ragItems.length === 0 && newTabItems.length === 0">
-        <div class="w-100 d-flex justify-content-center py-2">
+        <div
+          class="w-100 d-flex justify-content-center"
+          :class="designChrome ? 'py-0' : 'py-2'"
+        >
           <button
             type="button"
-            class="btn btn-sm btn-outline-primary"
+            class="btn rounded-pill btn-sm my-font-size-xs px-2 py-1 flex-shrink-0 d-flex align-items-center justify-content-center rag-tabs-add-btn my-btn-border my-border-color-blue"
             :disabled="relaxButtonDisables ? false : createRagLoading"
             @click="emit('add-new-tab')"
           >
@@ -74,7 +89,10 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
               <button
                 v-if="activeTabId === item._tabId"
                 type="button"
-                class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                :class="[
+                  'btn btn-link p-0 text-decoration-none tab-nav-action-btn',
+                  designChrome ? 'my-color-gray-light' : 'text-muted',
+                ]"
                 title="重新命名分頁"
                 :disabled="relaxButtonDisables ? false : deleteRagLoading || renameTabLoading"
                 @click.stop="emit('rename-tab', item._tabId)"
@@ -88,12 +106,19 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
                 title="試卷用題庫"
                 role="img"
               >
-                <span class="rounded-circle bg-success d-inline-block" style="width: 0.5rem; height: 0.5rem;" />
+                <span
+                  class="rounded-circle d-inline-block"
+                  :class="designChrome ? 'my-bgcolor-green' : 'bg-success'"
+                  style="width: 0.5rem; height: 0.5rem;"
+                />
               </span>
               <button
                 v-else-if="activeTabId === item._tabId"
                 type="button"
-                class="btn btn-link btn-sm p-0 text-muted text-decoration-none tab-nav-action-btn"
+                :class="[
+                  'btn btn-link p-0 text-decoration-none tab-nav-action-btn',
+                  designChrome ? 'my-color-gray-light' : 'text-muted',
+                ]"
                 title="刪除此出題單元"
                 :disabled="relaxButtonDisables ? false : deleteRagLoading || renameTabLoading"
                 @click.stop="emit('delete-rag', item._tabId)"
@@ -116,7 +141,10 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
           <li class="nav-item ms-2 d-flex align-items-center">
             <button
               type="button"
-              class="btn btn-sm btn-outline-primary mb-2"
+              :class="[
+                'btn rounded-pill btn-sm my-font-size-xs px-2 py-1 flex-shrink-0 d-flex align-items-center justify-content-center rag-tabs-add-btn my-btn-border my-border-color-blue',
+                designChrome ? '' : 'mb-2',
+              ]"
               :disabled="relaxButtonDisables ? false : createRagLoading"
               @click="emit('add-new-tab')"
             >
@@ -161,7 +189,32 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
   border-bottom-color: var(--bs-primary) !important;
 }
 
-/* 頁籤筆／刪除：同外框與圖示字級（略小），避免與 .btn-sm 字級衝突故設在 .fa-solid） */
+.rag-tabs-bar--design .nav-tabs .nav-link {
+  color: var(--my-color-gray-light);
+}
+.rag-tabs-bar--design .nav-tabs .nav-link.active {
+  color: var(--my-color-white);
+}
+.rag-tabs-bar--design .nav-tabs .nav-link.active,
+.rag-tabs-bar--design .nav-tabs .nav-link.active:hover,
+.rag-tabs-bar--design .nav-tabs .nav-link.active:focus,
+.rag-tabs-bar--design .nav-tabs .nav-link.active:focus-visible {
+  border-bottom-color: var(--my-color-blue) !important;
+}
+
+/* 設計稿：分頁底緣與外層底線之間不留空隙 */
+.rag-tabs-bar--design .nav-tabs {
+  margin-bottom: 0 !important;
+}
+.rag-tabs-bar--design .nav-tabs .nav-link {
+  padding-bottom: 0.25rem;
+  margin-bottom: 0;
+}
+.rag-tabs-bar--design .nav-item {
+  margin-bottom: 0 !important;
+}
+
+/* 頁籤筆／刪除：同外框與圖示字級（略小），字級設在 .fa-solid 以免與 .btn-link 預設字級牽制 */
 .tab-nav-action-btn {
   display: inline-flex;
   align-items: center;
@@ -177,5 +230,21 @@ const emit = defineEmits(['update:activeTabId', 'add-new-tab', 'delete-rag', 're
   line-height: 1;
   width: 1em;
   height: 1em;
+}
+
+/* 「+ 新增」：藍色描邊（.my-btn-border＋.my-border-color-blue）；覆寫深色主題描邊鈕預設灰框／白字 */
+button.rag-tabs-add-btn.btn.my-btn-border.my-border-color-blue {
+  color: var(--my-color-blue);
+  background-color: transparent;
+  border-color: var(--my-color-blue);
+}
+button.rag-tabs-add-btn.btn.my-btn-border.my-border-color-blue:hover:not(:disabled),
+button.rag-tabs-add-btn.btn.my-btn-border.my-border-color-blue:active:not(:disabled) {
+  color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-blue) 32%, transparent);
+  border-color: var(--my-color-blue);
+}
+button.rag-tabs-add-btn.btn.my-btn-border.my-border-color-blue:disabled {
+  opacity: 0.55;
 }
 </style>

@@ -152,7 +152,7 @@ async function saveProfile() {
                 </div>
                 <button
                   type="button"
-                  class="btn btn-primary btn-sm flex-shrink-0"
+                  class="btn btn-primary flex-shrink-0"
                   :disabled="loading"
                   @click="saveProfile"
                 >

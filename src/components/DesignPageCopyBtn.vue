@@ -1,7 +1,7 @@
 <template>
   <button
     type="button"
-    class="design-page-copy-btn btn btn-sm btn-link d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-1 lh-1 shadow-none text-decoration-none border-0"
+    class="design-page-copy-btn btn btn-link d-inline-flex align-items-center justify-content-center flex-shrink-0 rounded-circle p-1 lh-1 shadow-none text-decoration-none border-0"
     :class="onLightBg ? 'design-page-copy-btn--light' : 'design-page-copy-btn--dark'"
     @click.prevent="onCopy"
   >

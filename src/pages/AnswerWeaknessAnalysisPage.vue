@@ -203,7 +203,7 @@ onMounted(() => {
           <div class="mt-3 d-flex justify-content-end">
             <button
               type="button"
-              class="btn btn-outline-primary btn-sm"
+              class="btn btn-outline-primary"
               @click="onDownloadExcel"
             >
               下載 Excel

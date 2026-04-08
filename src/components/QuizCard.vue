@@ -21,6 +21,8 @@ const props = defineProps({
   currentRagId: { type: [String, Number], default: null },
   /** 為 true 時略過上述 rag_id 比對（介面稿頁用） */
   skipRagMismatchGuard: { type: Boolean, default: false },
+  /** 與 UI 元件參考按鈕／字色一致（建立測驗題庫設計稿用） */
+  designUi: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']);
@@ -50,36 +52,67 @@ const answerInputDisabled = computed(() => {
       <!-- 單元與難度（唯讀顯示） -->
       <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
         <div>
-          <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">單元</label>
+          <label
+            class="form-label my-font-size-sm fw-medium mb-1"
+            :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+          >單元</label>
           <div class="form-control form-control-sm bg-body-secondary border my-font-size-sm" style="min-height: 31px;">{{ card.ragName || '—' }}</div>
         </div>
         <div>
-          <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">難度</label>
+          <label
+            class="form-label my-font-size-sm fw-medium mb-1"
+            :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+          >難度</label>
           <div class="form-control form-control-sm bg-body-secondary border my-font-size-sm" style="min-height: 31px;">{{ card.generateLevel || '—' }}</div>
         </div>
       </div>
       <div class="mb-3">
-        <div class="form-label my-font-size-sm text-secondary fw-medium mb-1">題目</div>
+        <div
+          class="form-label my-font-size-sm fw-medium mb-1"
+          :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+        >題目</div>
         <div class="bg-body-secondary border rounded p-2 lh-base">
           {{ card.quiz }}
         </div>
       </div>
       <div class="mb-3">
-        <button type="button" class="btn btn-sm btn-outline-secondary py-0" @click="emit('toggle-hint', card)">
+        <button
+          type="button"
+          :class="[
+            designUi
+              ? 'btn rounded-pill d-inline-flex align-items-center justify-content-center my-btn-border px-3 py-0'
+              : 'btn py-0 btn-outline-secondary',
+          ]"
+          @click="emit('toggle-hint', card)"
+        >
           {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
         </button>
-        <div v-show="card.hintVisible" class="rounded bg-body-tertiary my-font-size-sm mt-2 p-2 text-secondary">
+        <div
+          v-show="card.hintVisible"
+          class="rounded bg-body-tertiary my-font-size-sm mt-2 p-2"
+          :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+        >
           {{ card.hint }}
         </div>
       </div>
       <div v-if="card.referenceAnswer" class="mb-3">
-        <div class="form-label my-font-size-sm text-secondary fw-medium mb-1">參考答案(暫存)</div>
+        <div
+          class="form-label my-font-size-sm fw-medium mb-1"
+          :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+        >參考答案(暫存)</div>
         <div class="rounded bg-body-tertiary border p-2 my-font-size-sm" style="white-space: pre-wrap;">{{ card.referenceAnswer }}</div>
       </div>
       <div class="mb-3">
         <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
-          <label :for="`quiz-answer-${card.id}`" class="form-label my-font-size-sm text-secondary fw-medium mb-0">答案</label>
-          <span class="form-text my-font-size-sm text-secondary text-end flex-shrink-0 mb-0">{{ card.quiz_answer.length }} / 2000</span>
+          <label
+            :for="`quiz-answer-${card.id}`"
+            class="form-label my-font-size-sm fw-medium mb-0"
+            :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+          >答案</label>
+          <span
+            class="form-text my-font-size-sm text-end flex-shrink-0 mb-0"
+            :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+          >{{ card.quiz_answer.length }} / 2000</span>
         </div>
         <template v-if="!card.confirmed">
           <textarea
@@ -94,7 +127,17 @@ const answerInputDisabled = computed(() => {
           />
           <div v-if="answerInputDisabled" class="form-text my-font-size-sm text-warning">此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
           <div class="d-flex justify-content-end mt-2">
-            <button type="button" class="btn btn-sm btn-primary" :disabled="answerInputDisabled" @click="emit('confirm-answer', card)">確定</button>
+            <button
+              type="button"
+              :class="[
+                'btn rounded-pill px-3 py-2 flex-shrink-0',
+                designUi
+                  ? 'd-flex align-items-center justify-content-center my-bgcolor-blue my-color-white my-btn-hover-blue'
+                  : 'btn-primary',
+              ]"
+              :disabled="answerInputDisabled"
+              @click="emit('confirm-answer', card)"
+            >確定</button>
           </div>
         </template>
         <template v-else>
@@ -102,7 +145,10 @@ const answerInputDisabled = computed(() => {
         </template>
       </div>
       <div class="mb-3">
-        <label class="form-label my-font-size-sm text-secondary fw-medium mb-1">批改規則（預覽）</label>
+        <label
+          class="form-label my-font-size-sm fw-medium mb-1"
+          :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+        >批改規則（預覽）</label>
         <div class="my-font-size-sm border rounded p-3 bg-body-tertiary">
           你是一位「{{ courseName }}」課程的教授，請批改這道題目：<br>
           【評分規範】<br>
@@ -128,7 +174,10 @@ const answerInputDisabled = computed(() => {
       </div>
       <!-- 批改結果區（由 useQuizGrading 格式化後顯示） -->
       <div class="mb-3">
-        <div class="form-label my-font-size-sm text-secondary fw-medium mb-1">批改結果</div>
+        <div
+          class="form-label my-font-size-sm fw-medium mb-1"
+          :class="designUi ? 'my-color-gray-light' : 'text-secondary'"
+        >批改結果</div>
         <div class="rounded bg-body-tertiary border p-2 my-font-size-sm" style="white-space: pre-wrap;">{{ card.gradingResult || '尚未批改' }}</div>
       </div>
     </div>
