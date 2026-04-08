@@ -345,7 +345,7 @@ function onDesignTabRename(tabId) {
           </section>
 
           <!-- ===== 05 · 按鈕 + 08 · 下拉選單（同一 section） =====
-               按鈕：小／中／大三組；每組 藍（my-button-blue）／白描邊／白無框；列排版＝示範 + <code> + DesignPageCopyBtn。
+               按鈕：小／中／大三組；每組 藍（my-button-blue）／白描邊／白無框；中號另附兩鍵 btn-group + my-btn-group-pill。
                圓形：分頁「+」與複製鈕同規 my-btn-circle + my-button-white-borderless。
                08 下拉：緊接於此深底區塊下；觸發鈕僅示範「中」字級（my-font-md-400 · px-3 py-2）之藍底與白無框；選單 my-dropdown-menu。 -->
           <section class="my-page-block-spacing">
@@ -450,6 +450,34 @@ function onDesignTabRename(tabId) {
                         <DesignPageCopyBtn
                           class="align-self-end align-self-md-center ms-auto"
                           text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless px-3 py-2"
+                        />
+                      </div>
+                      <div class="my-color-gray-light small mb-2">兩鍵群組（btn-group · my-btn-group-pill · 中）</div>
+                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                        <div
+                          class="btn-group my-btn-group-pill flex-shrink-0"
+                          role="group"
+                          aria-label="示範：兩鍵群組（中）"
+                        >
+                          <button
+                            type="button"
+                            class="btn d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-3 py-2"
+                          >
+                            選項甲
+                          </button>
+                          <button
+                            type="button"
+                            class="btn d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border px-3 py-2"
+                          >
+                            選項乙
+                          </button>
+                        </div>
+                        <code
+                          class="user-select-all my-font-sm-400 font-monospace my-color-gray-light text-break flex-grow-1 min-w-0 rounded-2 my-bgcolor-black p-2"
+                          >btn-group my-btn-group-pill · btn … my-font-md-400 my-button-blue px-3 py-2 · btn … my-button-white-border px-3 py-2</code>
+                        <DesignPageCopyBtn
+                          class="align-self-end align-self-md-center ms-auto"
+                          text="btn-group my-btn-group-pill btn my-font-md-400 my-button-blue px-3 py-2 btn my-font-md-400 my-button-white-border px-3 py-2"
                         />
                       </div>
                     </div>

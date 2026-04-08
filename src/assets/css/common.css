@@ -252,6 +252,18 @@ code {
   box-sizing: border-box;
 }
 
+/* 兩鍵（或多鍵）膠囊群組：併 Bootstrap `.btn-group`；內層 `.btn` 勿再加 `.rounded-pill`（由外層裁切圓角） */
+.my-btn-group-pill.btn-group {
+  border-radius: 999px;
+  overflow: hidden;
+}
+.my-btn-group-pill.btn-group > .btn {
+  border-radius: 0 !important;
+}
+.my-btn-group-pill.btn-group > .btn:focus-visible {
+  z-index: 2;
+}
+
 /* nav-tabs（建立測驗題庫分頁列、ExamPage）：Bootstrap 在 :hover／:focus 會套四邊 border-color，取消左右垂直線 */
 .nav.nav-tabs .nav-link {
   border-left: none !important;

@@ -65,13 +65,9 @@ import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 const props = defineProps({
   tabId: { type: String, required: true },
-  /** 與 DesignPage 相同外殼（黑底、欄寬、分頁列深色）；由 CreateExamQuizBankDesignPage 傳入 */
-  designPageLayout: { type: Boolean, default: false },
+  /** 本機示範：不呼叫後端 API，畫面與 /create-test-bank 相同；由 CreateExamQuizBankDesignPage 傳入 */
+  mockWithoutApi: { type: Boolean, default: false },
 });
-
-const contentBlockClass = computed(() =>
-  props.designPageLayout ? 'my-bgcolor-gray-dark' : 'my-bgcolor-page-block'
-);
 
 let cardIdSeq = 0;
 function nextCardId() {
@@ -89,7 +85,7 @@ function fileHasAllowedUploadExtension(file) {
 
 const authStore = useAuthStore();
 
-const ragListFetchEnabled = computed(() => !props.designPageLayout);
+const ragListFetchEnabled = computed(() => !props.mockWithoutApi);
 const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList({
   fetchEnabled: ragListFetchEnabled,
 });
@@ -111,18 +107,18 @@ const newTabIds = ref([]);
 
 const { getTabState, currentState, isNewTabId } = useRagTabState(activeTabId, newTabIds, ragList, authStore, { defaultSystemInstruction: DEFAULT_SYSTEM_INSTRUCTION });
 
-/** 介面稿：本機假資料分頁 id（不呼叫 GET /rag/tabs，由父層灌入單筆示範 RAG） */
-const DESIGN_MOCK_TAB_ID = 'design-mock-tab';
+/** 本機示範用分頁 id（不呼叫 GET /rag/tabs；由 mockWithoutApi 灌入單筆假 RAG） */
+const STATIC_MOCK_TAB_ID = 'static-mock-tab';
 
 const showCreateBankMainForm = computed(
-  () => ragList.value.length > 0 || showFormWhenNoData.value || props.designPageLayout
+  () => ragList.value.length > 0 || showFormWhenNoData.value || props.mockWithoutApi
 );
-const showStepperSection = computed(() => props.designPageLayout || !!activeTabId.value);
+const showStepperSection = computed(() => props.mockWithoutApi || !!activeTabId.value);
 
-/** 供 /create-test-bank_design 顯示與正式頁相同結構的單筆 RAG（純前端，無 API） */
-function buildDesignMockRag() {
+/** 供 /create-test-bank_design：與正式頁相同資料結構的單筆 RAG（純前端，無 API） */
+function buildStaticMockRag() {
   return {
-    rag_tab_id: DESIGN_MOCK_TAB_ID,
+    rag_tab_id: STATIC_MOCK_TAB_ID,
     rag_id: 999001,
     tab_name: '示範測驗題庫',
     unit_list: '第一章+第二章',
@@ -135,8 +131,8 @@ function buildDesignMockRag() {
     chunk_size: 1000,
     chunk_overlap: 200,
     outputs: [
-      { rag_tab_id: DESIGN_MOCK_TAB_ID, rag_name: '示範單元甲', unit_name: '示範單元甲', filename: '甲.zip' },
-      { rag_tab_id: DESIGN_MOCK_TAB_ID, rag_name: '示範單元乙', unit_name: '示範單元乙', filename: '乙.zip' },
+      { rag_tab_id: STATIC_MOCK_TAB_ID, rag_name: '示範單元甲', unit_name: '示範單元甲', filename: '甲.zip' },
+      { rag_tab_id: STATIC_MOCK_TAB_ID, rag_name: '示範單元乙', unit_name: '示範單元乙', filename: '乙.zip' },
     ],
     quizzes: [
       {
@@ -154,10 +150,10 @@ function buildDesignMockRag() {
 }
 
 watch(
-  () => props.designPageLayout,
-  (isDesign) => {
-    if (isDesign) {
-      ragList.value = [buildDesignMockRag()];
+  () => props.mockWithoutApi,
+  (useMock) => {
+    if (useMock) {
+      ragList.value = [buildStaticMockRag()];
     }
   },
   { immediate: true }
@@ -324,7 +320,7 @@ const currentRagIdAndTabId = computed(() => {
 watch(
   currentRagIdAndTabId,
   (v) => {
-    if (props.designPageLayout) return;
+    if (props.mockWithoutApi) return;
     // 畫面不顯示 rag_id／rag_tab_id，改由此處輸出供除錯
     // eslint-disable-next-line no-console -- 依需求於開發者工具查看
     console.log('[CreateExamQuizBankPage] rag_id:', v.rag_id, 'rag_tab_id:', v.rag_tab_id);
@@ -368,9 +364,9 @@ const fileMetadataToShow = computed(() => {
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
 
-/** 介面稿一律顯示上傳區（與下方「已上傳」區塊並列，方便對照正式頁所有元件） */
+/** mockWithoutApi 時仍顯示上傳區（與下方「已上傳」區塊並列，與正式頁相同元件） */
 const showUploadFileSection = computed(
-  () => props.designPageLayout || (!!activeTabId.value && !hasUploadedFileMetadata.value)
+  () => props.mockWithoutApi || (!!activeTabId.value && !hasUploadedFileMetadata.value)
 );
 
 /**
@@ -567,18 +563,18 @@ function syncRagItemToState(rag, state) {
 
 watch(currentRagItem, (rag) => syncRagItemToState(rag, currentState.value), { immediate: true });
 
-/** 介面稿：在示範 RAG 同步後多開一題槽，同時顯示題卡與「產生題目」表單 */
+/** mockWithoutApi：本機示範 RAG 同步後多開一題槽，同時顯示題卡與「產生題目」表單 */
 watch(
   () => [
-    props.designPageLayout,
+    props.mockWithoutApi,
     currentRagItem.value?.rag_tab_id,
     activeTabId.value,
     currentState.value?.quizSlotsCount,
   ],
   async () => {
-    if (!props.designPageLayout) return;
+    if (!props.mockWithoutApi) return;
     const rag = currentRagItem.value;
-    if (!rag || String(rag.rag_tab_id ?? '') !== DESIGN_MOCK_TAB_ID) return;
+    if (!rag || String(rag.rag_tab_id ?? '') !== STATIC_MOCK_TAB_ID) return;
     await nextTick();
     const id = activeTabId.value;
     if (!id) return;
@@ -667,7 +663,7 @@ watch(chunkOverlap, (v) => {
 }, { flush: 'post' });
 
 async function refreshRagForExamSetting() {
-  if (props.designPageLayout) return;
+  if (props.mockWithoutApi) return;
   try {
     const data = await apiGetRagForExamSetting();
     ragForExamSettingRagId.value = parseRagIdFromRagForExamSettingPayload(data);
@@ -699,7 +695,7 @@ onMounted(() => {
 
 /** 設為測驗用（PUT system-settings rag-for-exam-*） */
 async function setRagForExam() {
-  if (props.designPageLayout) return;
+  if (props.mockWithoutApi) return;
   const rag = currentRagItem.value;
   if (!rag || isNewTabId(activeTabId.value)) return;
   const ragId = rag.rag_id ?? rag.id;
@@ -729,7 +725,7 @@ async function setRagForExam() {
 
 /** 取消測驗用（PUT rag_id 空字串） */
 async function clearRagForExam() {
-  if (props.designPageLayout) return;
+  if (props.mockWithoutApi) return;
   if (!currentRagIsExamRag.value || isNewTabId(activeTabId.value)) return;
   const personId = getPersonId(authStore);
   if (!personId) {
@@ -752,7 +748,7 @@ async function clearRagForExam() {
 
 /** 刪除 RAG */
 async function deleteRag(rag, e) {
-  if (props.designPageLayout) return;
+  if (props.mockWithoutApi) return;
   if (e) e.stopPropagation();
   const fileId = rag?.rag_tab_id ?? rag?.id ?? rag;
   if (fileId == null || fileId === '') return;
@@ -795,7 +791,7 @@ const ragCreatedAtMap = ref({});
 
 /** 點「新增」：建立 RAG，成功後重整列表並切到新 tab */
 async function addNewTab() {
-  if (props.designPageLayout) {
+  if (props.mockWithoutApi) {
     createRagError.value = '';
     createRagLoading.value = false;
     const personId = getPersonId(authStore);
@@ -874,7 +870,7 @@ async function onRenameRagTabSave(name) {
     renameRagTabError.value = '請輸入名稱';
     return;
   }
-  if (props.designPageLayout) {
+  if (props.mockWithoutApi) {
     const rid = renameRagTabDraftRagId.value;
     const rag = ragList.value.find(
       (x) => x != null && Number(x.rag_id) === Number(rid)
@@ -963,7 +959,7 @@ function openZipFileDialog() {
 
 /** 上傳 ZIP */
 async function confirmUploadZip() {
-  if (props.designPageLayout) {
+  if (props.mockWithoutApi) {
     const state = currentState.value;
     if (!state.uploadedZipFile) {
       state.zipError = '請先選擇要上傳的檔案';
@@ -1040,7 +1036,7 @@ async function confirmUploadZip() {
 
 /** 出題群組確定：tab/build-rag-zip（按鈕文案「確定」） */
 async function confirmPack() {
-  if (props.designPageLayout) {
+  if (props.mockWithoutApi) {
     const state = currentState.value;
     const fileId = String(state.zipTabId ?? '').trim();
     const unitList = state.packTasks?.trim();
@@ -1059,7 +1055,7 @@ async function confirmPack() {
     state.packLoading = true;
     state.packError = '';
     try {
-      const mock = buildDesignMockRag();
+      const mock = buildStaticMockRag();
       state.packResponseJson = {
         rag_tab_id: fileId,
         outputs: mock.outputs,
@@ -1172,7 +1168,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 
 /** 產生題目 */
 async function generateQuiz(slotIndex) {
-  if (props.designPageLayout) {
+  if (props.mockWithoutApi) {
     const state = currentState.value;
     const slotState = getSlotFormState(slotIndex);
     const selectedUnit = findQuizUnitBySlotSelection(generateQuizUnits.value, slotState.generateQuizTabId);
@@ -1188,7 +1184,7 @@ async function generateQuiz(slotIndex) {
     try {
       setCardAtSlot(
         slotIndex,
-        '（示範）此為介面稿預覽題目，不會呼叫後端出題 API。',
+        '（示範）本機預覽題目，不會呼叫後端出題 API。',
         '可參考教材中與「' + unitName + '」相關的段落。',
         selectedUnit?.filename ?? '',
         '（示範參考答案）',
@@ -1269,8 +1265,8 @@ function toggleHint(item) {
 /** 評分：POST /rag/tab/quiz/grade；body: rag_id、rag_tab_id、rag_quiz_id、quiz_content、quiz_answer、quiz_answer_reference（皆 string，選填可 ""）；回傳 202 + job_id；輪詢 GET /rag/tab/quiz/grade-result/{job_id}；ready 時 result: { quiz_score, quiz_comments, rag_answer_id }。 */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
-  if (props.designPageLayout) {
-    applyDesignMockGrading(item);
+  if (props.mockWithoutApi) {
+    applyMockGradingPreview(item);
     return;
   }
   const state = currentState.value;
@@ -1306,11 +1302,11 @@ async function confirmAnswer(item) {
   }
 }
 
-/** 介面稿：本地預覽批改結果（不呼叫評分 API） */
-function applyDesignMockGrading(item) {
+/** 本機示範：預覽批改結果（不呼叫評分 API） */
+function applyMockGradingPreview(item) {
   const preview = JSON.stringify({
     quiz_score: 4,
-    quiz_comments: ['示範：介面稿不連線後端。', '內容大致正確，可再補充例證。'],
+    quiz_comments: ['示範：本機預覽不連後端。', '內容大致正確，可再補充例證。'],
   });
   item.confirmed = true;
   item.gradingResult = formatGradingResult(preview) || preview;
@@ -1318,11 +1314,7 @@ function applyDesignMockGrading(item) {
 </script>
 
 <template>
-  <div
-    class="d-flex flex-column h-100 position-relative"
-    :class="designPageLayout ? 'overflow-hidden my-bgcolor-black' : 'bg-body-secondary'"
-    :data-bs-theme="designPageLayout ? 'dark' : undefined"
-  >
+  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
     <LoadingOverlay
       :is-visible="isAnyLoading"
       loading-text="請稍候，正在載入或處理..."
@@ -1335,52 +1327,27 @@ function applyDesignMockGrading(item) {
       title="修改測驗題庫分頁名稱"
       @save="onRenameRagTabSave"
     />
-    <header v-if="designPageLayout" class="flex-shrink-0 my-bgcolor-black py-3 px-3 px-md-4">
-      <div class="container-fluid px-0">
-        <div class="row justify-content-center">
-          <div class="col-12 col-xl-10 col-xxl-8">
-            <p class="my-font-xl-600 my-color-white text-break mb-0">建立測驗題庫（介面稿）</p>
-          </div>
-        </div>
-      </div>
-    </header>
-    <div v-else class="navbar navbar-expand-lg bg-white flex-shrink-0">
+    <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand my-font-xl-400 mb-0">建立測驗題庫</span>
       </div>
     </div>
-    <div
-      class="flex-shrink-0 my-rag-tabs-bar"
-      :class="
-        designPageLayout ? 'my-rag-tabs-bar--design my-bgcolor-black border-bottom' : 'bg-white'
-      "
-    >
+    <div class="flex-shrink-0 my-rag-tabs-bar bg-white">
       <div
-        class="d-flex justify-content-center w-100 px-4"
-        :class="
-          designPageLayout
-            ? 'align-items-end pb-0'
-            : 'align-items-center border-bottom border-secondary-subtle'
-        "
+        class="d-flex justify-content-center align-items-center border-bottom border-secondary-subtle w-100 px-4"
       >
         <template v-if="ragListLoading">
-          <span
-            class="my-font-sm-400"
-            :class="designPageLayout ? 'my-color-gray-light' : 'text-secondary'"
-            >載入中...</span>
+          <span class="my-font-sm-400 text-secondary">載入中...</span>
         </template>
         <template v-else-if="ragItems.length === 0 && newTabItems.length === 0">
-          <div
-            class="w-100 d-flex justify-content-center"
-            :class="designPageLayout ? 'py-0' : 'py-2'"
-          >
+          <div class="w-100 d-flex justify-content-center py-2">
             <button
               type="button"
               class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle"
               title="新增分頁"
               :aria-label="createRagLoading ? '建立中' : '新增分頁'"
               :aria-busy="createRagLoading"
-              :disabled="designPageLayout ? false : createRagLoading"
+              :disabled="mockWithoutApi ? false : createRagLoading"
               @click="addNewTab"
             >
               <i
@@ -1410,12 +1377,9 @@ function applyDesignMockGrading(item) {
                 <button
                   v-if="activeTabId === item._tabId"
                   type="button"
-                  :class="[
-                    'btn btn-link text-decoration-none my-tab-nav-action-btn p-0',
-                    designPageLayout ? 'my-color-gray-light' : 'text-muted',
-                  ]"
+                  class="btn btn-link text-decoration-none my-tab-nav-action-btn p-0 text-muted"
                   title="重新命名分頁"
-                  :disabled="designPageLayout ? false : deleteRagLoading || renameRagTabSaving"
+                  :disabled="mockWithoutApi ? false : deleteRagLoading || renameRagTabSaving"
                   @click.stop="openRenameRagTab(item._tabId)"
                 >
                   <i class="fa-solid fa-pen" aria-hidden="true" />
@@ -1428,20 +1392,16 @@ function applyDesignMockGrading(item) {
                   role="img"
                 >
                   <span
-                    class="rounded-circle d-inline-block"
-                    :class="designPageLayout ? 'my-bgcolor-blue' : 'bg-success'"
+                    class="rounded-circle d-inline-block bg-success"
                     style="width: 0.5rem; height: 0.5rem"
                   />
                 </span>
                 <button
                   v-else-if="activeTabId === item._tabId"
                   type="button"
-                  :class="[
-                    'btn btn-link text-decoration-none my-tab-nav-action-btn p-0',
-                    designPageLayout ? 'my-color-gray-light' : 'text-muted',
-                  ]"
+                  class="btn btn-link text-decoration-none my-tab-nav-action-btn p-0 text-muted"
                   title="刪除此出題單元"
-                  :disabled="designPageLayout ? false : deleteRagLoading || renameRagTabSaving"
+                  :disabled="mockWithoutApi ? false : deleteRagLoading || renameRagTabSaving"
                   @click.stop="onDeleteRagTab(item._tabId)"
                 >
                   <i class="fa-solid fa-xmark" aria-hidden="true" />
@@ -1465,11 +1425,8 @@ function applyDesignMockGrading(item) {
                 title="新增分頁"
                 :aria-label="createRagLoading ? '建立中' : '新增分頁'"
                 :aria-busy="createRagLoading"
-                :class="[
-                  'btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle',
-                  designPageLayout ? '' : 'mb-2',
-                ]"
-                :disabled="designPageLayout ? false : createRagLoading"
+                class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle mb-2"
+                :disabled="mockWithoutApi ? false : createRagLoading"
                 @click="addNewTab"
               >
                 <i
@@ -1490,20 +1447,11 @@ function applyDesignMockGrading(item) {
       </div>
     </div>
 
-    <!-- 內容區：可上下捲動（介面稿與 DesignPage 同寬：container-fluid + col-xl-10 col-xxl-8） -->
-    <div
-      class="flex-grow-1 overflow-auto"
-      :class="designPageLayout ? '' : 'bg-white px-4 py-5'"
-    >
-      <div :class="designPageLayout ? 'container-fluid px-3 px-md-4 py-4' : ''">
-        <div class="row justify-content-center">
-          <div
-            :class="
-              designPageLayout ? 'col-12 col-xl-10 col-xxl-8' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
-            "
-          >
-            <div :class="{ 'my-create-exam-design-inner': designPageLayout }">
-      <!-- 無資料時不顯示表單，點「+」後才顯示；介面稿無列表時仍顯示示範表單 -->
+    <!-- 內容區：與 /create-test-bank 相同版面 -->
+    <div class="flex-grow-1 overflow-auto bg-white px-4 py-5">
+      <div class="row justify-content-center">
+        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+      <!-- 無資料時不顯示表單，點「+」後才顯示；mockWithoutApi 時仍顯示示範表單 -->
       <template v-if="showCreateBankMainForm">
       <!-- 建立流程 stepper：依 file_metadata / rag_metadata 亮起 1～3 步 -->
       <div v-if="showStepperSection" class="my-create-rag-stepper text-start my-page-block-spacing">
@@ -1515,15 +1463,7 @@ function applyDesignMockGrading(item) {
             >1</span>
             <span
               class="mt-2"
-              :class="
-                createRagStepperPhase >= 1
-                  ? designPageLayout
-                    ? 'my-color-white my-font-sm-600'
-                    : 'text-dark my-font-sm-600'
-                  : designPageLayout
-                    ? 'my-color-gray-light my-font-sm-400'
-                    : 'text-muted my-font-sm-400'
-              "
+              :class="createRagStepperPhase >= 1 ? 'text-dark my-font-sm-600' : 'text-muted my-font-sm-400'"
             >上傳檔案</span>
           </div>
           <div
@@ -1538,15 +1478,7 @@ function applyDesignMockGrading(item) {
             >2</span>
             <span
               class="mt-2"
-              :class="
-                createRagStepperPhase >= 2
-                  ? designPageLayout
-                    ? 'my-color-white my-font-sm-600'
-                    : 'text-dark my-font-sm-600'
-                  : designPageLayout
-                    ? 'my-color-gray-light my-font-sm-400'
-                    : 'text-muted my-font-sm-400'
-              "
+              :class="createRagStepperPhase >= 2 ? 'text-dark my-font-sm-600' : 'text-muted my-font-sm-400'"
             >建立測驗題庫</span>
           </div>
           <div
@@ -1561,22 +1493,14 @@ function applyDesignMockGrading(item) {
             >3</span>
             <span
               class="mt-2"
-              :class="
-                createRagStepperPhase >= 3
-                  ? designPageLayout
-                    ? 'my-color-white my-font-sm-600'
-                    : 'text-dark my-font-sm-600'
-                  : designPageLayout
-                    ? 'my-color-gray-light my-font-sm-400'
-                    : 'text-muted my-font-sm-400'
-              "
+              :class="createRagStepperPhase >= 3 ? 'text-dark my-font-sm-600' : 'text-muted my-font-sm-400'"
             >測試問題</span>
           </div>
         </div>
       </div>
-      <!-- 尚無 file_metadata 時顯示上傳區；介面稿固定一併顯示以利對照元件 -->
+      <!-- 尚無 file_metadata 時顯示上傳區；mockWithoutApi 時固定一併顯示 -->
       <div v-if="showUploadFileSection" class="text-start my-page-block-spacing">
-        <div class="rounded-3 p-3 p-lg-4 mb-4" :class="contentBlockClass">
+        <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
           <input
             ref="zipFileInputRef"
             type="file"
@@ -1628,7 +1552,7 @@ function applyDesignMockGrading(item) {
         class="text-start my-page-block-spacing"
         :class="{ 'pe-none text-muted': !hasRagMetadata && packGroupsEditBlocked }"
       >
-        <div class="rounded-3 p-3 p-lg-4 mb-4" :class="contentBlockClass">
+        <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
         <div class="mb-3">
           <div class="my-font-sm-600 text-secondary mb-1">上傳檔案名稱</div>
           <div class="my-font-sm-400 text-break">{{ uploadedZipDisplayName }}</div>
@@ -1864,11 +1788,8 @@ function applyDesignMockGrading(item) {
         class="text-start my-page-block-spacing"
         :class="{ 'text-muted': ragGenerateDisabled }"
       >
-        <div class="rounded-3 p-3 p-lg-4 mb-4" :class="contentBlockClass">
-        <div
-          class="my-font-lg-600 border-bottom pb-2 mb-4"
-          :class="designPageLayout ? 'my-color-white' : ''"
-        >測試問題</div>
+        <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
+        <div class="my-font-lg-600 border-bottom pb-2 mb-4">測試問題</div>
 
         <!-- 題目區塊：每按一次「新增題目」才多一個「第 n 題」；按鈕固定在最下面 -->
         <div class="mb-4">
@@ -1880,8 +1801,7 @@ function applyDesignMockGrading(item) {
                 :slot-index="slotIndex"
                 :course-name="courseNameForPrompt"
                 :current-rag-id="currentRagIdForQuizCards"
-                :design-ui="designPageLayout"
-                :skip-rag-mismatch-guard="designPageLayout"
+                :skip-rag-mismatch-guard="mockWithoutApi"
                 @toggle-hint="toggleHint"
                 @confirm-answer="confirmAnswer"
                 @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
@@ -1889,11 +1809,8 @@ function applyDesignMockGrading(item) {
             </template>
             <template v-else>
               <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
-              <div class="rounded-3 p-3 p-lg-4 mb-4" :class="[contentBlockClass, { 'mt-4': slotIndex > 1 }]">
-                <div
-                  class="my-font-lg-600 border-bottom pb-2 mb-3"
-                  :class="designPageLayout ? 'my-color-white' : ''"
-                >第 {{ slotIndex }} 題</div>
+              <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
+                <div class="my-font-lg-600 border-bottom pb-2 mb-3">第 {{ slotIndex }} 題</div>
                 <div class="text-start pt-3">
                   <div class="d-flex flex-wrap align-items-end gap-3">
                     <div class="flex-grow-1 min-w-0" style="min-width: 10rem">
@@ -1902,7 +1819,6 @@ function applyDesignMockGrading(item) {
                         v-model="getSlotFormState(slotIndex).generateQuizTabId"
                         :options="generateQuizUnits"
                         :menu-id="`rag-quiz-unit-${slotIndex}`"
-                        :design-ui="designPageLayout"
                       />
                     </div>
                     <div>
@@ -1954,8 +1870,6 @@ function applyDesignMockGrading(item) {
       </div>
 
       </template>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -2016,12 +1930,4 @@ function applyDesignMockGrading(item) {
   background-color: var(--my-color-blue);
 }
 
-/* 介面稿頁：與 DesignPage 深色主區可讀性一致（標籤／輔助內文） */
-.my-create-exam-design-inner .text-secondary,
-.my-create-exam-design-inner .text-muted {
-  color: var(--my-color-gray-light) !important;
-}
-.my-create-exam-design-inner .text-body {
-  color: var(--my-color-white) !important;
-}
 </style>

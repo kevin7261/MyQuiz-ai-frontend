@@ -1,6 +1,6 @@
 <script setup>
 /**
- * 建立測驗題庫（設計稿入口）— 與 CreateExamQuizBankPage 同一元件，避免雙份維護。
+ * 建立測驗題庫（僅前端示範）— 與 CreateExamQuizBankPage 同一元件，不呼叫 API。
  */
 import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 
@@ -10,5 +10,5 @@ defineProps({
 </script>
 
 <template>
-  <CreateExamQuizBankPage :tab-id="tabId" :design-page-layout="true" />
+  <CreateExamQuizBankPage :tab-id="tabId" :mock-without-api="true" />
 </template>
