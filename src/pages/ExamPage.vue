@@ -648,6 +648,12 @@ const isAnyLoading = computed(() =>
   createExamLoading.value ||
   deleteExamLoading.value
 );
+
+/** 全螢幕遮罩文案：刪除測驗分頁時顯示「刪除中」，其餘為「處理中...」 */
+const examLoadingOverlayText = computed(() =>
+  deleteExamLoading.value ? '刪除中...' : '處理中...'
+);
+
 const deleteExamError = ref('');
 async function deleteExam(examTabId) {
   if (!examTabId) return;
@@ -911,7 +917,7 @@ onMounted(() => {
   <div class="d-flex flex-column my-bgcolor-gray-4 h-100 position-relative">
     <LoadingOverlay
       :is-visible="isAnyLoading"
-      loading-text="請稍候，正在載入或處理..."
+      :loading-text="examLoadingOverlayText"
     />
     <TabRenameModal
       v-model="examRenameModalOpen"

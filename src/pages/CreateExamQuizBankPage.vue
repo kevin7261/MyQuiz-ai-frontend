@@ -61,7 +61,6 @@ import { loggedFetch } from '../utils/loggedFetch.js';
 import QuizCard from '../components/QuizCard.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
-import LoadingOverlay from '../components/LoadingOverlay.vue';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -97,7 +96,7 @@ const renameRagTabDraftRagId = ref(null);
 const renameRagTabInitialName = ref('');
 const renameRagTabSaving = ref(false);
 const renameRagTabError = ref('');
-/** 正在送出批改的題卡 id（按鈕顯示「批改中」、結果區待回傳；不觸發全螢幕 LoadingOverlay） */
+/** 正在送出批改的題卡 id（按鈕顯示「批改中」、結果區待回傳；不觸發內容區載入區塊） */
 const gradingSubmittingCardId = ref(null);
 const deleteRagLoading = ref(false);
 /** 與左側標題相同：GET /system-settings/course-name 的 course_name，失敗時維持 AIQuiz */
@@ -332,7 +331,7 @@ watch(
   { immediate: true }
 );
 
-/** 任一非同步載入或處理進行中時為 true，用於全螢幕遮罩（產生題目、確定批改僅按鈕狀態，不佔全畫面） */
+/** 任一非同步載入或處理進行中時為 true，於內容區顯示 spinner＋文案（產生題目、確定批改僅按鈕狀態，不觸發此狀態） */
 const isAnyLoading = computed(() =>
   ragListLoading.value ||
   createRagLoading.value ||
@@ -341,10 +340,12 @@ const isAnyLoading = computed(() =>
   currentState.value.packLoading
 );
 
-/** GET /rag/tabs 載入中時遮罩主文案；其餘操作維持通用提示 */
-const loadingOverlayText = computed(() =>
-  ragListLoading.value ? '載入測驗題庫中' : '請稍候，正在載入或處理...'
-);
+/** 內容區載入文案：刪除分頁 → 刪除中；GET /rag/tabs → 載入測驗題庫中；其餘 → 處理中... */
+const pageLoadingBannerText = computed(() => {
+  if (deleteRagLoading.value) return '刪除中...';
+  if (ragListLoading.value) return '載入測驗題庫中';
+  return '處理中...';
+});
 
 /** 用於顯示 file_metadata：上傳回傳的 zipResponseJson、GET /rag/tabs 的 file_metadata；若列表已建題庫但未內嵌 file_metadata，則由 rag 與 unit_list 合成，避免「出題設定」整塊被隱藏 */
 const fileMetadataToShow = computed(() => {
@@ -1306,11 +1307,7 @@ function applyMockGradingPreview(item) {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 position-relative overflow-hidden my-bgcolor-gray-4">
-    <LoadingOverlay
-      :is-visible="isAnyLoading"
-      :loading-text="loadingOverlayText"
-    />
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4">
     <TabRenameModal
       v-model="renameRagTabModalOpen"
       :initial-name="renameRagTabInitialName"
@@ -1326,8 +1323,8 @@ function applyMockGradingPreview(item) {
     </header>
     <div class="flex-shrink-0 my-rag-tabs-bar my-bgcolor-gray-4">
       <div class="d-flex justify-content-center align-items-center w-100">
-        <template v-if="ragListLoading">
-          <span class="my-font-sm-400 my-color-gray-4">載入中...</span>
+        <template v-if="ragListLoading && ragItems.length === 0 && newTabItems.length === 0">
+          <div class="w-100 py-2" aria-busy="true" />
         </template>
         <template v-else-if="ragItems.length === 0 && newTabItems.length === 0">
           <div class="w-100 d-flex justify-content-center py-2">
@@ -1436,9 +1433,20 @@ function applyMockGradingPreview(item) {
       </div>
     </div>
 
-    <!-- 內容區：與介面稿同淺底 + col-xl-10／col-xxl-8 -->
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4">
-      <div class="container-fluid px-3 px-md-4 py-4">
+    <!-- 內容區：載入中僅板面內 spinner＋說明文字（無整區 overlay） -->
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+      <div
+        v-if="isAnyLoading"
+        class="flex-grow-1 d-flex flex-column align-items-center justify-content-center gap-3 px-3 py-5"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div class="spinner-border my-create-bank-inline-spinner" role="status">
+          <span class="visually-hidden">{{ pageLoadingBannerText }}</span>
+        </div>
+        <p class="mb-0 my-font-lg-400 my-color-black text-center">{{ pageLoadingBannerText }}</p>
+      </div>
+      <div v-else class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <!-- 無資料時不顯示表單，點「+」後才顯示；mockWithoutApi 時仍顯示示範表單 -->
@@ -2029,6 +2037,13 @@ function applyMockGradingPreview(item) {
 </template>
 
 <style scoped>
+/* 內容區載入 spinner（與 LoadingOverlay 同色） */
+.my-create-bank-inline-spinner {
+  width: 2rem;
+  height: 2rem;
+  color: var(--my-color-blue);
+}
+
 /* 區塊外標題：────── 測試問題 ────── */
 .my-test-section-heading-line {
   display: block;
