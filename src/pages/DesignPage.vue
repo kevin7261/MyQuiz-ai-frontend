@@ -5,22 +5,21 @@ defineProps({
   tabId: { type: String, default: '' },
 });
 
-const designSampleChoice = ref('選項一');
 const designSampleChoiceWhite = ref('選項一');
 </script>
 
 <template>
   <!--
     DesignPage｜UI 元件參考（稿）
-    - 根層：全高 flex 直向、網頁 canvas 灰淺（my-bgcolor-gray-light）；頂部固定、頁首標題無底分隔線、下方主區可捲動。
+    - 根層：全高 flex 直向、網頁 canvas 灰淺（my-bgcolor-gray-4）；頂部固定、頁首標題無底分隔線、下方主區可捲動。
     - 頁首標題「UI 元件參考」置中、無 col；主內文仍 container-fluid + row 置中，欄寬上限 col-xl-10／col-xxl-8。
-    - 章節：各 <section> 使用 my-page-block-spacing；區塊 rounded-4 my-bgcolor-gray、無 border；標題 my-font-lg-600 my-color-black。
-    - 複製：DesignPageCopyBtn 預設淺底深字；凡 class 示範列（.my-design-swatch-row my-bgcolor-black）內複製鈕一律 :on-light-bg="false"。黑框內 <code>／示範 <span> 皆併 my-font-sm-400（必要時 my-color-white），避免 Bootstrap code 字級覆蓋。02／03 色票每組一顆色圓；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。
+    - 章節：各 <section> 使用 my-page-block-spacing；區塊 rounded-4 my-bgcolor-gray-3、無 border；子標題 my-font-lg-600 my-color-gray-1。
+    - 複製：DesignPageCopyBtn 預設淺底深字；class 示範列多為黑框（.my-design-swatch-row my-bgcolor-black）複製鈕 :on-light-bg="false"；08 區塊本體 my-bgcolor-gray-3 shadow-sm（與 canvas 區隔）；其內 class 示範列仍 .my-design-swatch-row--light、:on-light-bg="true"、<code> my-color-black。黑框內 <code>／示範 <span> 皆併 my-font-sm-400（黑底併 my-color-white），避免 Bootstrap code 字級覆蓋。02／03 色票每組一顆色圓；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。
     - 編號：05 區塊內含「09 · 徽章」與「08 · 下拉選單」；其後為 06 輸入、07 分頁、08 表格。
   -->
-  <div class="h-100 d-flex flex-column overflow-hidden my-bgcolor-gray-light">
+  <div class="h-100 d-flex flex-column overflow-hidden my-bgcolor-gray-4">
     <!-- 頁首：稿名，不隨內文捲動 -->
-    <header class="flex-shrink-0 my-bgcolor-gray-light p-4">
+    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">UI 元件參考</p>
       </div>
@@ -36,8 +35,8 @@ const designSampleChoiceWhite = ref('選項一');
           <!-- ===== 01 · 字階 =====
                common：.my-font-{xl|lg|md|sm}-{400|600}；左欄字重 400、右欄 600；<dl> 示範語意結構 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">01 · 字階</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">01 · 字階</div>
                 <div class="row g-4 align-items-start">
                   <div class="col-12 col-md-6">
                     <dl class="mb-0">
@@ -126,8 +125,8 @@ const designSampleChoiceWhite = ref('選項一');
           <!-- ===== 02 · 語意色 =====
                每語意一顆色圓；底／字 class 各一黑框，.my-design-swatch-rows 橫向同一排，各附複製鈕。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">02 · 語意色</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">02 · 語意色</div>
                 <div class="row g-3">
                   <div class="col-12">
                     <div class="my-design-swatch-cell">
@@ -181,8 +180,8 @@ const designSampleChoiceWhite = ref('選項一');
           <!-- ===== 03 · 灰階 · 背景 =====
                每列一顆色圓（背景階）；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">03 · 灰階 · 背景</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">03 · 灰階 · 背景</div>
                 <div class="row g-3">
                   <div class="col-12">
                     <div class="my-design-swatch-cell">
@@ -201,11 +200,11 @@ const designSampleChoiceWhite = ref('選項一');
                   </div>
                   <div class="col-12">
                     <div class="my-design-swatch-cell">
-                      <span class="my-design-swatch-dot my-bgcolor-gray-dark" aria-hidden="true"></span>
+                      <span class="my-design-swatch-dot my-bgcolor-gray-2" aria-hidden="true"></span>
                       <div class="my-design-swatch-rows">
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-bgcolor-gray-dark</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".my-bgcolor-gray-dark" :on-light-bg="false" />
+                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-bgcolor-gray-2</code>
+                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".my-bgcolor-gray-2" :on-light-bg="false" />
                         </div>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0">
                           <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-color-black</code>
@@ -216,11 +215,11 @@ const designSampleChoiceWhite = ref('選項一');
                   </div>
                   <div class="col-12">
                     <div class="my-design-swatch-cell">
-                      <span class="my-design-swatch-dot my-bgcolor-gray" aria-hidden="true"></span>
+                      <span class="my-design-swatch-dot my-bgcolor-gray-3" aria-hidden="true"></span>
                       <div class="my-design-swatch-rows">
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-bgcolor-gray</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".my-bgcolor-gray" :on-light-bg="false" />
+                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-bgcolor-gray-3</code>
+                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".my-bgcolor-gray-3" :on-light-bg="false" />
                         </div>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0">
                           <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-color-black</code>
@@ -231,11 +230,11 @@ const designSampleChoiceWhite = ref('選項一');
                   </div>
                   <div class="col-12">
                     <div class="my-design-swatch-cell">
-                      <span class="my-design-swatch-dot my-bgcolor-gray-light" aria-hidden="true"></span>
+                      <span class="my-design-swatch-dot my-bgcolor-gray-4" aria-hidden="true"></span>
                       <div class="my-design-swatch-rows">
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-bgcolor-gray-light</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".my-bgcolor-gray-light" :on-light-bg="false" />
+                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-bgcolor-gray-4</code>
+                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".my-bgcolor-gray-4" :on-light-bg="false" />
                         </div>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0">
                           <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">.my-color-black</code>
@@ -264,17 +263,17 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 04 · 區塊定義 =====
-               Design 頁章節外層：rounded-4 my-bgcolor-gray p-4 mb-5、無 border；全站 canvas 為 gray-light（body）；業務內容區 my-bgcolor-page-block（底同 --my-color-gray）。 -->
+               Design 頁章節外層：rounded-4 my-bgcolor-gray-3 p-4 mb-5、無 border；全站 canvas 為 gray-4（body）；業務內容區 my-bgcolor-page-block（底同 --my-color-gray-3）。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">04 · 區塊定義</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">04 · 區塊定義</div>
                 <div class="my-font-sm-400 d-flex flex-column gap-3">
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                        >rounded-4 my-bgcolor-gray p-4 mb-5</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5"
+                        >rounded-4 my-bgcolor-gray-3 p-4 mb-5</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5"
                       :on-light-bg="false"/>
                     </div>
                   </div>
@@ -283,17 +282,17 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 05 · 按鈕 + 09 · 徽章 + 08 · 下拉選單（同一 section） =====
-               按鈕：小／中／大三組；每組 藍／黑色（class 仍 my-button-white）／白描邊／黑無框；圓形黑無框下附兩鍵 btn-group + my-btn-group-pill（中）：選中 my-button-white、未選 my-button-gray-dark。單行輸入見獨立區塊「06 · 輸入」。
+               按鈕：小／中／大三組；小／中每組 藍／黑／描邊／黑無框；大僅藍／黑（填色，無白描邊與黑無框示範）；描邊（my-button-white-border）淺底 gray-1 邊＋字見 common。圓形黑無框下附兩鍵 btn-group + my-btn-group-pill（圓角同輸入 rounded-2、非膠囊；中）：選中 my-button-white、未選示範 my-button-gray-3（選項乙）。單行輸入見「06 · 輸入」。
                圓形：分頁「+」與複製鈕同規 my-btn-circle + my-button-transparent-borderless。
-               09 徽章：在 08 下拉之上；僅示範灰底黑字（my-bgcolor-gray、my-color-black、描邊）＋ class 黑框列。
-               08 下拉：觸發鈕示範藍底／白填／透明無框；選單 my-dropdown-menu（外層 my-bgcolor-surface）。 -->
+               09 徽章：在 08 下拉之上；僅示範灰底黑字；class 順序 badge … my-bgcolor-gray-3、my-color-black、描邊、rounded、px-2 py-1（rounded 在 badge 與色票之後、間距置末）。
+               08 下拉：區塊底 my-bgcolor-gray-3 shadow-sm；外層 .my-design-08-dropdown；示範一白底觸發邊 gray-2；示範二透明底無邊框；選單 .dropdown-menu Bootstrap 預設；觸發 rounded-2 同輸入（非膠囊）。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">05 · 按鈕</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">05 · 按鈕</div>
                 <div class="d-flex flex-column gap-4">
                   <!-- 小：字級 my-font-sm-400、內距 px-3 py-1 -->
                   <div>
-                    <div class="my-color-gray-light my-font-sm-400 mb-2">小（my-font-sm-400 · px-3 py-1）</div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">小（my-font-sm-400 · px-3 py-1）</div>
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
@@ -367,7 +366,7 @@ const designSampleChoiceWhite = ref('選項一');
                   </div>
                   <!-- 中：字級 my-font-md-400、內距 px-3 py-2（全站表單／下拉觸發與此組對齊；文字輸入見 06 · 輸入） -->
                   <div>
-                    <div class="my-color-gray-light my-font-sm-400 mb-2">中（my-font-md-400 · px-3 py-2）</div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">中（my-font-md-400 · px-3 py-2）</div>
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
@@ -439,9 +438,9 @@ const designSampleChoiceWhite = ref('選項一');
                       </div>
                     </div>
                   </div>
-                  <!-- 大：字級同中、內距 px-4 py-3 -->
+                  <!-- 大：字級同中、內距 px-4 py-3；不示範白描邊／黑無框（class 與中組相同，僅改 px-4 py-3） -->
                   <div>
-                    <div class="my-color-gray-light my-font-sm-400 mb-2">大（my-font-md-400 · px-4 py-3）</div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">大（my-font-md-400 · px-4 py-3 · 僅藍／黑）</div>
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
@@ -477,45 +476,11 @@ const designSampleChoiceWhite = ref('選項一');
                       :on-light-bg="false"/>
                         </div>
                       </div>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border flex-shrink-0 px-4 py-3"
-                        >
-                          白描邊
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code
-                            class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border px-4 py-3</code>
-                          <DesignPageCopyBtn
-                          class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border px-4 py-3"
-                      :on-light-bg="false"/>
-                        </div>
-                      </div>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-4 py-3"
-                        >
-                          黑無框
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code
-                            class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-3</code>
-                          <DesignPageCopyBtn
-                          class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-3"
-                      :on-light-bg="false"/>
-                        </div>
-                      </div>
                     </div>
                   </div>
                   <!-- 圓形圖示鈕：32×32，與建立測驗題庫分頁「+」／ExamPage 新增分頁同規 -->
                   <div>
-                    <div class="my-color-gray-light my-font-sm-400 mb-2">圓形黑無框（md · my-btn-circle · 例：fa-plus）</div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">圓形黑無框（md · my-btn-circle · 例：fa-plus）</div>
                     <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                       <button
                         type="button"
@@ -535,10 +500,10 @@ const designSampleChoiceWhite = ref('選項一');
                       </div>
                     </div>
                   </div>
-                  <!-- 兩鍵群組（示範：選中 my-button-white＝黑底、未選淺灰底＋灰淺邊；字級同「中」） -->
+                  <!-- 兩鍵群組（外框／分段線同 my-input-md：gray-2；選中白底深字、未選示範 my-button-gray-3；字級同「中」） -->
                   <div>
-                    <div class="my-color-gray-light my-font-sm-400 mb-2">
-                      兩鍵群組（btn-group · my-btn-group-pill · 中 · 選中 my-button-white · 未選 my-button-gray-dark）
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">
+                      兩鍵群組（btn-group · my-btn-group-pill · rounded-2 同輸入 · 中 · 外框 gray-2 · 選中 my-button-white 白底 · 未選示範 my-button-gray-3＝填色 gray-3）
                     </div>
                     <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                       <div
@@ -554,7 +519,7 @@ const designSampleChoiceWhite = ref('選項一');
                         </button>
                         <button
                           type="button"
-                          class="btn d-flex justify-content-center align-items-center my-font-md-400 my-button-gray-dark px-3 py-2"
+                          class="btn d-flex justify-content-center align-items-center my-font-md-400 my-button-gray-3 px-3 py-2"
                         >
                           選項乙
                         </button>
@@ -562,10 +527,10 @@ const designSampleChoiceWhite = ref('選項一');
                       <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                         <code
                           class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                          >btn-group my-btn-group-pill · btn … my-font-md-400 my-button-white px-3 py-2 · btn … my-font-md-400 my-button-gray-dark px-3 py-2</code>
+                          >btn-group my-btn-group-pill · btn … my-font-md-400 my-button-white px-3 py-2 · btn … my-font-md-400 my-button-gray-3 px-3 py-2</code>
                         <DesignPageCopyBtn
                         class="flex-shrink-0 ms-auto"
-                        text="btn-group my-btn-group-pill btn my-font-md-400 my-button-white px-3 py-2 btn my-font-md-400 my-button-gray-dark px-3 py-2"
+                        text="btn-group my-btn-group-pill btn my-font-md-400 my-button-white px-3 py-2 btn my-font-md-400 my-button-gray-3 px-3 py-2"
                       :on-light-bg="false"/>
                       </div>
                     </div>
@@ -574,11 +539,11 @@ const designSampleChoiceWhite = ref('選項一');
             </div>
 
             <!-- 09 · 徽章（仍屬 05 同一 section；在 08 下拉之上） -->
-            <div class="rounded-4 my-bgcolor-gray p-4 mb-5 mt-4">
-              <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">09 · 徽章</div>
+            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5 mt-4">
+              <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">09 · 徽章</div>
               <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                 <span
-                  class="badge my-bgcolor-gray my-color-black my-border-neutral-1 rounded user-select-none my-font-sm-400 px-2 py-1 flex-shrink-0 align-self-start"
+                  class="badge my-bgcolor-gray-3 my-color-black my-border-gray-2 user-select-none my-font-sm-400 flex-shrink-0 align-self-start rounded px-2 py-1"
                 >
                   標籤
                 </span>
@@ -586,11 +551,11 @@ const designSampleChoiceWhite = ref('選項一');
                   <code
                     class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
                   >
-                    badge my-bgcolor-gray my-color-black my-border-neutral-1 rounded user-select-none my-font-sm-400 px-2 py-1
+                    badge my-bgcolor-gray-3 my-color-black my-border-gray-2 user-select-none my-font-sm-400 rounded px-2 py-1
                   </code>
                   <DesignPageCopyBtn
                     class="flex-shrink-0 ms-auto"
-                    text="badge my-bgcolor-gray my-color-black my-border-neutral-1 rounded user-select-none my-font-sm-400 px-2 py-1"
+                    text="badge my-bgcolor-gray-3 my-color-black my-border-gray-2 user-select-none my-font-sm-400 rounded px-2 py-1"
                     :on-light-bg="false"
                   />
                 </div>
@@ -598,52 +563,17 @@ const designSampleChoiceWhite = ref('選項一');
             </div>
 
             <!-- 08 · 下拉選單（仍屬 05 同一 section） -->
-            <div class="rounded-4 my-bgcolor-gray p-4 mb-5 mt-4">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">08 · 下拉選單</div>
-              <div>
-                <div class="my-color-gray-light my-font-sm-400 mb-2">中（my-font-md-400 · px-3 py-2）</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5 mt-4">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">08 · 下拉選單</div>
+              <div class="my-design-08-dropdown">
+                <div class="my-color-gray-1 my-font-sm-400 mb-2">中（my-font-md-400 · px-3 py-2）；外層 .my-design-08-dropdown；觸發 rounded-2 同輸入；示範一邊 gray-2；示範二透明底無邊框；選單 Bootstrap 預設</div>
                 <div class="d-flex flex-column gap-3">
-                  <!-- 藍底觸發：designSampleChoice 綁定示範選項文字 -->
-                  <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <div class="dropdown flex-shrink-0">
-                      <button
-                        id="design-dd-md-blue-btn"
-                        class="btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-blue flex-shrink-0 px-3 py-2"
-                        type="button"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                      >
-                        <span class="text-truncate text-start pe-2">{{ designSampleChoice }}</span>
-                        <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret" aria-hidden="true"></i>
-                      </button>
-                      <ul class="dropdown-menu my-dropdown-menu" aria-labelledby="design-dd-md-blue-btn">
-                        <li>
-                          <a class="dropdown-item" href="#" @click.prevent="designSampleChoice = '選項一'">選項一</a>
-                        </li>
-                        <li>
-                          <a class="dropdown-item" href="#" @click.prevent="designSampleChoice = '選項二'">選項二</a>
-                        </li>
-                        <li>
-                          <a class="dropdown-item" href="#" @click.prevent="designSampleChoice = '選項三'">選項三</a>
-                        </li>
-                      </ul>
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                      <code
-                        class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                        >btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-blue flex-shrink-0 px-3 py-2</code>
-                      <DesignPageCopyBtn
-                      class="flex-shrink-0 ms-auto"
-                      text="btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-blue flex-shrink-0 px-3 py-2"
-                      :on-light-bg="false"/>
-                    </div>
-                  </div>
-                  <!-- 黑色填色觸發（class：my-button-white）：designSampleChoiceWhite 綁定示範選項文字 -->
+                  <!-- 示範一（預設文案選項一）：白底 rounded-2＋邊線同 my-input-md -->
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <div class="dropdown flex-shrink-0">
                       <button
                         id="design-dd-md-white-btn"
-                        class="btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2"
+                        class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2 text-start"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
@@ -651,7 +581,10 @@ const designSampleChoiceWhite = ref('選項一');
                         <span class="text-truncate text-start pe-2">{{ designSampleChoiceWhite }}</span>
                         <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret" aria-hidden="true"></i>
                       </button>
-                      <ul class="dropdown-menu my-dropdown-menu" aria-labelledby="design-dd-md-white-btn">
+                      <ul
+                        class="dropdown-menu"
+                        aria-labelledby="design-dd-md-white-btn"
+                      >
                         <li>
                           <a class="dropdown-item" href="#" @click.prevent="designSampleChoiceWhite = '選項一'">選項一</a>
                         </li>
@@ -666,19 +599,19 @@ const designSampleChoiceWhite = ref('選項一');
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                        >btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2</code>
+                        >my-design-08-dropdown · btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2 text-start</code>
                       <DesignPageCopyBtn
                       class="flex-shrink-0 ms-auto"
-                      text="btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2"
+                      text="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2 text-start"
                       :on-light-bg="false"/>
                     </div>
                   </div>
-                  <!-- 黑無框觸發：同字級／內距，my-button-transparent-borderless -->
+                  <!-- 示範二：my-button-transparent-borderless → 透明底、無邊框 -->
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                     <div class="dropdown flex-shrink-0">
                       <button
                         id="design-dd-md-bl-btn"
-                        class="btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2"
+                        class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2 text-start"
                         type="button"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
@@ -686,7 +619,7 @@ const designSampleChoiceWhite = ref('選項一');
                         <span class="text-truncate text-start pe-2">選項</span>
                         <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret" aria-hidden="true"></i>
                       </button>
-                      <ul class="dropdown-menu my-dropdown-menu" aria-labelledby="design-dd-md-bl-btn">
+                      <ul class="dropdown-menu" aria-labelledby="design-dd-md-bl-btn">
                         <li><a class="dropdown-item" href="#" @click.prevent>選項一</a></li>
                         <li><a class="dropdown-item" href="#" @click.prevent>選項二</a></li>
                       </ul>
@@ -694,10 +627,10 @@ const designSampleChoiceWhite = ref('選項一');
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                        >btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2</code>
+                        >my-design-08-dropdown · btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2 text-start</code>
                       <DesignPageCopyBtn
                       class="flex-shrink-0 ms-auto"
-                      text="btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2"
+                      text="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2 text-start"
                       :on-light-bg="false"/>
                     </div>
                   </div>
@@ -709,15 +642,15 @@ const designSampleChoiceWhite = ref('選項一');
           <!-- ===== 06 · 輸入 =====
                單行／輸入區塊：啟用與停用各一；停用＝ readonly（勿用 disabled）；全站 .form-control.my-input-md.rounded-2。版面：row 兩欄（示範｜黑框 class＋複製，併 .my-design-swatch-row）。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-              <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">06 · 輸入</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+              <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">06 · 輸入</div>
               <div class="d-flex flex-column gap-4">
                 <!-- 單行：示範與複製鈕垂直置中 -->
                 <div class="row g-3 g-lg-4 align-items-center">
                   <div class="col-12 col-md-5 col-lg-4">
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-0">
                       <label
-                        class="my-color-gray-light my-font-sm-400 mb-0"
+                        class="my-color-gray-1 my-font-sm-400 mb-0"
                         for="design-input-md-on"
                       >
                         輸入（啟用）
@@ -748,9 +681,9 @@ const designSampleChoiceWhite = ref('選項一');
                 </div>
                 <div class="row g-3 g-lg-4 align-items-center">
                   <div class="col-12 col-md-5 col-lg-4">
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-0">
                       <label
-                        class="my-color-gray-light my-font-sm-400 mb-0"
+                        class="my-color-gray-1 my-font-sm-400 mb-0"
                         for="design-input-md-off"
                       >
                         輸入（停用）
@@ -783,9 +716,9 @@ const designSampleChoiceWhite = ref('選項一');
                 <!-- 多行：頂端對齊，複製鈕與 class 區與 textarea 同高起點 -->
                 <div class="row g-3 g-lg-4 align-items-start">
                   <div class="col-12 col-lg-5 col-xl-4">
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-0">
                       <label
-                        class="my-color-gray-light my-font-sm-400 mb-0"
+                        class="my-color-gray-1 my-font-sm-400 mb-0"
                         for="design-textarea-md-on"
                       >
                         輸入區塊（啟用）
@@ -815,9 +748,9 @@ const designSampleChoiceWhite = ref('選項一');
                 </div>
                 <div class="row g-3 g-lg-4 align-items-start">
                   <div class="col-12 col-lg-5 col-xl-4">
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-0">
                       <label
-                        class="my-color-gray-light my-font-sm-400 mb-0"
+                        class="my-color-gray-1 my-font-sm-400 mb-0"
                         for="design-textarea-md-off"
                       >
                         輸入區塊（停用）
@@ -850,13 +783,13 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 07 · 分頁 =====
-               外殼 my-bgcolor-gray；僅分頁列 my-rag-tabs-bar my-bgcolor-surface；其下說明區不另加 surface（與章節灰底一致）。ul.nav-tabs.w-100、justify-content:center（common）、選中 --my-color-black 底線 2pt；黑底稿另見 my-rag-tabs-bar--design。 -->
+               外殼 my-bgcolor-gray-3；分頁列 my-rag-tabs-bar my-bgcolor-gray-4（與全站 canvas）；其下說明區與章節灰底一致。ul.nav-tabs.w-100、justify-content:center（common）、選中 --my-color-black 底線 2pt；黑底稿另見 my-rag-tabs-bar--design。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray overflow-hidden mb-4">
+            <div class="rounded-4 my-bgcolor-gray-3 overflow-hidden mb-4">
               <div class="px-3 px-lg-4 py-3">
-                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-0">07 · 分頁</div>
+                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-0">07 · 分頁</div>
               </div>
-              <div class="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-surface">
+              <div class="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-gray-4">
                 <div class="d-flex justify-content-center w-100 align-items-center">
                   <ul class="nav nav-tabs w-100">
                     <li class="nav-item">
@@ -865,7 +798,7 @@ const designSampleChoiceWhite = ref('選項一');
                         <button
                           type="button"
                           disabled
-                          class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-light pe-2"
+                          class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 pe-2"
                           title="重新命名分頁（示範，無功能）"
                         >
                           <i class="fa-solid fa-pen" aria-hidden="true"></i>
@@ -873,7 +806,7 @@ const designSampleChoiceWhite = ref('選項一');
                         <button
                           type="button"
                           disabled
-                          class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-light"
+                          class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4"
                           title="刪除此出題單元（示範，無功能）"
                         >
                           <i class="fa-solid fa-xmark" aria-hidden="true"></i>
@@ -917,19 +850,19 @@ const designSampleChoiceWhite = ref('選項一');
               <div class="px-3 px-lg-4 py-3">
                 <div class="my-font-sm-400 d-flex flex-column gap-3">
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">外殼（淺底列表）</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">分頁列底（gray-4）</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                        >flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-surface</code>
+                        >flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-gray-4</code>
                       <DesignPageCopyBtn
                       class="flex-shrink-0 ms-auto"
-                      text="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-surface"
+                      text="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-gray-4"
                       :on-light-bg="false"/>
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">內層置中列</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">內層置中列</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -941,7 +874,7 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">結構</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">結構</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -953,7 +886,7 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">筆／刪除（僅當前分頁）</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">筆／刪除（僅當前分頁）</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -963,7 +896,7 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">試卷用題庫（藍點）</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">試卷用題庫（藍點）</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -975,7 +908,7 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">新增分頁（32×32 rounded-circle · my-btn-circle · fa-plus／建立中 fa-spinner）</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">新增分頁（32×32 rounded-circle · my-btn-circle · fa-plus／建立中 fa-spinner）</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -992,11 +925,11 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 08 · 表格 =====
-               外層捲動框 + Bootstrap table；表頭／儲存格內距 px-3 py-2；輔助欄 my-color-gray-light。
+               外層捲動框 + Bootstrap table；表頭／儲存格內距 px-3 py-2；輔助欄 my-color-gray-4。
                進階表頭樣式見 common .my-table（本示範為輕量版）。 -->
           <section class="my-page-block-spacing">
-            <div class="rounded-4 my-bgcolor-gray shadow-sm p-4 mb-5">
-            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">08 · 表格</div>
+            <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
+            <div role="heading" aria-level="2" class="my-font-lg-600 my-color-gray-1 text-break mb-4">08 · 表格</div>
                 <div class="rounded-4 overflow-auto border">
                   <table class="table table-striped table-hover mb-0">
                     <thead>
@@ -1009,12 +942,12 @@ const designSampleChoiceWhite = ref('選項一');
                     <tbody>
                       <tr>
                         <td class="px-3 py-2">範例列 A</td>
-                        <td class="my-color-gray-light px-3 py-2">輔助欄位</td>
+                        <td class="my-color-gray-4 px-3 py-2">輔助欄位</td>
                         <td class="text-end px-3 py-2">12</td>
                       </tr>
                       <tr>
                         <td class="px-3 py-2">範例列 B</td>
-                        <td class="my-color-gray-light px-3 py-2">輔助欄位</td>
+                        <td class="my-color-gray-4 px-3 py-2">輔助欄位</td>
                         <td class="text-end px-3 py-2">3</td>
                       </tr>
                     </tbody>
@@ -1022,7 +955,7 @@ const designSampleChoiceWhite = ref('選項一');
                 </div>
                 <div class="my-font-sm-400 d-flex flex-column gap-3 mt-3">
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">外層捲動框</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">外層捲動框</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -1034,7 +967,7 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">表格</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">表格</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -1046,7 +979,7 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">表頭／儲存格</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">表頭／儲存格</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
@@ -1056,12 +989,12 @@ const designSampleChoiceWhite = ref('選項一');
                     </div>
                   </div>
                   <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                    <span class="my-color-gray-light flex-shrink-0 my-font-sm-400">輔助字色</span>
+                    <span class="my-color-gray-4 flex-shrink-0 my-font-sm-400">輔助字色</span>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                       <code
                         class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                        >my-color-gray-light</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-gray-light"
+                        >my-color-gray-4</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-gray-4"
                       :on-light-bg="false"/>
                     </div>
                   </div>

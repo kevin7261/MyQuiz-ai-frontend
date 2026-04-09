@@ -57,7 +57,7 @@ function onSave() {
       @click.self="onBackdropClick"
     >
       <div class="modal-dialog modal-dialog-centered" @click.stop>
-        <div class="modal-content shadow border-0 my-bgcolor-gray p-4 d-flex flex-column gap-3">
+        <div class="modal-content shadow border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
           <div class="modal-header border-bottom-0 p-0">
             <h5 id="tab-rename-modal-title" class="modal-title my-color-white">{{ title }}</h5>
             <button
@@ -69,7 +69,7 @@ function onSave() {
           </div>
           <div class="modal-body p-0">
             <label
-              class="form-label flex-shrink-0 my-font-sm-400 my-color-gray-light mb-1"
+              class="form-label flex-shrink-0 my-font-sm-400 my-color-gray-1 mb-0"
               for="tab-rename-input"
             >
               名稱

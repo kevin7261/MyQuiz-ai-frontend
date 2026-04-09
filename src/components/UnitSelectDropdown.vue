@@ -1,6 +1,7 @@
 <script setup>
 /**
- * 出題區「選擇單元」：Bootstrap 5 dropdown（btn + dropdown-menu），行為等同原生 select + v-model。
+ * 出題區「選擇單元」：Bootstrap 5 dropdown；行為等同原生 select + v-model。
+ * 與 Design 08 一致：外層 .my-design-08-dropdown；觸發 rounded-2、my-button-white（白底、gray-2 邊）；選單 .dropdown-menu Bootstrap 預設。
  */
 import { computed } from 'vue';
 import { unitSelectValue } from '../utils/rag.js';
@@ -12,8 +13,6 @@ const props = defineProps({
   placeholder: { type: String, default: '— 請選擇單元 —' },
   /** 用於觸發鈕 id（會加上 -toggle），須在頁面內唯一 */
   menuId: { type: String, required: true },
-  /** 與 UI 元件參考（DesignPage）08 · 下拉選單一致（觸發鈕同 05 中號） */
-  designUi: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -36,34 +35,21 @@ function select(val) {
 </script>
 
 <template>
-  <div class="dropdown w-100">
+  <div class="dropdown w-100 my-design-08-dropdown">
     <button
       :id="toggleId"
-      :class="[
-        'dropdown-toggle w-100 d-flex justify-content-between align-items-center my-unit-select-dd-toggle',
-        designUi
-          ? 'btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2'
-          : 'btn my-btn-outline-neutral',
-      ]"
+      class="btn dropdown-toggle w-100 d-flex justify-content-between align-items-center my-unit-select-dd-toggle my-dropdown-caret my-font-md-400 my-button-white px-3 py-2 rounded-2 text-start"
       type="button"
       data-bs-toggle="dropdown"
       aria-expanded="false"
       :disabled="disabled"
       :title="buttonLabel"
     >
-      <span
-        class="text-truncate text-start"
-        :class="designUi ? 'pe-2' : 'me-2'"
-      >{{ buttonLabel }}</span>
-      <i
-        v-if="designUi"
-        class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0"
-        aria-hidden="true"
-      />
+      <span class="text-truncate flex-grow-1 pe-2">{{ buttonLabel }}</span>
+      <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
     </button>
     <ul
       class="dropdown-menu dropdown-menu-start w-100 my-unit-select-dd-menu"
-      :class="designUi ? 'my-dropdown-menu' : 'shadow-sm'"
       :aria-labelledby="toggleId"
     >
       <li>

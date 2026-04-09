@@ -11,7 +11,7 @@ const difficultyOptions = QUIZ_LEVEL_LABELS;
  * 未確定前可輸入答案並按「確定批改」送出評分。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
- * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id，RAG 題庫頁另含 rag_quiz_id（與後端 API 欄位一致）。designEmbedded：稿頁「測試問題」外層已包 rounded-4 深灰塊時為 true，與 Design 單一區塊一致。
+ * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id，RAG 題庫頁另含 rag_quiz_id（與後端 API 欄位一致）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試問題」每題一區塊時應為 false。
  */
 const props = defineProps({
   /** 題目資料（含題目、提示、答案、批改結果等） */
@@ -57,7 +57,7 @@ const answerInputDisabled = computed(() => {
   <div
     :class="[
       designUi
-        ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray rounded-4 p-4 mb-0 w-100 min-w-0')
+        ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-3 rounded-4 shadow-sm p-4 mb-0 w-100 min-w-0')
         : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
       { 'mt-4': !designUi && slotIndex > 1 },
     ]"
@@ -67,40 +67,42 @@ const answerInputDisabled = computed(() => {
       :class="designUi ? 'd-flex flex-column gap-4' : ''"
     >
       <div
-        class="my-font-lg-600"
-        :class="designUi ? 'my-color-white mb-0' : 'mb-3'"
+        class="my-font-lg-600 my-color-gray-1"
+        :class="designUi ? 'mb-0' : 'mb-3'"
       >第 {{ slotIndex }} 題</div>
-      <!-- 單元與難度（唯讀）；designUi：單行、單元白膠囊、難度同 Design 兩鍵群組（btn-group · my-btn-group-pill） -->
+      <!-- 單元與難度（唯讀）；designUi：單元視覺同 Design 08 白底 rounded-2＋ gray-2 邊＋箭頭；難度同 Design 兩鍵群組（my-btn-group-pill · rounded-2／外框 gray-2 · 選中 white · 未選 gray-3） -->
       <div
         class="d-flex flex-row align-items-end gap-3 w-100 min-w-0"
         :class="[designUi ? 'flex-nowrap mb-0' : 'flex-wrap mb-3']"
       >
         <div
-          class="d-flex flex-column gap-2 min-w-0"
-          :class="designUi ? 'flex-grow-1' : 'w-100 flex-shrink-0'"
+          class="d-flex flex-column min-w-0"
+          :class="designUi ? 'flex-grow-1 gap-1' : 'w-100 flex-shrink-0 gap-0'"
         >
           <div
-            :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-1 my-color-gray-light'"
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >單元</div>
           <div
             v-if="designUi"
-            class="btn rounded-pill d-flex align-items-center justify-content-start my-font-md-400 my-button-white w-100 min-w-0 px-3 py-2"
+            class="d-flex justify-content-between align-items-center my-font-md-400 my-color-black w-100 min-w-0 px-3 py-2 rounded-2 my-bgcolor-white my-border-gray-2"
             :title="card.ragName || '—'"
+            role="presentation"
           >
-            <span class="text-truncate text-start">{{ card.ragName || '—' }}</span>
+            <span class="text-truncate text-start pe-2">{{ card.ragName || '—' }}</span>
+            <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0 opacity-50" aria-hidden="true" />
           </div>
           <div
             v-else
-            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2 d-flex align-items-center"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2 d-flex align-items-center"
             :style="{ minHeight: '31px' }"
           >{{ card.ragName || '—' }}</div>
         </div>
         <div
-          class="d-flex flex-column gap-2"
-          :class="designUi ? 'flex-shrink-0' : 'flex-shrink-0 w-100'"
+          class="d-flex flex-column"
+          :class="designUi ? 'flex-shrink-0 gap-1' : 'flex-shrink-0 w-100 gap-0'"
         >
           <div
-            :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-1 my-color-gray-light'"
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >難度</div>
           <div
             v-if="designUi"
@@ -113,7 +115,7 @@ const answerInputDisabled = computed(() => {
               :key="'diff-pill-' + opt"
               type="button"
               class="btn d-flex justify-content-center align-items-center my-font-md-400 px-3 py-2"
-              :class="isDifficultyPillActive(opt) ? 'my-button-white' : 'my-button-gray-dark'"
+              :class="isDifficultyPillActive(opt) ? 'my-button-white' : 'my-button-gray-3'"
               tabindex="-1"
             >
               {{ opt }}
@@ -121,36 +123,33 @@ const answerInputDisabled = computed(() => {
           </div>
           <div
             v-else
-            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2 d-flex align-items-center"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2 d-flex align-items-center"
             :style="{ minHeight: '31px' }"
           >{{ card.generateLevel || '—' }}</div>
         </div>
       </div>
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-2 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <div
-          :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-1 my-color-gray-light'"
+          :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
         >題目</div>
         <div
           class="lh-base"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 my-font-sm-400'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
         >
           {{ card.quiz }}
         </div>
       </div>
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-2 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <button
           type="button"
-          :class="[
-            designUi
-              ? 'btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless px-3 py-1 align-self-start'
-              : 'btn my-btn-outline-neutral my-font-sm-400 py-0',
-          ]"
+          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+          style="flex: 0 0 auto;"
           @click="emit('toggle-hint', card)"
         >
           {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
@@ -158,7 +157,7 @@ const answerInputDisabled = computed(() => {
         <div
           v-show="card.hintVisible"
           class="my-font-sm-400"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-light' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 mt-2'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 mt-2'"
         >
           {{ card.hint }}
         </div>
@@ -166,10 +165,10 @@ const answerInputDisabled = computed(() => {
       <div
         v-if="card.referenceAnswer"
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-2 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <div
-          :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-1 my-color-gray-light'"
+          :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
         >參考答案(暫存)</div>
         <div
           class="my-font-sm-400"
@@ -179,15 +178,15 @@ const answerInputDisabled = computed(() => {
       </div>
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-2 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <div class="d-flex justify-content-between align-items-baseline gap-2" :class="designUi ? '' : 'mb-1'">
           <label
             :for="`quiz-answer-${card.id}`"
-            :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-light'"
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >答案</label>
           <span
-            :class="designUi ? 'my-font-sm-400 my-color-gray-light text-end flex-shrink-0 mb-0' : 'form-text my-font-sm-400 my-color-gray-light text-end flex-shrink-0 mb-0'"
+            :class="designUi ? 'my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0' : 'form-text my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0'"
           >{{ card.quiz_answer.length }} / 2000</span>
         </div>
         <template v-if="!card.confirmed">
@@ -205,7 +204,7 @@ const answerInputDisabled = computed(() => {
             v-if="answerInputDisabled"
             :class="designUi ? 'my-font-sm-400 my-color-red mt-1' : 'form-text my-font-sm-400 my-color-red'"
           >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
-          <div class="d-flex justify-content-end mt-2">
+          <div :class="designUi ? 'd-flex justify-content-center mt-2' : 'd-flex justify-content-end mt-2'">
             <button
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
@@ -223,11 +222,11 @@ const answerInputDisabled = computed(() => {
       </div>
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-2 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <label
           class="d-block"
-          :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-1 my-color-gray-light'"
+          :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
         >批改規則（預覽）</label>
         <div
           class="my-font-sm-400"
@@ -258,10 +257,10 @@ const answerInputDisabled = computed(() => {
       <!-- 批改結果區（由 useQuizGrading 格式化後顯示） -->
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-2 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <div
-          :class="designUi ? 'my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-1 my-color-gray-light'"
+          :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
         >批改結果</div>
         <div
           class="my-font-sm-400"

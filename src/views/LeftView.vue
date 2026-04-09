@@ -62,7 +62,7 @@
 </script>
 
 <template>
-  <aside class="h-100 d-flex flex-column w-100 my-bgcolor-gray-light my-border-end-neutral">
+  <aside class="h-100 d-flex flex-column w-100 my-bgcolor-gray-4 my-border-end-gray-2">
     <div class="fw-semibold fs-5 my-color-black lh-sm px-3 pt-3 pb-2">{{ courseName }}</div>
     <nav class="nav nav-pills flex-column flex-grow-1 justify-content-center gap-1 overflow-auto px-3 pt-3">
       <router-link
@@ -84,7 +84,7 @@
       <div class="dropdown dropup w-100">
         <button
           type="button"
-          class="btn my-btn-outline-neutral dropdown-toggle w-100 text-start d-flex align-items-center gap-1"
+          class="btn my-btn-outline-gray-2 dropdown-toggle w-100 text-start d-flex align-items-center gap-1"
           data-bs-toggle="dropdown"
           aria-expanded="false"
         >

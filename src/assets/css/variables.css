@@ -1,13 +1,13 @@
 /**
  * 設計權杖 — 僅保留目前前端實際用到的變數：
- * - body 預設字體／字級／字距／色（common.css；中性灰階 #333／gray-dark／gray／gray-light／#fff＋紅綠藍；淺底次要字色見 common .my-color-gray-light 等混色；白底邊線多併 --my-color-gray-dark）
+ * - body 預設字體／字級／字距／色（common.css；中性灰階 #333／gray-1～gray-4／#fff＋紅綠藍；淺底次要字色見 common .my-color-gray-4 等混色；表單欄位標題併 --my-color-gray-1；中型輸入／原生 select 等邊線併 --my-color-gray-2）
  * - 字級 rem 僅在此定義 --my-font-size-*；版面字級／字重僅併 common `.my-font-{xl|lg|md|sm}-{400|600}`（勿另造 `.my-font-size-*` 等純字級 class，與變數前綴區隔）
  * - 字重：僅 --my-font-weight-regular（400）、--my-font-weight-semibold（600）；common 內用 var(--my-font-weight-*)，禁止字面量 400／600
- * - common：字階 .my-font-*-{400|600}（僅字級字重）；網頁標題（頂欄品牌等）.my-font-xl-400；區塊標題 .my-font-lg-600；字色 .my-color-*；底 .my-bgcolor-*；全頁 canvas 為 body gray-light；業務內容區塊 .my-bgcolor-page-block（同 --my-color-gray）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-dark／.my-bgcolor-gray／.my-bgcolor-gray-light；描邊鈕 .my-button-white-border、黑底填色 .my-button-black、填色「白」.my-button-white（淺頁為黑底白字；黑底稿內例外淺底）、黑無框 .my-button-transparent-borderless；32×32 圓形圖示鈕 .my-btn-circle（分頁「+」、稿頁複製等）
+ * - common：字階 .my-font-*-{400|600}（僅字級字重）；網頁標題（頂欄品牌等）.my-font-xl-400；區塊子標題 .my-font-lg-600 併 .my-color-gray-1；字色 .my-color-*；底 .my-bgcolor-*；全頁 canvas 為 body gray-4；業務內容區塊 .my-bgcolor-page-block（同 --my-color-gray-3）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-2／.my-bgcolor-gray-3／.my-bgcolor-gray-4；描邊鈕 .my-button-white-border、黑底填色 .my-button-black、填色「白」.my-button-white（淺頁為黑底白字；黑底稿內例外淺底）、黑無框 .my-button-transparent-borderless；32×32 圓形圖示鈕 .my-btn-circle（分頁「+」、稿頁複製等）
  * - 主要區塊縱向間距：common .my-page-block-spacing（業務頁內文區多區塊用）
  * - 表格：common .my-table（併 .table）表頭混色等；儲存格內距依 Bootstrap；勿疊 .table-sm；原生 select 見 common .my-form-select；與中型按鈕同高文字欄見 common .form-control.my-input-md；深底黑底白字併 .my-input-md--on-dark；textarea／符合條件之 input／div.form-control 寬度同 .w-100（common 全寬規則）
  * - LoadingOverlay、LoginView 等另以各元件 scoped 樣式或 Bootstrap 補齊非權杖行為（`data-bs-theme="dark"` 不覆寫此檔變數）
- * - 捲軸樣式（common.css 全域）；Bootstrap 式下拉見 common .my-dropdown-menu
+ * - 捲軸樣式（common.css 全域）；下拉選單項目用 Bootstrap `.dropdown-menu` 預設，觸發箭頭見 common `.my-dropdown-caret`
  * - 撰寫 CSS 時：同一規則內最後先 padding 再 margin；Vue／HTML 的 `class` 字串：`p-*`／`m-*` 等間距類別整串置末、之後不得再接其它 class（先 p 後 m）
  */
 :root {
@@ -26,15 +26,13 @@
   --my-font-weight-regular: 400;
   --my-font-weight-semibold: 600;
 
-  /* 中性灰三階（由深→淺）；白底邊線併 --my-color-gray-dark；字 #333；純白 #fff（.my-color-gray-light 為淺底次要字 class，非 canvas 權杖 --my-color-gray-light） */
+  /* 中性灰階 gray-1～4（gray-1 次深字色；gray-2～4 由深→淺底／邊線）；字 #333；純白 #fff（.my-color-gray-4 為淺底次要字 class，混色非必等於權杖 --my-color-gray-4） */
   --my-color-black: #333333;
-  --my-color-gray-dark: #e2e2e2;
-  --my-color-gray: #f0f0f0;
-  --my-color-gray-light: #fafafa;
+  --my-color-gray-1: #888888;
+  --my-color-gray-2: #e2e2e2;
+  --my-color-gray-3: #f0f0f0;
+  --my-color-gray-4: #fafafa;
   --my-color-white: #ffffff;
-
-  /* 業務頁主要內容區塊底：common .my-bgcolor-page-block（與 --my-color-gray 同值；全頁 canvas 為 gray-light） */
-  --my-page-block-bg: var(--my-color-gray);
 
   /* 語意色順序：紅／綠／藍 */
   --my-color-red: #e84136;
@@ -55,6 +53,6 @@
   --my-scrollbar-track: transparent;
   --my-scrollbar-size: 6pt;
   --my-scrollbar-thumb-inset: 1pt; /* 左右／上下各 1pt → 6 − 2 = 4pt */
-  --my-scrollbar-thumb: color-mix(in srgb, var(--my-color-gray-light) 55%, var(--my-color-white));
-  --my-scrollbar-thumb-hover: color-mix(in srgb, var(--my-color-gray-light) 78%, var(--my-color-black));
+  --my-scrollbar-thumb: color-mix(in srgb, var(--my-color-gray-4) 55%, var(--my-color-white));
+  --my-scrollbar-thumb-hover: color-mix(in srgb, var(--my-color-gray-4) 78%, var(--my-color-black));
 }

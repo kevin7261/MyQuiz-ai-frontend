@@ -92,8 +92,8 @@
       <div class="card-body p-4">
         <h4 class="card-title text-center mb-4">{{ courseName }} 登入</h4>
         <form @submit.prevent="onLogin">
-          <div class="mb-3">
-            <label class="form-label" for="login-person-id">使用者 ID</label>
+          <div class="mb-3 d-flex flex-column gap-0">
+            <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者 ID</label>
             <input
               id="login-person-id"
               v-model="personId"
@@ -103,8 +103,8 @@
               autocomplete="username"
             />
           </div>
-          <div class="mb-3">
-            <label class="form-label" for="login-password">密碼</label>
+          <div class="mb-3 d-flex flex-column gap-0">
+            <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-password">密碼</label>
             <input
               id="login-password"
               v-model="password"

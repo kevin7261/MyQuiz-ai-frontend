@@ -912,7 +912,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-light h-100 position-relative">
+  <div class="d-flex flex-column my-bgcolor-gray-4 h-100 position-relative">
     <LoadingOverlay
       :is-visible="isAnyLoading"
       loading-text="請稍候，正在載入或處理..."
@@ -934,7 +934,7 @@ onMounted(() => {
     <div class="flex-shrink-0 my-bgcolor-surface">
       <div class="d-flex justify-content-center align-items-center w-100 px-4">
         <template v-if="examListLoading || forExamLoading">
-          <span class="my-font-sm-400 my-color-gray-light">—</span>
+          <span class="my-font-sm-400 my-color-gray-4">—</span>
         </template>
         <template v-else-if="examList.length === 0">
           <div class="w-100 d-flex justify-content-center py-2">
@@ -1028,7 +1028,7 @@ onMounted(() => {
     </div>
 
     <!-- 內容區：可上下捲動 -->
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-light px-4 py-5">
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <template v-if="examList.length > 0">
@@ -1044,33 +1044,38 @@ onMounted(() => {
               <template v-if="currentState.cardList[slotIndex - 1]">
                 <!-- 已有卡片：顯示完整題目區塊 -->
                 <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-                  <div class="my-font-lg-600 mb-3">第 {{ slotIndex }} 題</div>
+                  <div class="my-font-lg-600 my-color-gray-1 mb-3">第 {{ slotIndex }} 題</div>
                   <div class="text-start">
                     <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
                       <div>
-                        <label class="form-label my-font-sm-600 my-color-gray-light mb-1">單元</label>
-                        <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].ragName || '—' }}</div>
+                        <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">單元</label>
+                        <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].ragName || '—' }}</div>
                       </div>
                       <div>
-                        <label class="form-label my-font-sm-600 my-color-gray-light mb-1">難度</label>
-                        <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].generateLevel || '—' }}</div>
+                        <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">難度</label>
+                        <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" style="min-height: 31px;">{{ currentState.cardList[slotIndex - 1].generateLevel || '—' }}</div>
                       </div>
                     </div>
                     <div class="mb-3">
-                      <div class="form-label my-font-sm-600 my-color-gray-light mb-1">題目</div>
-                      <div class="my-bgcolor-light-gray my-border-neutral-1 rounded lh-base p-2">
+                      <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">題目</div>
+                      <div class="my-bgcolor-light-gray my-border-gray-2 rounded lh-base p-2">
                         {{ currentState.cardList[slotIndex - 1].quiz }}
                       </div>
                     </div>
                     <div class="mb-3">
                       <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                        <button type="button" class="btn my-btn-outline-neutral py-0" @click="toggleHint(currentState.cardList[slotIndex - 1])">
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                          style="flex: 0 0 auto;"
+                          @click="toggleHint(currentState.cardList[slotIndex - 1])"
+                        >
                           {{ currentState.cardList[slotIndex - 1].hintVisible ? '隱藏提示' : '顯示提示' }}
                         </button>
                         <div class="btn-group btn-group-sm" role="group">
                           <button
                             type="button"
-                            class="btn my-btn-outline-neutral"
+                            class="btn my-btn-outline-gray-2"
                             :class="{ active: currentState.cardList[slotIndex - 1].quiz_rate === 1 }"
                             title="讚"
                             @click="rateExamQuiz(currentState.cardList[slotIndex - 1], 'up')"
@@ -1080,7 +1085,7 @@ onMounted(() => {
                           </button>
                           <button
                             type="button"
-                            class="btn my-btn-outline-neutral"
+                            class="btn my-btn-outline-gray-2"
                             :class="{ active: currentState.cardList[slotIndex - 1].quiz_rate === -1 }"
                             title="差"
                             @click="rateExamQuiz(currentState.cardList[slotIndex - 1], 'down')"
@@ -1093,18 +1098,18 @@ onMounted(() => {
                       <div v-if="currentState.cardList[slotIndex - 1].rateError" class="my-font-sm-400 my-color-red text-end mt-1">
                         {{ currentState.cardList[slotIndex - 1].rateError }}
                       </div>
-                      <div v-show="currentState.cardList[slotIndex - 1].hintVisible" class="rounded my-bgcolor-gray my-font-sm-400 my-color-gray-light p-2 mt-2">
+                      <div v-show="currentState.cardList[slotIndex - 1].hintVisible" class="rounded my-bgcolor-gray-3 my-font-sm-400 my-color-gray-4 p-2 mt-2">
                         {{ currentState.cardList[slotIndex - 1].hint }}
                       </div>
                     </div>
                     <div v-if="currentState.cardList[slotIndex - 1].referenceAnswer" class="mb-3">
-                      <div class="form-label my-font-sm-600 my-color-gray-light mb-1">參考答案(暫存)</div>
-                      <div class="rounded my-bgcolor-gray my-border-neutral-1 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
+                      <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">參考答案(暫存)</div>
+                      <div class="rounded my-bgcolor-gray-3 my-border-gray-2 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].referenceAnswer }}</div>
                     </div>
                     <div class="mb-3">
                       <div class="d-flex justify-content-between align-items-baseline gap-2 mb-1">
-                        <label :for="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label my-font-sm-600 my-color-gray-light mb-0">答案</label>
-                        <span class="form-text my-font-sm-400 my-color-gray-light text-end flex-shrink-0 mb-0">{{ currentState.cardList[slotIndex - 1].quiz_answer.length }} / 2000</span>
+                        <label :for="`quiz-answer-${currentState.cardList[slotIndex - 1].id}`" class="form-label my-font-sm-600 my-color-gray-1 mb-0">答案</label>
+                        <span class="form-text my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0">{{ currentState.cardList[slotIndex - 1].quiz_answer.length }} / 2000</span>
                       </div>
                       <template v-if="!currentState.cardList[slotIndex - 1].confirmed">
                         <textarea
@@ -1131,12 +1136,12 @@ onMounted(() => {
                         </div>
                       </template>
                       <template v-else>
-                        <div class="rounded my-bgcolor-gray my-font-sm-400 p-2 mb-2">{{ currentState.cardList[slotIndex - 1].quiz_answer }}</div>
+                        <div class="rounded my-bgcolor-gray-3 my-font-sm-400 p-2 mb-2">{{ currentState.cardList[slotIndex - 1].quiz_answer }}</div>
                       </template>
                     </div>
                     <div class="mb-3">
-                      <div class="form-label my-font-sm-600 my-color-gray-light mb-1">批改結果</div>
-                      <div class="rounded my-bgcolor-gray my-border-neutral-1 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
+                      <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">批改結果</div>
+                      <div class="rounded my-bgcolor-gray-3 my-border-gray-2 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ currentState.cardList[slotIndex - 1].gradingResult || '尚未批改' }}</div>
                     </div>
                   </div>
                 </div>
@@ -1144,37 +1149,43 @@ onMounted(() => {
               <template v-else>
                 <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
                 <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-                  <div class="my-font-lg-600 mb-3">第 {{ slotIndex }} 題</div>
+                  <div class="my-font-lg-600 my-color-gray-1 mb-3">第 {{ slotIndex }} 題</div>
                   <div class="text-start pt-3">
                     <div class="d-flex flex-wrap align-items-end gap-3">
                       <div class="flex-grow-1 min-w-0" style="min-width: 10rem">
-                        <label class="form-label my-font-sm-600 my-color-gray-light mb-1" :for="`exam-quiz-unit-${slotIndex}-toggle`">單元</label>
+                        <label class="form-label my-font-sm-600 my-color-gray-1 mb-0" :for="`exam-quiz-unit-${slotIndex}-toggle`">單元</label>
                         <UnitSelectDropdown
                           v-model="getSlotFormState(slotIndex).generateQuizTabId"
                           :options="generateQuizUnits"
                           :menu-id="`exam-quiz-unit-${slotIndex}`"
                         />
                       </div>
-                      <div>
-                        <label class="form-label my-font-sm-600 my-color-gray-light d-block mb-1">難度</label>
-                        <div class="btn-group btn-group-sm" role="group">
-                          <template v-for="(opt, di) in difficultyOptions" :key="opt">
-                            <input
-                              :id="'exam-quiz-diff-' + slotIndex + '-' + di"
-                              v-model="filterDifficulty"
-                              type="radio"
-                              class="btn-check"
-                              :name="'exam-quiz-difficulty-' + slotIndex"
-                              :value="opt"
-                              autocomplete="off"
-                            >
-                            <label class="btn my-btn-outline-blue-hollow" :for="'exam-quiz-diff-' + slotIndex + '-' + di">{{ opt }}</label>
-                          </template>
+                      <div class="d-flex flex-column gap-1 flex-shrink-0">
+                        <label
+                          class="form-label my-font-sm-600 my-color-gray-1 mb-0"
+                          :id="`exam-quiz-difficulty-label-${slotIndex}`"
+                        >難度</label>
+                        <div
+                          class="btn-group my-btn-group-pill flex-shrink-0"
+                          role="group"
+                          :aria-labelledby="`exam-quiz-difficulty-label-${slotIndex}`"
+                        >
+                          <button
+                            v-for="opt in difficultyOptions"
+                            :key="'exam-quiz-diff-' + slotIndex + '-' + opt"
+                            type="button"
+                            class="btn d-flex justify-content-center align-items-center my-font-md-400 px-3 py-2"
+                            :class="filterDifficulty === opt ? 'my-button-white' : 'my-button-gray-3'"
+                            :aria-pressed="filterDifficulty === opt"
+                            @click="filterDifficulty = opt"
+                          >
+                            {{ opt }}
+                          </button>
                         </div>
                       </div>
                       <button
                         type="button"
-                        class="btn my-button-blue"
+                        class="btn my-button-blue ms-auto"
                         :disabled="getSlotFormState(slotIndex).loading || generateQuizBlocked || !String(getSlotFormState(slotIndex).generateQuizTabId || '').trim()"
                         @click="generateQuiz(slotIndex)"
                       >
@@ -1201,7 +1212,7 @@ onMounted(() => {
               </button>
               <p
                 v-if="generateQuizBlocked && !forExamLoading && activeTabId"
-                class="my-font-sm-400 my-color-gray-light text-center mb-0 mt-2"
+                class="my-font-sm-400 my-color-gray-4 text-center mb-0 mt-2"
               >
                 目前沒有可用RAG
               </p>

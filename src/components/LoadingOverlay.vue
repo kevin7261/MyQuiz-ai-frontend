@@ -51,7 +51,7 @@
         </div>
       </div>
       <div v-if="subText" class="mt-2">
-        <span class="my-font-sm-400 my-color-gray-light">{{ subText }}</span>
+        <span class="my-font-sm-400 my-color-gray-4">{{ subText }}</span>
       </div>
     </div>
   </div>

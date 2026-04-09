@@ -92,7 +92,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-light h-100 position-relative">
+  <div class="d-flex flex-column my-bgcolor-gray-4 h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
       loading-text="載入作答資料中..."
@@ -107,17 +107,17 @@ onMounted(() => {
     </div>
 
     <!-- 內容區：不顯示 weakness_report（學生作答分析固定為 null） -->
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-light px-4 py-5">
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-      <div v-if="loading" class="text-center my-color-gray-light py-5" />
+      <div v-if="loading" class="text-center my-color-gray-4 py-5" />
       <div v-else-if="items.length === 0" class="my-alert-info-soft rounded my-font-sm-400 p-3 mt-0">尚無答題紀錄。</div>
 
       <template v-else>
         <!-- 作答紀錄摘要表：題號 / 單元 / 難度 / 分數 / 時間（每題取最新一筆作答） -->
         <div class="text-start my-page-block-spacing">
           <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
-          <div class="my-font-lg-600 mb-4">作答紀錄摘要</div>
+          <div class="my-font-lg-600 my-color-gray-1 mb-4">作答紀錄摘要</div>
           <div class="table-responsive">
             <table class="table table-bordered table-sm my-font-sm-400 mb-0">
               <thead class="my-table-thead">
@@ -160,50 +160,50 @@ onMounted(() => {
           :key="item.exam_quiz_id ?? item.rag_quiz_id ?? idx"
           class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4"
         >
-          <div class="my-font-lg-600 mb-3">第 {{ idx + 1 }} 題</div>
+          <div class="my-font-lg-600 my-color-gray-1 mb-3">第 {{ idx + 1 }} 題</div>
           <div class="text-start">
             <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
               <div>
-                <label class="form-label my-font-sm-600 my-color-gray-light mb-1">使用者 ID</label>
-                <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2" style="min-height: 31px;">{{ item.person_id ?? '—' }}</div>
+                <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">使用者 ID</label>
+                <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" style="min-height: 31px;">{{ item.person_id ?? '—' }}</div>
               </div>
               <div>
-                <label class="form-label my-font-sm-600 my-color-gray-light mb-1">單元</label>
-                <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2" style="min-height: 31px;">{{ item.rag_name ?? item.exam_name ?? '—' }}</div>
+                <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">單元</label>
+                <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" style="min-height: 31px;">{{ item.rag_name ?? item.exam_name ?? '—' }}</div>
               </div>
               <div>
-                <label class="form-label my-font-sm-600 my-color-gray-light mb-1">難度</label>
-                <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2" style="min-height: 31px;">{{ getDifficultyLabel(examQuizLevelFromRow(item) ?? item.quiz_level) }}</div>
+                <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">難度</label>
+                <div class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" style="min-height: 31px;">{{ getDifficultyLabel(examQuizLevelFromRow(item) ?? item.quiz_level) }}</div>
               </div>
             </div>
             <div class="mb-3">
-              <div class="form-label my-font-sm-600 my-color-gray-light mb-1">題目</div>
-              <div class="my-bgcolor-light-gray my-border-neutral-1 rounded lh-base p-2">
+              <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">題目</div>
+              <div class="my-bgcolor-light-gray my-border-gray-2 rounded lh-base p-2">
                 {{ item.quiz_content ?? '—' }}
               </div>
             </div>
             <div v-if="item.quiz_hint" class="mb-3">
-              <div class="form-label my-font-sm-600 my-color-gray-light mb-1">提示</div>
-              <div class="rounded my-bgcolor-gray my-font-sm-400 my-color-gray-light p-2 mt-2">
+              <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">提示</div>
+              <div class="rounded my-bgcolor-gray-3 my-font-sm-400 my-color-gray-4 p-2 mt-2">
                 {{ item.quiz_hint }}
               </div>
             </div>
             <div v-if="item.quiz_answer_reference || item.quiz_reference_answer" class="mb-3">
-              <div class="form-label my-font-sm-600 my-color-gray-light mb-1">參考答案(暫存)</div>
-              <div class="rounded my-bgcolor-gray my-border-neutral-1 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ item.quiz_answer_reference ?? item.quiz_reference_answer }}</div>
+              <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">參考答案(暫存)</div>
+              <div class="rounded my-bgcolor-gray-3 my-border-gray-2 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ item.quiz_answer_reference ?? item.quiz_reference_answer }}</div>
             </div>
             <template v-if="getSingleAnswer(item)">
               <div class="mb-3">
-                <label class="form-label my-font-sm-600 my-color-gray-light mb-1">答案</label>
-                <div class="rounded my-bgcolor-gray my-font-sm-400 p-2 mb-2">{{ getSingleAnswer(item).quiz_answer ?? getSingleAnswer(item).student_answer ?? '—' }}</div>
+                <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">答案</label>
+                <div class="rounded my-bgcolor-gray-3 my-font-sm-400 p-2 mb-2">{{ getSingleAnswer(item).quiz_answer ?? getSingleAnswer(item).student_answer ?? '—' }}</div>
               </div>
               <div class="mb-3">
-                <div class="form-label my-font-sm-600 my-color-gray-light mb-1">批改結果</div>
-                <div class="rounded my-bgcolor-gray my-border-neutral-1 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ getGradingResultText(getSingleAnswer(item)) }}</div>
+                <div class="form-label my-font-sm-600 my-color-gray-1 mb-0">批改結果</div>
+                <div class="rounded my-bgcolor-gray-3 my-border-gray-2 my-font-sm-400 p-2" style="white-space: pre-wrap;">{{ getGradingResultText(getSingleAnswer(item)) }}</div>
               </div>
             </template>
             <template v-else>
-              <div class="my-color-gray-light my-font-sm-400">尚無作答</div>
+              <div class="my-color-gray-4 my-font-sm-400">尚無作答</div>
             </template>
           </div>
         </div>

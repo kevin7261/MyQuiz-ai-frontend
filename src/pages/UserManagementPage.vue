@@ -508,7 +508,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-light h-100 position-relative">
+  <div class="d-flex flex-column my-bgcolor-gray-4 h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
       loading-text="載入名單中..."
@@ -520,13 +520,13 @@ onMounted(() => {
     </div>
     <div v-if="error" class="my-alert-warning-soft rounded my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
     <div v-if="deleteUserError" class="my-alert-danger-soft rounded my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-light px-4 py-5">
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
           <div class="text-start my-page-block-spacing">
             <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-              <p class="my-font-sm-400 my-color-gray-light mb-0">
+              <p class="my-font-sm-400 my-color-gray-4 mb-0">
                 共 {{ count }} 筆使用者
               </p>
               <div class="d-flex flex-wrap gap-2">
@@ -538,7 +538,7 @@ onMounted(() => {
                 </button>
               </div>
             </div>
-            <div v-if="loading" class="my-color-gray-light my-font-sm-400" />
+            <div v-if="loading" class="my-color-gray-4 my-font-sm-400" />
             <div v-else class="table-responsive">
               <table class="table table-bordered table-hover table-sm">
                 <thead class="my-table-thead">
@@ -566,11 +566,11 @@ onMounted(() => {
                         <i class="fa-solid fa-xmark" aria-hidden="true" />
                         <span class="visually-hidden">刪除</span>
                       </button>
-                      <span v-else class="my-color-gray-light">—</span>
+                      <span v-else class="my-color-gray-4">—</span>
                     </td>
                   </tr>
                   <tr v-if="!loading && users.length === 0">
-                    <td colspan="4" class="my-color-gray-light text-center my-font-sm-400">尚無使用者</td>
+                    <td colspan="4" class="my-color-gray-4 text-center my-font-sm-400">尚無使用者</td>
                   </tr>
                 </tbody>
               </table>
@@ -606,7 +606,7 @@ onMounted(() => {
             </div>
             <div class="modal-body pt-2">
               <div class="mb-3">
-                <label for="user-single-id" class="form-label my-font-sm-400 my-color-gray-light mb-1">登入 ID</label>
+                <label for="user-single-id" class="form-label my-font-sm-400 my-color-gray-1 mb-0">登入 ID</label>
                 <input
                   id="user-single-id"
                   v-model="singlePersonId"
@@ -624,7 +624,7 @@ onMounted(() => {
                 </div>
               </div>
               <div class="mb-3">
-                <label for="user-single-name" class="form-label my-font-sm-400 my-color-gray-light mb-1">姓名</label>
+                <label for="user-single-name" class="form-label my-font-sm-400 my-color-gray-1 mb-0">姓名</label>
                 <input
                   id="user-single-name"
                   v-model="singleName"
@@ -637,7 +637,7 @@ onMounted(() => {
                 >
               </div>
               <div class="mb-0">
-                <label for="user-single-type" class="form-label my-font-sm-400 my-color-gray-light mb-1">類型</label>
+                <label for="user-single-type" class="form-label my-font-sm-400 my-color-gray-1 mb-0">類型</label>
                 <select
                   id="user-single-type"
                   v-model.number="singleUserType"
@@ -655,7 +655,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn my-btn-outline-neutral" :disabled="singleSaving" @click="closeSingleModal">
+              <button type="button" class="btn my-btn-outline-gray-2" :disabled="singleSaving" @click="closeSingleModal">
                 取消
               </button>
               <button
@@ -696,7 +696,7 @@ onMounted(() => {
               />
             </div>
             <div class="modal-body pt-2">
-              <p class="my-font-sm-400 my-color-gray-light mb-2">
+              <p class="my-font-sm-400 my-color-gray-4 mb-2">
                 Excel 第一行為表頭，須含 <strong>ID</strong>、<strong>姓名</strong>。若檔內 <strong>登入 ID 重複</strong>或<strong>與現有使用者重複</strong>，將無法送出；匯入的每位將新增為「{{ USER_TYPE_LABELS[RESTRICTED_USER_TYPE] }}」。
               </p>
               <input
@@ -708,7 +708,7 @@ onMounted(() => {
                 @change="onExcelChange"
               >
               <div
-                class="my-zip-drop-zone rounded border border-dashed text-center position-relative p-4"
+                class="my-zip-drop-zone text-center position-relative"
                 :class="{ 'my-zip-drop-zone-over': isExcelDragOver }"
                 @dragover.prevent="onExcelDragOver"
                 @dragenter.prevent="onExcelDragOver"
@@ -718,11 +718,11 @@ onMounted(() => {
               >
                 <template v-if="excelFileName">
                   <span class="my-font-sm-400 my-color-black">{{ excelFileName }}</span>
-                  <div class="my-font-sm-400 my-color-gray-light mt-1">拖曳檔案到這裡，或點擊重新選擇</div>
+                  <div class="my-font-sm-400 my-color-gray-4 mt-1">拖曳檔案到這裡，或點擊重新選擇</div>
                 </template>
                 <template v-else>
-                  <span class="my-font-sm-400 my-color-gray-light">拖曳 Excel 到這裡，或點擊選擇檔案</span>
-                  <div class="my-font-sm-400 my-color-gray-light mt-2">格式：表頭須含 ID、姓名 欄（ID 不分大小寫）</div>
+                  <span class="my-font-sm-400 my-color-gray-4">拖曳 Excel 到這裡，或點擊選擇檔案</span>
+                  <div class="my-font-sm-400 my-color-gray-4 mt-2">格式：表頭須含 ID、姓名 欄（ID 不分大小寫）</div>
                 </template>
               </div>
               <div v-if="excelParseError" class="my-alert-warning-soft rounded my-font-sm-400 py-2 mt-2 mb-0" role="alert">
@@ -743,7 +743,7 @@ onMounted(() => {
                     </tr>
                   </tbody>
                 </table>
-                <p class="my-font-sm-400 my-color-gray-light mt-2 mb-0">共 {{ excelPreviewRows.length }} 筆預覽（有效登入 ID：{{ batchPayloadNormalized.length }} 筆）</p>
+                <p class="my-font-sm-400 my-color-gray-4 mt-2 mb-0">共 {{ excelPreviewRows.length }} 筆預覽（有效登入 ID：{{ batchPayloadNormalized.length }} 筆）</p>
               </div>
               <div
                 v-if="excelPreviewRows.length > 0 && batchPayloadNormalized.length === 0"
@@ -766,7 +766,7 @@ onMounted(() => {
               >
                 以下登入 ID 已存在於系統：{{ batchIdsClashingExisting.join('、') }}，請從檔案移除後再試。
               </div>
-              <div v-if="batchSubmitSummary.ok > 0 || batchSubmitSummary.fail > 0" class="my-font-sm-400 my-color-gray-light mt-3">
+              <div v-if="batchSubmitSummary.ok > 0 || batchSubmitSummary.fail > 0" class="my-font-sm-400 my-color-gray-4 mt-3">
                 本次結果：成功 {{ batchSubmitSummary.ok }} 筆，失敗 {{ batchSubmitSummary.fail }} 筆
               </div>
               <div v-if="batchSubmitError" class="my-color-red my-font-sm-400 mt-2 mb-0">
@@ -774,7 +774,7 @@ onMounted(() => {
               </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn my-btn-outline-neutral" :disabled="batchSaving" @click="closeBatchModal">
+              <button type="button" class="btn my-btn-outline-gray-2" :disabled="batchSaving" @click="closeBatchModal">
                 關閉
               </button>
               <button
@@ -793,19 +793,3 @@ onMounted(() => {
   </div>
 </template>
 
-<style scoped>
-.my-zip-drop-zone {
-  cursor: pointer;
-  border-width: 2px;
-  border-color: var(--my-drop-zone-border);
-  background: var(--my-drop-zone-bg);
-}
-.my-zip-drop-zone:hover {
-  border-color: var(--my-color-blue);
-  background: var(--my-drop-zone-hover-bg);
-}
-.my-zip-drop-zone-over {
-  border-color: var(--my-color-blue) !important;
-  background: var(--my-drop-zone-active-bg) !important;
-}
-</style>
