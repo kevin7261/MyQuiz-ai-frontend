@@ -4,7 +4,7 @@
    *
    * 職責：
    * - 顯示品牌（課程名稱，由 GET /system-settings/course-name 取得）、主要導覽（測驗、作答弱點分析）
-   * - 左下角使用者名下拉：出題／學生作答分析／使用者管理／系統設定、分隔線、設定、登出（/design、/create-test-bank_design 不列於選單，僅網址進入）
+   * - 左下角使用者名下拉：Design 08 同款（my-design-08-dropdown、rounded-2 my-button-white、my-dropdown-caret＋FA chevron）；出題／學生作答分析／使用者管理／系統設定、分隔線、設定、登出（/design、/create-test-bank_design 不列於選單，僅網址進入）
    * - 依 user_type 顯示允許的項目（canSeeNavLink）
    */
   import { ref, computed, onMounted } from 'vue';
@@ -62,9 +62,11 @@
 </script>
 
 <template>
-  <aside class="h-100 d-flex flex-column w-100 my-bgcolor-gray-4 my-border-end-gray-2">
+  <aside class="h-100 d-flex flex-column w-100 my-bgcolor-gray-3">
     <div class="fw-semibold fs-5 my-color-black lh-sm px-3 pt-3 pb-2">{{ courseName }}</div>
-    <nav class="nav nav-pills flex-column flex-grow-1 justify-content-center gap-1 overflow-auto px-3 pt-3">
+    <nav
+      class="my-left-view-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 pt-2 pb-3"
+    >
       <router-link
         v-if="canSeeNavLink(userType, 'work')"
         to="/exam"
@@ -81,16 +83,17 @@
       >
     </nav>
     <div class="flex-shrink-0 px-3 pb-2 mt-auto">
-      <div class="dropdown dropup w-100">
+      <div class="my-design-08-dropdown dropdown dropup w-100 min-w-0">
         <button
           type="button"
-          class="btn my-btn-outline-gray-2 dropdown-toggle w-100 text-start d-flex align-items-center gap-1"
+          class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white w-100 min-w-0 px-3 py-2 text-start"
           data-bs-toggle="dropdown"
           aria-expanded="false"
         >
-          <span class="flex-grow-1 overflow-hidden text-truncate">{{ userName || '—' }}</span>
+          <span class="flex-grow-1 overflow-hidden text-truncate text-start pe-2">{{ userName || '—' }}</span>
+          <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret" aria-hidden="true" />
         </button>
-        <ul class="dropdown-menu dropdown-menu-start shadow-sm w-100">
+        <ul class="dropdown-menu dropdown-menu-start w-100">
           <li v-if="canSeeNavLink(userType, 'create-test-bank')">
             <router-link class="dropdown-item" to="/create-test-bank" active-class="active">建立測驗題庫</router-link>
           </li>
@@ -125,3 +128,21 @@
     </div>
   </aside>
 </template>
+
+<style scoped>
+.my-left-view-nav .nav-link {
+  color: var(--my-color-black);
+}
+.my-left-view-nav .nav-link:not(.active):hover,
+.my-left-view-nav .nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+}
+.my-left-view-nav .nav-link.active,
+.my-left-view-nav .nav-link.active:hover,
+.my-left-view-nav .nav-link.active:focus,
+.my-left-view-nav .nav-link.active:focus-visible {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
+</style>

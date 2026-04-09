@@ -12,13 +12,13 @@ const designSampleChoiceWhite = ref('選項一');
   <!--
     DesignPage｜UI 元件參考（稿）
     - 根層：全高 flex 直向、網頁 canvas 灰淺（my-bgcolor-gray-4）；頂部固定、頁首標題無底分隔線、下方主區可捲動。
-    - 頁首標題「UI 元件參考」置中、無 col；主內文仍 container-fluid + row 置中，欄寬上限 col-xl-10／col-xxl-8。
+    - 頁首標題「UI 元件參考」置中、無 col；主內文 container-fluid px-3 px-md-4 py-4 + row 置中，欄寬與測驗頁一致 col-lg-10 col-xl-8 col-xxl-6。
     - 章節：各 <section> 使用 my-page-block-spacing；區塊 rounded-4 my-bgcolor-gray-3、無 border；子標題 .my-font-lg-600（common 預設字色 --my-color-black）。
     - 複製：DesignPageCopyBtn 預設淺底深字；class 示範列多為黑框（.my-design-swatch-row my-bgcolor-black）複製鈕 :on-light-bg="false"；08 區塊本體 my-bgcolor-gray-3 shadow-sm（與 canvas 區隔）；其內 class 示範列仍 .my-design-swatch-row--light、:on-light-bg="true"、<code> my-color-black。黑框內 <code>／示範 <span> 皆併 my-font-sm-400（黑底併 my-color-white），避免 Bootstrap code 字級覆蓋。02／03 色票每組一顆色圓；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。
     - 編號：05 區塊內含「09 · 徽章」與「08 · 下拉選單」；其後為 06 輸入、07 分頁、08 表格。
   -->
-  <div class="h-100 d-flex flex-column overflow-hidden my-bgcolor-gray-4">
-    <!-- 頁首：稿名，不隨內文捲動 -->
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+    <!-- 頁首：稿名，不隨內文捲動（與測驗頁同層級） -->
     <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">UI 元件參考</p>
@@ -26,11 +26,10 @@ const designSampleChoiceWhite = ref('選項一');
     </header>
 
     <!-- 主內文：overflow-auto 僅此層捲動 -->
-    <div class="flex-grow-1 overflow-auto">
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <!-- 與 header 同寬上限，避免寬螢過長一行 -->
-          <div class="col-12 col-xl-10 col-xxl-8">
+          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
 
           <!-- ===== 01 · 字階 =====
                common：.my-font-{xl|lg|md|sm}-{400|600}；左欄字重 400、右欄 600；<dl> 示範語意結構 -->
@@ -927,24 +926,24 @@ const designSampleChoiceWhite = ref('選項一');
             <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 mb-5">
             <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">08 · 表格</div>
                 <div class="rounded-4 overflow-auto border">
-                  <table class="table table-striped table-hover mb-0">
+                  <table class="table table-striped table-hover my-font-md-400 mb-0">
                     <thead>
                       <tr>
-                        <th class="px-3 py-2" scope="col">項目</th>
-                        <th class="px-3 py-2" scope="col">說明</th>
-                        <th class="text-end px-3 py-2" scope="col">數量</th>
+                        <th class="my-font-md-600 px-3 py-2" scope="col">項目</th>
+                        <th class="my-font-md-600 px-3 py-2" scope="col">說明</th>
+                        <th class="my-font-md-600 text-end px-3 py-2" scope="col">數量</th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr>
-                        <td class="px-3 py-2">範例列 A</td>
-                        <td class="my-color-gray-4 px-3 py-2">輔助欄位</td>
-                        <td class="text-end px-3 py-2">12</td>
+                        <td class="my-font-md-400 px-3 py-2">範例列 A</td>
+                        <td class="my-font-md-400 my-color-gray-4 px-3 py-2">輔助欄位</td>
+                        <td class="my-font-md-400 text-end px-3 py-2">12</td>
                       </tr>
                       <tr>
-                        <td class="px-3 py-2">範例列 B</td>
-                        <td class="my-color-gray-4 px-3 py-2">輔助欄位</td>
-                        <td class="text-end px-3 py-2">3</td>
+                        <td class="my-font-md-400 px-3 py-2">範例列 B</td>
+                        <td class="my-font-md-400 my-color-gray-4 px-3 py-2">輔助欄位</td>
+                        <td class="my-font-md-400 text-end px-3 py-2">3</td>
                       </tr>
                     </tbody>
                   </table>

@@ -140,21 +140,22 @@ async function save(block) {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-4 h-100 position-relative">
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
     <LoadingOverlay
       :is-visible="fetchLoading || BLOCKS.some((b) => state[b.id].loading)"
       loading-text="載入或儲存設定中..."
     />
-    <div class="navbar navbar-expand-lg my-bgcolor-surface flex-shrink-0">
-      <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand my-font-xl-400 mb-0">系統設定</span>
+    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+      <div class="container-fluid px-0 text-center">
+        <p class="my-font-xl-400 my-color-black text-break mb-0">系統設定</p>
       </div>
-    </div>
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 px-4 py-5">
-      <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-          <div class="text-start my-page-block-spacing">
-            <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
+    </header>
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+      <div class="container-fluid px-3 px-md-4 py-4">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+            <div class="text-start my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 w-100 min-w-0">
             <template v-for="block in BLOCKS" :key="block.id">
               <div class="mb-4">
                 <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">{{ block.label }}</label>
@@ -172,7 +173,7 @@ async function save(block) {
                   </div>
                   <button
                     type="button"
-                    class="btn my-button-blue flex-shrink-0"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2 flex-shrink-0"
                     :disabled="state[block.id].loading || fetchLoading"
                     @click="save(block)"
                   >
@@ -197,6 +198,7 @@ async function save(block) {
                 {{ API_BASE }}
               </div>
             </div>
+              </div>
             </div>
           </div>
         </div>

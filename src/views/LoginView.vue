@@ -83,42 +83,54 @@
 </script>
 
 <template>
-  <div class="d-flex flex-column justify-content-center align-items-center h-100 my-bgcolor-black position-relative">
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
     <LoadingOverlay
       :is-visible="loading"
       loading-text="登入中..."
     />
-    <div class="card shadow-sm my-login-view-card my-bgcolor-surface my-color-black">
-      <div class="card-body p-4">
-        <h4 class="card-title text-center mb-4">{{ courseName }} 登入</h4>
-        <form @submit.prevent="onLogin">
-          <div class="mb-3 d-flex flex-column gap-0">
-            <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者 ID</label>
-            <input
-              id="login-person-id"
-              v-model="personId"
-              type="text"
-              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
-              placeholder="請輸入使用者 ID"
-              autocomplete="username"
-            />
-          </div>
-          <div class="mb-3 d-flex flex-column gap-0">
-            <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-password">密碼</label>
-            <input
-              id="login-password"
-              v-model="password"
-              type="text"
-              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
-              placeholder="請輸入密碼"
-              autocomplete="current-password"
-            />
-          </div>
-          <div v-if="error" class="my-alert-danger-soft rounded py-2 mb-3" role="alert">{{ error }}</div>
-          <button type="submit" class="btn my-button-blue w-100" :disabled="loading">
-            登入
-          </button>
-        </form>
+    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+      <div class="container-fluid px-0 text-center">
+        <p class="my-font-xl-400 my-color-black text-break mb-0">{{ courseName }} 登入</p>
+      </div>
+    </header>
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+      <div
+        class="container-fluid px-3 px-md-4 py-4 flex-grow-1 d-flex align-items-center justify-content-center"
+      >
+        <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 w-100 my-login-view-card my-color-black">
+          <form @submit.prevent="onLogin">
+            <div class="mb-3 d-flex flex-column gap-0">
+              <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者 ID</label>
+              <input
+                id="login-person-id"
+                v-model="personId"
+                type="text"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
+                placeholder="請輸入使用者 ID"
+                autocomplete="username"
+              />
+            </div>
+            <div class="mb-3 d-flex flex-column gap-0">
+              <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-password">密碼</label>
+              <input
+                id="login-password"
+                v-model="password"
+                type="text"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
+                placeholder="請輸入密碼"
+                autocomplete="current-password"
+              />
+            </div>
+            <div v-if="error" class="my-alert-danger-soft py-2 mb-3" role="alert">{{ error }}</div>
+            <button
+              type="submit"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-4 py-2 w-100"
+              :disabled="loading"
+            >
+              登入
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   </div>

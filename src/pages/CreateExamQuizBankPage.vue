@@ -1307,7 +1307,7 @@ function applyMockGradingPreview(item) {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4">
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
     <TabRenameModal
       v-model="renameRagTabModalOpen"
       :initial-name="renameRagTabInitialName"

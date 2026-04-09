@@ -508,53 +508,64 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column my-bgcolor-gray-4 h-100 position-relative">
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
     <LoadingOverlay
       :is-visible="loading"
       loading-text="載入名單中..."
     />
-    <div class="navbar navbar-expand-lg my-bgcolor-surface flex-shrink-0">
-      <div class="container-fluid d-flex justify-content-center">
-        <span class="navbar-brand my-font-xl-400 mb-0">使用者管理</span>
+    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+      <div class="container-fluid px-0 text-center">
+        <p class="my-font-xl-400 my-color-black text-break mb-0">使用者管理</p>
       </div>
+    </header>
+    <div class="flex-shrink-0">
+      <div v-if="error" class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
+      <div v-if="deleteUserError" class="my-alert-danger-soft my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
     </div>
-    <div v-if="error" class="my-alert-warning-soft rounded my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
-    <div v-if="deleteUserError" class="my-alert-danger-soft rounded my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 px-4 py-5">
-      <div class="row justify-content-center">
-        <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-          <div class="text-start my-page-block-spacing">
-            <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-              <p class="my-font-sm-400 my-color-gray-4 mb-0">
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+      <div class="container-fluid px-3 px-md-4 py-4">
+        <div class="row justify-content-center">
+          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+            <div class="text-start my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 w-100 min-w-0">
+            <div class="mb-4">
+              <p class="my-font-sm-400 my-color-gray-4 text-center mb-3">
                 共 {{ count }} 筆使用者
               </p>
-              <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn my-button-blue" @click="openSingleModal">
+              <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                  @click="openSingleModal"
+                >
                   新增一筆使用者
                 </button>
-                <button type="button" class="btn my-button-blue" @click="openBatchModal">
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                  @click="openBatchModal"
+                >
                   批次新增學生
                 </button>
               </div>
             </div>
             <div v-if="loading" class="my-color-gray-4 my-font-sm-400" />
             <div v-else class="table-responsive">
-              <table class="table table-bordered table-hover table-sm">
+              <table class="table table-bordered table-hover table-sm my-font-md-400 mb-0">
                 <thead class="my-table-thead">
                   <tr>
-                    <th class="my-font-sm-600">登入 ID</th>
-                    <th class="my-font-sm-600">姓名</th>
-                    <th class="my-font-sm-600">類型</th>
-                    <th class="my-font-sm-600 text-center" style="width: 3rem;" />
+                    <th class="my-font-md-600">登入 ID</th>
+                    <th class="my-font-md-600">姓名</th>
+                    <th class="my-font-md-600">類型</th>
+                    <th class="my-font-md-600 text-center" style="width: 3rem;" />
                   </tr>
                 </thead>
                 <tbody>
                   <tr v-for="(u, idx) in users" :key="userRowKey(u, idx)">
-                    <td class="my-font-sm-400">{{ u.person_id ?? '—' }}</td>
-                    <td class="my-font-sm-400">{{ u.name ?? '—' }}</td>
-                    <td class="my-font-sm-400">{{ userTypeLabel(u.user_type) }}</td>
-                    <td class="my-font-sm-400 text-center align-middle">
+                    <td class="my-font-md-400">{{ u.person_id ?? '—' }}</td>
+                    <td class="my-font-md-400">{{ u.name ?? '—' }}</td>
+                    <td class="my-font-md-400">{{ userTypeLabel(u.user_type) }}</td>
+                    <td class="my-font-md-400 text-center align-middle">
                       <button
                         v-if="u.person_id != null && String(u.person_id).trim() !== '' && !isCurrentUserRow(u)"
                         type="button"
@@ -570,11 +581,12 @@ onMounted(() => {
                     </td>
                   </tr>
                   <tr v-if="!loading && users.length === 0">
-                    <td colspan="4" class="my-color-gray-4 text-center my-font-sm-400">尚無使用者</td>
+                    <td colspan="4" class="my-color-gray-4 text-center my-font-md-400">尚無使用者</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+              </div>
             </div>
           </div>
         </div>
@@ -729,17 +741,17 @@ onMounted(() => {
                 {{ excelParseError }}
               </div>
               <div v-if="excelPreviewRows.length > 0" class="table-responsive mt-3">
-                <table class="table table-bordered table-hover table-sm mb-0">
+                <table class="table table-bordered table-hover table-sm my-font-md-400 mb-0">
                   <thead class="my-table-thead">
                     <tr>
-                      <th class="my-font-sm-600">ID</th>
-                      <th class="my-font-sm-600">姓名</th>
+                      <th class="my-font-md-600">ID</th>
+                      <th class="my-font-md-600">姓名</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-for="(row, idx) in excelPreviewRows" :key="'excel-' + idx">
-                      <td class="my-font-sm-400 text-break">{{ row.id }}</td>
-                      <td class="my-font-sm-400 text-break">{{ row.name }}</td>
+                      <td class="my-font-md-400 text-break">{{ row.id }}</td>
+                      <td class="my-font-md-400 text-break">{{ row.name }}</td>
                     </tr>
                   </tbody>
                 </table>
