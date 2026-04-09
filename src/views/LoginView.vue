@@ -20,7 +20,7 @@
     setup() {
       const router = useRouter();
       const authStore = useAuthStore();
-      const courseName = ref('AIQuiz');
+      const courseName = ref('MyQuiz.ai');
       const personId = ref('');
       const password = ref('');
       const loading = ref(false);
@@ -36,7 +36,7 @@
             }
           }
         } catch {
-          // 保持預設 AIQuiz
+          // 保持預設 MyQuiz.ai
         }
       });
 

@@ -1,4 +1,4 @@
-# aiquiz_frontend
+# MyQuiz.ai_frontend
 
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.2.13-4FC08D?style=flat-square&logo=vue.js)](https://vuejs.org/)
 [![Vue Router](https://img.shields.io/badge/Vue_Router-4.5.1-4FC08D?style=flat-square&logo=vue.js)](https://router.vuejs.org/)
@@ -6,22 +6,22 @@
 [![Bootstrap](https://img.shields.io/badge/Bootstrap-5.3.0-7952B3?style=flat-square&logo=bootstrap)](https://getbootstrap.com/)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
-基於 Vue 3 的 AIQuiz 單頁應用程式，提供**工作分頁**與**儀表板**介面，適合數據展示、工作流程與儀表板類專案。程式碼含中文註解，便於維護與擴充。
+基於 Vue 3 的 **MyQuiz.ai** 單頁應用程式（倉庫名稱 MyQuiz.ai_frontend），提供**工作分頁**與**儀表板**介面，適合數據展示、工作流程與儀表板類專案。程式碼含中文註解，便於維護與擴充。
 
-### 上傳到新 Repository（aiquiz_frontend）
+### 上傳到新 Repository（MyQuiz.ai_frontend）
 
-本專案已改為獨立 Git 儲存庫。若要推送到 GitHub 上的新 repository `aiquiz_frontend`：
+本專案已改為獨立 Git 儲存庫。若要推送到 GitHub 上的新 repository `MyQuiz.ai_frontend`：
 
-1. 在 GitHub 建立新 repository，名稱設為 **aiquiz_frontend**（不要勾選「Add a README」）。
+1. 在 GitHub 建立新 repository，名稱設為 **MyQuiz.ai_frontend**（不要勾選「Add a README」）。
 2. 在專案目錄執行：
 
 ```bash
-git remote add origin https://github.com/kevin7261/aiquiz_frontend.git
+git remote add origin https://github.com/kevin7261/MyQuiz.ai_frontend.git
 git branch -M main
 git push -u origin main
 ```
 
-若使用 SSH：`git remote add origin git@github.com:kevin7261/aiquiz_frontend.git`
+若使用 SSH：`git remote add origin git@github.com:kevin7261/MyQuiz.ai_frontend.git`
 
 ---
 
@@ -51,7 +51,7 @@ git push -u origin main
 
 ### 簡介
 
-**AIQuiz** 為一單頁應用程式（SPA），以 Vue 3 為核心，搭配 Vue Router、Pinia、Bootstrap 5 與 Font Awesome，實作「工作分頁」與「儀表板」兩大區塊，並可依需求擴充狀態與頁面。
+**MyQuiz.ai** 為一單頁應用程式（SPA），以 Vue 3 為核心，搭配 Vue Router、Pinia、Bootstrap 5 與 Font Awesome，實作「工作分頁」與「儀表板」兩大區塊，並可依需求擴充狀態與頁面。
 
 ### 目標與特色
 
@@ -166,8 +166,8 @@ git push -u origin main
 ### 1. 取得專案
 
 ```bash
-git clone https://github.com/kevin7261/aiquiz_frontend.git
-cd aiquiz_frontend
+git clone https://github.com/kevin7261/MyQuiz.ai_frontend.git
+cd MyQuiz.ai_frontend
 ```
 
 （若專案根目錄即為 `frontend`，則從 `frontend` 開始即可。）
@@ -204,7 +204,7 @@ yarn build
 ```
 
 - 產出目錄：**dist/**。  
-- 生產環境 `publicPath` 為 **`/aiquiz_frontend/`**（對應 GitHub Pages 子路徑）。  
+- 生產環境 `publicPath` 為 **`/MyQuiz.ai_frontend/`**（對應 GitHub Pages 子路徑）。  
 - 建置時會進行壓縮、Tree-shaking、chunk 分割等優化。
 
 ### 5. 部署至 GitHub Pages
@@ -216,8 +216,8 @@ yarn deploy
 ```
 
 - 會先執行 `predeploy`（即 `npm run build`），再以 **gh-pages** 將 `dist` 目錄推送至 `gh-pages` 分支。  
-- 若倉庫為 `https://github.com/kevin7261/autoq`，則線上網址為：**https://kevin7261.github.io/aiquiz_frontend**。  
-- `vue.config.js` 中生產環境 `publicPath: '/aiquiz_frontend/'` 需與 GitHub 專案名稱一致，否則資源路徑會錯誤。
+- 若倉庫為 `https://github.com/kevin7261/autoq`，則線上網址為：**https://kevin7261.github.io/MyQuiz.ai_frontend**。  
+- `vue.config.js` 中生產環境 `publicPath: '/MyQuiz.ai_frontend/'` 需與 GitHub 專案名稱一致，否則資源路徑會錯誤。
 
 ---
 
@@ -295,10 +295,10 @@ frontend/
 
 - **publicPath**  
   - 開發：`/`。  
-  - 生產：`/aiquiz_frontend/`，對應 GitHub Pages 專案路徑。
+  - 生產：`/MyQuiz.ai_frontend/`，對應 GitHub Pages 專案路徑。
 
 - **chainWebpack**  
-  - 設定 `html-webpack-plugin` 的 title 為 `'AIQuiz'`。
+  - 設定 `html-webpack-plugin` 的 title 為 `'MyQuiz.ai'`（使用者可見品牌名稱）。
 
 - **transpileDependencies**  
   - `true`：轉譯 `node_modules` 內依賴，提高舊瀏覽器相容性。
@@ -493,7 +493,7 @@ npm run build
 ```
 
 - 產出在 **dist/**。  
-- 生產環境 `publicPath` 為 `/aiquiz_frontend/`，所有資源路徑會以 `/aiquiz_frontend/` 為前綴。  
+- 生產環境 `publicPath` 為 `/MyQuiz.ai_frontend/`，所有資源路徑會以 `/MyQuiz.ai_frontend/` 為前綴。  
 - 若需部署到其他路徑，請修改 `vue.config.js` 的 `publicPath`。
 
 ### 本機預覽建置結果
@@ -504,7 +504,7 @@ npm run build
 npx serve dist -s
 ```
 
-`-s` 會啟用 SPA fallback（所有路徑回傳 index.html）。注意預覽時網址需與 `publicPath` 一致（例如掛在 `/aiquiz_frontend/` 下）。
+`-s` 會啟用 SPA fallback（所有路徑回傳 index.html）。注意預覽時網址需與 `publicPath` 一致（例如掛在 `/MyQuiz.ai_frontend/` 下）。
 
 ### 部署至 GitHub Pages
 
@@ -515,8 +515,8 @@ npx serve dist -s
    npm run deploy
    ```
 
-3. 確認倉庫名與 `publicPath` 一致（例如倉庫 `username/aiquiz_frontend` → `publicPath: '/aiquiz_frontend/'`）。  
-4. 線上網址一般為：`https://<username>.github.io/aiquiz_frontend/`。
+3. 確認倉庫名與 `publicPath` 一致（例如倉庫 `username/MyQuiz.ai_frontend` → `publicPath: '/MyQuiz.ai_frontend/'`）。  
+4. 線上網址一般為：`https://<username>.github.io/MyQuiz.ai_frontend/`。
 
 ---
 
@@ -532,8 +532,8 @@ npx serve dist -s
 ### Router
 
 - **createWebHistory(process.env.BASE_URL)**：HTML5 History 模式。  
-- **routes**：目前僅 `{ path: '/', name: 'Home', component: HomeView, meta: { title: 'AIQuiz', ... } }`。  
-- **beforeEach**：若 `to.meta.title` 存在，則設定 `document.title = to.meta.title + ' - AIQuiz'`。
+- **routes**：目前僅 `{ path: '/', name: 'Home', component: HomeView, meta: { title: 'MyQuiz.ai', ... } }`。  
+- **beforeEach**：依路由設定 `document.title`（`Main` 且為有效 view 時用 `VIEW_TITLES`；否則若有 `meta.title` 則用之；否則預設 `MyQuiz.ai`）。
 
 ---
 
@@ -547,7 +547,7 @@ npx serve dist -s
 
 ### 建置後頁面空白或資源 404
 
-- 檢查 `vue.config.js` 的 **publicPath** 是否與實際部署路徑一致（例如 GitHub Pages 的 `/aiquiz_frontend/`）。  
+- 檢查 `vue.config.js` 的 **publicPath** 是否與實際部署路徑一致（例如 GitHub Pages 的 `/MyQuiz.ai_frontend/`）。  
 - 若部署在子路徑，需確保 `router` 的 `createWebHistory(base)` 的 base 與 publicPath 一致（Vue CLI 會透過 `process.env.BASE_URL` 處理）。
 
 ### ESLint / Prettier 報錯
@@ -578,7 +578,7 @@ npx serve dist -s
 - **作者**：Kevin Cheng  
 - **Email**：kevin7261@gmail.com  
 - **GitHub**：[@kevin7261](https://github.com/kevin7261)  
-- **專案首頁**：[https://kevin7261.github.io/aiquiz_frontend](https://kevin7261.github.io/aiquiz_frontend)
+- **專案首頁**：[https://kevin7261.github.io/MyQuiz.ai_frontend](https://kevin7261.github.io/MyQuiz.ai_frontend)
 
 ---
 

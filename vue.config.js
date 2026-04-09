@@ -22,14 +22,14 @@ module.exports = defineConfig({
   /**
    * 🌐 公開路徑設定 (Public Path Configuration)
    * - 開發環境 (npm run serve)：'/'，可用 http://localhost:8080 開啟
-   * - Vercel 部署（根路徑）：'/'，避免請求 /aiquiz_frontend/js/... 拿到 HTML 導致 Unexpected token '<'
-   * - GitHub Pages：'/aiquiz_frontend/'，建置時需設 VUE_APP_DEPLOY=gh-pages
+   * - Vercel 部署（根路徑）：'/'，避免請求 /MyQuiz.ai_frontend/js/... 拿到 HTML 導致 Unexpected token '<'
+   * - GitHub Pages：'/MyQuiz.ai_frontend/'，建置時需設 VUE_APP_DEPLOY=gh-pages
    */
   publicPath:
     process.env.NODE_ENV === 'production'
       ? process.env.VERCEL === '1' || process.env.VUE_APP_DEPLOY !== 'gh-pages'
         ? '/'
-        : '/aiquiz_frontend/'
+        : '/MyQuiz.ai_frontend/'
       : '/',
 
   /**
@@ -38,7 +38,7 @@ module.exports = defineConfig({
    */
   chainWebpack: (config) => {
     config.plugin('html').tap((args) => {
-      args[0].title = 'AIQuiz';
+      args[0].title = 'MyQuiz.ai';
       return args;
     });
   },

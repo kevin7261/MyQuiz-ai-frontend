@@ -30,16 +30,16 @@ const VALID_VIEWS = [
 
 /** 各 view 對應的瀏覽器頁籤標題 */
 const VIEW_TITLES = {
-  work: '測驗 - AIQuiz',
-  'student-weakness-analysis': '作答弱點分析 - AIQuiz',
-  'student-answer-analysis': '學生作答分析 - AIQuiz',
-  profile: '設定 - AIQuiz',
-  'create-test-bank': '建立測驗題庫 - AIQuiz',
-  'create-test-bank_design': '建立測驗題庫（介面稿） - AIQuiz',
-  design: 'UI 元件（Bootstrap） - AIQuiz',
-  'manage-users': '使用者管理 - AIQuiz',
-  settings: '系統設定 - AIQuiz',
-  logs: '系統 Log - AIQuiz',
+  work: '測驗 - MyQuiz.ai',
+  'student-weakness-analysis': '作答弱點分析 - MyQuiz.ai',
+  'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
+  profile: '設定 - MyQuiz.ai',
+  'create-test-bank': '建立測驗題庫 - MyQuiz.ai',
+  'create-test-bank_design': '建立測驗題庫（介面稿） - MyQuiz.ai',
+  design: 'UI 元件（Bootstrap） - MyQuiz.ai',
+  'manage-users': '使用者管理 - MyQuiz.ai',
+  settings: '系統設定 - MyQuiz.ai',
+  logs: '系統 Log - MyQuiz.ai',
 };
 
 const routes = [
@@ -48,13 +48,13 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: LoginView,
-    meta: { title: '登入 - AIQuiz' },
+    meta: { title: '登入 - MyQuiz.ai' },
   },
   {
     path: '/exam',
     name: 'Exam',
     component: HomeView,
-    meta: { title: '測驗 - AIQuiz' },
+    meta: { title: '測驗 - MyQuiz.ai' },
   },
   // 舊網址相容（書籤）：/main/... → 新路徑
   {
@@ -109,7 +109,7 @@ const routes = [
     path: '/:view',
     name: 'Main',
     component: HomeView,
-    meta: { title: 'AIQuiz' },
+    meta: { title: 'MyQuiz.ai' },
     beforeEnter(to, _from, next) {
       if (VALID_VIEWS.includes(to.params.view)) return next();
       next({ path: '/exam', replace: true });
@@ -132,7 +132,7 @@ router.beforeEach((to, _from, next) => {
   } else if (to.meta.title) {
     document.title = to.meta.title;
   } else {
-    document.title = 'AIQuiz';
+    document.title = 'MyQuiz.ai';
   }
   next();
 });

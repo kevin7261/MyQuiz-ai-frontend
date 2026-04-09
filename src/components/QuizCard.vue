@@ -19,7 +19,7 @@ const props = defineProps({
   /** 題號（從 1 開始，用於顯示「第 N 題」） */
   slotIndex: { type: Number, required: true },
   /** 批改 prompt 內「課程名稱」占位（與建立測驗題庫頁 course 一致） */
-  courseName: { type: String, default: 'AIQuiz' },
+  courseName: { type: String, default: 'MyQuiz.ai' },
   /** 目前分頁／試題用 RAG 的 rag_id；與 card.rag_id 皆有值且不同時，停用答案輸入與確定 */
   currentRagId: { type: [String, Number], default: null },
   /** 為 true 時略過上述 rag_id 比對（介面稿頁用） */

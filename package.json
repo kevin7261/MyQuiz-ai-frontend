@@ -1,9 +1,9 @@
 {
-  "name": "aiquiz_frontend",
+  "name": "myquiz.ai_frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://kevin7261.github.io/aiquiz_frontend",
-  "description": "AIQuiz Frontend",
+  "homepage": "https://kevin7261.github.io/MyQuiz.ai_frontend",
+  "description": "MyQuiz.ai web frontend",
   "author": "Kevin Cheng <kevin7261@gmail.com>",
   "keywords": [
     "vue3",
@@ -16,10 +16,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/kevin7261/aiquiz_frontend.git"
+    "url": "https://github.com/kevin7261/MyQuiz.ai_frontend.git"
   },
   "bugs": {
-    "url": "https://github.com/kevin7261/aiquiz_frontend/issues"
+    "url": "https://github.com/kevin7261/MyQuiz.ai_frontend/issues"
   },
   "license": "MIT",
   "scripts": {

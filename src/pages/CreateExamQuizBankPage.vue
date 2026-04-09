@@ -99,8 +99,8 @@ const renameRagTabError = ref('');
 /** 正在送出批改的題卡 id（按鈕顯示「批改中」、結果區待回傳；不觸發內容區載入區塊） */
 const gradingSubmittingCardId = ref(null);
 const deleteRagLoading = ref(false);
-/** 與左側標題相同：GET /system-settings/course-name 的 course_name，失敗時維持 AIQuiz */
-const courseNameForPrompt = ref('AIQuiz');
+/** 與左側標題相同：GET /system-settings/course-name 的 course_name，失敗時維持 MyQuiz.ai */
+const courseNameForPrompt = ref('MyQuiz.ai');
 const activeTabId = ref(null);
 const showFormWhenNoData = ref(false);
 const newTabIds = ref([]);
@@ -675,7 +675,7 @@ async function fetchCourseNameForPrompt() {
       }
     }
   } catch {
-    // 保持預設 AIQuiz（與 LeftView 一致）
+    // 保持預設 MyQuiz.ai（與 LeftView 一致）
   }
 }
 

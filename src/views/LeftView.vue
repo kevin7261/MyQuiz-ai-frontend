@@ -22,7 +22,7 @@
     },
     emits: ['logout'],
     setup(props, { emit }) {
-      const courseName = ref('AIQuiz');
+      const courseName = ref('MyQuiz.ai');
       const onLogout = () => emit('logout');
 
       const showDividerBeforeProfile = computed(() => {
@@ -47,7 +47,7 @@
             }
           }
         } catch {
-          // 保持預設 AIQuiz
+          // 保持預設 MyQuiz.ai
         }
       });
 
