@@ -1,9 +1,10 @@
 /**
  * 全域與共用 class：
  * 全站：html/body/#app、連結無底線、捲軸
- * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)（variables.css）
- * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊標題 .my-font-lg-600；字色另併 .my-color-*；底 .my-bgcolor-*；業務頁淺底主區併 .my-bgcolor-page-block、rounded-3、p-3 p-lg-4、mb-4；深底稿頁併 .my-bgcolor-gray-dark、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-yellow`／`.my-button-green`／`.my-button-blue`／`.my-button-black`／`.my-button-white`（底＋字＋hover 一鍵；白色於淺底頁併淡邊）；描邊 `.my-button-white-border`、無框 `.my-button-white-borderless`（同色階；深底 `--my-color-white`；祖先 `.bg-white` 內 `--my-color-blue`）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-white-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
+ * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)；body 字距 var(--my-letter-spacing)（variables.css）
+ * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊標題 .my-font-lg-600；字色另併 .my-color-*；底 .my-bgcolor-*；業務頁淺底主區併 .my-bgcolor-page-block、rounded-3、p-3 p-lg-4、mb-4；深底稿頁併 .my-bgcolor-gray-dark、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-yellow`／`.my-button-green`／`.my-button-blue`／`.my-button-black`／`.my-button-gray-dark`／`.my-button-white`（底＋字＋hover 一鍵；白色於淺底頁併淡邊；深灰未選獨立鈕併灰淺 inset；併 my-btn-group-pill 則整組白外框＋未選段左白線）；描邊 `.my-button-white-border`、無框 `.my-button-transparent-borderless`（同色階；深底 `--my-color-white`；祖先 `.bg-white` 內 `--my-color-blue`）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-transparent-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
  * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）；文字輸入 .form-control.my-input-md（與中型膠囊按鈕同字級／px-3 py-2；單行／textarea 併 .rounded-2，或單行另可 .rounded-pill 與膠囊按鈕對齊）；深底黑底白字併 .my-input-md--on-dark
+ * textarea／符合條件之 input／div.form-control：寬度撐滿父層（同 Bootstrap .w-100，見檔內「輸入／多行」規則）
  * 權杖下拉：.my-dropdown-menu；.my-dropdown-caret 隱藏 ::after，箭頭 FA .my-dropdown-toggle-caret
  * .my-page-block-spacing：多個業務頁主要區塊（非權杖對照）
  * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin。HTML／Vue 的 `class` 字串：`p-*`／`px-*`／`py-*` 等內距與 `m-*`／`mx-*` 等外距類別必須整串置末，且其後不得再出現任何 class（先 p 後 m；陣列 :class 時將 py／mb 等獨立為末段字串）；含 .btn 時 `.btn` 置首，次 `.rounded-pill`／`.rounded-circle` 等，再 `d-flex`／`d-inline-flex` → `justify-content-*` → `align-items-*`（無 .btn 時此 flex 組合可置字串最前）
@@ -29,8 +30,9 @@ body {
   font-family: var(--my-font-family-primary);
   font-size: var(--my-font-size-md);
   font-weight: var(--my-font-weight-regular);
+  letter-spacing: var(--my-letter-spacing);
   color: var(--my-color-black);
-  background-color: var(--my-color-surface);
+  background-color: var(--my-color-white);
 }
 
 /* Bootstrap Reboot 預設 <code> 為 $code-color（粉紅）；改繼承父層字色，才會吃到 .my-color-* 等權杖，避免非 variables 裝飾色 */
@@ -153,45 +155,45 @@ code {
   border-top: 1px solid color-mix(in srgb, var(--my-color-gray-light) 38%, transparent);
 }
 .my-border-bottom-border-muted {
-  border-bottom: 1px solid var(--my-color-border-muted);
+  border-bottom: 1px solid var(--my-color-gray-light);
 }
 
 /* 淺底表面／微調灰（勿用 Bootstrap bg-body／body-tertiary／body-secondary） */
 .my-bgcolor-surface {
-  background-color: var(--my-color-surface);
+  background-color: var(--my-color-white);
 }
 .my-bgcolor-surface-tint {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-surface));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
 }
-
-/* 次要標籤徽章（勿用 Bootstrap bg-secondary-subtle／text-secondary） */
-.my-badge-surface-outline {
-  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-surface));
-  color: var(--my-color-black);
-  border: 1px solid var(--my-color-border-muted);
+/* 淺灰底：提示等次級內容；淺底為白混灰淺；深底 input（.my-input-md--on-dark）為灰深混灰淺略亮於稿底 */
+.my-bgcolor-light-gray {
+  background-color: color-mix(in srgb, var(--my-color-gray-light) 22%, var(--my-color-white));
+}
+.form-control.my-input-md.my-input-md--on-dark.my-bgcolor-light-gray {
+  background-color: color-mix(in srgb, var(--my-color-gray-light) 14%, var(--my-color-gray-dark));
 }
 
 /* 錯誤提示區塊（勿用 Bootstrap alert-danger） */
 .my-alert-danger-soft {
   color: var(--my-color-red);
-  background-color: color-mix(in srgb, var(--my-color-red) 12%, var(--my-color-surface));
+  background-color: color-mix(in srgb, var(--my-color-red) 12%, var(--my-color-white));
   border: 1px solid color-mix(in srgb, var(--my-color-red) 38%, transparent);
 }
 .my-alert-warning-soft {
   color: color-mix(in srgb, var(--my-color-black) 72%, var(--my-color-yellow));
-  background-color: color-mix(in srgb, var(--my-color-yellow) 18%, var(--my-color-surface));
+  background-color: color-mix(in srgb, var(--my-color-yellow) 18%, var(--my-color-white));
   border: 1px solid color-mix(in srgb, var(--my-color-yellow) 45%, transparent);
 }
 
 /* 線框按鈕（勿用 Bootstrap btn-outline-*） */
 .btn.my-btn-outline-neutral {
   color: var(--my-color-black);
-  background-color: var(--my-color-surface);
-  border: 1px solid var(--my-color-border-muted);
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-light);
 }
 .btn.my-btn-outline-neutral:hover {
-  border-color: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-border-muted));
-  background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-surface));
+  border-color: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-gray-light));
+  background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
 }
 .btn.my-btn-outline-blue-hollow {
   color: var(--my-color-blue);
@@ -264,21 +266,42 @@ code {
   opacity: 0.55;
 }
 
-/* 白色填色膠囊（併 .btn）：填色 --my-color-surface、字 --my-color-black；淺底頁加淡邊以免與背景融為一片 */
+/* 深灰填色膠囊（併 .btn）：深稿未選分段等；字 --my-color-white。底為灰深階（少量黑混入以略深於 --my-color-gray-dark 稿底，勿過深致像純黑）。獨立鈕可用四邊 inset；併 my-btn-group-pill 見下，勿四邊 inset（子鈕無圓角，父層 overflow 裁切後外緣會像方框） */
+.btn.my-button-gray-dark {
+  background-color: color-mix(in srgb, var(--my-color-black) 20%, var(--my-color-gray-dark));
+  color: var(--my-color-white);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--my-color-gray-light);
+}
+.btn.my-button-gray-dark:hover,
+.btn.my-button-gray-dark:active:not(:disabled) {
+  background-color: color-mix(
+    in srgb,
+    var(--my-color-white) 10%,
+    color-mix(in srgb, var(--my-color-black) 20%, var(--my-color-gray-dark))
+  );
+  color: var(--my-color-white);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--my-color-white) 35%, var(--my-color-gray-light));
+}
+.btn.my-button-gray-dark:disabled {
+  opacity: 0.55;
+}
+
+/* 白色填色膠囊（併 .btn）：填色 --my-color-white、字 --my-color-black；淺底頁加淡邊以免與背景融為一片 */
 .btn.my-button-white {
-  background-color: var(--my-color-surface);
+  background-color: var(--my-color-white);
   color: var(--my-color-black);
   border-color: transparent;
 }
 .btn.my-button-white:hover,
 .btn.my-button-white:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-surface));
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
 .bg-white .btn.my-button-white,
 .my-bgcolor-page-block .btn.my-button-white,
 .my-bgcolor-gray-dark .btn.my-button-white {
-  border: 1px solid var(--my-color-border-muted);
+  border: 1px solid var(--my-color-gray-light);
 }
 .bg-white .btn.my-button-white:hover,
 .bg-white .btn.my-button-white:active:not(:disabled),
@@ -286,7 +309,7 @@ code {
 .my-bgcolor-page-block .btn.my-button-white:active:not(:disabled),
 .my-bgcolor-gray-dark .btn.my-button-white:hover,
 .my-bgcolor-gray-dark .btn.my-button-white:active:not(:disabled) {
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-border-muted));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-light));
 }
 .btn.my-button-white:disabled {
   opacity: 0.55;
@@ -319,29 +342,38 @@ code {
 }
 
 /* 無框膠囊（併 .btn）：字色／hover 同 white-border，無邊框 */
-.btn.my-button-white-borderless {
+.btn.my-button-transparent-borderless {
   color: var(--my-color-white);
   background-color: transparent;
   border: none;
 }
-.btn.my-button-white-borderless:hover,
-.btn.my-button-white-borderless:active:not(:disabled) {
+.btn.my-button-transparent-borderless:hover,
+.btn.my-button-transparent-borderless:active:not(:disabled) {
   color: var(--my-color-white);
   background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
 }
-.bg-white .btn.my-button-white-borderless {
+.bg-white .btn.my-button-transparent-borderless {
   color: var(--my-color-blue);
 }
-.bg-white .btn.my-button-white-borderless:hover,
-.bg-white .btn.my-button-white-borderless:active:not(:disabled) {
+.bg-white .btn.my-button-transparent-borderless:hover,
+.bg-white .btn.my-button-transparent-borderless:active:not(:disabled) {
   color: var(--my-color-white);
   background-color: color-mix(in srgb, var(--my-color-blue) 32%, transparent);
 }
-.btn.my-button-white-borderless:disabled {
+/* 業務頁淺底主區：白無框膠囊字色同白區（可讀藍字） */
+.my-bgcolor-page-block .btn.my-button-transparent-borderless {
+  color: var(--my-color-blue);
+}
+.my-bgcolor-page-block .btn.my-button-transparent-borderless:hover,
+.my-bgcolor-page-block .btn.my-button-transparent-borderless:active:not(:disabled) {
+  color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-blue) 32%, transparent);
+}
+.btn.my-button-transparent-borderless:disabled {
   opacity: 0.55;
 }
 
-/* 32×32 圓形圖示鈕：分頁「+」、稿頁複製等併 .my-button-white-borderless；淺底複製另見 DesignPageCopyBtn scoped */
+/* 32×32 圓形圖示鈕：分頁「+」、稿頁複製等併 .my-button-transparent-borderless；淺底複製另見 DesignPageCopyBtn scoped */
 .btn.my-btn-circle {
   width: 32px;
   height: 32px;
@@ -351,17 +383,28 @@ code {
   box-sizing: border-box;
 }
 
-/* 兩鍵（或多鍵）膠囊群組：併 Bootstrap `.btn-group`；內層 `.btn` 勿再加 `.rounded-pill`（由外層裁切圓角）；全無邊框（含 Bootstrap 群組接縫） */
+/* 兩鍵（或多鍵）膠囊群組：併 Bootstrap `.btn-group`；內層 `.btn` 勿再加 `.rounded-pill`（由外層裁切圓角）；全無邊框（含 Bootstrap 群組接縫）。勿對 .my-button-gray-dark 清 box-shadow，否則會蓋掉未選分段的 inset 邊線 */
 .my-btn-group-pill.btn-group {
   border-radius: 999px;
   overflow: hidden;
-  box-shadow: none;
+  /* 外緣白框隨膠囊圓角；未選分段僅內側左線另見 .my-button-gray-dark */
+  box-shadow: 0 0 0 1px var(--my-color-white);
 }
 .my-btn-group-pill.btn-group > .btn {
   border-radius: 0 !important;
   border: none !important;
-  box-shadow: none !important;
   margin: 0 !important;
+}
+.my-btn-group-pill.btn-group > .btn:not(.my-button-gray-dark) {
+  box-shadow: none !important;
+}
+/* 未選分段僅「左側」與選中區隔（白線）；勿四邊 inset 以免裁切方角；外圈白框在父層 .my-btn-group-pill */
+.my-btn-group-pill.btn-group > .btn.my-button-gray-dark {
+  box-shadow: inset 1px 0 0 var(--my-color-white) !important;
+}
+.my-btn-group-pill.btn-group > .btn.my-button-gray-dark:hover,
+.my-btn-group-pill.btn-group > .btn.my-button-gray-dark:active:not(:disabled) {
+  box-shadow: inset 1px 0 0 var(--my-color-white) !important;
 }
 .my-btn-group-pill.btn-group > .btn:focus-visible {
   z-index: 2;
@@ -453,11 +496,11 @@ code {
 /* 白底分頁列：未選 hover */
 .my-rag-tabs-bar.my-bgcolor-surface .nav-tabs .nav-link:not(.active):hover {
   color: var(--my-color-blue) !important;
-  background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-surface)) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white)) !important;
 }
-/* 淺底分頁列（--my-color-surface）：當前分頁 hover */
+/* 淺底分頁列（my-bgcolor-surface）：當前分頁 hover */
 .my-rag-tabs-bar.my-bgcolor-surface .nav-tabs .nav-link.active:hover {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-surface)) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
 }
 .my-rag-tabs-bar--design .nav-tabs {
   margin-bottom: 0 !important;
@@ -485,12 +528,51 @@ code {
   height: 1em;
 }
 
-/* /create-test-bank_design：主區黑底時 stepper 在淺色區塊外，字與連線對比（勿用 Bootstrap text-dark／text-muted） */
-.create-exam-quiz-bank--design-mock .my-create-rag-stepper span.my-color-black {
-  color: var(--my-color-white) !important;
+/* 建立測驗題庫：流程 stepper（1–2–3），色票僅用 variables :root --my-color-* */
+.my-create-rag-stepper-num {
+  width: 2.25rem;
+  height: 2.25rem;
+  line-height: 1;
 }
-.create-exam-quiz-bank--design-mock .my-create-rag-stepper span.my-color-gray-light {
-  color: var(--my-color-gray-light) !important;
+/* 啟用步驟：白底＋黑字＋淡邊（與 DesignPage 白色填色鈕同語意） */
+.my-create-rag-stepper-num--on {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+  border: 1px solid var(--my-color-gray-light);
+}
+.my-create-rag-stepper-num--off {
+  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-white));
+  color: var(--my-color-gray-light);
+  border: 1px solid color-mix(in srgb, var(--my-color-black) 20%, transparent);
+}
+.my-create-rag-stepper-line {
+  flex: 1 1 1rem;
+  min-width: 0.35rem;
+  height: 2px;
+  margin-top: 1.125rem;
+  align-self: flex-start;
+  background-color: color-mix(in srgb, var(--my-color-black) 20%, transparent);
+  border-radius: 1px;
+}
+.my-create-rag-stepper-line--on {
+  background-color: color-mix(in srgb, var(--my-color-black) 32%, transparent);
+}
+.my-create-rag-stepper-label {
+  margin-top: 0.5rem;
+}
+.my-create-rag-stepper-label--current {
+  color: var(--my-color-black);
+}
+.my-create-rag-stepper-label--inactive {
+  color: var(--my-color-gray-light);
+}
+
+/* /create-test-bank_design：主區黑底時 stepper 字與連線對比 */
+.create-exam-quiz-bank--design-mock .my-create-rag-stepper-label--current {
+  color: var(--my-color-white);
+}
+.create-exam-quiz-bank--design-mock .my-create-rag-stepper-label--inactive {
+  color: var(--my-color-gray-light);
 }
 .create-exam-quiz-bank--design-mock .my-create-rag-stepper-num--off {
   background-color: color-mix(in srgb, var(--my-color-white) 12%, transparent);
@@ -500,6 +582,9 @@ code {
 .create-exam-quiz-bank--design-mock .my-create-rag-stepper-line:not(.my-create-rag-stepper-line--on) {
   background-color: color-mix(in srgb, var(--my-color-white) 22%, transparent);
 }
+.create-exam-quiz-bank--design-mock .my-create-rag-stepper-line--on {
+  background-color: color-mix(in srgb, var(--my-color-white) 42%, transparent);
+}
 
 .my-callout-primary-soft {
   border: 1px solid
@@ -508,7 +593,7 @@ code {
       var(--my-color-blue) 42%,
       color-mix(in srgb, var(--my-color-gray-light) 40%, transparent)
     );
-  background-color: color-mix(in srgb, var(--my-color-blue) 12%, var(--my-color-surface));
+  background-color: color-mix(in srgb, var(--my-color-blue) 12%, var(--my-color-white));
 }
 
 /* Modal／Teleport 外層半透明底（與 Bootstrap .modal.show 併用） */
@@ -516,7 +601,7 @@ code {
   background-color: color-mix(in srgb, var(--my-color-black) 45%, transparent);
 }
 
-/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕與 05 中號同：`my-font-md-400` `px-3 py-2`，併 `d-flex` `justify-content-between` `dropdown-toggle` `my-dropdown-caret`＋ `my-button-blue`／`my-button-white`／`my-button-white-borderless`；標籤後 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
+/* —— 權杖下拉選單：選單併 .dropdown-menu .my-dropdown-menu；觸發鈕與 05 中號同：`my-font-md-400` `px-3 py-2`，併 `d-flex` `justify-content-between` `dropdown-toggle` `my-dropdown-caret`＋ `my-button-blue`／`my-button-white`／`my-button-transparent-borderless`；標籤後 <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret">；危險項 .dropdown-item.my-dropdown-item-danger —— */
 .my-dropdown-caret.dropdown-toggle::after {
   display: none;
 }
@@ -528,7 +613,7 @@ code {
 }
 
 .my-dropdown-menu.dropdown-menu {
-  background-color: var(--my-color-surface);
+  background-color: var(--my-color-white);
   border: 1px solid color-mix(in srgb, var(--my-color-gray-light) 40%, transparent);
 }
 
@@ -572,7 +657,7 @@ code {
 
 .my-table thead th {
   font-weight: var(--my-font-weight-semibold);
-  background-color: color-mix(in srgb, var(--my-color-gray-light) 22%, var(--my-color-surface));
+  background-color: color-mix(in srgb, var(--my-color-gray-light) 22%, var(--my-color-white));
   border-bottom: 1px solid color-mix(in srgb, var(--my-color-gray-light) 40%, transparent);
 }
 
@@ -605,8 +690,8 @@ code {
   font-size: var(--my-font-size-md);
   font-weight: var(--my-font-weight-regular);
   color: var(--my-color-black);
-  background-color: var(--my-color-surface);
-  border: 1px solid var(--my-color-border-muted);
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-light);
   border-radius: 0.375rem;
   appearance: none;
   cursor: pointer;
@@ -623,69 +708,86 @@ code {
 }
 
 .my-form-select-wrap:has(.my-form-select:disabled) .my-form-select-caret {
-  color: color-mix(in srgb, var(--my-color-gray-light) 50%, var(--my-color-surface));
+  color: color-mix(in srgb, var(--my-color-gray-light) 50%, var(--my-color-white));
 }
 
 .my-form-select:focus {
-  border-color: var(--my-color-blue);
+  border-color: var(--my-color-gray-dark);
   outline: 0;
-  box-shadow: 0 0 0 0.2rem var(--my-color-blue-focus-ring);
+  box-shadow: none;
 }
 
 .my-form-select:disabled {
   cursor: not-allowed;
-  color: color-mix(in srgb, var(--my-color-black) 68%, var(--my-color-surface));
-  background-color: color-mix(in srgb, var(--my-color-surface) 92%, var(--my-color-border-muted));
-  border-color: color-mix(in srgb, var(--my-color-border-muted) 72%, var(--my-color-surface));
+  color: color-mix(in srgb, var(--my-color-black) 68%, var(--my-color-white));
+  background-color: color-mix(in srgb, var(--my-color-white) 92%, var(--my-color-gray-light));
+  border-color: color-mix(in srgb, var(--my-color-gray-light) 72%, var(--my-color-white));
 }
 
-/* 文字輸入（併 Bootstrap .form-control）：與 05 中型膠囊按鈕同字級／內距（my-font-md-400 · px-3 py-2）；單行／textarea 常併 .rounded-2（Design 稿）；單行若與膠囊按鈕並排可改 .rounded-pill；textarea 勿用 pill */
+/* 文字輸入（併 .form-control）：字級／內距同中型按鈕；淺底預設、深底加 .my-input-md--on-dark；邊框淺灰 75% 透明（color-mix：gray-light 25% + transparent 75%） */
 .form-control.my-input-md {
+  --my-input-md-border: color-mix(in srgb, var(--my-color-gray-light) 25%, transparent);
+  min-width: 0;
+  box-sizing: border-box;
   padding: 0.5rem 1rem;
   font-family: inherit;
   font-size: var(--my-font-size-md);
   font-weight: var(--my-font-weight-regular);
   line-height: 1.5;
   color: var(--my-color-black);
-  background-color: var(--my-color-surface);
-  border: 1px solid var(--my-color-border-muted);
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-input-md-border);
 }
 .form-control.my-input-md::placeholder {
-  color: color-mix(in srgb, var(--my-color-gray-light) 85%, var(--my-color-black));
+  color: var(--my-color-gray-light);
   opacity: 1;
 }
-.form-control.my-input-md:focus {
-  border-color: var(--my-color-blue);
+.form-control.my-input-md:focus,
+.form-control.my-input-md.my-input-md--on-dark:focus {
+  border-color: var(--my-input-md-border);
   outline: 0;
-  box-shadow: 0 0 0 0.2rem var(--my-color-blue-focus-ring);
+  box-shadow: none;
 }
 .form-control.my-input-md:disabled {
   cursor: not-allowed;
-  color: color-mix(in srgb, var(--my-color-black) 68%, var(--my-color-surface));
-  background-color: color-mix(in srgb, var(--my-color-surface) 92%, var(--my-color-border-muted));
-  border-color: color-mix(in srgb, var(--my-color-border-muted) 72%, var(--my-color-surface));
+  color: var(--my-color-gray-light);
+  background-color: var(--my-color-white);
+  border-color: var(--my-input-md-border);
 }
-/* 深底稿／黑底區：黑底淺字（--my-color-white 內文、gray-light 占位） */
 .form-control.my-input-md.my-input-md--on-dark {
   color: var(--my-color-white);
   background-color: var(--my-color-black);
-  border: 1px solid color-mix(in srgb, var(--my-color-white) 26%, var(--my-color-black));
+  border-color: var(--my-input-md-border);
 }
 .form-control.my-input-md.my-input-md--on-dark::placeholder {
-  color: color-mix(in srgb, var(--my-color-gray-light) 88%, var(--my-color-white));
+  color: var(--my-color-gray-light);
   opacity: 1;
 }
-.form-control.my-input-md.my-input-md--on-dark:focus {
-  border-color: var(--my-color-blue);
-  box-shadow: 0 0 0 0.2rem var(--my-color-blue-focus-ring);
-}
 .form-control.my-input-md.my-input-md--on-dark:disabled {
-  color: color-mix(in srgb, var(--my-color-white) 58%, var(--my-color-black));
-  background-color: color-mix(in srgb, var(--my-color-black) 82%, var(--my-color-gray-dark));
-  border-color: color-mix(in srgb, var(--my-color-white) 16%, var(--my-color-black));
+  cursor: not-allowed;
+  color: var(--my-color-gray-light);
+  background-color: var(--my-color-gray-dark);
+  border-color: var(--my-input-md-border);
+}
+/* 與停用同視覺，但可聚焦選取、複製（稿頁「停用」示範用 readonly，勿用 disabled） */
+.form-control.my-input-md.my-input-md--on-dark:read-only {
+  cursor: text;
+  color: var(--my-color-gray-light);
+  background-color: var(--my-color-gray-dark);
+  border-color: var(--my-input-md-border);
 }
 
-/* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（含 black／white 填色）；描邊僅 .my-button-white-border（其餘含 white-borderless 為無框） —— */
+/* 輸入／多行／div 仿輸入區塊：在區塊內滿版（同 .w-100；min-width:0 利於 flex 子項撐滿） */
+textarea.form-control,
+input.form-control:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
+div.form-control {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（含 black／white 填色）；描邊僅 .my-button-white-border（其餘含 transparent-borderless 為無框） —— */
 .btn.rounded-pill:not(.my-button-white-border),
 .btn.rounded-circle:not(.my-button-white-border) {
   border: none;

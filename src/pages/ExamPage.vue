@@ -922,7 +922,7 @@ onMounted(() => {
       :initial-name="examRenameInitialName"
       :saving="examRenameSaving"
       :error="examRenameError"
-      title="修改測驗分頁名稱"
+      title="修改名稱"
       @save="onExamRenameSave"
     />
     <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
@@ -940,7 +940,7 @@ onMounted(() => {
           <div class="w-100 d-flex justify-content-center py-2">
             <button
               type="button"
-              class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle"
+              class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle"
               title="新增測驗分頁"
               :aria-label="createExamLoading ? '建立中' : '新增測驗分頁'"
               :aria-busy="createExamLoading"
@@ -996,7 +996,7 @@ onMounted(() => {
             <li class="nav-item d-flex align-items-center ms-2">
               <button
                 type="button"
-                class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-white-borderless my-btn-circle mb-2"
+                class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle mb-2"
                 title="新增測驗分頁"
                 :aria-label="createExamLoading ? '建立中' : '新增測驗分頁'"
                 :aria-busy="createExamLoading"
@@ -1044,7 +1044,7 @@ onMounted(() => {
               <template v-if="currentState.cardList[slotIndex - 1]">
                 <!-- 已有卡片：顯示完整題目區塊 -->
                 <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-                  <div class="my-font-lg-600 border-bottom pb-2 mb-3">第 {{ slotIndex }} 題</div>
+                  <div class="my-font-lg-600 mb-3">第 {{ slotIndex }} 題</div>
                   <div class="text-start">
                     <div class="d-flex flex-wrap align-items-end gap-3 mb-3">
                       <div>
@@ -1122,11 +1122,11 @@ onMounted(() => {
                         <div class="d-flex justify-content-end mt-2">
                           <button
                             type="button"
-                            class="btn btn-primary"
+                            class="btn rounded-pill d-flex justify-content-center align-items-center flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
                             :disabled="examCardAnswerDisabled(currentState.cardList[slotIndex - 1])"
                             @click="confirmAnswer(currentState.cardList[slotIndex - 1])"
                           >
-                            確定
+                            確定批改
                           </button>
                         </div>
                       </template>
@@ -1144,7 +1144,7 @@ onMounted(() => {
               <template v-else>
                 <!-- 尚未產生：顯示產生題目表單（第 slotIndex 題，每題獨立不連動） -->
                 <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4" :class="{ 'mt-4': slotIndex > 1 }">
-                  <div class="my-font-lg-600 border-bottom pb-2 mb-3">第 {{ slotIndex }} 題</div>
+                  <div class="my-font-lg-600 mb-3">第 {{ slotIndex }} 題</div>
                   <div class="text-start pt-3">
                     <div class="d-flex flex-wrap align-items-end gap-3">
                       <div class="flex-grow-1 min-w-0" style="min-width: 10rem">

@@ -11,7 +11,7 @@ const props = defineProps({
   saving: { type: Boolean, default: false },
   error: { type: String, default: '' },
   /** 標題列文字 */
-  title: { type: String, default: '修改分頁名稱' },
+  title: { type: String, default: '修改名稱' },
 });
 
 const emit = defineEmits(['update:modelValue', 'save']);
@@ -57,23 +57,28 @@ function onSave() {
       @click.self="onBackdropClick"
     >
       <div class="modal-dialog modal-dialog-centered" @click.stop>
-        <div class="modal-content shadow">
-          <div class="modal-header border-bottom-0 pb-0">
-            <h5 id="tab-rename-modal-title" class="modal-title">{{ title }}</h5>
+        <div class="modal-content shadow border-0 my-bgcolor-gray-dark p-4 d-flex flex-column gap-3">
+          <div class="modal-header border-bottom-0 p-0">
+            <h5 id="tab-rename-modal-title" class="modal-title my-color-white">{{ title }}</h5>
             <button
               type="button"
-              class="btn-close"
+              class="btn-close btn-close-white"
               :disabled="saving"
               @click="close"
             />
           </div>
-          <div class="modal-body pt-2">
-            <label class="form-label my-font-sm-400 text-secondary mb-1" for="tab-rename-input">名稱</label>
+          <div class="modal-body p-0">
+            <label
+              class="form-label flex-shrink-0 my-font-sm-400 my-color-gray-light mb-1"
+              for="tab-rename-input"
+            >
+              名稱
+            </label>
             <input
               id="tab-rename-input"
               v-model="localName"
               type="text"
-              class="form-control"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 flex-shrink-0 w-100 px-3 py-2"
               maxlength="200"
               autocomplete="off"
               :disabled="saving"
@@ -81,12 +86,22 @@ function onSave() {
             />
             <div v-if="error" class="text-danger my-font-sm-400 mt-2">{{ error }}</div>
           </div>
-          <div class="modal-footer border-top-0 pt-0">
-            <button type="button" class="btn btn-outline-secondary" :disabled="saving" @click="close">
+          <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
+            <button
+              type="button"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+              :disabled="saving"
+              @click="close"
+            >
               取消
             </button>
-            <button type="button" class="btn btn-primary" :disabled="saving" @click="onSave">
-              {{ saving ? '儲存中…' : '儲存' }}
+            <button
+              type="button"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-3 py-2"
+              :disabled="saving"
+              @click="onSave"
+            >
+              {{ saving ? '儲存中…' : '確定' }}
             </button>
           </div>
         </div>
