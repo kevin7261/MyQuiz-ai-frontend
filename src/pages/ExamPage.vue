@@ -144,6 +144,7 @@ function getTabState(id) {
       slotFormState: {},
       showQuizGeneratorBlock: false,
       quizSlotsCount: 0,
+      _synced: false,
     });
   }
   return tabStateMap[resolvedId];
@@ -426,14 +427,17 @@ function syncExamItemToTabState(exam) {
     state.quizSlotsCount = 0;
     state.cardList = [];
   }
+  state._synced = true;
 }
 
-/** 僅在切換測驗分頁時自 GET /exam/tabs 灌入卡片；勿 deep 監聽 forExamRag／列表物件替換，以免 refetch 覆寫未同步畫面 */
+/** 僅在首次切換到該測驗分頁時自 GET /exam/tabs 灌入卡片；已同步過的 tab 不再覆寫，保留使用者輸入 */
 watch(
   activeTabId,
   (id) => {
     if (id == null || id === '') return;
     const idStr = String(id);
+    const state = getTabState(idStr);
+    if (state._synced) return;
     const exam = examList.value.find((e) => getExamTabId(e) === idStr);
     if (exam) syncExamItemToTabState(exam);
   },
@@ -1153,10 +1157,13 @@ onMounted(() => {
                 <div class="d-flex flex-column align-items-center justify-content-center pt-2 mb-0 gap-2">
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-4 py-3"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                    title="新增題目"
+                    aria-label="新增題目"
                     :disabled="generateQuizBlocked"
                     @click="openNextQuizSlot"
                   >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
                     新增題目
                   </button>
                   <p

@@ -578,18 +578,21 @@ function syncRagItemToState(rag, state) {
     state.quizSlotsCount = 0;
     state.cardList = [];
   }
+  state._synced = true;
 }
 
-/** 僅在切換 RAG 分頁時自列表灌入狀態；勿綁 currentRagItem（列表 refetch 會換物件參考而覆寫未存回後端的畫面） */
+/** 僅在首次切換到該 RAG 分頁時自列表灌入狀態；已同步過的 tab 不再覆寫，保留使用者輸入 */
 watch(
   activeTabId,
   (id) => {
     if (!id || isNewTabId(id)) return;
+    const state = getTabState(id);
+    if (state._synced) return;
     const rag = ragList.value.find(
       (r) => String(r.rag_tab_id ?? r.id ?? r) === String(id)
     );
     if (!rag) return;
-    syncRagItemToState(rag, getTabState(id));
+    syncRagItemToState(rag, state);
   },
   { immediate: true }
 );
@@ -2031,13 +2034,16 @@ function applyMockGradingPreview(item) {
             </template>
           </template>
 
-            <!-- 新增題目按鈕：固定在最下面；大號藍底膠囊（my-button-blue） -->
+            <!-- 新增題目按鈕：固定在最下面；與「新增測驗題庫」同款灰底膠囊＋加號 -->
             <div class="d-flex justify-content-center pt-2 mb-0">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-4 py-3"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                title="新增題目"
+                aria-label="新增題目"
                 @click="openNextQuizSlot"
               >
+                <i class="fa-solid fa-plus" aria-hidden="true" />
                 新增題目
               </button>
             </div>

@@ -53,6 +53,7 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore, optio
         slotFormState: {},
         showQuizGeneratorBlock: false,
         quizSlotsCount: 0,
+        _synced: false,
         forExamLoading: false,
         forExamError: '',
         systemInstruction: defaultSystemInstruction,
