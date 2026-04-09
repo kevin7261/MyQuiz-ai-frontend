@@ -11,7 +11,7 @@ const difficultyOptions = QUIZ_LEVEL_LABELS;
  * 未確定前可輸入答案並按「確定批改」送出評分。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
- * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id，RAG 題庫頁另含 rag_quiz_id（與後端 API 欄位一致）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試問題」每題一區塊時應為 false。
+ * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError，RAG 題庫頁另含 rag_quiz_id（與後端 API 欄位一致）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試問題」每題一區塊時應為 false。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz，且不顯示「批改規則（預覽）」。
  */
 const props = defineProps({
   /** 題目資料（含題目、提示、答案、批改結果等） */
@@ -30,9 +30,11 @@ const props = defineProps({
   designEmbedded: { type: Boolean, default: false },
   /** 正在送出「確定批改」（按鈕顯示 spinner＋「批改中」；批改結果區塊於回傳後才出現；不佔全畫面） */
   gradeSubmitting: { type: Boolean, default: false },
+  /** 測驗頁：顯示題目讚／差（32×32 my-btn-circle · 透明底；未選 fa-regular my-color-gray-1、選中 fa-solid my-color-black；與 POST /exam/tab/quiz/rate 搭配；需 designUi）；為 true 時不顯示「批改規則（預覽）」 */
+  showExamRating: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer']);
+const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer', 'rate-quiz']);
 
 function isDifficultyPillActive(opt) {
   const normalized = normalizeQuizLevelLabel(props.card?.generateLevel);
@@ -150,8 +152,69 @@ const showGradingResultSection = computed(
         >
           {{ card.quiz }}
         </div>
+        <div
+          v-if="designUi && showExamRating"
+          class="d-flex justify-content-end align-items-center w-100 min-w-0"
+          role="group"
+          aria-label="題目評價"
+        >
+          <button
+            type="button"
+            class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
+            title="讚"
+            :aria-pressed="card.quiz_rate === 1"
+            @click="emit('rate-quiz', 'up')"
+          >
+            <i
+              class="fa-thumbs-up"
+              :class="card.quiz_rate === 1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
+              aria-hidden="true"
+            />
+            <span class="visually-hidden">讚</span>
+          </button>
+          <button
+            type="button"
+            class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
+            title="差"
+            :aria-pressed="card.quiz_rate === -1"
+            @click="emit('rate-quiz', 'down')"
+          >
+            <i
+              class="fa-thumbs-down"
+              :class="card.quiz_rate === -1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
+              aria-hidden="true"
+            />
+            <span class="visually-hidden">差</span>
+          </button>
+        </div>
+        <div
+          v-if="designUi && showExamRating && card.rateError"
+          class="my-font-sm-400 my-color-red text-end mb-0 w-100"
+        >
+          {{ card.rateError }}
+        </div>
       </div>
       <div
+        v-if="designUi && showExamRating"
+        class="w-100 min-w-0 d-flex flex-column gap-1 mb-0"
+      >
+        <button
+          type="button"
+          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+          style="flex: 0 0 auto;"
+          @click="emit('toggle-hint', card)"
+        >
+          {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
+        </button>
+        <div
+          v-show="card.hintVisible"
+          class="my-font-sm-400 form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4"
+        >
+          {{ card.hint }}
+        </div>
+      </div>
+      <div
+        v-else
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
@@ -239,6 +302,7 @@ const showGradingResultSection = computed(
         </template>
       </div>
       <div
+        v-if="!showExamRating"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
