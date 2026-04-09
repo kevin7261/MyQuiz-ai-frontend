@@ -57,7 +57,7 @@ const answerInputDisabled = computed(() => {
   <div
     :class="[
       designUi
-        ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-dark rounded-4 p-4 mb-0 w-100 min-w-0')
+        ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray rounded-4 p-4 mb-0 w-100 min-w-0')
         : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
       { 'mt-4': !designUi && slotIndex > 1 },
     ]"
@@ -91,7 +91,7 @@ const answerInputDisabled = computed(() => {
           </div>
           <div
             v-else
-            class="form-control my-font-sm-400 d-flex align-items-center form-control-sm my-bgcolor-surface-tint border"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2 d-flex align-items-center"
             :style="{ minHeight: '31px' }"
           >{{ card.ragName || '—' }}</div>
         </div>
@@ -121,7 +121,7 @@ const answerInputDisabled = computed(() => {
           </div>
           <div
             v-else
-            class="form-control my-font-sm-400 d-flex align-items-center form-control-sm my-bgcolor-surface-tint border"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static my-font-sm-400 w-100 px-3 py-2 d-flex align-items-center"
             :style="{ minHeight: '31px' }"
           >{{ card.generateLevel || '—' }}</div>
         </div>
@@ -135,7 +135,7 @@ const answerInputDisabled = computed(() => {
         >題目</div>
         <div
           class="lh-base"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'my-bgcolor-surface-tint border rounded p-2 my-font-sm-400'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 my-font-sm-400'"
         >
           {{ card.quiz }}
         </div>
@@ -158,7 +158,7 @@ const answerInputDisabled = computed(() => {
         <div
           v-show="card.hintVisible"
           class="my-font-sm-400"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-light' : 'rounded my-bgcolor-light-gray my-color-gray-light p-2 mt-2'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-light' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 mt-2'"
         >
           {{ card.hint }}
         </div>
@@ -174,7 +174,7 @@ const answerInputDisabled = computed(() => {
         <div
           class="my-font-sm-400"
           style="white-space: pre-wrap;"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'rounded my-bgcolor-surface-tint border p-2'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
         >{{ card.referenceAnswer }}</div>
       </div>
       <div
@@ -194,9 +194,8 @@ const answerInputDisabled = computed(() => {
           <textarea
             :id="`quiz-answer-${card.id}`"
             :value="card.quiz_answer"
-            class="form-control"
-            :class="designUi ? 'my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : ''"
-            :disabled="answerInputDisabled"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
+            :readonly="answerInputDisabled"
             @input="emit('update:quiz_answer', $event.target.value)"
             rows="4"
             placeholder="請輸入您的答案..."
@@ -204,7 +203,7 @@ const answerInputDisabled = computed(() => {
           />
           <div
             v-if="answerInputDisabled"
-            :class="designUi ? 'my-font-sm-400 my-color-yellow mt-1' : 'form-text my-font-sm-400 my-color-yellow'"
+            :class="designUi ? 'my-font-sm-400 my-color-red mt-1' : 'form-text my-font-sm-400 my-color-red'"
           >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
           <div class="d-flex justify-content-end mt-2">
             <button
@@ -218,7 +217,7 @@ const answerInputDisabled = computed(() => {
         <template v-else>
           <div
             class="my-font-sm-400 mb-2"
-            :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'rounded my-bgcolor-surface-tint p-2'"
+            :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
           >{{ card.quiz_answer }}</div>
         </template>
       </div>
@@ -232,7 +231,7 @@ const answerInputDisabled = computed(() => {
         >批改規則（預覽）</label>
         <div
           class="my-font-sm-400"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'border rounded my-bgcolor-surface-tint p-3'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
         >
           你是一位「{{ courseName }}」課程的教授，請批改這道題目：<br>
           【評分規範】<br>
@@ -267,7 +266,7 @@ const answerInputDisabled = computed(() => {
         <div
           class="my-font-sm-400"
           style="white-space: pre-wrap;"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'rounded my-bgcolor-surface-tint border p-2'"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
         >{{ card.gradingResult || '尚未批改' }}</div>
       </div>
     </div>

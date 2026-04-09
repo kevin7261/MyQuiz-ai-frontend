@@ -12,8 +12,8 @@
 <script setup>
 const props = defineProps({
   text: { type: String, required: true },
-  /** 淺底（黃／淺灰／白區塊） */
-  onLightBg: { type: Boolean, default: false },
+  /** 淺底（Design 頁預設白底；深填色票上請設為 false） */
+  onLightBg: { type: Boolean, default: true },
 })
 
 async function onCopy() {
@@ -39,7 +39,7 @@ async function onCopy() {
 }
 
 .my-design-page-copy-btn:focus-visible {
-  outline: 2px solid var(--my-color-gray-light);
+  outline: 2px solid var(--my-color-gray-dark);
   outline-offset: 2px;
 }
 </style>

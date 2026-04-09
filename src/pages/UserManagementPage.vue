@@ -508,40 +508,40 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+  <div class="d-flex flex-column my-bgcolor-gray-light h-100 position-relative">
     <LoadingOverlay
       :is-visible="loading"
       loading-text="載入名單中..."
     />
-    <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
+    <div class="navbar navbar-expand-lg my-bgcolor-surface flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand my-font-xl-400 mb-0">使用者管理</span>
       </div>
     </div>
-    <div v-if="error" class="alert alert-warning my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
-    <div v-if="deleteUserError" class="alert alert-danger my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
-    <div class="flex-grow-1 overflow-auto bg-white px-4 py-5">
+    <div v-if="error" class="my-alert-warning-soft rounded my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
+    <div v-if="deleteUserError" class="my-alert-danger-soft rounded my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-light px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
           <div class="text-start my-page-block-spacing">
             <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-              <p class="my-font-sm-400 text-secondary mb-0">
+              <p class="my-font-sm-400 my-color-gray-light mb-0">
                 共 {{ count }} 筆使用者
               </p>
               <div class="d-flex flex-wrap gap-2">
-                <button type="button" class="btn btn-primary" @click="openSingleModal">
+                <button type="button" class="btn my-button-blue" @click="openSingleModal">
                   新增一筆使用者
                 </button>
-                <button type="button" class="btn btn-primary" @click="openBatchModal">
+                <button type="button" class="btn my-button-blue" @click="openBatchModal">
                   批次新增學生
                 </button>
               </div>
             </div>
-            <div v-if="loading" class="text-muted my-font-sm-400" />
+            <div v-if="loading" class="my-color-gray-light my-font-sm-400" />
             <div v-else class="table-responsive">
               <table class="table table-bordered table-hover table-sm">
-                <thead class="table-light">
+                <thead class="my-table-thead">
                   <tr>
                     <th class="my-font-sm-600">登入 ID</th>
                     <th class="my-font-sm-600">姓名</th>
@@ -558,7 +558,7 @@ onMounted(() => {
                       <button
                         v-if="u.person_id != null && String(u.person_id).trim() !== '' && !isCurrentUserRow(u)"
                         type="button"
-                        class="btn btn-link text-danger text-decoration-none lh-1 p-0"
+                        class="btn btn-link my-color-red text-decoration-none lh-1 p-0"
                         :disabled="deletingPersonId != null"
                         :title="`刪除 ${String(u.person_id).trim()}`"
                         @click="deleteUser(u)"
@@ -566,11 +566,11 @@ onMounted(() => {
                         <i class="fa-solid fa-xmark" aria-hidden="true" />
                         <span class="visually-hidden">刪除</span>
                       </button>
-                      <span v-else class="text-muted">—</span>
+                      <span v-else class="my-color-gray-light">—</span>
                     </td>
                   </tr>
                   <tr v-if="!loading && users.length === 0">
-                    <td colspan="4" class="text-muted text-center my-font-sm-400">尚無使用者</td>
+                    <td colspan="4" class="my-color-gray-light text-center my-font-sm-400">尚無使用者</td>
                   </tr>
                 </tbody>
               </table>
@@ -606,12 +606,12 @@ onMounted(() => {
             </div>
             <div class="modal-body pt-2">
               <div class="mb-3">
-                <label for="user-single-id" class="form-label my-font-sm-400 text-secondary mb-1">登入 ID</label>
+                <label for="user-single-id" class="form-label my-font-sm-400 my-color-gray-light mb-1">登入 ID</label>
                 <input
                   id="user-single-id"
                   v-model="singlePersonId"
                   type="text"
-                  class="form-control form-control-sm"
+                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
                   :class="{ 'is-invalid': singlePersonIdDuplicate }"
                   maxlength="256"
                   autocomplete="off"
@@ -624,12 +624,12 @@ onMounted(() => {
                 </div>
               </div>
               <div class="mb-3">
-                <label for="user-single-name" class="form-label my-font-sm-400 text-secondary mb-1">姓名</label>
+                <label for="user-single-name" class="form-label my-font-sm-400 my-color-gray-light mb-1">姓名</label>
                 <input
                   id="user-single-name"
                   v-model="singleName"
                   type="text"
-                  class="form-control form-control-sm"
+                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
                   maxlength="256"
                   autocomplete="name"
                   :disabled="singleSaving"
@@ -637,7 +637,7 @@ onMounted(() => {
                 >
               </div>
               <div class="mb-0">
-                <label for="user-single-type" class="form-label my-font-sm-400 text-secondary mb-1">類型</label>
+                <label for="user-single-type" class="form-label my-font-sm-400 my-color-gray-light mb-1">類型</label>
                 <select
                   id="user-single-type"
                   v-model.number="singleUserType"
@@ -650,17 +650,17 @@ onMounted(() => {
                   </option>
                 </select>
               </div>
-              <div v-if="singleSubmitError" class="text-danger my-font-sm-400 mt-3 mb-0">
+              <div v-if="singleSubmitError" class="my-color-red my-font-sm-400 mt-3 mb-0">
                 {{ singleSubmitError }}
               </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn btn-outline-secondary" :disabled="singleSaving" @click="closeSingleModal">
+              <button type="button" class="btn my-btn-outline-neutral" :disabled="singleSaving" @click="closeSingleModal">
                 取消
               </button>
               <button
                 type="button"
-                class="btn btn-primary"
+                class="btn my-button-blue"
                 :disabled="!singleSubmitEnabled"
                 @click="submitSingleUser"
               >
@@ -696,7 +696,7 @@ onMounted(() => {
               />
             </div>
             <div class="modal-body pt-2">
-              <p class="my-font-sm-400 text-secondary mb-2">
+              <p class="my-font-sm-400 my-color-gray-light mb-2">
                 Excel 第一行為表頭，須含 <strong>ID</strong>、<strong>姓名</strong>。若檔內 <strong>登入 ID 重複</strong>或<strong>與現有使用者重複</strong>，將無法送出；匯入的每位將新增為「{{ USER_TYPE_LABELS[RESTRICTED_USER_TYPE] }}」。
               </p>
               <input
@@ -717,20 +717,20 @@ onMounted(() => {
                 @click="openExcelFileDialog"
               >
                 <template v-if="excelFileName">
-                  <span class="my-font-sm-400 text-body">{{ excelFileName }}</span>
-                  <div class="my-font-sm-400 text-muted mt-1">拖曳檔案到這裡，或點擊重新選擇</div>
+                  <span class="my-font-sm-400 my-color-black">{{ excelFileName }}</span>
+                  <div class="my-font-sm-400 my-color-gray-light mt-1">拖曳檔案到這裡，或點擊重新選擇</div>
                 </template>
                 <template v-else>
-                  <span class="my-font-sm-400 text-secondary">拖曳 Excel 到這裡，或點擊選擇檔案</span>
-                  <div class="my-font-sm-400 text-muted mt-2">格式：表頭須含 ID、姓名 欄（ID 不分大小寫）</div>
+                  <span class="my-font-sm-400 my-color-gray-light">拖曳 Excel 到這裡，或點擊選擇檔案</span>
+                  <div class="my-font-sm-400 my-color-gray-light mt-2">格式：表頭須含 ID、姓名 欄（ID 不分大小寫）</div>
                 </template>
               </div>
-              <div v-if="excelParseError" class="alert alert-warning my-font-sm-400 py-2 mt-2 mb-0" role="alert">
+              <div v-if="excelParseError" class="my-alert-warning-soft rounded my-font-sm-400 py-2 mt-2 mb-0" role="alert">
                 {{ excelParseError }}
               </div>
               <div v-if="excelPreviewRows.length > 0" class="table-responsive mt-3">
                 <table class="table table-bordered table-hover table-sm mb-0">
-                  <thead class="table-light">
+                  <thead class="my-table-thead">
                     <tr>
                       <th class="my-font-sm-600">ID</th>
                       <th class="my-font-sm-600">姓名</th>
@@ -743,43 +743,43 @@ onMounted(() => {
                     </tr>
                   </tbody>
                 </table>
-                <p class="my-font-sm-400 text-secondary mt-2 mb-0">共 {{ excelPreviewRows.length }} 筆預覽（有效登入 ID：{{ batchPayloadNormalized.length }} 筆）</p>
+                <p class="my-font-sm-400 my-color-gray-light mt-2 mb-0">共 {{ excelPreviewRows.length }} 筆預覽（有效登入 ID：{{ batchPayloadNormalized.length }} 筆）</p>
               </div>
               <div
                 v-if="excelPreviewRows.length > 0 && batchPayloadNormalized.length === 0"
-                class="alert alert-warning my-font-sm-400 py-2 mt-3 mb-0"
+                class="my-alert-warning-soft rounded my-font-sm-400 py-2 mt-3 mb-0"
                 role="alert"
               >
                 沒有有效的登入 ID，請檢查 Excel。
               </div>
               <div
                 v-if="batchDuplicateIdsInFile.length > 0"
-                class="alert alert-danger my-font-sm-400 py-2 mt-3 mb-0"
+                class="my-alert-danger-soft rounded my-font-sm-400 py-2 mt-3 mb-0"
                 role="alert"
               >
                 Excel 內登入 ID 重複：{{ batchDuplicateIdsInFile.join('、') }}，請修正檔案後再試。
               </div>
               <div
                 v-if="batchIdsClashingExisting.length > 0"
-                class="alert alert-danger my-font-sm-400 py-2 mt-3 mb-0"
+                class="my-alert-danger-soft rounded my-font-sm-400 py-2 mt-3 mb-0"
                 role="alert"
               >
                 以下登入 ID 已存在於系統：{{ batchIdsClashingExisting.join('、') }}，請從檔案移除後再試。
               </div>
-              <div v-if="batchSubmitSummary.ok > 0 || batchSubmitSummary.fail > 0" class="my-font-sm-400 text-secondary mt-3">
+              <div v-if="batchSubmitSummary.ok > 0 || batchSubmitSummary.fail > 0" class="my-font-sm-400 my-color-gray-light mt-3">
                 本次結果：成功 {{ batchSubmitSummary.ok }} 筆，失敗 {{ batchSubmitSummary.fail }} 筆
               </div>
-              <div v-if="batchSubmitError" class="text-danger my-font-sm-400 mt-2 mb-0">
+              <div v-if="batchSubmitError" class="my-color-red my-font-sm-400 mt-2 mb-0">
                 {{ batchSubmitError }}
               </div>
             </div>
             <div class="modal-footer border-top-0 pt-0">
-              <button type="button" class="btn btn-outline-secondary" :disabled="batchSaving" @click="closeBatchModal">
+              <button type="button" class="btn my-btn-outline-neutral" :disabled="batchSaving" @click="closeBatchModal">
                 關閉
               </button>
               <button
                 type="button"
-                class="btn btn-primary"
+                class="btn my-button-blue"
                 :disabled="!batchSubmitEnabled"
                 @click="submitBatchUsers"
               >

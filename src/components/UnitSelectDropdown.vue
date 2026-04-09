@@ -43,7 +43,7 @@ function select(val) {
         'dropdown-toggle w-100 d-flex justify-content-between align-items-center my-unit-select-dd-toggle',
         designUi
           ? 'btn rounded-pill d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white flex-shrink-0 px-3 py-2'
-          : 'btn btn-outline-secondary',
+          : 'btn my-btn-outline-neutral',
       ]"
       type="button"
       data-bs-toggle="dropdown"

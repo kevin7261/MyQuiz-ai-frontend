@@ -140,30 +140,30 @@ async function save(block) {
 </script>
 
 <template>
-  <div class="d-flex flex-column bg-body-secondary h-100 position-relative">
+  <div class="d-flex flex-column my-bgcolor-gray-light h-100 position-relative">
     <LoadingOverlay
       :is-visible="fetchLoading || BLOCKS.some((b) => state[b.id].loading)"
       loading-text="載入或儲存設定中..."
     />
-    <div class="navbar navbar-expand-lg bg-white flex-shrink-0">
+    <div class="navbar navbar-expand-lg my-bgcolor-surface flex-shrink-0">
       <div class="container-fluid d-flex justify-content-center">
         <span class="navbar-brand my-font-xl-400 mb-0">系統設定</span>
       </div>
     </div>
-    <div class="flex-grow-1 overflow-auto bg-white px-4 py-5">
+    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-light px-4 py-5">
       <div class="row justify-content-center">
         <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
           <div class="text-start my-page-block-spacing">
             <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
             <template v-for="block in BLOCKS" :key="block.id">
               <div class="mb-4">
-                <label class="form-label my-font-sm-600 text-secondary mb-1">{{ block.label }}</label>
+                <label class="form-label my-font-sm-600 my-color-gray-light mb-1">{{ block.label }}</label>
                 <div class="d-flex flex-wrap align-items-center gap-2">
                   <div class="flex-grow-1" style="min-width: 0">
                     <input
                       v-model="state[block.id].value"
                       type="text"
-                      class="form-control form-control-sm"
+                      class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
                       :placeholder="block.placeholder"
                       :disabled="fetchLoading"
                       :autocomplete="block.id === 'llmApiKey' ? 'off' : undefined"
@@ -172,7 +172,7 @@ async function save(block) {
                   </div>
                   <button
                     type="button"
-                    class="btn btn-primary flex-shrink-0"
+                    class="btn my-button-blue flex-shrink-0"
                     :disabled="state[block.id].loading || fetchLoading"
                     @click="save(block)"
                   >
@@ -189,9 +189,9 @@ async function save(block) {
               </div>
             </template>
             <div class="mb-4">
-              <label class="form-label my-font-sm-600 text-secondary mb-1">服務位址（僅供查閱）</label>
+              <label class="form-label my-font-sm-600 my-color-gray-light mb-1">服務位址（僅供查閱）</label>
               <div
-                class="form-control form-control-sm bg-body-secondary font-monospace text-break py-2"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static font-monospace text-break w-100 px-3 py-2"
                 role="status"
               >
                 {{ API_BASE }}

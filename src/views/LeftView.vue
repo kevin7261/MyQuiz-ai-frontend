@@ -62,8 +62,8 @@
 </script>
 
 <template>
-  <aside class="h-100 d-flex flex-column w-100 bg-white border-end">
-    <div class="fw-semibold fs-5 text-body lh-sm px-3 pt-3 pb-2">{{ courseName }}</div>
+  <aside class="h-100 d-flex flex-column w-100 my-bgcolor-gray-light my-border-end-neutral">
+    <div class="fw-semibold fs-5 my-color-black lh-sm px-3 pt-3 pb-2">{{ courseName }}</div>
     <nav class="nav nav-pills flex-column flex-grow-1 justify-content-center gap-1 overflow-auto px-3 pt-3">
       <router-link
         v-if="canSeeNavLink(userType, 'work')"
@@ -84,7 +84,7 @@
       <div class="dropdown dropup w-100">
         <button
           type="button"
-          class="btn btn-outline-secondary dropdown-toggle w-100 text-start d-flex align-items-center gap-1"
+          class="btn my-btn-outline-neutral dropdown-toggle w-100 text-start d-flex align-items-center gap-1"
           data-bs-toggle="dropdown"
           aria-expanded="false"
         >
@@ -118,7 +118,7 @@
             <hr class="dropdown-divider" />
           </li>
           <li>
-            <a class="dropdown-item text-danger" href="#" @click.prevent="onLogout">登出</a>
+            <a class="dropdown-item my-color-red" href="#" @click.prevent="onLogout">登出</a>
           </li>
         </ul>
       </div>

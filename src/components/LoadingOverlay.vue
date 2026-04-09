@@ -32,14 +32,14 @@
     class="my-loading-overlay d-flex justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100"
   >
     <div class="text-center my-bgcolor-white rounded shadow my-loading-overlay-panel p-4">
-      <div class="spinner-border text-primary my-loading-overlay-spinner mb-3" role="status">
+      <div class="spinner-border my-loading-overlay-spinner mb-3" role="status">
         <span class="visually-hidden">{{ loadingText }}</span>
       </div>
-      <div class="my-font-xl-400 text-dark">{{ loadingText }}</div>
+      <div class="my-font-xl-400 my-color-black">{{ loadingText }}</div>
       <div class="mt-3" v-if="showProgress && progress >= 0">
         <div class="progress my-loading-overlay-progress">
           <div
-            class="d-flex justify-content-center align-items-center progress-bar bg-primary my-loading-overlay-progress-bar my-font-sm-400"
+            class="d-flex justify-content-center align-items-center progress-bar my-loading-overlay-progress-bar my-font-sm-400"
             role="progressbar"
             :style="{ '--my-loading-overlay-progress-pct': progress + '%' }"
             :aria-valuenow="progress"
@@ -71,6 +71,7 @@
 .my-loading-overlay-spinner {
   width: 2rem;
   height: 2rem;
+  color: var(--my-color-blue);
 }
 
 .my-loading-overlay-progress {
@@ -80,5 +81,6 @@
 .my-loading-overlay-progress-bar {
   width: var(--my-loading-overlay-progress-pct, 0);
   color: var(--my-color-white);
+  background-color: var(--my-color-blue);
 }
 </style>

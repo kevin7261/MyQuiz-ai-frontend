@@ -1317,7 +1317,7 @@ function applyMockGradingPreview(item) {
 <template>
   <div
     class="d-flex flex-column h-100 position-relative"
-    :class="mockWithoutApi ? 'overflow-hidden my-bgcolor-black' : 'my-bgcolor-page-block'"
+    :class="mockWithoutApi ? 'overflow-hidden my-bgcolor-black' : 'my-bgcolor-gray-light'"
   >
     <LoadingOverlay
       :is-visible="isAnyLoading"
@@ -1347,7 +1347,7 @@ function applyMockGradingPreview(item) {
     >
       <div
         class="d-flex justify-content-center w-100 px-4"
-        :class="mockWithoutApi ? 'align-items-end pb-0' : 'align-items-center my-border-bottom-border-muted'"
+        :class="mockWithoutApi ? 'align-items-end pb-0' : 'align-items-center'"
       >
         <template v-if="ragListLoading">
           <span class="my-font-sm-400 my-color-gray-light">載入中...</span>
@@ -1375,7 +1375,7 @@ function applyMockGradingPreview(item) {
           </div>
         </template>
         <template v-else>
-          <ul class="nav nav-tabs border-bottom-0">
+          <ul class="nav nav-tabs w-100">
             <li v-for="item in ragItems" :key="'rag-' + item._tabId" class="nav-item">
               <div
                 role="tab"
@@ -1531,10 +1531,10 @@ function applyMockGradingPreview(item) {
           </div>
         </div>
       </section>
-      <!-- 尚無 file_metadata 時顯示上傳區；mockWithoutApi：DesignPage 同款 rounded-4 my-bgcolor-gray-dark p-4 mb-5 + 區塊標題 div -->
+      <!-- 尚無 file_metadata 時顯示上傳區；mockWithoutApi：DesignPage 同款 rounded-4 my-bgcolor-gray p-4 mb-5 + 區塊標題 div -->
       <section v-if="showUploadFileSection" class="text-start my-page-block-spacing">
         <div
-          class="rounded-4 my-bgcolor-gray-dark"
+          class="rounded-4 my-bgcolor-gray"
           :class="mockWithoutApi ? 'p-4 mb-5' : 'p-3 p-lg-4 mb-4'"
         >
           <div class="my-font-lg-600 my-color-white text-break mb-4" role="heading" aria-level="2">上傳檔案</div>
@@ -1586,7 +1586,7 @@ function applyMockGradingPreview(item) {
       <!-- 建立 RAG：要有 file_metadata 才顯示；已有 rag_metadata 時僅純文字顯示出題單元／chunk／規範；稿頁兩塊出題設定各佔一 section（同 Design 一區塊一節） -->
       <template v-if="fileMetadataToShow != null && mockWithoutApi">
         <section class="text-start my-page-block-spacing">
-          <div class="rounded-4 my-bgcolor-gray-dark p-4 mb-5">
+          <div class="rounded-4 my-bgcolor-gray p-4 mb-5">
             <div
               class="my-font-lg-600 my-color-white text-break mb-4"
               role="heading"
@@ -1798,7 +1798,7 @@ function applyMockGradingPreview(item) {
           </div>
         </section>
         <section class="text-start my-page-block-spacing">
-          <div class="rounded-4 my-bgcolor-gray-dark p-4 mb-5">
+          <div class="rounded-4 my-bgcolor-gray p-4 mb-5">
             <div
               class="my-font-lg-600 my-color-white text-break mb-4"
               role="heading"
@@ -1926,7 +1926,7 @@ function applyMockGradingPreview(item) {
       >
           <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
             <div
-              class="my-font-lg-600 border-bottom pb-2 mb-4"
+              class="my-font-lg-600 mb-4"
               role="heading"
               aria-level="2"
             >
@@ -1940,7 +1940,7 @@ function applyMockGradingPreview(item) {
               <input
                 id="rag-upload-zip-fn-prod-edit"
                 type="text"
-                class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
                 readonly
                 :value="uploadZipReadonlyInputValue"
                 autocomplete="off"
@@ -1951,7 +1951,7 @@ function applyMockGradingPreview(item) {
           <div v-if="secondFoldersFull.length" class="mb-3">
             <div class="my-color-gray-light flex-shrink-0 my-font-sm-400 mb-1">資料夾</div>
             <div
-              class="form-control my-input-md rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
               role="group"
               aria-label="資料夾"
             >
@@ -1981,7 +1981,7 @@ function applyMockGradingPreview(item) {
             >
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
                 <div
-                  class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
+                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
                   style="min-width: 120px; min-height: 2.5rem; flex: 1 1 auto;"
                   @dragover.prevent="onDragOver($event)"
                   @dragenter.prevent="onDragEnter($event)"
@@ -2065,7 +2065,7 @@ function applyMockGradingPreview(item) {
                 type="number"
                 min="1"
                 step="1"
-                class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
                 placeholder="1000"
                 autocomplete="off"
               >
@@ -2081,7 +2081,7 @@ function applyMockGradingPreview(item) {
                 type="number"
                 min="0"
                 step="1"
-                class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
                 placeholder="200"
                 autocomplete="off"
               >
@@ -2093,7 +2093,7 @@ function applyMockGradingPreview(item) {
               for="rag-pack-system-instruction"
             >出題說明（給 AI）</label>
             <div
-              class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2 d-flex flex-column gap-3"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex flex-column gap-3"
             >
               <div class="my-font-md-400 my-color-gray-light lh-base text-break">
                 【出題規範】<br>
@@ -2104,7 +2104,7 @@ function applyMockGradingPreview(item) {
               <textarea
                 id="rag-pack-system-instruction"
                 v-model="currentState.systemInstruction"
-                class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2 font-monospace"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 font-monospace"
                 style="resize: vertical; min-height: 6rem;"
                 rows="5"
                 :placeholder="'留空則使用預設：' + DEFAULT_SYSTEM_INSTRUCTION"
@@ -2142,7 +2142,7 @@ function applyMockGradingPreview(item) {
           </div>
           <div class="my-bgcolor-page-block rounded-3 p-3 p-lg-4 mb-4">
             <div
-              class="my-font-lg-600 border-bottom pb-2 mb-4"
+              class="my-font-lg-600 mb-4"
               role="heading"
               aria-level="2"
             >
@@ -2156,7 +2156,7 @@ function applyMockGradingPreview(item) {
               <input
                 id="rag-upload-zip-fn-prod-ro"
                 type="text"
-                class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
                 readonly
                 :value="uploadZipReadonlyInputValue"
                 autocomplete="off"
@@ -2166,7 +2166,7 @@ function applyMockGradingPreview(item) {
               <div class="mb-3 d-flex flex-column gap-2 w-100 min-w-0">
                 <div class="my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0">出題單元</div>
                 <div
-                  class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2 my-font-sm-400 lh-base text-break"
+                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-sm-400 lh-base text-break"
                   :class="ragListReadonlyGroups.length ? '' : 'my-color-gray-light'"
                 >
                   {{ ragListReadonlyGroups.length ? ragListReadonlyInlineText : '—' }}
@@ -2185,7 +2185,7 @@ function applyMockGradingPreview(item) {
                   <input
                     id="rag-pack-chunk-size-ro"
                     type="text"
-                    class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2"
+                    class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
                     :value="String(chunkSize)"
                     readonly
                     autocomplete="off"
@@ -2199,7 +2199,7 @@ function applyMockGradingPreview(item) {
                   <input
                     id="rag-pack-chunk-overlap-ro"
                     type="text"
-                    class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2"
+                    class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
                     :value="String(chunkOverlap)"
                     readonly
                     autocomplete="off"
@@ -2209,7 +2209,7 @@ function applyMockGradingPreview(item) {
               <div class="mb-3 d-flex flex-column gap-2 w-100 min-w-0">
                 <div class="my-color-gray-light flex-shrink-0 my-font-sm-400 mb-0">出題說明（給 AI）</div>
                 <div
-                  class="form-control my-input-md rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 lh-base text-break d-flex flex-column gap-3"
+                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 lh-base text-break d-flex flex-column gap-3"
                 >
                   <div class="my-color-gray-light">
                     你是一個「{{ courseNameForPrompt }}」課程的教授，請給學生設計試卷題目：<br>
@@ -2265,10 +2265,10 @@ function applyMockGradingPreview(item) {
         class="text-start my-page-block-spacing"
         :class="{ 'my-color-gray-light': ragGenerateDisabled }"
       >
-        <div :class="mockWithoutApi ? 'rounded-4 my-bgcolor-gray-dark p-4 mb-5' : ''">
+        <div :class="mockWithoutApi ? 'rounded-4 my-bgcolor-gray p-4 mb-5' : ''">
           <div
             class="my-font-lg-600 text-break mb-4"
-            :class="mockWithoutApi ? 'my-color-white' : 'border-bottom pb-2'"
+            :class="mockWithoutApi ? 'my-color-white' : ''"
             role="heading"
             aria-level="2"
           >
@@ -2377,7 +2377,7 @@ function applyMockGradingPreview(item) {
                       :class="
                         mockWithoutApi
                           ? 'btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-3 py-2'
-                          : 'btn btn-primary'
+                          : 'btn my-button-blue'
                       "
                       :disabled="getSlotFormState(slotIndex).loading || !String(getSlotFormState(slotIndex).generateQuizTabId || '').trim()"
                       @click="generateQuiz(slotIndex)"
@@ -2400,7 +2400,7 @@ function applyMockGradingPreview(item) {
                 :class="
                   mockWithoutApi
                     ? 'btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-3'
-                    : 'btn btn-primary'
+                    : 'btn my-button-blue'
                 "
                 @click="openNextQuizSlot"
               >
@@ -2433,23 +2433,23 @@ function applyMockGradingPreview(item) {
   border-color: var(--my-color-blue) !important;
   background: var(--my-drop-zone-active-bg) !important;
 }
-/* 上傳外層為稿頁同款 my-bgcolor-gray-dark 時，內嵌拖放區比照 DesignPage 深灰塊內黑底票 */
-.my-bgcolor-gray-dark .my-zip-drop-zone {
+/* 上傳外層為稿頁同款 my-bgcolor-gray 時，內嵌拖放區比照 DesignPage 深灰塊內黑底票 */
+.my-bgcolor-gray .my-zip-drop-zone {
   border-color: color-mix(in srgb, var(--my-color-white) 28%, transparent);
   background: var(--my-color-black);
 }
-.my-bgcolor-gray-dark .my-zip-drop-zone:hover:not(.my-zip-drop-zone-disabled) {
+.my-bgcolor-gray .my-zip-drop-zone:hover:not(.my-zip-drop-zone-disabled) {
   border-color: var(--my-color-blue);
   background: color-mix(in srgb, var(--my-color-blue) 14%, var(--my-color-black));
 }
-.my-bgcolor-gray-dark .my-zip-drop-zone-over {
+.my-bgcolor-gray .my-zip-drop-zone-over {
   background: color-mix(in srgb, var(--my-color-blue) 22%, var(--my-color-black)) !important;
 }
 .my-zip-drop-zone-disabled {
   cursor: not-allowed;
   border-color: color-mix(in srgb, var(--my-color-black) 20%, transparent);
   background-color: color-mix(in srgb, var(--my-color-white) 88%, var(--my-color-gray-light));
-  color: var(--my-color-gray-light);
+  color: color-mix(in srgb, var(--my-color-black) 46%, var(--my-color-white));
 }
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;

@@ -57,7 +57,7 @@ function onSave() {
       @click.self="onBackdropClick"
     >
       <div class="modal-dialog modal-dialog-centered" @click.stop>
-        <div class="modal-content shadow border-0 my-bgcolor-gray-dark p-4 d-flex flex-column gap-3">
+        <div class="modal-content shadow border-0 my-bgcolor-gray p-4 d-flex flex-column gap-3">
           <div class="modal-header border-bottom-0 p-0">
             <h5 id="tab-rename-modal-title" class="modal-title my-color-white">{{ title }}</h5>
             <button
@@ -84,7 +84,7 @@ function onSave() {
               :disabled="saving"
               @keydown.enter.prevent="onSave"
             />
-            <div v-if="error" class="text-danger my-font-sm-400 mt-2">{{ error }}</div>
+            <div v-if="error" class="my-color-red my-font-sm-400 mt-2">{{ error }}</div>
           </div>
           <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
             <button

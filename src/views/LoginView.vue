@@ -88,7 +88,7 @@
       :is-visible="loading"
       loading-text="登入中..."
     />
-    <div class="card shadow-sm my-login-view-card bg-white text-dark">
+    <div class="card shadow-sm my-login-view-card my-bgcolor-surface my-color-black">
       <div class="card-body p-4">
         <h4 class="card-title text-center mb-4">{{ courseName }} 登入</h4>
         <form @submit.prevent="onLogin">
@@ -98,7 +98,7 @@
               id="login-person-id"
               v-model="personId"
               type="text"
-              class="form-control"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
               placeholder="請輸入使用者 ID"
               autocomplete="username"
             />
@@ -109,13 +109,13 @@
               id="login-password"
               v-model="password"
               type="text"
-              class="form-control"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
               placeholder="請輸入密碼"
               autocomplete="current-password"
             />
           </div>
-          <div v-if="error" class="alert alert-danger py-2 mb-3" role="alert">{{ error }}</div>
-          <button type="submit" class="btn btn-primary w-100" :disabled="loading">
+          <div v-if="error" class="my-alert-danger-soft rounded py-2 mb-3" role="alert">{{ error }}</div>
+          <button type="submit" class="btn my-button-blue w-100" :disabled="loading">
             登入
           </button>
         </form>
