@@ -45,6 +45,14 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore, optio
         packResponseJson: null,
         packLoading: false,
         packError: '',
+        /** POST build-rag-zip 串流進度（start.total） */
+        packBuildTotal: 0,
+        /** 已完成筆數（unit.index 或 building.completed_before） */
+        packBuildDone: 0,
+        /** 目前建置中的序號 1-based（building.index） */
+        packBuildCurrent: 0,
+        /** 目前建置中的 repack 檔名（building.filename） */
+        packBuildFilename: '',
         generateQuizTabId: '',
         generateQuizLoading: false,
         generateQuizError: '',

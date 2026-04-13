@@ -16,8 +16,10 @@ import {
   API_PUT_RAG_FOR_EXAM_LOCALHOST,
   isFrontendLocalHost,
 } from '../constants/api.js';
-import { parseBuildRagZipError, parseFetchError } from '../utils/apiError.js';
+import { formatBuildRagZipErrorDetail, parseBuildRagZipError, parseFetchError } from '../utils/apiError.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
+
+const RETRY_500_DELAY_MS = 2000;
 import { quizLevelStringForApi } from '../utils/rag.js';
 
 /**
@@ -180,23 +182,129 @@ export async function apiSetRagForExam(ragId) {
 }
 
 /**
- * 建 RAG ZIP：POST /rag/tab/build-rag-zip
- * @param {object} body - 含 rag_tab_id, person_id, unit_list, chunk_size, chunk_overlap, system_prompt_instruction 等
- * @returns {Promise<object | string>} 後端回傳的 JSON 或原始文字
+ * 建 RAG ZIP：POST /rag/tab/build-rag-zip（application/x-ndjson 串流；勿用 response.json() 讀 200 本文）
+ *
+ * @param {object} body - 含 rag_tab_id, person_id, unit_list, chunk_size, chunk_overlap, system_prompt_instruction 等（person_id 須與 query 一致）
+ * @param {(ev: object) => void} [onStreamEvent] - 每收到一列事件即呼叫；type 為 start | building | unit | complete
+ * @returns {Promise<object>} 成功時回傳與舊版 JSON 相容之物件（outputs、rag_tab_id、unit_list、built_ok 等）
  */
-export async function apiBuildRagZip(body) {
-  const res = await loggedFetch(`${API_BASE}${API_BUILD_RAG_ZIP}`, {
+export async function apiBuildRagZip(body, onStreamEvent) {
+  const personId = body?.person_id;
+  if (personId == null || String(personId).trim() === '') {
+    throw new Error('person_id 為必填');
+  }
+
+  const urlString = `${API_BASE}${API_BUILD_RAG_ZIP}`;
+  let u;
+  try {
+    u = new URL(urlString);
+  } catch {
+    u = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+  }
+  u.searchParams.set('person_id', String(personId).trim());
+
+  const init = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-  });
-  const text = await res.text();
-  if (!res.ok) throw new Error(parseBuildRagZipError(res, text));
+  };
+
+  let res;
   try {
-    return text ? JSON.parse(text) : null;
-  } catch {
-    return text;
+    res = await fetch(u.toString(), init);
+  } catch (e) {
+    const msg = e?.message ?? String(e);
+    if (e?.name === 'TypeError' && msg.includes('Failed to fetch')) {
+      throw new Error(
+        '無法連線至後端。若使用 npm run serve，請用 http://localhost:8080 或 http://127.0.0.1:8080 開啟（會經開發伺服器代理）；若要直連本機 API，請在 .env 設定 VUE_APP_API_BASE=http://127.0.0.1:8000 並啟動後端。'
+      );
+    }
+    throw e;
   }
+
+  while (res.status === 500) {
+    await new Promise((r) => setTimeout(r, RETRY_500_DELAY_MS));
+    res = await fetch(u.toString(), init);
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(parseBuildRagZipError(res, text));
+  }
+
+  const reader = res.body?.getReader();
+  if (!reader) {
+    throw new Error('無法讀取回應內容（此瀏覽器不支援串流）');
+  }
+
+  const dec = new TextDecoder();
+  let buf = '';
+  /** @type {object | null} */
+  let lastComplete = null;
+
+  const dispatch = (ev) => {
+    // eslint-disable-next-line no-console -- NDJSON 串流除錯（事件順序／目前第幾個 ZIP）
+    console.log('[build-rag-zip stream]', ev?.type, ev);
+    if (typeof onStreamEvent === 'function') onStreamEvent(ev);
+    if (ev && ev.type === 'complete') lastComplete = ev;
+  };
+
+  let chunk = await reader.read();
+  while (!chunk.done) {
+    buf += dec.decode(chunk.value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop() ?? '';
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t) continue;
+      let ev;
+      try {
+        ev = JSON.parse(t);
+      } catch (e) {
+        throw new Error(`建置回應格式錯誤：${e?.message ?? e}`);
+      }
+      dispatch(ev);
+    }
+    chunk = await reader.read();
+  }
+
+  const tail = buf.trim();
+  if (tail) {
+    let ev;
+    try {
+      ev = JSON.parse(tail);
+    } catch (e) {
+      throw new Error(`建置回應格式錯誤：${e?.message ?? e}`);
+    }
+    dispatch(ev);
+  }
+
+  if (!lastComplete) {
+    throw new Error('建置未完成：未收到完成事件');
+  }
+
+  if (!lastComplete.success) {
+    const msg =
+      lastComplete.message != null && String(lastComplete.message).trim() !== ''
+        ? String(lastComplete.message).trim()
+        : '建置失敗';
+    const detail = {
+      message: msg,
+      outputs: lastComplete.outputs,
+      source_rag_tab_id: lastComplete.source_rag_tab_id,
+      unit_list: lastComplete.unit_list,
+    };
+    throw new Error(formatBuildRagZipErrorDetail(detail));
+  }
+
+  return {
+    outputs: Array.isArray(lastComplete.outputs) ? lastComplete.outputs : [],
+    rag_tab_id: lastComplete.source_rag_tab_id,
+    unit_list: lastComplete.unit_list,
+    total: lastComplete.total,
+    built_ok: lastComplete.built_ok,
+    built_failed: lastComplete.built_failed,
+  };
 }
 
 /**

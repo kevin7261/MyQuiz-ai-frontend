@@ -8,7 +8,7 @@
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
- * - 建 RAG：POST /rag/tab/build-rag-zip（unit_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
+ * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、chunk_size、chunk_overlap、system_prompt_instruction 等）
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 測驗用：GET／PUT /system-settings/rag-for-exam-localhost 或 rag-for-exam-deploy；PUT rag_id 正整數或 '' 清空；列表 for_exam 與設定併用於按鈕「取消設為測驗用」
  * - 出題：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""，空 unit_name 後端用 outputs 第一筆）；評分：POST /rag/tab/quiz/grade、GET /rag/tab/quiz/grade-result/{job_id}，ready 時 result: { quiz_score, quiz_comments, rag_answer_id }
@@ -314,6 +314,23 @@ const loadingOverlayText = computed(() => {
   if (createRagLoading.value) return '建立中...';
   if (ragListLoading.value) return '載入測驗題庫中';
   return '處理中...';
+});
+
+/** 建題庫串流進度（LoadingOverlay subText；全螢幕遮罩會蓋住表單下方進度區） */
+const loadingOverlaySubText = computed(() => {
+  const st = currentState.value;
+  if (!st?.packLoading) return '';
+  const total = Number(st.packBuildTotal) || 0;
+  const done = Number(st.packBuildDone) || 0;
+  const cur = Number(st.packBuildCurrent) || 0;
+  const fn = String(st.packBuildFilename ?? '').trim();
+  if (total > 0) {
+    const lines = [`共 ${total} 個 RAG ZIP，已完成 ${done} 個`];
+    if (fn) lines.push(`目前建置：第 ${cur} / ${total} 個\n${fn}`);
+    else if (cur > 0) lines.push(`目前建置：第 ${cur} / ${total} 個`);
+    return lines.join('\n');
+  }
+  return '正在連線並準備建置…';
 });
 
 /** 用於顯示 file_metadata：上傳回傳的 zipResponseJson、GET /rag/tabs 的 file_metadata；若列表已建題庫但未內嵌 file_metadata，則由 rag 與 unit_list 合成，避免「出題設定」整塊被隱藏 */
@@ -966,15 +983,41 @@ async function confirmPack() {
   state.packLoading = true;
   state.packError = '';
   state.packResponseJson = null;
+  state.packBuildTotal = 0;
+  state.packBuildDone = 0;
+  state.packBuildCurrent = 0;
+  state.packBuildFilename = '';
   try {
-    state.packResponseJson = await apiBuildRagZip({
-      rag_tab_id: fileId,
-      person_id: personId,
-      unit_list: unitList,
-      chunk_size: ensureNumber(chunkSize.value, 1000),
-      chunk_overlap: ensureNumber(chunkOverlap.value, 200),
-      system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
-    });
+    state.packResponseJson = await apiBuildRagZip(
+      {
+        rag_tab_id: fileId,
+        person_id: personId,
+        unit_list: unitList,
+        chunk_size: ensureNumber(chunkSize.value, 1000),
+        chunk_overlap: ensureNumber(chunkOverlap.value, 200),
+        system_prompt_instruction: (state.systemInstruction ?? '').trim() || '',
+      },
+      (ev) => {
+        if (!ev || typeof ev !== 'object') return;
+        if (ev.type === 'start') {
+          state.packBuildTotal = Number(ev.total) || 0;
+          state.packBuildDone = 0;
+          state.packBuildCurrent = 0;
+          state.packBuildFilename = '';
+        } else if (ev.type === 'building') {
+          state.packBuildTotal = Number(ev.total) || state.packBuildTotal;
+          state.packBuildCurrent = Number(ev.index) || 0;
+          state.packBuildDone = Number(ev.completed_before) || 0;
+          state.packBuildFilename = ev.filename != null ? String(ev.filename) : '';
+        } else if (ev.type === 'unit') {
+          state.packBuildTotal = Number(ev.total) || state.packBuildTotal;
+          state.packBuildDone = Number(ev.index) || state.packBuildDone;
+        } else if (ev.type === 'complete') {
+          state.packBuildTotal = Number(ev.total) || state.packBuildTotal;
+          if (ev.built_ok != null) state.packBuildDone = Number(ev.built_ok) || 0;
+        }
+      }
+    );
     state.ragMetadata = typeof state.packResponseJson === 'string' ? state.packResponseJson : JSON.stringify(state.packResponseJson, null, 2);
     await fetchRagList();
   } catch (err) {
@@ -984,6 +1027,10 @@ async function confirmPack() {
     state.packResponseJson = null;
   } finally {
     state.packLoading = false;
+    state.packBuildTotal = 0;
+    state.packBuildDone = 0;
+    state.packBuildCurrent = 0;
+    state.packBuildFilename = '';
   }
 }
 
@@ -1148,6 +1195,7 @@ async function confirmAnswer(item) {
     <LoadingOverlay
       :is-visible="loadingOverlayVisible"
       :loading-text="loadingOverlayText"
+      :sub-text="loadingOverlaySubText"
     />
     <TabRenameModal
       v-model="renameRagTabModalOpen"
@@ -1603,6 +1651,23 @@ async function confirmAnswer(item) {
             >
               開始建立題庫
             </button>
+          </div>
+          <div
+            v-if="currentState.packLoading"
+            class="my-font-sm-400 my-color-gray-4 text-break text-center mt-2 mb-1"
+            role="status"
+            aria-live="polite"
+          >
+            <template v-if="currentState.packBuildTotal > 0">
+              <div>共 {{ currentState.packBuildTotal }} 個 RAG ZIP；已完成 {{ currentState.packBuildDone }} 個</div>
+              <div v-if="currentState.packBuildFilename" class="mt-1">
+                建置中 {{ currentState.packBuildCurrent }} / {{ currentState.packBuildTotal }}：{{ currentState.packBuildFilename }}
+              </div>
+              <div v-else-if="currentState.packBuildCurrent > 0" class="mt-1">
+                建置中 {{ currentState.packBuildCurrent }} / {{ currentState.packBuildTotal }}
+              </div>
+            </template>
+            <template v-else>建立題庫中…</template>
           </div>
           <div
             v-if="currentState.packError"

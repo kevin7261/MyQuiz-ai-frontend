@@ -101,7 +101,7 @@ export const API_UPLOAD_ZIP = '/rag/tab/upload-zip';
 export const API_RAG_DELETE = '/rag/tab/delete';
 /** 更新 RAG 分頁顯示名稱：PUT /rag/tab/tab-name；body JSON：rag_id、tab_name；以 rag_id 比對，僅更新 deleted=false；回傳 rag_id、rag_tab_id、person_id、tab_name、updated_at */
 export const API_RAG_UNIT_NAME = '/rag/tab/tab-name';
-/** 建 RAG ZIP：POST /rag/tab/build-rag-zip；依已上傳 ZIP（rag_tab_id，路徑 {person_id}/{rag_tab_id}/upload 與 tab/upload-zip 一致）與 unit_list 抽出資料夾重壓並存後端；body 必填 rag_tab_id、person_id、unit_list（逗號分隔多個輸出檔，加號為同檔內多資料夾）、system_prompt_instruction、chunk_size、chunk_overlap；LLM Key 依 person_id 自 User；回傳 JSON 含 outputs[]（每項可含 file_size〔MB〕）；寫入 Rag.rag_metadata 並更新 chunk_size、chunk_overlap；不需 llm_api_key */
+/** 建 RAG ZIP：POST /rag/tab/build-rag-zip；同上 body；成功時回應 application/x-ndjson 串流（每行 JSON：type start|building|unit|complete），query 須帶 person_id 與 body 一致；整批成敗以 complete.success 為準；寫入 Rag.rag_metadata；不需 llm_api_key */
 export const API_BUILD_RAG_ZIP = '/rag/tab/build-rag-zip';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';

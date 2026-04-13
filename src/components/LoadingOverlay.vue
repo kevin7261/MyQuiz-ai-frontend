@@ -50,8 +50,8 @@
           </div>
         </div>
       </div>
-      <div v-if="subText" class="mt-2">
-        <span class="my-font-sm-400 my-color-gray-4">{{ subText }}</span>
+      <div v-if="subText" class="mt-2 my-loading-overlay-subtext-wrap">
+        <span class="my-font-sm-400 my-color-gray-4 my-loading-overlay-subtext">{{ subText }}</span>
       </div>
     </div>
   </div>
@@ -65,7 +65,18 @@
 
 .my-loading-overlay-panel {
   min-width: 300px;
-  max-width: 400px;
+  max-width: min(90vw, 480px);
+}
+
+.my-loading-overlay-subtext-wrap {
+  text-align: center;
+}
+
+.my-loading-overlay-subtext {
+  display: inline-block;
+  max-width: 100%;
+  white-space: pre-line;
+  word-break: break-word;
 }
 
 .my-loading-overlay-progress {
