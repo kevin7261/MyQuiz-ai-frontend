@@ -1675,6 +1675,37 @@ function applyPhasesFromApiResponse(state, data) {
       const n = Number(esQid);
       sfp.english_system_quiz_phase_id = Number.isFinite(n) ? n : esQid;
     }
+    /* GET 每筆 phases[].quizzes 內嵌題目，須灌入卡與展開產生區，否則重進頁面只看得到空題 */
+    const qList = Array.isArray(ph.quizzes) ? ph.quizzes : [];
+    let qRow = null;
+    for (let j = qList.length - 1; j >= 0; j--) {
+      const c = qList[j];
+      if (c && typeof c === 'object' && String(c.quiz_content ?? c.quiz ?? '').trim() !== '') {
+        qRow = c;
+        break;
+      }
+    }
+    if (qRow) {
+      applyEnglishPhaseQuizCardFromApi(sfp, qRow, key);
+      sfp.showEnglishGenerateQuizForm = true;
+    }
+    if (String(sfp.englishGeneratePhasePrompt ?? '').trim() === '') {
+      for (let j = qList.length - 1; j >= 0; j--) {
+        const c = qList[j];
+        if (
+          c &&
+          typeof c === 'object' &&
+          (Object.prototype.hasOwnProperty.call(c, 'quiz_user_prompt_instruction') ||
+            Object.prototype.hasOwnProperty.call(c, 'quizUserPromptInstruction'))
+        ) {
+          setEnglishGeneratePhasePromptFromApiFields(sfp, c);
+          break;
+        }
+      }
+    }
+    if (String(sfp.englishGeneratePhasePrompt ?? '').trim() === '' && ph && typeof ph === 'object') {
+      setEnglishGeneratePhasePromptFromApiFields(sfp, ph);
+    }
   }
   if (!state.phaseCardById) state.phaseCardById = {};
   const next = {};
@@ -1790,6 +1821,20 @@ async function onEnglishGenerateQuiz() {
 }
 
 /**
+ * 後端可回傳 quiz_user_prompt_instruction（與 POST phase/create 表單欄位相同）
+ * @param {object} pst
+ * @param {object} obj
+ */
+function setEnglishGeneratePhasePromptFromApiFields(pst, obj) {
+  if (!pst || !obj || typeof obj !== 'object') return;
+  if (Object.prototype.hasOwnProperty.call(obj, 'quiz_user_prompt_instruction')) {
+    pst.englishGeneratePhasePrompt = String(obj.quiz_user_prompt_instruction ?? '');
+  } else if (Object.prototype.hasOwnProperty.call(obj, 'quizUserPromptInstruction')) {
+    pst.englishGeneratePhasePrompt = String(obj.quizUserPromptInstruction ?? '');
+  }
+}
+
+/**
  * 產題結果寫入 QuizCard 用 card（僅 quiz／hint 有值；與建立測驗題庫欄位一致）
  * @param {object} pst
  * @param {object} data
@@ -1800,9 +1845,14 @@ function applyEnglishPhaseQuizCardFromApi(pst, data, phaseId) {
   if (!card || typeof data !== 'object') return;
   const ref = String(data.quiz_answer_reference ?? '').trim();
   const hint = String(data.quiz_hint ?? data.hint ?? '').trim() || ref;
+  const sysQid = data.system_quiz_id ?? data.english_system_quiz_id;
+  const idStable =
+    sysQid != null && String(sysQid).trim() !== ''
+      ? `eph-sq-${String(sysQid).trim()}`
+      : `eph-quiz-${String(phaseId)}-${Date.now()}`;
   Object.assign(card, {
-    id: `eph-quiz-${String(phaseId)}-${Date.now()}`,
-    quiz: String(data.quiz_content ?? '').trim(),
+    id: idStable,
+    quiz: String(data.quiz_content ?? data.quiz ?? '').trim(),
     hint,
     hintVisible: false,
     quiz_answer: '',
@@ -1814,6 +1864,7 @@ function applyEnglishPhaseQuizCardFromApi(pst, data, phaseId) {
     rag_id: null,
     rag_quiz_id: null,
   });
+  setEnglishGeneratePhasePromptFromApiFields(pst, data);
 }
 
 function toggleEnglishPhaseQuizCardHint(item) {
@@ -2756,7 +2807,6 @@ watch(
                     class="rounded-4 my-bgcolor-gray-3 shadow-sm p-4 w-100 min-w-0 d-flex flex-column gap-3"
                   >
                     <div
-                      v-if="!String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.quiz ?? '').trim()"
                       class="my-font-lg-600 my-color-black mb-0"
                     >第 {{ testPhaseLocalQuestionIndexOneBased() }} 題</div>
                   <div class="d-flex flex-column gap-0 w-100 min-w-0">
@@ -2772,7 +2822,10 @@ watch(
                       placeholder="請輸入產生題目的 prompt（必填，送出前須有內容）"
                     />
                   </div>
-                  <div class="d-flex flex-wrap justify-content-center align-items-center gap-2">
+                  <div
+                    v-if="String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.quiz ?? '').trim() === ''"
+                    class="d-flex flex-wrap justify-content-center align-items-center gap-2"
+                  >
                     <button
                       type="button"
                       class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
@@ -2799,6 +2852,7 @@ watch(
                     :slot-index="testPhaseLocalQuestionIndexOneBased()"
                     :course-name="courseNameForPrompt"
                     question-hint-only
+                    hide-slot-index
                     design-ui
                     design-embedded
                     skip-rag-mismatch-guard

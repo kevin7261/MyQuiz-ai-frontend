@@ -34,6 +34,8 @@ const props = defineProps({
   showExamRating: { type: Boolean, default: false },
   /** 建立英文測驗題庫：僅題目＋提示，版式與本元件 designUi 相同，其餘區塊隱藏 */
   questionHintOnly: { type: Boolean, default: false },
+  /** 父層已顯示「第 N 題」時，隱藏本卡題號（避免重複） */
+  hideSlotIndex: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer', 'rate-quiz']);
@@ -82,6 +84,7 @@ const showGradingResultSection = computed(
     >
       <div :class="designUi ? 'd-flex flex-column gap-3 w-100 min-w-0' : ''">
       <div
+        v-if="!hideSlotIndex"
         class="my-font-lg-600 my-color-black"
         :class="designUi ? 'mb-0' : 'mb-3'"
       >第 {{ slotIndex }} 題</div>
