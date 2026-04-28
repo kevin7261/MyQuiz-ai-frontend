@@ -1,80 +1,86 @@
 /**
- * 建立「英文測驗題庫」專用 fork（與 `useQuizGrading.js` 分離；內容對齊 RAG 批改路徑）
+ * 建立「英文測驗題庫」專用：批改走 POST /english_system/tab/phase/quiz/grade（同步 200，無 job 輪詢）。
  *
- * 評分 Composable
- *
- * 職責：送出評分請求、輪詢 job_id 取得結果、將回傳 JSON 格式化为易讀文字。
- * 會直接修改題目卡片 item（gradingResult、gradingResponseJson；confirmed 僅在整段流程結束後設為 true，送出與輪詢期間維持 false 以便按鈕顯示「批改中」、結果區待回傳後再顯示）。
- * 供 CreateEnglishExamQuizBankPage（RAG）；ExamPage 仍使用 `useQuizGrading.js`。
+ * 職責：送出評分請求、將回傳 JSON 格式化为易讀文字。
+ * 會直接修改題目卡片 item（gradingResult、gradingResponseJson、answer_id；confirmed 於流程結束後設為 true）。
+ * 供 CreateEnglishExamQuizBankPage 測驗階段題卡「確定批改」。
  */
-import {
-  API_BASE,
-  API_RAG_QUIZ_GRADE,
-  API_RAG_QUIZ_GRADE_RESULT,
-} from '../constants/api.js';
+import { API_BASE, API_ENGLISH_SYSTEM_TAB_PHASE_QUIZ_GRADE } from '../constants/api.js';
+import { getPersonId } from '../services/englishExamRagApi.js';
+import { useAuthStore } from '../stores/authStore.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
+/** @param {unknown} v @param {number} fallback */
+function toNonNegInt(v, fallback = 0) {
+  const n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return fallback;
+  return Math.trunc(n);
+}
+
 /**
- * 送出評分並輪詢結果
+ * 送出英文測驗階段題卡批改（English System Phase Quiz Grade）
  *
- * 流程：POST 送出 → 若 202 則取 job_id → 每 2 秒 GET 輪詢結果 → 解析 status ready/error → 寫入 item
- *
- * @param {Object} item - 題目卡片物件，會被 mutate（confirmed、gradingResult、gradingResponseJson）
- * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：{ examId, examTabId }（並設 options.gradingMode === 'exam'）
- * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時 POST body 為 exam_*（對齊 POST /exam/tab/quiz/grade）
+ * @param {Object} item - 題目卡片（quiz、quiz_answer、rag_quiz_id 即 system_quiz_id、referenceAnswer 等）
+ * @param {Object} context - { systemId, systemTabId, systemQuizPhaseId, quizText }
+ * @param {Object} [options] - critiqueUserPromptInstruction；或 extraGradeBody.critique_user_prompt_instruction / context_text（舊併送鍵）作為批改指令
  */
 export async function submitGrade(item, context, options = {}) {
-  const isExam = options.gradingMode === 'exam';
-  const { sourceTabId, ragId, examId, examTabId } = context;
-  const quizGradeSubmissionPath =
-    options.quizGradeSubmissionPath ?? options.gradeSubmissionPath ?? API_RAG_QUIZ_GRADE;
-  const quizGradeResultPath =
-    options.quizGradeResultPath ?? options.gradeResultPath ?? API_RAG_QUIZ_GRADE_RESULT;
+  const { systemId, systemTabId, systemQuizPhaseId, quizText } = context;
 
-  const gradeBody = isExam
-    ? {
-        exam_id: String(examId ?? ''),
-        exam_tab_id: examTabId != null ? String(examTabId) : '',
-        exam_quiz_id:
-          item.exam_quiz_id != null && String(item.exam_quiz_id).trim() !== ''
-            ? String(item.exam_quiz_id)
-            : item.quiz_id != null
-              ? String(item.quiz_id)
-              : '',
-        quiz_content: item.quiz ?? '',
-        quiz_answer: item.quiz_answer.trim(),
-        quiz_answer_reference: item.referenceAnswer != null ? String(item.referenceAnswer) : '',
-      }
-    : {
-        rag_id: String(ragId),
-        rag_tab_id: sourceTabId,
-        rag_quiz_id:
-          item.rag_quiz_id != null && String(item.rag_quiz_id).trim() !== ''
-            ? String(item.rag_quiz_id)
-            : item.quiz_id != null
-              ? String(item.quiz_id)
-              : '',
-        quiz_content: item.quiz ?? '',
-        quiz_answer: item.quiz_answer.trim(),
-        quiz_answer_reference: item.referenceAnswer != null ? String(item.referenceAnswer) : '',
-      };
+  const extra = options.extraGradeBody;
+  const critiqueRaw =
+    options.critiqueUserPromptInstruction ??
+    (extra && typeof extra === 'object'
+      ? extra.critique_user_prompt_instruction ?? extra.context_text
+      : '') ??
+    '';
+  const critique_user_prompt_instruction = String(critiqueRaw ?? '').trim();
+
+  const system_quiz_id_raw =
+    item.rag_quiz_id != null && String(item.rag_quiz_id).trim() !== ''
+      ? item.rag_quiz_id
+      : item.quiz_id != null
+        ? item.quiz_id
+        : 0;
+
+  /** 與 OpenAPI：POST /english_system/tab/phase/quiz/grade 之 application/json 欄位一致 */
+  const gradeBody = {
+    english_system_id: toNonNegInt(systemId, 0),
+    english_system_tab_id: systemTabId != null ? String(systemTabId).trim() : '',
+    english_system_quiz_phase_id: toNonNegInt(systemQuizPhaseId, 0),
+    english_system_quiz_id: toNonNegInt(system_quiz_id_raw, 0),
+    quiz_text: String(quizText ?? '').trim(),
+    quiz_content: item.quiz ?? '',
+    critique_user_prompt_instruction,
+    quiz_answer: String(item.quiz_answer ?? '').trim(),
+  };
 
   item.gradingResult = '';
 
   try {
-    const res = await loggedFetch(`${API_BASE}${quizGradeSubmissionPath}`, {
+    const authStore = useAuthStore();
+    const personId = getPersonId(authStore);
+    const fetchOpts = personId ? { personId } : {};
+    const res = await loggedFetch(`${API_BASE}${API_ENGLISH_SYSTEM_TAB_PHASE_QUIZ_GRADE}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(gradeBody),
-    });
+    }, fetchOpts);
     const text = await res.text();
     if (!res.ok) {
       let msg = res.statusText;
       if (text) {
         try {
           const errBody = JSON.parse(text);
-          msg = errBody.error != null ? errBody.error : (errBody.detail != null ? (typeof errBody.detail === 'string' ? errBody.detail : JSON.stringify(errBody.detail)) : text);
+          msg =
+            errBody.error != null
+              ? errBody.error
+              : errBody.detail != null
+                ? typeof errBody.detail === 'string'
+                  ? errBody.detail
+                  : JSON.stringify(errBody.detail)
+                : text;
         } catch (_) {
           msg = text;
         }
@@ -88,87 +94,31 @@ export async function submitGrade(item, context, options = {}) {
       item.gradingResult = `批改失敗：${statusHint}${msg}`;
       return;
     }
-    if (res.status !== 202) {
-      let parsed = null;
-      try { parsed = text ? JSON.parse(text) : null; } catch { /* ignore */ }
-      item.gradingResponseJson = parsed;
-      item.gradingResult = formatGradingResult(text) || '（無批改內容）';
-      return;
-    }
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (_) {
-      item.gradingResult = '批改失敗：無法取得處理編號，請稍後再試';
-      return;
-    }
-    const jobId = data.job_id;
-    if (!jobId) {
-      item.gradingResult = '批改失敗：系統未回傳處理編號，請稍後再試';
-      return;
-    }
-    const maxPolls = 60;
-    const intervalMs = 2000;
-    const maxRetries = 3;
-    const retryDelayMs = 2000;
-    const friendlyUnavailable = '批改失敗：暫時無法連線，請稍後再試或重新送出。';
 
-    for (let i = 0; i < maxPolls; i++) {
-      await new Promise((r) => setTimeout(r, intervalMs));
-      let pollRes = null;
-      let pollText = '';
-      for (let r = 0; r <= maxRetries; r++) {
-        if (r > 0) await new Promise((r) => setTimeout(r, retryDelayMs));
-        try {
-          pollRes = await loggedFetch(`${API_BASE}${quizGradeResultPath}/${encodeURIComponent(jobId)}`);
-          pollText = await pollRes.text();
-          if (pollRes.status !== 502 && pollRes.status !== 504) break;
-        } catch (_) {
-          // 網路錯誤時重試
-        }
-      }
-      if (!pollRes || pollRes.status === 502 || pollRes.status === 504) {
-        item.gradingResult = friendlyUnavailable;
-        return;
-      }
-      if (pollRes.status === 404) {
-        item.gradingResult = '批改工作已失效或逾時，請重新送出批改。';
-        return;
-      }
-      let pollData;
-      try {
-        pollData = JSON.parse(pollText);
-      } catch (_) {
-        item.gradingResult = friendlyUnavailable;
-        return;
-      }
-      if (pollData.status === 'ready') {
-        const result = pollData.result;
-        item.gradingResponseJson = result;
-        if (
-          quizGradeSubmissionPath === API_RAG_QUIZ_GRADE &&
-          result &&
-          typeof result === 'object' &&
-          result.rag_answer_id != null &&
-          String(result.rag_answer_id).trim() !== ''
-        ) {
-          const rid = Number(result.rag_answer_id);
-          item.answer_id = Number.isFinite(rid) ? rid : result.rag_answer_id;
-        }
-        item.gradingResult = formatGradingResult(JSON.stringify(result)) || '（無批改內容）';
-        return;
-      }
-      if (pollData.status === 'error') {
-        const errMsg = pollData.error || '';
-        const isJobNotFound = errMsg.includes('job not found');
-        item.gradingResult = isJobNotFound
-          ? '批改工作已失效或逾時，請重新送出批改。'
-          : `批改失敗：${pollData.error || '未知錯誤'}`;
-        return;
-      }
+    let data = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch (_) {
+      item.gradingResult = text?.trim() || '批改失敗：無法解析回應';
+      return;
     }
-    item.gradingResult = '批改逾時：請稍後再試或重新送出';
-  } catch (err) {
+    item.gradingResponseJson = data;
+
+    const forDisplay = {
+      quiz_grade: data?.quiz_grade,
+      quiz_score: data?.quiz_score ?? data?.quiz_grade,
+      quiz_comments: data?.quiz_comments,
+    };
+    item.gradingResult = formatGradingResult(JSON.stringify(forDisplay)) || '（無批改內容）';
+
+    const ansId = data?.english_system_answer_id;
+    if (ansId != null && String(ansId).trim() !== '') {
+      const rid = Number(ansId);
+      item.answer_id = Number.isFinite(rid) ? rid : ansId;
+    } else {
+      delete item.answer_id;
+    }
+  } catch (_) {
     item.gradingResult = '批改失敗：連線逾時或服務忙碌，請稍後再試。';
   } finally {
     item.confirmed = true;

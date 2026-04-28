@@ -149,6 +149,12 @@ export const API_ENGLISH_SYSTEM_TAB_PHASE_QUIZ_CREATE = '/english_system/tab/pha
  */
 export const API_ENGLISH_SYSTEM_TAB_PHASE_CREATE = '/english_system/tab/phase/create';
 /**
+ * POST /english_system/tab/phase/quiz/grade — **English System Phase Quiz Grade**（LLM 批改，無 RAG ZIP，同步 200）。
+ * Query：`person_id`（必填，與 phase/create 相同，由 loggedFetch 附加）。Body：`system_id`、`system_tab_id`、`system_quiz_phase_id`、`system_quiz_id`、`quiz_text`、`quiz_content`、`critique_user_prompt_instruction`、`quiz_answer`。
+ * 成功時寫入 english_system_answer；回傳 `quiz_grade`、`quiz_comments`、`english_system_answer_id`（寫入失敗時後者可為 null，仍回傳分數與評語）。
+ */
+export const API_ENGLISH_SYSTEM_TAB_PHASE_QUIZ_GRADE = '/english_system/tab/phase/quiz/grade';
+/**
  * English System 音訊轉逐字稿：POST /english_system/transcript/audio
  * multipart：file、system_tab_id；query person_id。後端寫入 SUPABASE_ENGLISH_BUCKET 並以 Deepgram 轉逐字稿（DEEPGRAM_API_KEY；可選 DEEPGRAM_MODEL，預設 nova-2）；無對應 English_System 列時可依 system_tab_id 與檔名自動建立。
  */

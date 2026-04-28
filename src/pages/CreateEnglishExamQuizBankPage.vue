@@ -1,10 +1,10 @@
 <script setup>
 /**
- * CreateEnglishExamQuizBankPage - 建立英文測驗題庫（獨立頁面；列表／教材等走 `englishExam*`）。產題結果以 **QuizCard** `questionHintOnly` 呈現，與「建立測驗題庫」相同題目／提示版式，不顯示單元、參考答案、作答與批改。
+ * CreateEnglishExamQuizBankPage - 建立英文測驗題庫（獨立頁面；列表／教材等走 `englishExam*`）。產題以 **QuizCard** `questionHintOnly` 呈現題目／提示；批改 prompt、答案與「確定批改」在題卡下方，走 `submitGrade`（POST /english_system/tab/phase/quiz/grade）。
  *
  * 側欄分頁清單：GET /english_system/tabs（合併同 system_tab_id 之 GET /rag/tabs 詳情）；教材來源為文字／MP3／YouTube。
  * MP3 轉逐字稿：POST /english_system/transcript/audio（Deepgram，見 englishSystemApi）。YouTube：GET /english_system/transcript/youtube。
- * 按「＋」：POST /rag/tab/create 後即 POST /english_system/tab/create。「開始建立題庫」POST /english_system/tab/build-system。測驗階段：新增僅 Phase 用 POST /english_system/tab/phase/quiz/create（無 LLM）；產生題目（LLM）用 POST /english_system/tab/phase/create，帶 content_text（教材）與 quiz_user_prompt_instruction。GET /english_system/tabs 內嵌 phases。
+ * 按「＋」：POST /rag/tab/create 後即 POST /english_system/tab/create。「開始建立題庫」POST /english_system/tab/build-system。測驗階段：新增僅 Phase 用 POST /english_system/tab/phase/quiz/create（無 LLM）；產生題目（LLM）用 POST /english_system/tab/phase/create，帶 content_text（教材）與 quiz_user_prompt_instruction。GET /english_system/tabs 內嵌 phases。確定批改：POST /english_system/tab/phase/quiz/grade。
  */
 import { ref, computed, watch, onMounted, onUnmounted, onActivated, reactive } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
@@ -49,6 +49,7 @@ import {
 import { useEnglishExamRagList } from '../composables/useEnglishExamRagList.js';
 import { useEnglishRagTabState } from '../composables/useEnglishRagTabState.js';
 import { useEnglishExamPackTasks } from '../composables/useEnglishExamPackTasks.js';
+import { submitGrade } from '../composables/useEnglishExamQuizGrading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 import QuizCard from '../components/QuizCard.vue';
@@ -63,6 +64,30 @@ const pageTitle = '建立英文測驗題庫';
 const quizBankNoun = '英文測驗題庫';
 /** 新增測驗階段時預設 quiz_phase_name；未填寫時分頁標籤亦同此字串 */
 const DEFAULT_TEST_PHASE_DISPLAY_NAME = '未命名測驗階段';
+
+/** 測驗階段「批改 prompt」預設（POST /english_system/tab/phase/quiz/grade 之 critique_user_prompt_instruction） */
+const DEFAULT_ENGLISH_EXAM_GRADING_PROMPT = `提示詞
+您是一名英語教師，請判斷學生是否正確掌握文章主題（main idea），並依規範回應。
+【任務要求】
+判定準確性
+✔ 是否清楚指出整體主題
+✖ 是否僅提及細節或誤解主旨
+判定標準
+正確主題需：
+涵蓋整篇文章
+統整「研究目的 + 方法 + 發現」
+非單一例子（如 tree experiment 不等於主旨）
+【輸出格式】
+① 判定結果
+Correct / Partially Correct / Incorrect
+② 回饋說明
+Correct：說明為何正確＋具體正向回饋
+其他：指出問題（如過於細節、缺主旨、理解錯誤）
+③ 關鍵依據
+引用 2–3 句英文關鍵句
+說明如何構成文章主題
+④ 建議修正
+提供一個完整、精準的 main idea 範例句（英文）`;
 
 /** POST /rag/tab/upload-zip 允許的副檔名（與後端可解析格式一致） */
 const UPLOAD_ALLOWED_EXTENSIONS = ['.zip', '.pdf', '.doc', '.docx', '.ppt', '.pptx'];
@@ -368,6 +393,9 @@ const hasAnyPhaseCreateLoading = computed(() => {
   return false;
 });
 
+/** 英文測驗階段題卡：送出 POST /english_system/tab/phase/quiz/grade 期間（與建立測驗題庫 gradingSubmittingCardId 對齊） */
+const englishGradingSubmittingCardId = ref(null);
+
 /** 全螢幕 LoadingOverlay：列表／建立分頁／刪除／更名／English build-system／建題庫／測驗用設定／建立測驗階段／GET 測驗階段／產生題目／英文 MP3 Deepgram 轉逐字稿／YouTube 字幕 */
 const loadingOverlayVisible = computed(
   () =>
@@ -382,7 +410,8 @@ const loadingOverlayVisible = computed(
     !!currentState.value?.englishTranscriptYoutubeLoading ||
     hasAnyPhaseCreateLoading.value ||
     !!currentState.value?.englishTabPhasesLoading ||
-    !!currentState.value?.generateQuizLoading
+    !!currentState.value?.generateQuizLoading ||
+    englishGradingSubmittingCardId.value != null
 );
 
 const loadingOverlayText = computed(() => {
@@ -390,6 +419,7 @@ const loadingOverlayText = computed(() => {
   const st = currentState.value;
   if (st?.englishTabPhasesLoading) return '載入測驗階段中...';
   if (st?.generateQuizLoading) return '產生題目中...';
+  if (englishGradingSubmittingCardId.value != null) return '批改中...';
   if (st?.englishTranscriptAudioLoading) return '轉換逐字稿中...';
   if (st?.englishTranscriptYoutubeLoading) return '擷取字幕中...';
   if (st?.englishBuildSystemLoading) return '建立題庫中...';
@@ -1479,6 +1509,7 @@ function createDefaultEnglishPhaseQuizCard() {
     quiz_answer: '',
     confirmed: false,
     gradingResult: '',
+    gradingResponseJson: null,
     referenceAnswer: '',
     ragName: '',
     generateLevel: '基礎',
@@ -1504,6 +1535,8 @@ function getSlotFormStateForTabState(state, phaseId) {
       showEnglishGenerateQuizForm: false,
       englishGeneratePhasePrompt: '',
       englishPhaseQuizError: '',
+      /** 批改 POST 一併送出之補充說明（extraGradeBody.context_text） */
+      englishPhaseGradingPrompt: '',
       /** 與 CreateExamQuizBankPage 相同 QuizCard；questionHintOnly 僅顯示題目／提示 */
       englishPhaseQuizCard: createDefaultEnglishPhaseQuizCard(),
     });
@@ -1516,6 +1549,7 @@ function getSlotFormStateForTabState(state, phaseId) {
     if (s.showEnglishGenerateQuizForm === undefined) s.showEnglishGenerateQuizForm = false;
     if (s.englishGeneratePhasePrompt === undefined) s.englishGeneratePhasePrompt = '';
     if (s.englishPhaseQuizError === undefined) s.englishPhaseQuizError = '';
+    if (s.englishPhaseGradingPrompt === undefined) s.englishPhaseGradingPrompt = '';
     if (s.englishPhaseQuizCard === undefined) s.englishPhaseQuizCard = createDefaultEnglishPhaseQuizCard();
     if (s.englishPhaseGeneratedQuiz !== undefined) delete s.englishPhaseGeneratedQuiz;
   }
@@ -1688,6 +1722,9 @@ function applyPhasesFromApiResponse(state, data) {
     if (qRow) {
       applyEnglishPhaseQuizCardFromApi(sfp, qRow, key);
       sfp.showEnglishGenerateQuizForm = true;
+      if (!String(sfp.englishPhaseGradingPrompt ?? '').trim()) {
+        sfp.englishPhaseGradingPrompt = DEFAULT_ENGLISH_EXAM_GRADING_PROMPT;
+      }
     }
     if (String(sfp.englishGeneratePhasePrompt ?? '').trim() === '') {
       for (let j = qList.length - 1; j >= 0; j--) {
@@ -1813,6 +1850,9 @@ async function onEnglishGenerateQuiz() {
       { personId }
     );
     applyEnglishPhaseQuizCardFromApi(pst, data, phaseId);
+    if (!String(pst.englishPhaseGradingPrompt ?? '').trim()) {
+      pst.englishPhaseGradingPrompt = DEFAULT_ENGLISH_EXAM_GRADING_PROMPT;
+    }
   } catch (err) {
     pst.englishPhaseQuizError = err?.message || '產生題目失敗';
   } finally {
@@ -1850,6 +1890,13 @@ function applyEnglishPhaseQuizCardFromApi(pst, data, phaseId) {
     sysQid != null && String(sysQid).trim() !== ''
       ? `eph-sq-${String(sysQid).trim()}`
       : `eph-quiz-${String(phaseId)}-${Date.now()}`;
+  const rawRq =
+    data.rag_quiz_id ?? data.english_system_quiz_id ?? data.system_quiz_id ?? data.quiz_id;
+  let ragQuizId = null;
+  if (rawRq != null && String(rawRq).trim() !== '') {
+    const n = Number(rawRq);
+    ragQuizId = Number.isFinite(n) ? n : String(rawRq).trim();
+  }
   Object.assign(card, {
     id: idStable,
     quiz: String(data.quiz_content ?? data.quiz ?? '').trim(),
@@ -1858,13 +1905,68 @@ function applyEnglishPhaseQuizCardFromApi(pst, data, phaseId) {
     quiz_answer: '',
     confirmed: false,
     gradingResult: '',
+    gradingResponseJson: null,
     referenceAnswer: ref,
     ragName: '',
     generateLevel: '基礎',
     rag_id: null,
-    rag_quiz_id: null,
+    rag_quiz_id: ragQuizId,
   });
   setEnglishGeneratePhasePromptFromApiFields(pst, data);
+}
+
+/** 英文測驗階段：POST /english_system/tab/phase/quiz/grade（同步）；批改指令為 critique_user_prompt_instruction */
+async function onEnglishPhaseConfirmGrade(phasePanelId) {
+  const phaseId = String(phasePanelId ?? '').trim();
+  if (!phaseId) return;
+  const pst = getSlotFormState(phaseId);
+  const item = pst.englishPhaseQuizCard;
+  if (!item || !String(item.quiz_answer ?? '').trim()) return;
+  const state = currentState.value;
+  const rag = currentRagItem.value;
+  const sourceTabId = String(
+    state.zipTabId ?? rag?.system_tab_id ?? rag?.rag_tab_id ?? rag?.id ?? activeTabId.value ?? ''
+  ).trim();
+  const systemId = rag?.system_id ?? rag?.english_system_id;
+  const systemIdNum = Number(systemId);
+  if (!sourceTabId) {
+    item.confirmed = true;
+    item.gradingResult = '缺少 system_tab_id，無法批改。';
+    return;
+  }
+  if (!Number.isFinite(systemIdNum) || systemIdNum <= 0) {
+    item.confirmed = true;
+    item.gradingResult = '缺少 system_id，無法批改。';
+    return;
+  }
+  const phaseDbId = pst.english_system_quiz_phase_id;
+  if (phaseDbId == null || String(phaseDbId).trim() === '' || Number(phaseDbId) <= 0) {
+    item.confirmed = true;
+    item.gradingResult = '缺少測驗階段編號（system_quiz_phase_id），無法批改。';
+    return;
+  }
+  if (item.rag_quiz_id == null || String(item.rag_quiz_id).trim() === '') {
+    item.confirmed = true;
+    item.gradingResult = '缺少題目編號（system_quiz_id），無法批改。';
+    return;
+  }
+  const quizText = String(rag?.quiz_text ?? state?.englishPasteText ?? '').trim();
+  englishGradingSubmittingCardId.value = item.id;
+  try {
+    const ctx = String(pst.englishPhaseGradingPrompt ?? '').trim();
+    await submitGrade(
+      item,
+      {
+        systemId: systemIdNum,
+        systemTabId: sourceTabId,
+        systemQuizPhaseId: phaseDbId,
+        quizText,
+      },
+      ctx !== '' ? { critiqueUserPromptInstruction: ctx } : {}
+    );
+  } finally {
+    englishGradingSubmittingCardId.value = null;
+  }
 }
 
 function toggleEnglishPhaseQuizCardHint(item) {
@@ -2846,18 +2948,100 @@ watch(
                   >
                     {{ getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizError }}
                   </div>
-                  <QuizCard
+                  <template
                     v-if="String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.quiz ?? '').trim() !== ''"
-                    :card="getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard"
-                    :slot-index="testPhaseLocalQuestionIndexOneBased()"
-                    :course-name="courseNameForPrompt"
-                    question-hint-only
-                    hide-slot-index
-                    design-ui
-                    design-embedded
-                    skip-rag-mismatch-guard
-                    @toggle-hint="toggleEnglishPhaseQuizCardHint"
-                  />
+                  >
+                    <QuizCard
+                      :card="getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard"
+                      :slot-index="testPhaseLocalQuestionIndexOneBased()"
+                      :course-name="courseNameForPrompt"
+                      :grade-submitting="
+                        englishGradingSubmittingCardId != null &&
+                          String(englishGradingSubmittingCardId) ===
+                            String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.id ?? '')
+                      "
+                      question-hint-only
+                      hide-slot-index
+                      design-ui
+                      design-embedded
+                      skip-rag-mismatch-guard
+                      @toggle-hint="toggleEnglishPhaseQuizCardHint"
+                    />
+                    <div
+                      v-if="!getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard.confirmed"
+                      class="w-100 min-w-0 d-flex flex-column gap-3 mt-2"
+                    >
+                      <div class="d-flex flex-column gap-1 w-100 min-w-0">
+                        <label
+                          class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                          :for="'english-phase-grading-prompt-' + activeTestPhaseIdForContent"
+                        >批改 prompt</label>
+                        <textarea
+                          :id="'english-phase-grading-prompt-' + activeTestPhaseIdForContent"
+                          v-model="getSlotFormState(activeTestPhaseIdForContent).englishPhaseGradingPrompt"
+                          class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-english-phase-grading-prompt"
+                          :disabled="englishGradingSubmittingCardId != null"
+                          placeholder="輸入批改時對模型的說明（可含教材重點、評分標準等）"
+                        />
+                      </div>
+                      <div class="d-flex flex-column gap-1 w-100 min-w-0">
+                        <div class="d-flex justify-content-between align-items-baseline gap-2">
+                          <label
+                            :for="'english-phase-quiz-answer-' + activeTestPhaseIdForContent"
+                            class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                          >答案</label>
+                          <span class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0">{{
+                            String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.quiz_answer ?? '').length
+                          }} / 2000</span>
+                        </div>
+                        <textarea
+                          :id="'english-phase-quiz-answer-' + activeTestPhaseIdForContent"
+                          v-model="getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard.quiz_answer"
+                          class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-english-phase-quiz-answer"
+                          maxlength="2000"
+                          :disabled="englishGradingSubmittingCardId != null"
+                          placeholder="請輸入您的答案..."
+                        />
+                      </div>
+                      <div class="d-flex justify-content-center">
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+                          :disabled="
+                            englishGradingSubmittingCardId != null ||
+                              !String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.quiz_answer ?? '').trim()
+                          "
+                          :aria-busy="englishGradingSubmittingCardId != null"
+                          aria-label="確定批改"
+                          @click="onEnglishPhaseConfirmGrade(activeTestPhaseIdForContent)"
+                        >
+                          確定批改
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      v-else
+                      class="w-100 min-w-0 d-flex flex-column gap-3 mt-2"
+                    >
+                      <div class="d-flex flex-column gap-1 w-100 min-w-0">
+                        <div class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">答案</div>
+                        <div
+                          class="my-font-sm-400 form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
+                          style="white-space: pre-wrap;"
+                        >{{ getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard.quiz_answer }}</div>
+                      </div>
+                      <div
+                        v-if="String(getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard?.gradingResult ?? '').trim() !== ''"
+                        class="d-flex flex-column gap-1 w-100 min-w-0"
+                      >
+                        <div class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">批改結果</div>
+                        <div
+                          class="my-font-sm-400 form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
+                          style="white-space: pre-wrap;"
+                        >{{ getSlotFormState(activeTestPhaseIdForContent).englishPhaseQuizCard.gradingResult }}</div>
+                      </div>
+                    </div>
+                  </template>
                   </div>
                   </template>
                   <!-- 與建立測驗題庫「測試題目」相同：新增題目列固定在最下面（展開產生區後仍在灰塊下方） -->
@@ -2903,6 +3087,16 @@ watch(
 }
 /* 產生題目 prompt：固定可視高度 100px（可垂直拉長） */
 .my-english-generate-prompt {
+  height: 100px;
+  min-height: 100px;
+  resize: vertical;
+}
+.my-english-phase-grading-prompt {
+  height: 400px;
+  min-height: 400px;
+  resize: vertical;
+}
+.my-english-phase-quiz-answer {
   height: 100px;
   min-height: 100px;
   resize: vertical;
