@@ -137,6 +137,13 @@ export const API_ENGLISH_SYSTEM_TAB_CREATE = '/english_system/tab/create';
 /** English System：POST /english_system/tab/build-system；query person_id；JSON body：system_tab_id、person_id、quiz_type（未傳預設 0）、quiz_text、quiz_mp3_filename、quiz_youtube_url；更新 English_System；「開始建立題庫」呼叫；不建 RAG、不串流 */
 export const API_ENGLISH_SYSTEM_TAB_BUILD_SYSTEM = '/english_system/tab/build-system';
 /**
+ * GET /english_system/tab/for-exam — 依連線讀取 System_Setting（本機 english_system_localhost／否則 english_system_deploy）之 value 為 system_id，將該 English_System for_exam=true；query person_id；成功回傳與 build-system 摘要類同
+ */
+export const API_ENGLISH_SYSTEM_TAB_FOR_EXAM = '/english_system/tab/for-exam';
+/** 寫入試題用所選 system_id 至 System_Setting（與 rag-for-exam-* 並列；body 見 apiSetEnglishSystemForExamSetting） */
+export const API_PUT_ENGLISH_SYSTEM_FOR_EXAM_LOCALHOST = '/system-settings/english-system-for-exam-localhost';
+export const API_PUT_ENGLISH_SYSTEM_FOR_EXAM_DEPLOY = '/system-settings/english-system-for-exam-deploy';
+/**
  * POST /english_system/tab/phase/quiz/create（OpenAPI：**Create English System Tab Phase (no LLM)**）
  * 建立或更新 English_System_Phase（不呼叫 LLM）。`system_quiz_phase_id === 0` 新增；`> 0` 更新。`person_id` 僅 query。
  * body：`system_id`、`system_tab_id`、`system_quiz_phase_id`、`quiz_phase_name`、`quiz_content`、`content_text`、`quiz_text`、`quiz_user_prompt_instruction`、`quiz_answer_reference`。
@@ -200,6 +207,8 @@ export const API_EXAM_RATE_QUIZ = '/exam/tab/quiz/rate';
  * - PUT  /system-settings/llm-api-key  Put Llm Api Key
  * - PUT  /system-settings/rag-for-exam-localhost  Put Rag For Exam Localhost（body: rag_id）
  * - PUT  /system-settings/rag-for-exam-deploy  Put Rag For Exam Deploy（body: rag_id）
+ * - PUT  /system-settings/english-system-for-exam-localhost  English System 試題用 system_id（本機；與 GET /english_system/tab/for-exam 搭配）
+ * - PUT  /system-settings/english-system-for-exam-deploy  同上（正式站）
  */
 /** GET：取得課程名稱；回傳含 course_name。 */
 export const API_GET_SYSTEM_SETTING_COURSE_NAME = '/system-settings/course-name';

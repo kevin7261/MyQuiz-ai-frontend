@@ -5,6 +5,7 @@ import {
   API_BASE,
   API_ENGLISH_SYSTEM_TAB_CREATE,
   API_ENGLISH_SYSTEM_TAB_BUILD_SYSTEM,
+  API_ENGLISH_SYSTEM_TAB_FOR_EXAM,
   API_ENGLISH_SYSTEM_TAB_PHASE_CREATE,
   API_ENGLISH_SYSTEM_TAB_PHASE_QUIZ_CREATE,
   API_ENGLISH_TRANSCRIPT_AUDIO,
@@ -101,6 +102,33 @@ export async function apiEnglishSystemTabBuildSystem(body, opts = {}) {
       quiz_youtube_url: body.quiz_youtube_url != null ? String(body.quiz_youtube_url) : '',
     }),
   }, { personId: opts.personId });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * GET /english_system/tab/for-exam（Get For Exam English System）
+ * 依連線讀取 System_Setting（english_system_localhost／english_system_deploy）value 為 system_id，將該 English_System for_exam=true。
+ * Query：`person_id`（loggedFetch）；可選 `english_system_id`（後端無此參數時會忽略）。
+ * 成功時回傳與 POST build-system 摘要類同；未設定或無列時各欄可為 null。
+ *
+ * @param {{ personId?: string | null, englishSystemId?: string | number | null }} [opts]
+ * @returns {Promise<object>}
+ */
+export async function apiEnglishSystemTabForExam(opts = {}) {
+  const basePath = `${String(API_BASE).replace(/\/$/, '')}${API_ENGLISH_SYSTEM_TAB_FOR_EXAM}`;
+  let urlString = basePath;
+  const sid = opts.englishSystemId ?? opts.system_id;
+  if (sid != null && String(sid).trim() !== '') {
+    const sep = basePath.includes('?') ? '&' : '?';
+    urlString = `${basePath}${sep}english_system_id=${encodeURIComponent(String(sid).trim())}`;
+  }
+  const fetchOpts =
+    opts.personId != null && String(opts.personId).trim() !== ''
+      ? { personId: String(opts.personId).trim() }
+      : {};
+  const res = await loggedFetch(urlString, { method: 'GET' }, fetchOpts);
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);

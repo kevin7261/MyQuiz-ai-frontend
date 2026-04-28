@@ -16,6 +16,8 @@ import {
   API_GENERATE_QUIZ,
   API_PUT_RAG_FOR_EXAM_DEPLOY,
   API_PUT_RAG_FOR_EXAM_LOCALHOST,
+  API_PUT_ENGLISH_SYSTEM_FOR_EXAM_DEPLOY,
+  API_PUT_ENGLISH_SYSTEM_FOR_EXAM_LOCALHOST,
   isFrontendLocalHost,
 } from '../constants/api.js';
 import { formatBuildRagZipErrorDetail, parseBuildRagZipError, parseFetchError } from '../utils/apiError.js';
@@ -130,6 +132,12 @@ function ragForExamSettingPath() {
   return isFrontendLocalHost() ? API_PUT_RAG_FOR_EXAM_LOCALHOST : API_PUT_RAG_FOR_EXAM_DEPLOY;
 }
 
+function englishSystemForExamSettingPath() {
+  return isFrontendLocalHost()
+    ? API_PUT_ENGLISH_SYSTEM_FOR_EXAM_LOCALHOST
+    : API_PUT_ENGLISH_SYSTEM_FOR_EXAM_DEPLOY;
+}
+
 /**
  * 從 GET /system-settings/rag-for-exam-* 回傳解析試題用 rag_id（支援 rag_id、value）
  * @param {object | null} data
@@ -173,6 +181,59 @@ export async function apiSetRagForExam(ragId) {
     body = { rag_id: n };
   }
   const res = await loggedFetch(`${API_BASE}${ragForExamSettingPath()}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(parseFetchError(res, text));
+  }
+}
+
+/**
+ * 從 GET/PUT system-settings english-system-for-exam-* 或 GET /english_system/tab/for-exam 回傳解析試題用 system_id（支援 value）
+ * @param {object | null} data
+ * @returns {number | null}
+ */
+export function parseEnglishSystemIdFromForExamSettingPayload(data) {
+  if (data == null || typeof data !== 'object') return null;
+  const raw = data.system_id ?? data.english_system_id ?? data.value;
+  if (raw === '' || raw == null) return null;
+  const s = String(raw).trim();
+  if (s === '') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * GET system-settings english-system-for-exam-*（試題用 English_System id；與 PUT 相同路徑）
+ * @returns {Promise<object>}
+ */
+export async function apiGetEnglishSystemForExamSetting() {
+  const res = await loggedFetch(`${API_BASE}${englishSystemForExamSettingPath()}`, { method: 'GET' });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * 設為試題用或清空：PUT system-settings english-system-for-exam-*。body.system_id 為正整數；清空傳空字串。
+ * @param {string | number | null | undefined} systemId - 傳 null／undefined／'' 表示取消試題用設定
+ */
+export async function apiSetEnglishSystemForExamSetting(systemId) {
+  const clear = systemId == null || systemId === '';
+  let body;
+  if (clear) {
+    body = { system_id: '' };
+  } else {
+    const n = Number(systemId);
+    if (!Number.isInteger(n) || n < 1) {
+      throw new Error('無效的 system_id（須為正整數）');
+    }
+    body = { system_id: n };
+  }
+  const res = await loggedFetch(`${API_BASE}${englishSystemForExamSettingPath()}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
