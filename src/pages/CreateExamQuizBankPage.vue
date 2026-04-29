@@ -8,7 +8,7 @@
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
- * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、chunk_size、chunk_overlap 等；已不再傳 system_prompt_instruction）
+ * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_* 等；已不再傳 system_prompt_instruction）
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id
@@ -60,6 +60,7 @@ import {
   examOrRagAnswerRowKey,
   quizAnswerPresetFromReference,
   serializePackUnitTypesForApi,
+  transcriptionsForBuildRagZip,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -1802,6 +1803,10 @@ async function confirmPack() {
       state.packTasksList?.length ?? 0
     );
     const unitTypesIntArray = packUnitTypesIntArrayForApi(unitTypesNormalized);
+    const transcriptions = transcriptionsForBuildRagZip(
+      unitTypesNormalized,
+      state.packUnitMarkdownTexts ?? []
+    );
     state.packResponseJson = await apiBuildRagZip(
       {
         rag_tab_id: fileId,
@@ -1811,6 +1816,7 @@ async function confirmPack() {
         unit_type_list: unitTypesIntArray,
         chunk_size: ensureNumber(chunkSize.value, 1000),
         chunk_overlap: ensureNumber(chunkOverlap.value, 200),
+        transcriptions,
       },
       (ev) => {
         if (!ev || typeof ev !== 'object') return;
@@ -2708,9 +2714,6 @@ async function confirmAnswer(item) {
           <!-- 出題單元：可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
           <div class="mb-3 d-flex flex-column gap-2 w-100 min-w-0">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">出題單元</div>
-            <p class="my-font-sm-400 my-color-gray-1 mb-0 lh-sm">
-              類型對應教材：<strong>rag</strong> 為 ZIP 內可建索引之 PDF／Word／PPT（.pdf .doc .docx .ppt .pptx）；<strong>文字</strong>、<strong>YouTube</strong> 請於該資料夾放置 <strong>.md</strong>；<strong>mp3</strong> 請放置 <strong>.mp3</strong>。
-            </p>
             <div
               class="d-flex flex-wrap align-items-stretch justify-content-start gap-2 w-100 min-w-0"
               role="group"

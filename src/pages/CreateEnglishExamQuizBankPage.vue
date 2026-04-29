@@ -51,6 +51,7 @@ import {
   UNIT_TYPE_MP3,
   UNIT_TYPE_YOUTUBE,
   serializePackUnitTypesForApi,
+  transcriptionsForBuildRagZip,
 } from '../utils/rag.js';
 import {
   englishSystemRowHasBuiltQuizBank,
@@ -1589,6 +1590,10 @@ async function confirmPack() {
       state.packTasksList?.length ?? 0
     );
     const unitTypesIntArray = packUnitTypesIntArrayForApi(unitTypesNormalized);
+    const transcriptions = transcriptionsForBuildRagZip(
+      unitTypesNormalized,
+      state.packUnitMarkdownTexts ?? []
+    );
     state.packResponseJson = await apiBuildRagZip(
       {
         rag_tab_id: fileId,
@@ -1598,6 +1603,7 @@ async function confirmPack() {
         unit_type_list: unitTypesIntArray,
         chunk_size: ensureNumber(chunkSize.value, 1000),
         chunk_overlap: ensureNumber(chunkOverlap.value, 200),
+        transcriptions,
       },
       (ev) => {
         if (!ev || typeof ev !== 'object') return;
@@ -2629,9 +2635,6 @@ watch(
           <!-- 出題單元：可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
           <div class="mb-3 d-flex flex-column gap-2 w-100 min-w-0">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">出題單元</div>
-            <p class="my-font-sm-400 my-color-gray-1 mb-0 lh-sm">
-              類型對應教材：<strong>rag</strong> 為 ZIP 內可建索引之 PDF／Word／PPT（.pdf .doc .docx .ppt .pptx）；<strong>文字</strong>、<strong>YouTube</strong> 請於該資料夾放置 <strong>.md</strong>；<strong>mp3</strong> 請放置 <strong>.mp3</strong>。
-            </p>
             <div
               class="d-flex flex-wrap align-items-stretch justify-content-start gap-2 w-100 min-w-0"
               role="group"

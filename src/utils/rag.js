@@ -262,6 +262,29 @@ export const UNIT_TYPE_TEXT = 2;
 export const UNIT_TYPE_MP3 = 3;
 export const UNIT_TYPE_YOUTUBE = 4;
 
+/**
+ * POST /rag/tab/build-rag-zip 的 body.transcriptions：與 unit_list 逗號分段同序、同數量（每個出題單元一筆）。
+ * unit_type 為 2／3／4 時為該單元逐字稿全文（前端 Markdown 編輯區字串，JSON UTF-8 原樣送出，不剝格式）；其餘型別傳空字串。
+ * @param {number[]} unitTypes - 與 parsePackUnitTypesFromRag 結果同長度
+ * @param {unknown[]} [markdownTexts] - packUnitMarkdownTexts，與群組索引對齊
+ * @returns {string[]}
+ */
+export function transcriptionsForBuildRagZip(unitTypes, markdownTexts) {
+  const types = Array.isArray(unitTypes) ? unitTypes : [];
+  const texts = Array.isArray(markdownTexts) ? markdownTexts : [];
+  const out = [];
+  for (let i = 0; i < types.length; i++) {
+    const t = Number(types[i]);
+    const raw = texts[i] != null ? String(texts[i]) : '';
+    if (t === UNIT_TYPE_TEXT || t === UNIT_TYPE_MP3 || t === UNIT_TYPE_YOUTUBE) {
+      out.push(raw);
+    } else {
+      out.push('');
+    }
+  }
+  return out;
+}
+
 function isValidUnitType(n) {
   return n === 0 || n === 1 || n === 2 || n === 3 || n === 4;
 }
