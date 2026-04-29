@@ -17,6 +17,8 @@ const props = defineProps({
   optionValue: { type: Function, default: null },
   /** 選項顯示文字；未傳時使用 rag_name */
   optionLabel: { type: Function, default: null },
+  /** disabled 時觸發鈕 title（例如「請先選擇單元」）；未設則用顯示文字 */
+  hintWhenDisabled: { type: String, default: '' },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -48,13 +50,23 @@ const buttonLabel = computed(() => {
   return props.placeholder;
 });
 
+const buttonTitle = computed(() => {
+  if (props.disabled && String(props.hintWhenDisabled ?? '').trim() !== '') {
+    return String(props.hintWhenDisabled).trim();
+  }
+  return buttonLabel.value;
+});
+
 function select(val) {
   emit('update:modelValue', val);
 }
 </script>
 
 <template>
-  <div class="dropdown w-100 my-design-08-dropdown">
+  <div
+    class="dropdown w-100 my-design-08-dropdown"
+    data-bs-display="static"
+  >
     <button
       :id="toggleId"
       class="btn dropdown-toggle w-100 d-flex justify-content-between align-items-center my-unit-select-dd-toggle my-dropdown-caret my-font-md-400 my-button-white px-3 py-2 rounded-2 text-start"
@@ -62,7 +74,7 @@ function select(val) {
       data-bs-toggle="dropdown"
       aria-expanded="false"
       :disabled="disabled"
-      :title="buttonLabel"
+      :title="buttonTitle"
     >
       <span class="text-truncate flex-grow-1 pe-2">{{ buttonLabel }}</span>
       <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />

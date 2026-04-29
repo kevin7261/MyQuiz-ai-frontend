@@ -138,10 +138,9 @@ export const API_RAG_APPLIED = '/rag/applied';
 export const API_RAG_FOR_EXAM = '/rag/tab/for-exam';
 /**
  * List RAG units & quizzes marked for exam：GET /exam/rag-for-exams
- * Query `person_id` 必填（全站慣例），此端點不用於篩選（不限 person_id）。
- * 單元：Rag_Unit.deleted=false 且（Rag_Unit.for_exam=true 或至少一筆 Rag_Quiz.for_exam=true 隸屬該 rag_unit_id）；若僅題目標記 for_exam、單元未標，仍會出現。
- * quizzes：僅 Rag_Quiz.for_exam=true 且 deleted=false。
- * Rag_Quiz 列上「出題 prompt」「批改 prompt」相關欄位僅供預覽（截短／摘要），不可當完整字串用於 LLM 送出；完整內容請依後端另行提供的讀取途徑。
+ * Query `person_id` 必填（全站慣例）；建議併帶 `local`（與 GET /exam/tabs、GET /rag/tabs 一致，本機 true／false）。
+ * 僅含後端認定之「測驗用」單元／題目（例如 for_exam 篩選）；若教材尚未標為測驗用，回傳 `units: []` 屬正常，與「完整單元列表」API 不同。
+ * Rag_Quiz 出題／批改 prompt 欄位若為預覽截短，前端勿當完整字串逕送 LLM。
  */
 export const API_RAG_FOR_EXAMS = '/exam/rag-for-exams';
 
@@ -203,8 +202,7 @@ export const API_EXAM_UNIT_NAME = '/exam/tab/tab-name';
 export const API_EXAM_DELETE = '/exam/tab/delete';
 /**
  * POST /exam/tab/quiz/create（OpenAPI：**Exam Create Quiz (no LLM)**）
- * Query：`person_id`（必填，呼叫者；前端由 loggedFetch 附加）。Body JSON：`exam_tab_id`、`rag_unit_id`。
- * Swagger 示例之 `rag_unit_id: 0` 為占位；送出時須為有效題庫單元編號。
+ * Query：`person_id`（必填）。Body JSON：`exam_tab_id`（呼叫端不需上傳 rag_unit_id；後端若對齊題庫可自行解析）。
  * LLM 出題請用 {@link API_EXAM_TAB_QUIZ_LLM_GENERATE}
  */
 export const API_EXAM_CREATE_QUIZ = '/exam/tab/quiz/create';
@@ -213,8 +211,8 @@ export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /** @deprecated 使用 API_EXAM_CREATE_QUIZ */
 export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /**
- * POST /exam/tab/quiz/llm-generate — body：`exam_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（後兩者可為空字串）；
- * `exam_tab_id`／unit_name／`rag_unit_id` 由後端依該 Exam_Quiz 列帶入。query person_id。
+ * POST /exam/tab/quiz/llm-generate — Rag LLM Generate Quiz；query：`person_id`（必填）。
+ * Body：`exam_quiz_id` 必填；選填 `rag_unit_id`（正整數）、`rag_quiz_id`、`unit_name`、`quiz_name`、`quiz_user_prompt_text`。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，對齊 RAG 之 202 + job_id）；body：exam_quiz_id、quiz_answer、選填 quiz_content、answer_user_prompt_text（批改指引）；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */
