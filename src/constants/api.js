@@ -218,7 +218,7 @@ export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /**
  * POST /exam/tab/quiz/llm-generate — Rag LLM Generate Quiz；query：`person_id`（必填）。
- * Body：`exam_quiz_id` 必填；選填 `rag_unit_id`（無選為 `0`）、`rag_quiz_id`、`unit_name`、`quiz_name`。**勿於 body 傳** `quiz_user_prompt_text`（後端自 Rag_Quiz 讀）。
+ * Body：`exam_quiz_id` 必填；選填 `rag_unit_id`（無選為 `0`）、`rag_quiz_id`；`unit_name`／`quiz_name` 有值才傳，勿送空字串。**勿於 body 傳** `quiz_user_prompt_text`（後端自 Rag_Quiz 讀）。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，對齊 RAG 之 202 + job_id）；body：`exam_quiz_id`、`quiz_answer`、選填 `quiz_content`；批改指引勿傳（後端自 Rag_Quiz 讀）；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */

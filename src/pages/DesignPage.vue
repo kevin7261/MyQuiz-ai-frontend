@@ -14,7 +14,7 @@ const designSampleChoiceWhite = ref('選項一');
     - 根層：全高 flex 直向、網頁 canvas 灰淺（my-bgcolor-gray-4）；頂部固定、頁首標題無底分隔線、下方主區可捲動。
     - 頁首標題「UI 元件參考」置中、無 col；主內文 container-fluid px-3 px-md-4 py-4 + row 置中，欄寬與測驗頁一致 col-lg-10 col-xl-8 col-xxl-6。
     - 章節：各 <section> 使用 my-page-block-spacing；區塊 rounded-4 my-bgcolor-gray-3、無 border；子標題 .my-font-lg-600（common 預設字色 --my-color-black）。
-    - 複製：DesignPageCopyBtn 預設淺底深字；class 示範列多為黑框（.my-design-swatch-row my-bgcolor-black）複製鈕 :on-light-bg="false"；08 區塊本體 my-bgcolor-gray-3（與 canvas 區隔）；其內 class 示範列仍 .my-design-swatch-row--light、:on-light-bg="true"、<code> my-color-black。黑框內 <code>／示範 <span> 皆併 my-font-sm-400（黑底併 my-color-white），避免 Bootstrap code 字級覆蓋。02／03 色票每組一顆色圓；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。
+    - 複製：DesignPageCopyBtn 預設淺底深字；class 示範列多為黑框（.my-design-swatch-row my-bgcolor-black）複製鈕 :on-light-bg="false"；08 區塊本體 my-bgcolor-gray-3（與 canvas 區隔）；其內 class 示範列仍 .my-design-swatch-row--light、:on-light-bg="true"、<code> my-color-black。黑框內 <code>／示範 <span> 皆併 my-font-sm-400（黑底併 my-color-white）；等寬字體由 common「黑底示範列」規則統一套用 --my-font-family-courier，避免 Bootstrap code 字級覆蓋。02／03 色票每組一顆色圓；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。
     - 編號：05 區塊內含「09 · 徽章」與「08 · 下拉選單」；其後為 06 輸入、07 分頁、08 表格。
   -->
   <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">

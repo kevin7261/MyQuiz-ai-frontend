@@ -1,7 +1,7 @@
 <script setup>
 /**
- * 建立英文測驗題庫「文字內容」用：EasyMDE + 「編輯／預覽」切換；預覽為 marked + DOMPurify（與全站 renderMarkdown 一致）
- * previewOnly：讀入／build-system 完成等唯讀時僅顯示預覽，不掛 EasyMDE、不顯示編輯分頁
+ * 建立英文測驗題庫「文字內容」用：EasyMDE（工具列含預覽等）。
+ * previewOnly：讀入／build-system 完成等唯讀時僅顯示 HTML 預覽（marked + DOMPurify，與全站 renderMarkdown 一致），不掛 EasyMDE
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import EasyMDE from 'easymde';
@@ -12,7 +12,7 @@ const props = defineProps({
   modelValue: { type: String, default: '' },
   placeholder: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
-  /** 僅預覽：已讀入或 build-system 完成；不掛編輯器、不顯示編輯／預覽切換 */
+  /** 僅預覽：已讀入或 build-system 完成；不掛編輯器 */
   previewOnly: { type: Boolean, default: false },
   /** 對應外層 <label for="…">，維持無障礙關聯 */
   textareaId: { type: String, default: 'english-bank-paste-text' },
@@ -22,9 +22,6 @@ const emit = defineEmits(['update:modelValue']);
 
 const previewHtml = computed(() => renderMarkdownToSafeHtml(props.modelValue));
 const previewEmpty = computed(() => !(props.modelValue != null && String(props.modelValue).trim()));
-
-/** 編輯器與 HTML 預覽二擇一顯示（避免左右並排） */
-const viewMode = ref('edit');
 
 const textareaRef = ref(null);
 /** @type {null | { value: (v?: string) => string, codemirror: { setOption: (k: string, v: unknown) => void, refresh: () => void }, toTextArea: () => void }} */
@@ -94,7 +91,6 @@ watch(
   () => props.previewOnly,
   (po) => {
     if (po) {
-      viewMode.value = 'preview';
       destroyEasyMde();
     } else {
       nextTick(() => {
@@ -106,13 +102,6 @@ watch(
     }
   }
 );
-
-watch(viewMode, (m) => {
-  if (m !== 'edit' || props.previewOnly) return;
-  nextTick(() => {
-    easyMDE?.codemirror?.refresh();
-  });
-});
 
 onBeforeUnmount(() => {
   destroyEasyMde();
@@ -144,66 +133,14 @@ onBeforeUnmount(() => {
       </div>
     </template>
     <template v-else>
-    <div
-      class="btn-group my-btn-group-pill w-100 mb-2"
-      role="tablist"
-      aria-label="Markdown 編輯或預覽"
-    >
-      <button
-        type="button"
-        class="btn d-flex justify-content-center align-items-center text-center my-font-md-400 px-2 px-sm-3 py-2 flex-fill"
-        :class="viewMode === 'edit' ? 'my-button-white' : 'my-button-gray-3'"
-        role="tab"
-        :aria-selected="viewMode === 'edit'"
-        aria-controls="english-exam-md-editor-panel"
-        :tabindex="viewMode === 'edit' ? 0 : -1"
-        @click="viewMode = 'edit'"
-      >
-        編輯
-      </button>
-      <button
-        type="button"
-        class="btn d-flex justify-content-center align-items-center text-center my-font-md-400 px-2 px-sm-3 py-2 flex-fill"
-        :class="viewMode === 'preview' ? 'my-button-white' : 'my-button-gray-3'"
-        role="tab"
-        :aria-selected="viewMode === 'preview'"
-        aria-controls="english-exam-md-preview-panel"
-        :tabindex="viewMode === 'preview' ? 0 : -1"
-        @click="viewMode = 'preview'"
-      >
-        預覽
-      </button>
-    </div>
-
-    <div
-      v-show="viewMode === 'edit'"
-      id="english-exam-md-editor-panel"
-      class="english-exam-md-editor-wrap min-w-0"
-      role="tabpanel"
-      aria-label="Markdown 編輯"
-    >
-      <textarea :id="textareaId" ref="textareaRef" />
-    </div>
-
-    <div
-      v-show="viewMode === 'preview'"
-      id="english-exam-md-preview-panel"
-      class="english-exam-md-preview-panel my-bgcolor-surface min-w-0 rounded-2 border overflow-auto"
-      role="tabpanel"
-      aria-label="Markdown 預覽"
-    >
       <div
-        v-if="!previewEmpty"
-        class="english-exam-md-preview-body px-3 py-2 text-break"
-        v-html="previewHtml"
-      />
-      <div
-        v-else
-        class="english-exam-md-preview-empty px-3 py-4 my-font-sm-400 my-color-gray-4 text-center"
+        id="english-exam-md-editor-panel"
+        class="english-exam-md-editor-wrap min-w-0"
+        role="region"
+        aria-label="Markdown 編輯"
       >
-        尚無內容可預覽
+        <textarea :id="textareaId" ref="textareaRef" />
       </div>
-    </div>
     </template>
   </div>
 </template>

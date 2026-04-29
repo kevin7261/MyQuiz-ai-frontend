@@ -7,7 +7,7 @@
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改 prompt 為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score（或 quiz_grade）／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片
- * 出題：空白列 POST /exam/tab/quiz/create（僅 exam_tab_id）；LLM 出題 POST /exam/tab/quiz/llm-generate（body：exam_quiz_id 必填；選填 rag_unit_id、rag_quiz_id、unit_name、quiz_name；quiz_user_prompt_text **勿傳**，由後端自 Rag_Quiz 讀）；評分：POST /exam/tab/quiz/llm-grade（exam_quiz_id、quiz_answer、選填 quiz_content；批改指引勿傳）、GET /exam/tab/quiz/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：POST /exam/tab/delete/{exam_tab_id}
+ * 出題：空白列 POST /exam/tab/quiz/create（僅 exam_tab_id）；LLM 出題 POST /exam/tab/quiz/llm-generate（body：exam_quiz_id 必填；選填 rag_unit_id（>0）、rag_quiz_id；unit_name／quiz_name 僅非空白時才加入 JSON，勿傳 ""；quiz_user_prompt_text **勿傳**，由後端自 Rag_Quiz 讀）；評分：POST /exam/tab/quiz/llm-grade（exam_quiz_id、quiz_answer、選填 quiz_content；批改指引勿傳）、GET /exam/tab/quiz/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：POST /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name；難度優先 quiz_level，否則 quiz_metadata.quiz_level。
  */
@@ -1312,7 +1312,7 @@ function examSlotQuizBodyTrim(slotIndex) {
 }
 
 /**
- * 題幹仍空白但後端已有 Exam_Quiz 列：POST llm-generate 以 exam_quiz_id 為主；前端可一併帶入 rag_unit_id、rag_quiz_id、unit_name、quiz_name（quiz_user_prompt_text **勿傳**，由後端自 Rag_Quiz 讀）。
+ * 題幹仍空白但後端已有 Exam_Quiz 列：POST llm-generate 以 exam_quiz_id 為主；可帶 rag_unit_id、rag_quiz_id；unit_name／quiz_name 有值才送（quiz_user_prompt_text **勿傳**，由後端自 Rag_Quiz 讀）。
  */
 function examSlotHasAnchoredExamQuizId(slotIndex) {
   const c = currentState.value.cardList[slotIndex - 1];
@@ -1418,7 +1418,7 @@ async function deleteExam(examTabId) {
 function getDefaultExamSlotForm() {
   return {
     examUnitSelectId: '',
-    /** 對應試卷 quizzes[].quiz_name，送 POST llm-generate */
+    /** 對應試卷 quizzes[].quiz_name；非空白時才納入 POST llm-generate body */
     examQuizNamePick: '',
     /** POST /exam/tab/quiz/create 成功後之 exam_quiz_id；產生題目時送 llm-generate */
     draftExamQuizId: null,
@@ -1565,7 +1565,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 }
 
 /**
- * 「產生題目」：POST /exam/tab/quiz/llm-generate（exam_quiz_id 必填；選填 rag_unit_id、rag_quiz_id、unit_name、quiz_name；quiz_user_prompt_text 勿傳）。
+ * 「產生題目」：POST /exam/tab/quiz/llm-generate（exam_quiz_id 必填；選填 rag_unit_id、rag_quiz_id；unit_name／quiz_name 僅非空白才納入 body；quiz_user_prompt_text 勿傳）。
  * - 尚無題列：先 POST /exam/tab/quiz/create（僅 exam_tab_id）取得 exam_quiz_id。
  * - 已有 Exam_Quiz 列但題幹仍空白：以該列 exam_quiz_id 呼叫 LLM；有試卷題庫時盡量帶入 rag／題名。
  */
@@ -1644,16 +1644,15 @@ async function generateQuiz(slotIndex) {
     }
     const unitNameForLlm = String(unitItemForLlm?.label ?? unitItemForLlm?.unitName ?? '').trim();
 
-    const data = await apiExamTabQuizLlmGenerate(
-      {
-        exam_quiz_id: draftEq,
-        rag_unit_id: ragUnitIdForLlm,
-        rag_quiz_id: ragQuizIdForLlm,
-        unit_name: unitNameForLlm,
-        quiz_name: resolvedQuizName,
-      },
-      personId
-    );
+    const llmGenerateBody = {
+      exam_quiz_id: draftEq,
+      rag_unit_id: ragUnitIdForLlm,
+      rag_quiz_id: ragQuizIdForLlm,
+    };
+    if (unitNameForLlm !== '') llmGenerateBody.unit_name = unitNameForLlm;
+    if (resolvedQuizName !== '') llmGenerateBody.quiz_name = resolvedQuizName;
+
+    const data = await apiExamTabQuizLlmGenerate(llmGenerateBody, personId);
 
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';

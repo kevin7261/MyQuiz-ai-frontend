@@ -106,7 +106,7 @@ export async function apiExamTabQuizLlmGrade(gradeBody, submissionPath) {
  * 測驗 LLM 出題：POST /exam/tab/quiz/llm-generate（OpenAPI：Rag LLM Generate Quiz）
  * Query：`person_id`（必填，由 {@link loggedFetch} 第三參數帶入）。
  *
- * Body：`exam_quiz_id` 必填；選填 `rag_unit_id`（正整數，無效或未選時傳 `0`）、`rag_quiz_id`、`unit_name`、`quiz_name`。
+ * Body：`exam_quiz_id` 必填；選填 `rag_unit_id`（正整數，無效或未選時傳 `0`）、`rag_quiz_id`；`unit_name`／`quiz_name` 僅在有非空白值時才加入 JSON（不送空字串）。
  * **勿傳** `quiz_user_prompt_text`：後端僅自 Rag_Quiz（effective `rag_quiz_id`）讀取出題補充。
  *
  * @param {{
@@ -128,18 +128,19 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
   const ragUnitId = Number.isFinite(ru) && ru > 0 ? Math.trunc(ru) : 0;
   const rq = body?.rag_quiz_id != null && body.rag_quiz_id !== '' ? Number(body.rag_quiz_id) : 0;
   const ragQuizId = Number.isFinite(rq) && rq > 0 ? Math.trunc(rq) : 0;
-  const unitName = body?.unit_name != null ? String(body.unit_name) : '';
-  const quizName = body?.quiz_name != null ? String(body.quiz_name) : '';
+  const unitNameTrim = String(body?.unit_name ?? '').trim();
+  const quizNameTrim = String(body?.quiz_name ?? '').trim();
+  const payload = {
+    exam_quiz_id: Math.trunc(eid),
+    rag_unit_id: ragUnitId,
+    rag_quiz_id: ragQuizId,
+  };
+  if (unitNameTrim !== '') payload.unit_name = unitNameTrim;
+  if (quizNameTrim !== '') payload.quiz_name = quizNameTrim;
   const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_LLM_GENERATE}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      exam_quiz_id: Math.trunc(eid),
-      rag_unit_id: ragUnitId,
-      rag_quiz_id: ragQuizId,
-      unit_name: unitName,
-      quiz_name: quizName,
-    }),
+    body: JSON.stringify(payload),
   }, { personId: pid });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));

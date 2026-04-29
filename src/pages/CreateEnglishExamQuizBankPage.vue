@@ -571,7 +571,7 @@ const englishMaterialReadOnly = computed(() => !!currentState.value.englishSyste
 
 /**
  * 文字內容僅 HTML 預覽：已建置／送 build-system 中／MP3·YouTube 讀入鎖定。
- * 可編輯時使用 EnglishExamMarkdownEditor（EasyMDE）之「編輯／預覽」切換。
+ * 可編輯時使用 EnglishExamMarkdownEditor（EasyMDE，工具列含預覽）。
  */
 const englishTextMarkdownPreviewOnly = computed(
   () =>
@@ -2507,7 +2507,7 @@ watch(
               </div>
             </div>
 
-            <!-- 文字內容：唯讀時僅 HTML 預覽；可編輯時 EasyMDE「編輯／預覽」切換 -->
+            <!-- 文字內容：唯讀時僅 HTML 預覽；可編輯時 EasyMDE -->
             <div
               class="mb-3"
               :class="currentState.englishSourceKind === 'text' ? '' : 'mt-3'"

@@ -1,6 +1,6 @@
 /**
  * 設計權杖 — 僅保留目前前端實際用到的變數：
- * - body 預設字體／字級／字距／色（common.css；中性灰階 #333／gray-1～gray-4／#fff＋紅綠藍；淺底次要字色見 common .my-color-gray-4 等混色；表單欄位標題併 --my-color-gray-1；中型輸入／原生 select 等邊線併 --my-color-gray-2）
+ * - body 預設字體／等寬 Courier（--my-font-family-courier）／字級／字距／色（common.css；中性灰階 #333／gray-1～gray-4／#fff＋紅綠藍；淺底次要字色見 common .my-color-gray-4 等混色；表單欄位標題併 --my-color-gray-1；中型輸入／原生 select 等邊線併 --my-color-gray-2）
  * - 字級 rem 僅在此定義 --my-font-size-*；版面字級／字重僅併 common `.my-font-{xl|lg|md|sm}-{400|600}`（勿另造 `.my-font-size-*` 等純字級 class，與變數前綴區隔）
  * - 字重：僅 --my-font-weight-regular（400）、--my-font-weight-semibold（600）；common 內用 var(--my-font-weight-*)，禁止字面量 400／600
  * - common：字階 .my-font-*-{400|600}（僅字級字重）；網頁標題（頂欄品牌等）.my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（次色另併 .my-color-gray-1）；字色 .my-color-*；底 .my-bgcolor-*；全頁 canvas 為 body gray-4；業務內容區塊 .my-bgcolor-page-block（同 --my-color-gray-3）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-2／.my-bgcolor-gray-3／.my-bgcolor-gray-4；描邊鈕 .my-button-white-border、黑底填色 .my-button-black、填色「白」.my-button-white（淺頁為黑底白字；黑底稿內例外淺底）、黑無框 .my-button-transparent-borderless；32×32 圓形圖示鈕 .my-btn-circle（分頁「+」、稿頁複製等）
@@ -12,6 +12,7 @@
  */
 :root {
   --my-font-family-primary: "Roboto", "Noto Sans TC", sans-serif;
+  --my-font-family-courier: "Courier New", Courier, monospace;
 
   /* 全站 body 字距（em 隨字級縮放）；common body */
   --my-letter-spacing: 0.04em;

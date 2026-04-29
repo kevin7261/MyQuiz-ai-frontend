@@ -12,7 +12,7 @@
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；空白題 POST /rag/tab/unit/quiz/create；LLM 出題 POST /rag/tab/unit/quiz/llm-generate（body: rag_quiz_id、quiz_name、quiz_user_prompt_text，後兩者可 ""；rag_tab_id／rag_unit_id 不需傳）；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；「單元基本資訊」：user_type 1／2／234 顯示單元名稱；unit_type≠1 時顯示逐字稿（`transcription`）；來源（unit_type=2 為 `text_file_name`；3／4 為 `mp3_file_name`／`youtube_url`）；RAG（1）僅來源檔案；其餘（如 3）僅單元名稱
+ * - 單元子分頁：GET /rag/tab/units；「新增題目」POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id），再填題名／出題 prompt 後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；「單元基本資訊」：user_type 1／2／234 顯示單元名稱；unit_type≠1 時顯示逐字稿（`transcription`）；來源（unit_type=2 為 `text_file_name`；3／4 為 `mp3_file_name`／`youtube_url`）；RAG（1）僅來源檔案；其餘（如 3）僅單元名稱
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, onActivated, reactive } from 'vue';
@@ -438,7 +438,7 @@ const examZipConfirmUploadDisabled = computed(() => {
   return uploadFileExceedsMaxSize(f);
 });
 
-/** 建立流程 stepper 階段：1 上傳檔案 → 2 已上傳、建置題庫中 → 3 已建置、可測試題目 */
+/** 建立流程 stepper 階段：1 上傳檔案 → 2 已上傳、建置題庫中 → 3 已建置、出題單元 */
 const createRagStepperPhase = computed(() => {
   if (hasRagMetadata.value) return 3;
   if (hasUploadedFileMetadata.value) return 2;
@@ -1881,9 +1881,9 @@ function getSlotFormState(slotIndex) {
       showGenerateForm: false,
       quizUserPromptText: '',
       unitDraftRagQuizId: null,
-      /** POST create 成功後備份 rag_quiz_id，避免草稿欄偶發遺漏時仍可送 llm-generate */
+      /** 「產生題目」時 POST create 成功後備份 rag_quiz_id，避免列上遺漏時仍可送 llm-generate */
       lastSuccessfulCreatedRagQuizId: null,
-      /** 目前此槽位在「所屬單元」內的第幾題（建立空白題成功時寫入，僅該單元內遞增） */
+      /** 目前此槽位在「所屬單元」內的第幾題（按「新增題目」推入草稿列時遞增） */
       unitPromptOrdinalInUnit: null,
       unitQuizCreateLoading: false,
       unitQuizCreateError: '',
@@ -1901,17 +1901,56 @@ function getSlotFormState(slotIndex) {
   return slot;
 }
 
-/** POST /rag/tab/unit/quiz/create：依目前單元建立空白 Rag_Quiz（不呼叫 LLM），再展開出題說明 */
+/** 本機草稿列（無 rag_quiz_id）：供先顯示題名／prompt 介面，待「產生題目」再 POST create。 */
+function createLocalDraftUnitQuizCard() {
+  const tab = activeUnitTabItem.value;
+  const rag = currentRagItem.value;
+  const state = currentState.value;
+  const ragId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
+  const ragIdStr = ragId != null && String(ragId).trim() !== '' ? String(ragId) : null;
+  const ragTabId = String(tab?.ragTabId ?? rag?.rag_tab_id ?? activeTabId.value ?? state.zipTabId ?? '').trim();
+  const ruRaw = tab?.ragUnitDbId != null ? Number(tab.ragUnitDbId) : NaN;
+  const ragUnitId = Number.isFinite(ruRaw) && ruRaw >= 0 ? ruRaw : 0;
+  const ragName = String(tab?.unitName ?? tab?.label ?? '').trim();
+  return {
+    id: nextCardId(),
+    quiz: '',
+    hint: '',
+    referenceAnswer: '',
+    sourceFilename: null,
+    ragName: ragName || null,
+    rag_id: ragIdStr,
+    quiz_answer: '',
+    hintVisible: false,
+    confirmed: false,
+    gradingResult: '',
+    gradingResponseJson: null,
+    generateQuizResponseJson: null,
+    generateLevel: null,
+    systemInstructionUsed: null,
+    rag_quiz_id: null,
+    rag_tab_id: ragTabId,
+    rag_unit_id: ragUnitId,
+    rag_quiz_for_exam: false,
+    ragQuizForExamLoading: false,
+    ragQuizForExamError: '',
+    answer_id: null,
+    gradingPrompt: '',
+    quizName: '',
+    quizUserPromptText: '',
+  };
+}
+
+/**
+ * 「新增題目」：POST /rag/tab/unit/quiz/create 建立空白 Rag_Quiz（不呼叫 LLM），回傳 rag_quiz_id 後推入題列並展開出題區。
+ * 可選 await GET 子分頁以補齊 rag_unit_id。
+ */
 async function createBlankUnitQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   let tab = activeUnitTabItem.value;
   const state = currentState.value;
   const rag = currentRagItem.value;
   const personId = getPersonId(authStore);
-  if (!personId) {
-    slotState.unitQuizCreateError = '請先登入';
-    return;
-  }
   const ragTabId =
     String(tab?.ragTabId ?? rag?.rag_tab_id ?? activeTabId.value ?? state.zipTabId ?? '').trim();
   let ragUnitId = tab?.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
@@ -1926,6 +1965,11 @@ async function createBlankUnitQuiz(slotIndex) {
       }
     }
   }
+  slotState.unitQuizCreateError = '';
+  if (!personId) {
+    slotState.unitQuizCreateError = '請先登入';
+    return;
+  }
   if (!ragTabId) {
     slotState.unitQuizCreateError = '無法取得 rag_tab_id';
     return;
@@ -1935,29 +1979,37 @@ async function createBlankUnitQuiz(slotIndex) {
     return;
   }
   slotState.unitQuizCreateLoading = true;
-  slotState.unitQuizCreateError = '';
   try {
-    const data = await apiCreateRagUnitQuiz(
+    const createData = await apiCreateRagUnitQuiz(
       { rag_tab_id: ragTabId, rag_unit_id: ragUnitId },
       personId
     );
-    const rawId = data?.rag_quiz_id ?? data?.quiz_id ?? data?.id;
-    const draftId = parsePositiveQuizId(rawId);
-    if (draftId == null) {
+    const rawNew = createData?.rag_quiz_id ?? createData?.quiz_id ?? createData?.id;
+    const newRq = parsePositiveQuizId(rawNew);
+    if (newRq == null) {
       throw new Error('後端未回傳有效的 rag_quiz_id');
     }
-    slotState.unitDraftRagQuizId = draftId;
-    slotState.lastSuccessfulCreatedRagQuizId = draftId;
     slotState.showGenerateForm = true;
     slotState.quizUserPromptText = String(slotState.quizUserPromptText ?? '');
     if (tab?.generateQuizTabId) {
       slotState.generateQuizTabId = tab.generateQuizTabId;
     }
-    try {
-      await refreshUnitSubTabsFromApi(ragTabId);
-    } catch {
-      // 子分頁可選更新
+    if (!state.unitSlotQuizCards) state.unitSlotQuizCards = [];
+    while (state.unitSlotQuizCards.length < slotIndex) state.unitSlotQuizCards.push([]);
+    let sub = state.unitSlotQuizCards[slotIndex - 1];
+    if (!Array.isArray(sub)) {
+      state.unitSlotQuizCards[slotIndex - 1] = [];
+      sub = state.unitSlotQuizCards[slotIndex - 1];
     }
+    const draft = createLocalDraftUnitQuizCard();
+    draft.rag_quiz_id = newRq;
+    draft.rag_tab_id = ragTabId;
+    draft.rag_unit_id = ragUnitId;
+    sub.push(draft);
+    state.unitSlotQuizCards[slotIndex - 1] = sortUnitQuizCardsByRagQuizId(sub);
+    slotState.unitDraftRagQuizId = newRq;
+    slotState.lastSuccessfulCreatedRagQuizId = newRq;
+    state.cardList[slotIndex - 1] = focalCardFromUnitQuizList(sub, slotState);
     const tabForOrdinal = activeUnitTabItem.value ?? tab;
     const unitTabKey = tabForOrdinal?.id != null ? String(tabForOrdinal.id).trim() : '';
     if (unitTabKey) {
@@ -1971,13 +2023,16 @@ async function createBlankUnitQuiz(slotIndex) {
       slotState.unitPromptOrdinalInUnit = slotState.unitPromptOrdinalInUnit ?? null;
     }
   } catch (err) {
-    slotState.unitQuizCreateError = err.message || '建立空白題目失敗';
+    slotState.unitQuizCreateError = err?.message || String(err) || '新增題目失敗';
   } finally {
     slotState.unitQuizCreateLoading = false;
   }
 }
 
-/** POST /rag/tab/unit/quiz/llm-generate：body 僅 rag_quiz_id、quiz_name、quiz_user_prompt_text（可空字串）；quizCardRow 傳入時以該列優先（多題同單元） */
+/**
+ * POST /rag/tab/unit/quiz/llm-generate：body 僅 rag_quiz_id、quiz_name、quiz_user_prompt_text（可空字串）。
+ * 若該列尚無 rag_quiz_id（相容舊本機草稿），先 POST /rag/tab/unit/quiz/create 再 llm-generate；一般流程已由「新增題目」先 create。
+ */
 async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
   const slotState = getSlotFormState(slotIndex);
   const tab = activeUnitTabItem.value;
@@ -2005,16 +2060,11 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
   const slotCard = draftCard ?? state.cardList[slotIndex - 1];
   const fromCard = slotCard ? positiveRagQuizIdFromCard(slotCard) : null;
   const anchorTab = tab?.anchorRagQuizId != null ? parsePositiveQuizId(tab.anchorRagQuizId) : null;
-  const rqid =
+  let rqid =
     (rqFromRow != null && rqFromRow >= 1 ? rqFromRow : null)
     ?? draftN
     ?? fromCard
     ?? anchorTab;
-  if (rqid == null || rqid < 1) {
-    slotState.unitQuizCreateError =
-      '無法取得 rag_quiz_id。請先按「新增題目」（POST create 已成功應已取得編號）；若已按過仍發生請重新整理，或確認未切到其他單元槽位後再試。';
-    return;
-  }
   const promptText =
     (quizCardRow != null && typeof quizCardRow === 'object'
       ? String(quizCardRow.quizUserPromptText ?? '').trim()
@@ -2028,6 +2078,59 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
   slotState.unitQuizCreateLoading = true;
   slotState.unitQuizCreateError = '';
   try {
+    if (
+      (rqid == null || rqid < 1)
+      && quizCardRow != null
+      && typeof quizCardRow === 'object'
+      && quizRowQuizEmpty(quizCardRow)
+    ) {
+      const ragTabIdCreate = String(
+        quizCardRow.rag_tab_id
+        ?? tab?.ragTabId
+        ?? rag?.rag_tab_id
+        ?? activeTabId.value
+        ?? state.zipTabId
+        ?? ''
+      ).trim();
+      const ruRaw = quizCardRow.rag_unit_id ?? tab?.ragUnitDbId;
+      const ragUnitIdCreate = ruRaw != null && ruRaw !== '' ? Number(ruRaw) : 0;
+      if (!ragTabIdCreate || !Number.isFinite(ragUnitIdCreate) || ragUnitIdCreate < 1) {
+        slotState.unitQuizCreateError =
+          '無法建立空白題目：缺少 rag_tab_id／rag_unit_id，請確認單元與題庫狀態後重試';
+        return;
+      }
+      const createData = await apiCreateRagUnitQuiz(
+        { rag_tab_id: ragTabIdCreate, rag_unit_id: ragUnitIdCreate },
+        personId
+      );
+      const rawNew = createData?.rag_quiz_id ?? createData?.quiz_id ?? createData?.id;
+      const newRq = parsePositiveQuizId(rawNew);
+      if (newRq == null) {
+        throw new Error('後端未回傳有效的 rag_quiz_id');
+      }
+      quizCardRow.rag_quiz_id = newRq;
+      if (quizCardRow.rag_tab_id == null || String(quizCardRow.rag_tab_id).trim() === '') {
+        quizCardRow.rag_tab_id = ragTabIdCreate;
+      }
+      if (!Number.isFinite(Number(quizCardRow.rag_unit_id)) || Number(quizCardRow.rag_unit_id) < 1) {
+        quizCardRow.rag_unit_id = ragUnitIdCreate;
+      }
+      rqid = newRq;
+      slotState.unitDraftRagQuizId = newRq;
+      slotState.lastSuccessfulCreatedRagQuizId = newRq;
+      /** 不在此呼叫 refreshUnitSubTabsFromApi：會 hydrate 覆寫整份 unitSlotQuizCards，抹掉同單元其他僅本機草稿列。 */
+      const subRef = state.unitSlotQuizCards?.[slotIndex - 1];
+      if (Array.isArray(subRef)) {
+        state.unitSlotQuizCards[slotIndex - 1] = sortUnitQuizCardsByRagQuizId(subRef);
+      }
+    }
+
+    if (rqid == null || rqid < 1) {
+      slotState.unitQuizCreateError =
+        '無法取得 rag_quiz_id。請在空白列填寫題名與出題說明後按「產生題目」，或重新整理頁面。';
+      return;
+    }
+
     const data = await apiRagUnitQuizLlmGenerate(
       {
         rag_quiz_id: rqid,
@@ -2492,7 +2595,7 @@ async function confirmAnswer(item) {
             <span
               class="my-create-rag-stepper-label"
               :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-            >測試單元</span>
+            >出題單元</span>
           </div>
           </div>
         </div>
@@ -2920,7 +3023,7 @@ async function confirmAnswer(item) {
           </section>
         </div>
       </template>
-      <!-- 測試題目：標題在區塊外；每題（題卡或產生題目槽）各一 rounded-4 深灰塊 -->
+      <!-- 出題單元：標題在區塊外；每題（題卡或產生題目槽）各一 rounded-4 深灰塊 -->
       <div
         v-if="hasBuiltRagSummary"
         class="text-start my-page-block-spacing"
@@ -2931,7 +3034,7 @@ async function confirmAnswer(item) {
             aria-level="2"
           >
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">測試單元</span>
+            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">出題單元</span>
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
           </div>
           <div
@@ -3055,7 +3158,7 @@ async function confirmAnswer(item) {
                       class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
                       :for="quizRowQuizEmpty(quizCard) ? `rag-unit-quiz-name-${activeUnitSlotIndex}-${qIdx}` : undefined"
                     >
-                      題目名稱<span class="text-danger" aria-hidden="true">＊</span>
+                      題目名稱
                     </label>
                     <input
                       v-if="quizRowQuizEmpty(quizCard)"
@@ -3063,7 +3166,7 @@ async function confirmAnswer(item) {
                       v-model="quizCard.quizName"
                       type="text"
                       class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0"
-                      placeholder="請輸入題目名稱（必填）"
+                      placeholder="請輸入題目名稱"
                       maxlength="500"
                       autocomplete="off"
                       required
@@ -3089,7 +3192,7 @@ async function confirmAnswer(item) {
                         v-if="quizRowQuizEmpty(quizCard)"
                         v-model="quizCard.quizUserPromptText"
                         :preview-only="false"
-                        placeholder="貼上或輸入出題 Markdown（必填）…"
+                        placeholder="貼上或輸入出題 Markdown…"
                         :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${qIdx}`"
                         :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                       />
@@ -3190,7 +3293,7 @@ async function confirmAnswer(item) {
               </div>
             </template>
 
-            <!-- 單元子分頁：題卡／出題 prompt 區塊下方，維持最底「新增題目」 -->
+            <!-- 單元子分頁：最底固定「新增題目」（含尚無任何題列時，避免僅依 showGenerateForm／題列長度漏顯） -->
             <div
               v-if="hasUnitSubTabs"
               class="d-flex justify-content-center pt-4 mb-0 w-100"
@@ -3200,11 +3303,25 @@ async function confirmAnswer(item) {
                 class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
                 :disabled="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                 :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                title="新增題目"
+                aria-label="新增題目"
                 @click="createBlankUnitQuiz(activeUnitSlotIndex)"
               >
                 <i class="fa-solid fa-plus" aria-hidden="true" />
                 新增題目
               </button>
+            </div>
+            <div
+              v-if="hasUnitSubTabs && getSlotFormState(activeUnitSlotIndex).unitQuizCreateError"
+              class="d-flex justify-content-center pt-2 mb-0 w-100 px-1"
+            >
+              <div
+                class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 text-break w-100"
+                style="max-width: 42rem"
+                role="alert"
+              >
+                {{ getSlotFormState(activeUnitSlotIndex).unitQuizCreateError }}
+              </div>
             </div>
 
             <!-- 新增題目按鈕：無單元子分頁時固定在最下面；與「新增測驗題庫」同款灰底膠囊＋加號 -->
@@ -3234,7 +3351,7 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
-/* 區塊外標題：────── 測試題目 ────── */
+/* 區塊外標題：────── 出題單元 ────── */
 .my-test-section-heading-line {
   display: block;
   border: 0;
