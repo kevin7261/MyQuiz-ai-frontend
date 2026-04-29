@@ -21,8 +21,8 @@ import { loggedFetch } from '../utils/loggedFetch.js';
  * 流程：POST 送出 → 若 202 則取 job_id → 每 2 秒 GET 輪詢結果 → 解析 status ready/error → 寫入 item
  *
  * @param {Object} item - 題目卡片物件，會被 mutate（confirmed、gradingResult、gradingResponseJson）
- * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：`gradingMode: 'exam'` 時 POST body 見下方（exam_quiz_id／quiz_answer／quiz_content／answer_user_prompt_text）；可傳 examId、examTabId 供錯誤提示等預留，body 已不再使用。
- * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時為 POST /exam/tab/quiz/llm-grade；RAG 預設 /rag/tab/unit/quiz/llm-grade，item.gradingPrompt 非空則併入 answer_user_prompt_text；extraGradeBody 可併入 POST JSON（Exam 批改請優先用 item.gradingPrompt → answer_user_prompt_text）
+ * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：`gradingMode: 'exam'` 時 body 為 exam_quiz_id／quiz_answer／選填 quiz_content（批改指引由後端自 Rag_Quiz 讀）。
+ * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時為 POST /exam/tab/quiz/llm-grade；RAG 預設 /rag/tab/unit/quiz/llm-grade，`item.gradingPrompt` 非空則併入 answer_user_prompt_text；extraGradeBody 僅合併至 **RAG** 請求
  */
 export async function submitGrade(item, context, options = {}) {
   const isExam = options.gradingMode === 'exam';
@@ -45,7 +45,6 @@ export async function submitGrade(item, context, options = {}) {
           exam_quiz_id: examQuizId,
           quiz_answer: item.quiz_answer.trim(),
           quiz_content: item.quiz != null ? String(item.quiz) : '',
-          answer_user_prompt_text: String(item.gradingPrompt ?? '').trim(),
         };
       })()
     : {

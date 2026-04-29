@@ -77,14 +77,13 @@ export async function apiExamTabQuizCreate(body, personId, fetchExtra = undefine
 
 /**
  * 測驗 LLM 批改（非同步）：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz）。
- * Body：`exam_quiz_id`、`quiz_answer`；選填 `quiz_content`、`answer_user_prompt_text`（批改指引）。
+ * Body：`exam_quiz_id`、`quiz_answer`；選填 `quiz_content`。批改指引由後端自 Rag_Quiz（含 answer_user_prompt_text 等）依題目關聯讀取，**勿傳**於 body。
  * 預期 **202** 與 `job_id`；輪詢 GET `/exam/tab/quiz/grade-result/{job_id}`（見 `useQuizGrading` 之 `submitGrade`）。
  *
  * @param {{
  *   exam_quiz_id: number,
  *   quiz_answer: string,
  *   quiz_content?: string,
- *   answer_user_prompt_text?: string,
  * }} gradeBody
  * @param {string} [submissionPath] - 預設 `API_EXAM_QUIZ_GRADE`（`/exam/tab/quiz/llm-grade`）；與 `submitGrade` 之 `quizGradeSubmissionPath` 一致時傳入
  * @returns {Promise<{ res: Response, text: string }>}
@@ -106,19 +105,19 @@ export async function apiExamTabQuizLlmGrade(gradeBody, submissionPath) {
 /**
  * 測驗 LLM 出題：POST /exam/tab/quiz/llm-generate（OpenAPI：Rag LLM Generate Quiz）
  * Query：`person_id`（必填，由 {@link loggedFetch} 第三參數帶入）。
- * Body（application/json），對齊 Swagger 示例：
- * `{ exam_quiz_id, rag_unit_id?, rag_quiz_id?, unit_name?, quiz_name?, quiz_user_prompt_text? }`
- * — `exam_quiz_id` 必填；未選或無效之整數欄位以 `0`、字串以 `""` 送出。
+ *
+ * Body：`exam_quiz_id` 必填；選填 `rag_unit_id`（正整數，無效或未選時傳 `0`）、`rag_quiz_id`、`unit_name`、`quiz_name`。
+ * **勿傳** `quiz_user_prompt_text`：後端僅自 Rag_Quiz（effective `rag_quiz_id`）讀取出題補充。
+ *
  * @param {{
  *   exam_quiz_id: number | string,
  *   rag_unit_id?: number | string,
  *   rag_quiz_id?: number | string,
  *   unit_name?: string,
  *   quiz_name?: string,
- *   quiz_user_prompt_text?: string,
  * }} body
  * @returns {Promise<object>} 預期含 quiz_content、quiz_hint、quiz_reference_answer、exam_quiz_id、quiz_name、
- *   quiz_user_prompt_text、unit_name、rag_unit_id、rag_quiz_id 等
+ *   quiz_user_prompt_text（回傳）、unit_name、rag_unit_id、rag_quiz_id 等
  */
 export async function apiExamTabQuizLlmGenerate(body, personId) {
   const pid = String(personId ?? '').trim();
@@ -131,7 +130,6 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
   const ragQuizId = Number.isFinite(rq) && rq > 0 ? Math.trunc(rq) : 0;
   const unitName = body?.unit_name != null ? String(body.unit_name) : '';
   const quizName = body?.quiz_name != null ? String(body.quiz_name) : '';
-  const uxt = body?.quiz_user_prompt_text != null ? String(body.quiz_user_prompt_text) : '';
   const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_LLM_GENERATE}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -141,7 +139,6 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
       rag_quiz_id: ragQuizId,
       unit_name: unitName,
       quiz_name: quizName,
-      quiz_user_prompt_text: uxt,
     }),
   }, { personId: pid });
   const text = await res.text();

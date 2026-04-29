@@ -12,7 +12,7 @@ const difficultyOptions = QUIZ_LEVEL_LABELS;
  * 未確定前可輸入答案並按「確定批改」送出評分。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
- * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；RAG 批改 POST 為 answer_user_prompt_text；Exam 仍為 critique_user_prompt_instruction）, confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（POST /rag/tab/unit/quiz/for-exam 用）、rag_quiz_for_exam（已標為測驗用試題）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示單元／難度、參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。
+ * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 批改指引不在前端送出，僅供預覽／相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（POST /rag/tab/unit/quiz/for-exam 用）、rag_quiz_for_exam（已標為測驗用試題）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示單元／難度、參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。
  */
 const props = defineProps({
   /** 題目資料（含題目、提示、答案、批改結果等） */
