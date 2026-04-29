@@ -163,7 +163,7 @@ function normalizeExamRagForExamsPayload(data) {
       rag_name: u0.rag_name ?? u0.unit_name,
       units,
       outputs: units.map(unitToOutput),
-      transcription: u0.transcription ?? u0.quiz_system_prompt_text ?? undefined,
+      transcription: u0.transcription ?? undefined,
     };
   }
 
@@ -229,7 +229,7 @@ function normalizeExamRagForExamsPayload(data) {
         rag_name: u0.rag_name ?? u0.unit_name,
         units,
         outputs: units.map(unitToOutput),
-        transcription: u0.transcription ?? u0.quiz_system_prompt_text ?? undefined,
+        transcription: u0.transcription ?? undefined,
       };
     }
   }

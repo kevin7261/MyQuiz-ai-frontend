@@ -748,8 +748,7 @@ function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
   const anchorRagQuizId = firstRagQuizAnchorIdFromUnit(unit);
   const ragUnitId = ragUnitIdFromRawUnit(unit);
   const src = unitSourceFilename(unit);
-  const qptRaw =
-    unit.transcription ?? unit.quiz_system_prompt_text ?? unit.quizSystemPromptText;
+  const qptRaw = unit.transcription;
   const transcription =
     qptRaw != null && String(qptRaw).trim() !== '' ? String(qptRaw).trim() : '';
   const ut = Number(unit.unit_type ?? unit.unitType);
@@ -802,7 +801,7 @@ function fallbackUnitsRawFromRag(rag) {
             ? String(o.rag_name).trim()
             : label;
       const unit_name = String(rawUnit || '').replace(/\+/g, '_') || label || sourceTabId;
-      const qpt = o.transcription ?? o.quiz_system_prompt_text ?? o.quizSystemPromptText;
+      const qpt = o.transcription;
       const transcription =
         qpt != null && String(qpt).trim() !== '' ? String(qpt).trim() : '';
       const utMerged = Number(o.unit_type ?? o.unitType ?? typesArr[idx]);
@@ -908,7 +907,7 @@ function buildUnitTabItem(unit, index = 0) {
     ragTabId,
     anchorRagQuizId: Number.isFinite(anchorRagQuizId) && anchorRagQuizId > 0 ? anchorRagQuizId : null,
     ragUnitDbId: Number.isFinite(ragUnitId) && ragUnitId > 0 ? ragUnitId : null,
-    transcription: String(unit?.transcription ?? unit?.quiz_system_prompt_text ?? unit?.quizSystemPromptText ?? '').trim(),
+    transcription: String(unit?.transcription ?? '').trim(),
     textFileName: unitTextFileName(unit),
     mp3FileName: unitMp3FileName(unit),
     youtubeUrl: unitYoutubeUrl(unit),
