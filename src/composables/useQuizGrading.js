@@ -7,10 +7,12 @@
  */
 import {
   API_BASE,
+  API_EXAM_QUIZ_GRADE,
   API_RAG_QUIZ_GRADE,
   API_RAG_QUIZ_GRADE_RESULT,
 } from '../constants/api.js';
 import { formatGradingResult } from '../utils/grading.js';
+import { apiExamTabQuizLlmGrade } from '../services/examApi.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
 /**
@@ -88,12 +90,18 @@ export async function submitGrade(item, context, options = {}) {
   item.gradingResult = '';
 
   try {
-    const res = await loggedFetch(`${API_BASE}${quizGradeSubmissionPath}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(gradeBody),
-    });
-    const text = await res.text();
+    let res;
+    let text;
+    if (isExam) {
+      ({ res, text } = await apiExamTabQuizLlmGrade(gradeBody, quizGradeSubmissionPath));
+    } else {
+      res = await loggedFetch(`${API_BASE}${quizGradeSubmissionPath}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gradeBody),
+      });
+      text = await res.text();
+    }
     if (!res.ok) {
       let msg = res.statusText;
       if (text) {
@@ -173,15 +181,23 @@ export async function submitGrade(item, context, options = {}) {
       if (pollData.status === 'ready') {
         const result = pollData.result;
         item.gradingResponseJson = result;
-        if (
-          quizGradeSubmissionPath === API_RAG_QUIZ_GRADE &&
-          result &&
-          typeof result === 'object' &&
-          result.rag_answer_id != null &&
-          String(result.rag_answer_id).trim() !== ''
-        ) {
-          const rid = Number(result.rag_answer_id);
-          item.answer_id = Number.isFinite(rid) ? rid : result.rag_answer_id;
+        if (result && typeof result === 'object') {
+          if (
+            quizGradeSubmissionPath === API_RAG_QUIZ_GRADE &&
+            result.rag_answer_id != null &&
+            String(result.rag_answer_id).trim() !== ''
+          ) {
+            const rid = Number(result.rag_answer_id);
+            item.answer_id = Number.isFinite(rid) ? rid : result.rag_answer_id;
+          }
+          if (
+            quizGradeSubmissionPath === API_EXAM_QUIZ_GRADE &&
+            result.exam_answer_id != null &&
+            String(result.exam_answer_id).trim() !== ''
+          ) {
+            const eid = Number(result.exam_answer_id);
+            item.answer_id = Number.isFinite(eid) ? eid : result.exam_answer_id;
+          }
         }
         item.gradingResult = formatGradingResult(JSON.stringify(result)) || '（無批改內容）';
         item.confirmed = true;

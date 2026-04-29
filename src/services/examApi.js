@@ -4,6 +4,7 @@
 import {
   API_BASE,
   API_EXAM_CREATE_QUIZ,
+  API_EXAM_QUIZ_GRADE,
   API_EXAM_TAB_QUIZ_LLM_GENERATE,
   API_EXAM_UNIT_NAME,
 } from '../constants/api.js';
@@ -72,6 +73,34 @@ export async function apiExamTabQuizCreate(body, personId, fetchExtra = undefine
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);
+}
+
+/**
+ * 測驗 LLM 批改（非同步）：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz）。
+ * Body：`exam_quiz_id`、`quiz_answer`；選填 `quiz_content`、`answer_user_prompt_text`（批改指引）。
+ * 預期 **202** 與 `job_id`；輪詢 GET `/exam/tab/quiz/grade-result/{job_id}`（見 `useQuizGrading` 之 `submitGrade`）。
+ *
+ * @param {{
+ *   exam_quiz_id: number,
+ *   quiz_answer: string,
+ *   quiz_content?: string,
+ *   answer_user_prompt_text?: string,
+ * }} gradeBody
+ * @param {string} [submissionPath] - 預設 `API_EXAM_QUIZ_GRADE`（`/exam/tab/quiz/llm-grade`）；與 `submitGrade` 之 `quizGradeSubmissionPath` 一致時傳入
+ * @returns {Promise<{ res: Response, text: string }>}
+ */
+export async function apiExamTabQuizLlmGrade(gradeBody, submissionPath) {
+  const p =
+    typeof submissionPath === 'string' && submissionPath.trim() !== ''
+      ? submissionPath.trim()
+      : API_EXAM_QUIZ_GRADE;
+  const res = await loggedFetch(`${API_BASE}${p}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(gradeBody),
+  });
+  const text = await res.text();
+  return { res, text };
 }
 
 /**

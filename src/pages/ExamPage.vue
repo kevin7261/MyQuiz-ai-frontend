@@ -26,7 +26,6 @@ import {
   API_EXAM_RATE_QUIZ,
   isFrontendLocalHost,
 } from '../constants/api.js';
-import { parseFetchError } from '../utils/apiError.js';
 import {
   parseRagMetadataObject,
   getRagUnitListString,
@@ -1258,9 +1257,19 @@ function examGenerateQuizButtonDisabled(slotIndex) {
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
+/** 任一題列「產生題目」流程中（含建立空白列與 llm-generate） */
+const examGenerateQuizOverlayVisible = computed(() => {
+  const state = currentState.value;
+  const n = Number(state.quizSlotsCount) || 0;
+  for (let i = 1; i <= n; i++) {
+    const s = state.slotFormState?.[i];
+    if (s?.loading) return true;
+  }
+  return false;
+});
+
 /**
- * 全螢幕遮罩僅用於：首次載入測驗列表、建立／刪除分頁、更名、批改中。
- * 刻意不含：forExamLoading、examList 已有資料時的列表重抓、LLM 產生題目、POST create 草稿——否則 z-index 9999 會蓋住整頁，單元 Bootstrap dropdown 無法點開。
+ * 全螢幕遮罩：首次載入測驗列表、建立／刪除分頁、更名、批改中、產生題目（LLM）。
  */
 const loadingOverlayVisible = computed(
   () =>
@@ -1268,11 +1277,13 @@ const loadingOverlayVisible = computed(
     createExamLoading.value ||
     deleteExamLoading.value ||
     examRenameSaving.value ||
-    isGradingSubmitting.value
+    isGradingSubmitting.value ||
+    examGenerateQuizOverlayVisible.value
 );
 
 const loadingOverlayText = computed(() => {
   if (isGradingSubmitting.value) return '批改中...';
+  if (examGenerateQuizOverlayVisible.value) return '產生題目中...';
   if (deleteExamLoading.value) return '刪除中...';
   if (examRenameSaving.value) return '儲存中...';
   if (createExamLoading.value) return '建立中...';
@@ -1495,53 +1506,55 @@ async function generateQuiz(slotIndex) {
       slotState.error = '請先選擇單元';
       return;
     }
-
-    await tryCreateDraftExamQuizForSlot(slotIndex);
-    draftEq =
-      slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1
-        ? Number(slotState.draftExamQuizId)
-        : null;
-    if (draftEq == null) {
-      if (!String(slotState.error ?? '').trim()) {
-        slotState.error = '無法建立空白題目，請稍候後再試';
-      }
-      return;
-    }
   }
-
-  const quizPickOpts = examQuizDropdownItemsForSlot(slotIndex);
-  if (quizPickOpts.length > 0 && !String(slotState.examQuizNamePick ?? '').trim()) {
-    slotState.error = '請選擇題目（quiz_name）';
-    return;
-  }
-
-  const resolvedQuizName =
-    String(slotState.examQuizNamePick ?? '').trim()
-    || prevExamQuizDisplayName;
-  const promptBundle = examQuizPromptBundleForSlot(slotIndex, prevExamQuizDisplayName);
-
-  const uidSel = String(slotState.examUnitSelectId ?? '').trim();
-  const unitItemForLlm =
-    examUnitTabItems.value.length > 0
-      ? examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uidSel)
-      : null;
-  const ragRowForLlm = findExamRagQuizRowBySelectedPick(unitItemForLlm, resolvedQuizName);
-  const ragUnitIdForLlm =
-    unitItemForLlm?.ragUnitId != null && Number.isFinite(Number(unitItemForLlm.ragUnitId)) && Number(unitItemForLlm.ragUnitId) >= 1
-      ? Number(unitItemForLlm.ragUnitId)
-      : 0;
-  let ragQuizIdForLlm = 0;
-  if (ragRowForLlm) {
-    const idStr = ragQuizSelectValue(ragRowForLlm);
-    const n = Number(idStr);
-    if (Number.isFinite(n) && n >= 1) ragQuizIdForLlm = Math.trunc(n);
-  }
-  const unitNameForLlm = String(unitItemForLlm?.label ?? unitItemForLlm?.unitName ?? '').trim();
 
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
   try {
+    if (draftEq == null) {
+      await tryCreateDraftExamQuizForSlot(slotIndex);
+      draftEq =
+        slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1
+          ? Number(slotState.draftExamQuizId)
+          : null;
+      if (draftEq == null) {
+        if (!String(slotState.error ?? '').trim()) {
+          slotState.error = '無法建立空白題目，請稍候後再試';
+        }
+        return;
+      }
+    }
+
+    const quizPickOpts = examQuizDropdownItemsForSlot(slotIndex);
+    if (quizPickOpts.length > 0 && !String(slotState.examQuizNamePick ?? '').trim()) {
+      slotState.error = '請選擇題目（quiz_name）';
+      return;
+    }
+
+    const resolvedQuizName =
+      String(slotState.examQuizNamePick ?? '').trim()
+      || prevExamQuizDisplayName;
+    const promptBundle = examQuizPromptBundleForSlot(slotIndex, prevExamQuizDisplayName);
+
+    const uidSel = String(slotState.examUnitSelectId ?? '').trim();
+    const unitItemForLlm =
+      examUnitTabItems.value.length > 0
+        ? examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uidSel)
+        : null;
+    const ragRowForLlm = findExamRagQuizRowBySelectedPick(unitItemForLlm, resolvedQuizName);
+    const ragUnitIdForLlm =
+      unitItemForLlm?.ragUnitId != null && Number.isFinite(Number(unitItemForLlm.ragUnitId)) && Number(unitItemForLlm.ragUnitId) >= 1
+        ? Number(unitItemForLlm.ragUnitId)
+        : 0;
+    let ragQuizIdForLlm = 0;
+    if (ragRowForLlm) {
+      const idStr = ragQuizSelectValue(ragRowForLlm);
+      const n = Number(idStr);
+      if (Number.isFinite(n) && n >= 1) ragQuizIdForLlm = Math.trunc(n);
+    }
+    const unitNameForLlm = String(unitItemForLlm?.label ?? unitItemForLlm?.unitName ?? '').trim();
+
     const data = await apiExamTabQuizLlmGenerate(
       {
         exam_quiz_id: draftEq,
@@ -1619,8 +1632,8 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 題目讚(1)／差(-1)；再點同一顆送 quiz_rate=0 取消。POST /exam/tab/quiz/rate；UI 先更新，僅在請求失敗時還原 */
-async function rateExamQuiz(item, direction) {
+/** 題目讚(1)／差(-1)；再點同一顆送 quiz_rate=0 取消。POST /exam/tab/quiz/rate；畫面立即變化，背景送出成功時可與回傳之 quiz_rate 同步 */
+function rateExamQuiz(item, direction) {
   if (!item || typeof item !== 'object') return;
   const examQuizId = item.exam_quiz_id ?? item.quiz_id;
   const idNum = Number(examQuizId);
@@ -1633,20 +1646,28 @@ async function rateExamQuiz(item, direction) {
   const nextRate = previousRate === target ? 0 : target;
   item.quiz_rate = nextRate;
   item.rateError = '';
-  try {
-    const res = await loggedFetch(`${API_BASE}${API_EXAM_RATE_QUIZ}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ exam_quiz_id: idNum, quiz_rate: nextRate }),
-    });
-    const text = await res.text();
-    if (!res.ok) throw new Error(parseFetchError(res, text));
-    const data = text ? JSON.parse(text) : {};
-    item.quiz_rate = normalizeExamQuizRate(data.quiz_rate ?? nextRate);
-  } catch (err) {
-    item.quiz_rate = previousRate;
-    item.rateError = err.message || '無法紀錄評價';
-  }
+  void (async () => {
+    try {
+      const res = await loggedFetch(`${API_BASE}${API_EXAM_RATE_QUIZ}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ exam_quiz_id: idNum, quiz_rate: nextRate }),
+      });
+      const text = await res.text();
+      if (!res.ok) return;
+      let data = {};
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        return;
+      }
+      if (data.quiz_rate != null) {
+        item.quiz_rate = normalizeExamQuizRate(data.quiz_rate);
+      }
+    } catch {
+      /* 樂觀 UI 已更新，不還原、不提示 */
+    }
+  })();
 }
 
 /** 試題用 RAG 的 rag_id（與題卡 card.rag_id 比對；皆有值且不同則不可作答） */
