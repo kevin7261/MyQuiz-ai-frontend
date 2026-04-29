@@ -40,6 +40,13 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore, optio
         zipTabId: isNew ? '' : id,
         packTasks: '',
         packTasksList: [],
+        /** 與 packTasksList 每群一筆：0～4，見 rag.js UNIT_TYPE_* */
+        packUnitTypes: [],
+        /** 出題單元為文字／mp3／YouTube 時之逐字稿 Markdown（與 packTasksList 序對齊） */
+        packUnitMarkdownTexts: [],
+        packUnitYoutubeUrls: [],
+        packUnitTranscriptLoading: [],
+        packUnitTranscriptError: [],
         ragMetadata: '',
         withRag: true,
         packResponseJson: null,

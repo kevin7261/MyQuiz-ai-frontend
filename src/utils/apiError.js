@@ -88,6 +88,16 @@ export function formatBuildRagZipErrorDetail(detail) {
   if (detail.unit_list != null && String(detail.unit_list).trim() !== '') {
     debug.push(`unit_list=${String(detail.unit_list).trim()}`);
   }
+  if (detail.unit_types != null && String(detail.unit_types).trim() !== '') {
+    debug.push(`unit_types=${String(detail.unit_types).trim()}`);
+  }
+  if (detail.unit_type_list != null) {
+    try {
+      debug.push(`unit_type_list=${JSON.stringify(detail.unit_type_list)}`);
+    } catch {
+      debug.push(`unit_type_list=${String(detail.unit_type_list)}`);
+    }
+  }
   const body = lines.join('\n\n');
   if (debug.length === 0) return body;
   return `${body}\n\n（${debug.join('｜')}）`;

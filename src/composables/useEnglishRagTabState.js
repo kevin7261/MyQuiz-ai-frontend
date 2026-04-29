@@ -34,6 +34,12 @@ export function useEnglishRagTabState(activeTabId, newTabIds, ragList, authStore
         zipTabId: isNew ? '' : id,
         packTasks: '',
         packTasksList: [],
+        /** 與 packTasksList 每群一筆：0～4，見 rag.js UNIT_TYPE_* */
+        packUnitTypes: [],
+        packUnitMarkdownTexts: [],
+        packUnitYoutubeUrls: [],
+        packUnitTranscriptLoading: [],
+        packUnitTranscriptError: [],
         ragMetadata: '',
         withRag: true,
         packResponseJson: null,
@@ -105,6 +111,10 @@ export function useEnglishRagTabState(activeTabId, newTabIds, ragList, authStore
       if (s.englishLockedYoutubeDisplay === undefined) s.englishLockedYoutubeDisplay = '';
       if (s.englishTabPhasesLoading === undefined) s.englishTabPhasesLoading = false;
       if (s.englishTabPhasesFetchError === undefined) s.englishTabPhasesFetchError = '';
+      if (s.packUnitMarkdownTexts === undefined) s.packUnitMarkdownTexts = [];
+      if (s.packUnitYoutubeUrls === undefined) s.packUnitYoutubeUrls = [];
+      if (s.packUnitTranscriptLoading === undefined) s.packUnitTranscriptLoading = [];
+      if (s.packUnitTranscriptError === undefined) s.packUnitTranscriptError = [];
       if (s.testPhaseOrder === undefined) {
         s.testPhaseOrder = [];
         s.activeTestPhaseId = null;

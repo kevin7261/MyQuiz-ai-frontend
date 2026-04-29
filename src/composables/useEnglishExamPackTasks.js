@@ -10,7 +10,13 @@
  * - 以 watch 同步 packTasks 字串與 packTasksList 陣列
  */
 import { computed, watch } from 'vue';
-import { parsePackTasksList, serializePackTasksList } from '../utils/englishExamRag.js';
+import {
+  parsePackTasksList,
+  parsePackUnitTypesFromRag,
+  remapPackUnitTypes,
+  serializePackTasksList,
+  UNIT_TYPE_RAG,
+} from '../utils/rag.js';
 
 /** 模組層級：拖曳中攜帶的資料，不依賴 dataTransfer */
 let dragPayload = null;
@@ -95,6 +101,8 @@ export function useEnglishExamPackTasks(currentState, fileMetadataToShow, packAn
     const tagIdx = payload?.tagIdx ?? -1;
 
     const state = currentState.value;
+    const prevList = JSON.parse(JSON.stringify(state.packTasksList || []));
+    const prevTypes = [...(state.packUnitTypes || [])];
     let list = [...(state.packTasksList || [])];
 
     if (fromRagList && groupIdx >= 0) {
@@ -114,33 +122,44 @@ export function useEnglishExamPackTasks(currentState, fileMetadataToShow, packAn
     list[targetGroupIdx] = arr;
     list = list.filter((g) => g != null && (Array.isArray(g) ? g.length > 0 : g));
     state.packTasksList = list;
+    state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, list);
   }
 
   function removeFromRagList(groupIdx, tagIdx) {
     const state = currentState.value;
+    const prevList = JSON.parse(JSON.stringify(state.packTasksList || []));
+    const prevTypes = [...(state.packUnitTypes || [])];
     const list = [...(state.packTasksList || [])];
     const g = list[groupIdx];
     if (!Array.isArray(g)) return;
     const next = g.filter((_, i) => i !== tagIdx);
     list[groupIdx] = next.length ? next : null;
-    state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
+    const nextList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
+    state.packTasksList = nextList;
+    state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, nextList);
   }
 
   function removeRagListGroup(groupIdx) {
     const state = currentState.value;
     const list = [...(state.packTasksList || [])];
+    const types = [...(state.packUnitTypes || [])];
+    while (types.length < list.length) types.push(UNIT_TYPE_RAG);
     list.splice(groupIdx, 1);
+    types.splice(groupIdx, 1);
     state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
+    state.packUnitTypes = types;
   }
 
   function addRagListGroup() {
     const state = currentState.value;
     state.packTasksList = [...(state.packTasksList || []), []];
+    state.packUnitTypes = [...(state.packUnitTypes || []), UNIT_TYPE_RAG];
   }
 
   function clearAllRagListGroups() {
     if (packAndGenerateDisabled.value) return;
     currentState.value.packTasksList = [];
+    currentState.value.packUnitTypes = [];
   }
 
   function addAllSecondFoldersAsGroups() {
@@ -150,6 +169,7 @@ export function useEnglishExamPackTasks(currentState, fileMetadataToShow, packAn
     const existing = state.packTasksList ?? [];
     const newGroups = names.map((name) => [name]);
     state.packTasksList = [...existing, ...newGroups];
+    state.packUnitTypes = [...(state.packUnitTypes || []), ...names.map(() => UNIT_TYPE_RAG)];
   }
 
   /** 在現有出題單元之後新增一個出題單元，內含全部單元（unit_list：a+b+c），不覆寫既有出題單元 */
@@ -159,6 +179,7 @@ export function useEnglishExamPackTasks(currentState, fileMetadataToShow, packAn
     const state = currentState.value;
     const existing = state.packTasksList ?? [];
     state.packTasksList = [...existing, [...names]];
+    state.packUnitTypes = [...(state.packUnitTypes || []), UNIT_TYPE_RAG];
   }
 
   watch(
@@ -168,6 +189,7 @@ export function useEnglishExamPackTasks(currentState, fileMetadataToShow, packAn
       const current = currentState.value.packTasksList;
       if (JSON.stringify(parsed) !== JSON.stringify(current)) {
         currentState.value.packTasksList = parsed;
+        currentState.value.packUnitTypes = parsePackUnitTypesFromRag(undefined, parsed.length);
       }
     }
   );

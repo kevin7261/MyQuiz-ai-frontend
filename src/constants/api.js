@@ -121,6 +121,12 @@ export const API_RAG_DELETE = '/rag/tab/delete';
 export const API_RAG_UNIT_NAME = '/rag/tab/tab-name';
 /** 建 RAG ZIP：POST /rag/tab/build-rag-zip；同上 body；成功時回應 application/x-ndjson 串流（每行 JSON：type start|building|unit|complete），query 須帶 person_id 與 body 一致；整批成敗以 complete.success 為準；寫入 Rag.rag_metadata；不需 llm_api_key */
 export const API_BUILD_RAG_ZIP = '/rag/tab/build-rag-zip';
+/** RAG 文字單元逐字稿：GET /rag/transcript/text；query：rag_tab_id、folder_name（unit_type=2，ZIP 內該資料夾所有 .md 依檔名排序合併）、person_id */
+export const API_RAG_TRANSCRIPT_TEXT = '/rag/transcript/text';
+/** RAG 音訊單元逐字稿：GET /rag/transcript/audio；query：rag_tab_id、folder_name（ZIP 內取第一個音訊檔以 Deepgram 轉 MD）、person_id */
+export const API_RAG_TRANSCRIPT_AUDIO = '/rag/transcript/audio';
+/** RAG YouTube 單元逐字稿：GET /rag/transcript/youtube；query：rag_tab_id、folder_name（ZIP 內 .md 解析 YouTube 連結後擷取 en 字幕）、person_id */
+export const API_RAG_TRANSCRIPT_YOUTUBE = '/rag/transcript/youtube';
 /** 列出指定 tab 下所有未刪除 Rag_Unit（含關聯 quizzes）：GET /rag/tab/units；query: rag_tab_id、person_id（必填）；依 created_at 舊→新 */
 export const API_RAG_TAB_UNITS = '/rag/tab/units';
 /**

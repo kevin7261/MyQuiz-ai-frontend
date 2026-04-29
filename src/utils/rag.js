@@ -255,6 +255,100 @@ export function serializePackTasksList(list) {
   return list.map((g) => (Array.isArray(g) ? g.filter(Boolean).join('+') : '')).filter(Boolean).join(',');
 }
 
+/** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 未選、1 rag→PDF／Office、2 文字→.md、3 mp3→.mp3、4 youtube→.md（預設 rag） */
+export const UNIT_TYPE_NONE = 0;
+export const UNIT_TYPE_RAG = 1;
+export const UNIT_TYPE_TEXT = 2;
+export const UNIT_TYPE_MP3 = 3;
+export const UNIT_TYPE_YOUTUBE = 4;
+
+function isValidUnitType(n) {
+  return n === 0 || n === 1 || n === 2 || n === 3 || n === 4;
+}
+
+function groupSig(g) {
+  if (!Array.isArray(g) || g.length === 0) return '';
+  return [...g].map(String).sort().join('\u0001');
+}
+
+/**
+ * 拖放／刪除標籤後，依群組資料夾集合對齊 unit_types（僅序位可能變動時沿用原類型）
+ * @param {string[][]} oldList
+ * @param {number[]} oldTypes
+ * @param {string[][]} newList
+ * @returns {number[]}
+ */
+export function remapPackUnitTypes(oldList, oldTypes, newList) {
+  const ol = oldList || [];
+  const nl = newList || [];
+  const ot = [...(oldTypes || [])];
+  while (ot.length < ol.length) ot.push(UNIT_TYPE_RAG);
+  ot.length = ol.length;
+  const used = new Set();
+  return nl.map((g) => {
+    const s = groupSig(g);
+    if (!s) return UNIT_TYPE_RAG;
+    for (let i = 0; i < ol.length; i++) {
+      if (used.has(i)) continue;
+      if (groupSig(ol[i]) === s) {
+        used.add(i);
+        const v = ot[i];
+        return isValidUnitType(v) ? v : UNIT_TYPE_RAG;
+      }
+    }
+    return UNIT_TYPE_RAG;
+  });
+}
+
+/**
+ * 自 GET /rag/tabs 等欄位還原 unit_types（逗號分隔數字，序與 unit_list 群組對齊）
+ * @param {unknown} raw - 逗號字串或數字陣列
+ * @param {number} groupCount
+ * @returns {number[]}
+ */
+export function parsePackUnitTypesFromRag(raw, groupCount) {
+  const n = Math.max(0, Math.floor(Number(groupCount)) || 0);
+  let arr = [];
+  if (raw == null || raw === '') {
+    return Array(n).fill(UNIT_TYPE_RAG);
+  }
+  if (Array.isArray(raw)) {
+    arr = raw.map((x) => Number(x));
+  } else {
+    arr = String(raw)
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== '')
+      .map((s) => Number(s));
+  }
+  const out = [];
+  for (let i = 0; i < n; i++) {
+    const v = arr[i];
+    out.push(isValidUnitType(v) ? v : UNIT_TYPE_RAG);
+  }
+  return out;
+}
+
+/**
+ * POST /rag/tab/build-rag-zip 的 unit_types（與 unit_list 群組序對齊，逗號分隔字串）
+ * @param {number[]} types
+ * @returns {string}
+ */
+export function serializePackUnitTypesForApi(types) {
+  if (!Array.isArray(types) || types.length === 0) return '';
+  return types.map((t) => (isValidUnitType(Number(t)) ? Number(t) : UNIT_TYPE_RAG)).join(',');
+}
+
+/**
+ * 同上群組序，整數陣列（與 GET /rag/tabs 之 unit_type_list 對齊，供後端依類型掃描檔案）
+ * @param {number[]} types
+ * @returns {number[]}
+ */
+export function packUnitTypesIntArrayForApi(types) {
+  if (!Array.isArray(types) || types.length === 0) return [];
+  return types.map((t) => (isValidUnitType(Number(t)) ? Number(t) : UNIT_TYPE_RAG));
+}
+
 /**
  * 將 GET /rag/tabs 回傳正規化為 RAG 陣列
  * 支援：直接陣列、{ rags, count }、{ items }、{ tabs }／{ data }（為陣列時）、或單一 RAG 物件

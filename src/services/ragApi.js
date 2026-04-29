@@ -11,6 +11,9 @@ import {
   API_RAG_DELETE,
   API_RAG_UNIT_NAME,
   API_BUILD_RAG_ZIP,
+  API_RAG_TRANSCRIPT_TEXT,
+  API_RAG_TRANSCRIPT_AUDIO,
+  API_RAG_TRANSCRIPT_YOUTUBE,
   API_RAG_TAB_UNITS,
   API_RAG_TAB_UNIT_QUIZ_CREATE,
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE,
@@ -41,6 +44,82 @@ function parseJson(text) {
   } catch {
     return {};
   }
+}
+
+/**
+ * 自 RAG 轉錄／讀檔 API 回傳取出 markdown 字串（相容 markdown／text 欄位）
+ * @param {unknown} data
+ * @returns {string}
+ */
+export function transcriptResponseMarkdown(data) {
+  if (!data || typeof data !== 'object') return '';
+  const m = data.markdown ?? data.text;
+  return m != null ? String(m) : '';
+}
+
+/**
+ * 共用：建立三支逐字稿 GET API 的 URL（rag_tab_id、folder_name、person_id 皆為 query）
+ * @param {string} path - API 路徑
+ * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
+ * @returns {string}
+ */
+function buildTranscriptUrl(path, params) {
+  const base = String(API_BASE).replace(/\/$/, '');
+  const u = new URL(`${base}${path}`);
+  u.searchParams.set('rag_tab_id', String(params.rag_tab_id ?? '').trim());
+  u.searchParams.set('folder_name', String(params.folder_name ?? '').trim());
+  return u.toString();
+}
+
+/**
+ * GET /rag/transcript/text — ZIP 內指定資料夾所有 .md 依檔名排序合併（unit_type=2 文字單元）
+ * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
+ * @returns {Promise<object>}
+ */
+export async function apiRagTranscriptText(params) {
+  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
+  const folder_name = String(params.folder_name ?? '').trim();
+  if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
+  if (!folder_name) throw new Error('缺少 folder_name');
+  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_TEXT, { rag_tab_id, folder_name });
+  const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * GET /rag/transcript/audio — ZIP 內 folder_name 資料夾取第一個音訊檔，以 Deepgram 轉 Markdown（unit_type=3 mp3 單元）
+ * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
+ * @returns {Promise<object>}
+ */
+export async function apiRagTranscriptAudioByFolder(params) {
+  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
+  const folder_name = String(params.folder_name ?? '').trim();
+  if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
+  if (!folder_name) throw new Error('缺少 folder_name');
+  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_AUDIO, { rag_tab_id, folder_name });
+  const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * GET /rag/transcript/youtube — ZIP 內 folder_name 資料夾 .md 解析 YouTube 連結後擷取 en 字幕（unit_type=4）
+ * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
+ * @returns {Promise<object>}
+ */
+export async function apiRagTranscriptYoutubeByFolder(params) {
+  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
+  const folder_name = String(params.folder_name ?? '').trim();
+  if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
+  if (!folder_name) throw new Error('缺少 folder_name');
+  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_YOUTUBE, { rag_tab_id, folder_name });
+  const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
 }
 
 /**
@@ -128,7 +207,7 @@ export async function apiUpdateRagTabName(ragId, tabName) {
 /**
  * 建 RAG ZIP：POST /rag/tab/build-rag-zip（application/x-ndjson 串流；勿用 response.json() 讀 200 本文）
  *
- * @param {object} body - 含 rag_tab_id, person_id, unit_list, chunk_size, chunk_overlap, system_prompt_instruction 等（person_id 須與 query 一致）
+ * @param {object} body - 含 rag_tab_id, person_id, unit_list, unit_types（逗號字串）與 unit_type_list（整數陣列，與 unit_list 群組序對齊：1 rag／2 文字／3 mp3／4 youtube；後端應依類型掃描 rag→pdf 等、文字／YouTube→.md、mp3→.mp3）, chunk_size, chunk_overlap, system_prompt_instruction 等（person_id 須與 query 一致）
  * @param {(ev: object) => void} [onStreamEvent] - 每收到一列事件即呼叫（start｜building.filename repack 工作檔｜unit.output 含 filename、repack_filename、rag_filename、file_size、rag_error｜complete）
  * @returns {Promise<object>} 成功時回傳與舊版 JSON 相容之物件（outputs、rag_tab_id、unit_list、built_ok 等）
  */

@@ -28,6 +28,12 @@ import {
   apiBuildRagZip,
   is504OrNetworkError,
 } from '../services/englishExamRagApi.js';
+import {
+  apiRagTranscriptText,
+  apiRagTranscriptAudioByFolder,
+  apiRagTranscriptYoutubeByFolder,
+  transcriptResponseMarkdown,
+} from '../services/ragApi.js';
 import { formatFileSize } from '../utils/formatFileSize.js';
 import {
   generateTabId,
@@ -38,6 +44,14 @@ import {
   parseRagMetadataObject,
   reconcileQuizUnitSelectSlot,
 } from '../utils/englishExamRag.js';
+import {
+  packUnitTypesIntArrayForApi,
+  parsePackUnitTypesFromRag,
+  UNIT_TYPE_TEXT,
+  UNIT_TYPE_MP3,
+  UNIT_TYPE_YOUTUBE,
+  serializePackUnitTypesForApi,
+} from '../utils/rag.js';
 import {
   englishSystemRowHasBuiltQuizBank,
   mapEnglishQuizTypeToSourceKind,
@@ -625,6 +639,137 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = useEnglishExamPackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
+function packUnitTypeAt(gi) {
+  const t = currentState.value.packUnitTypes?.[gi];
+  if (t === 0 || t === 1 || t === 2 || t === 3 || t === 4) return t;
+  return 1;
+}
+
+function onPackUnitTypeChange(ev, gi) {
+  const v = Number(ev?.target?.value);
+  if (!(v === 0 || v === 1 || v === 2 || v === 3 || v === 4)) return;
+  const state = currentState.value;
+  const n = state.packTasksList?.length ?? 0;
+  const next = parsePackUnitTypesFromRag(state.packUnitTypes, n);
+  next[gi] = v;
+  state.packUnitTypes = next;
+}
+
+function ensurePackUnitSidecarArrays() {
+  const s = currentState.value;
+  const n = s.packTasksList?.length ?? 0;
+  const stretch = (key, emptyVal) => {
+    let a = Array.isArray(s[key]) ? [...s[key]] : [];
+    if (a.length > n) a = a.slice(0, n);
+    while (a.length < n) a.push(emptyVal);
+    s[key] = a;
+  };
+  stretch('packUnitMarkdownTexts', '');
+  stretch('packUnitYoutubeUrls', '');
+  stretch('packUnitTranscriptLoading', false);
+  stretch('packUnitTranscriptError', '');
+}
+
+watch(
+  () => currentState.value.packTasksList,
+  () => {
+    ensurePackUnitSidecarArrays();
+  },
+  { deep: true, immediate: true }
+);
+
+function ragTabIdForTranscript() {
+  return String(currentState.value.zipTabId ?? activeTabId.value ?? '').trim();
+}
+
+function firstFolderNameInGroup(group) {
+  if (!Array.isArray(group) || group.length === 0) return '';
+  return String(group[0] ?? '').trim();
+}
+
+function setPackUnitMarkdownAt(gi, text) {
+  const s = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const arr = [...s.packUnitMarkdownTexts];
+  arr[gi] = text != null ? String(text) : '';
+  s.packUnitMarkdownTexts = arr;
+}
+
+function packUnitTranscriptBusy(gi) {
+  return !!(currentState.value.packUnitTranscriptLoading && currentState.value.packUnitTranscriptLoading[gi]);
+}
+
+function prepareTranscriptCall(gi, group) {
+  const s = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const folder = firstFolderNameInGroup(group);
+  const err = [...s.packUnitTranscriptError];
+  const load = [...s.packUnitTranscriptLoading];
+  if (!folder) {
+    err[gi] = '請先在上方拖入一個資料夾';
+    s.packUnitTranscriptError = err;
+    return null;
+  }
+  const rag_tab_id = ragTabIdForTranscript();
+  if (!rag_tab_id) {
+    err[gi] = '請先上傳教材 ZIP';
+    s.packUnitTranscriptError = err;
+    return null;
+  }
+  const personId = getPersonId(authStore);
+  if (!personId) {
+    err[gi] = '請先登入';
+    s.packUnitTranscriptError = err;
+    return null;
+  }
+  err[gi] = '';
+  s.packUnitTranscriptError = err;
+  load[gi] = true;
+  s.packUnitTranscriptLoading = load;
+  return { folder, rag_tab_id, personId };
+}
+
+async function runTranscriptCall(gi, apiFn) {
+  try {
+    const data = await apiFn();
+    setPackUnitMarkdownAt(gi, transcriptResponseMarkdown(data));
+  } catch (e) {
+    const s = currentState.value;
+    const err = [...s.packUnitTranscriptError];
+    err[gi] = e?.message ?? String(e);
+    s.packUnitTranscriptError = err;
+  } finally {
+    const s = currentState.value;
+    const lo = [...s.packUnitTranscriptLoading];
+    lo[gi] = false;
+    s.packUnitTranscriptLoading = lo;
+  }
+}
+
+async function onPackUnitTranscriptText(gi, group) {
+  const ctx = prepareTranscriptCall(gi, group);
+  if (!ctx) return;
+  await runTranscriptCall(gi, () =>
+    apiRagTranscriptText({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
+  );
+}
+
+async function onPackUnitTranscriptAudio(gi, group) {
+  const ctx = prepareTranscriptCall(gi, group);
+  if (!ctx) return;
+  await runTranscriptCall(gi, () =>
+    apiRagTranscriptAudioByFolder({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
+  );
+}
+
+async function onPackUnitTranscriptYoutube(gi, group) {
+  const ctx = prepareTranscriptCall(gi, group);
+  if (!ctx) return;
+  await runTranscriptCall(gi, () =>
+    apiRagTranscriptYoutubeByFolder({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
+  );
+}
+
 /** Tab 列用：rag 項目含 _tabId、_label、_isExamRag（試題用者分頁列不顯示刪除） */
 const ragItems = computed(() =>
   ragList.value.map((r) => ({
@@ -772,6 +917,8 @@ function syncRagItemToState(rag, state) {
   if (unitListStr) {
     state.packTasks = unitListStr;
     state.packTasksList = parsePackTasksList(state.packTasks);
+    const rawUt = rag.unit_types ?? rag.unit_type_list;
+    state.packUnitTypes = parsePackUnitTypesFromRag(rawUt, state.packTasksList.length);
   }
   if (rag.rag_metadata != null) {
     state.ragMetadata = typeof rag.rag_metadata === 'string' ? rag.rag_metadata : JSON.stringify(rag.rag_metadata, null, 2);
@@ -1419,11 +1566,18 @@ async function confirmPack() {
   state.packBuildRepackFilename = '';
   state.packBuildRagFilename = '';
   try {
+    const unitTypesNormalized = parsePackUnitTypesFromRag(
+      state.packUnitTypes,
+      state.packTasksList?.length ?? 0
+    );
+    const unitTypesIntArray = packUnitTypesIntArrayForApi(unitTypesNormalized);
     state.packResponseJson = await apiBuildRagZip(
       {
         rag_tab_id: fileId,
         person_id: personId,
         unit_list: unitList,
+        unit_types: serializePackUnitTypesForApi(unitTypesNormalized),
+        unit_type_list: unitTypesIntArray,
         chunk_size: ensureNumber(chunkSize.value, 1000),
         chunk_overlap: ensureNumber(chunkOverlap.value, 200),
       },
@@ -2457,49 +2611,127 @@ watch(
           <!-- 出題單元：可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
           <div class="mb-3 d-flex flex-column gap-2 w-100 min-w-0">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">出題單元</div>
+            <p class="my-font-sm-400 my-color-gray-1 mb-0 lh-sm">
+              類型對應教材：<strong>rag</strong> 為 ZIP 內可建索引之 PDF／Word／PPT（.pdf .doc .docx .ppt .pptx）；<strong>文字</strong>、<strong>YouTube</strong> 請於該資料夾放置 <strong>.md</strong>；<strong>mp3</strong> 請放置 <strong>.mp3</strong>。
+            </p>
             <div
               class="d-flex flex-wrap align-items-stretch justify-content-start gap-2 w-100 min-w-0"
               role="group"
               aria-label="出題單元"
             >
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
-                <div
-                  class="form-control my-input-md my-input-md--on-dark rounded-2 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
-                  style="min-width: 120px; min-height: 2.5rem; flex: 0 1 auto;"
-                  @dragover.prevent="onDragOver($event)"
-                  @dragenter.prevent="onDragEnter($event)"
-                  @dragleave="onDragLeave($event)"
-                  @drop.prevent="onDropRagList($event, gi)"
-                >
-                  <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1">
+                <div class="w-100 min-w-0 d-flex flex-column gap-2">
+                  <div class="d-flex flex-nowrap align-items-center gap-2 w-100 min-w-0">
                     <div
-                      v-for="(tag, ti) in group"
-                      :key="'t-' + gi + '-' + ti"
-                      class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                      style="cursor: grab;"
-                      draggable="true"
-                      role="button"
-                      @dragstart="onDragStartTag($event, tag, true, gi, ti)"
-                      @dragend="onDragEndTag"
+                      class="form-control my-input-md my-input-md--on-dark rounded-2 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
+                      style="min-width: 120px; min-height: 2.5rem; flex: 1 1 auto;"
+                      @dragover.prevent="onDragOver($event)"
+                      @dragenter.prevent="onDragEnter($event)"
+                      @dragleave="onDragLeave($event)"
+                      @drop.prevent="onDropRagList($event, gi)"
                     >
-                      {{ tag }}
-                      <span
-                        class="my-color-gray-4 ms-1"
-                        style="cursor: pointer;"
-                        @click.stop="removeFromRagList(gi, ti)"
-                      >×</span>
+                      <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1">
+                        <div
+                          v-for="(tag, ti) in group"
+                          :key="'t-' + gi + '-' + ti"
+                          class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                          style="cursor: grab;"
+                          draggable="true"
+                          role="button"
+                          @dragstart="onDragStartTag($event, tag, true, gi, ti)"
+                          @dragend="onDragEndTag"
+                        >
+                          {{ tag }}
+                          <span
+                            class="my-color-gray-4 ms-1"
+                            style="cursor: pointer;"
+                            @click.stop="removeFromRagList(gi, ti)"
+                          >×</span>
+                        </div>
+                        <span v-if="!group.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
+                      </div>
+                      <button
+                        v-if="(currentState.packTasksList || []).length > 0"
+                        type="button"
+                        class="btn btn-link my-color-gray-4 text-decoration-none flex-shrink-0 p-0 ms-1"
+                        style="min-width: 1.5rem;"
+                        @click.stop="removeRagListGroup(gi)"
+                      >
+                        ×
+                      </button>
                     </div>
-                    <span v-if="!group.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
+                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                      <span class="my-font-sm-400 my-color-gray-1 text-nowrap">類型</span>
+                      <div class="my-form-select-wrap flex-shrink-0" style="width: 7.25rem; max-width: 100%;">
+                        <select
+                          class="my-form-select my-font-sm-400 py-1"
+                          :aria-label="`出題單元 ${gi + 1} 類型`"
+                          :value="packUnitTypeAt(gi)"
+                          @change="onPackUnitTypeChange($event, gi)"
+                        >
+                          <option :value="0">未選擇</option>
+                          <option :value="1">rag</option>
+                          <option :value="2">文字</option>
+                          <option :value="3">mp3</option>
+                          <option :value="4">youtube</option>
+                        </select>
+                        <i class="fa-solid fa-chevron-down my-form-select-caret" aria-hidden="true" />
+                      </div>
+                    </div>
                   </div>
-                  <button
-                    v-if="(currentState.packTasksList || []).length > 0"
-                    type="button"
-                    class="btn btn-link my-color-gray-4 text-decoration-none flex-shrink-0 p-0 ms-1"
-                    style="min-width: 1.5rem;"
-                    @click.stop="removeRagListGroup(gi)"
+                  <div
+                    v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT || packUnitTypeAt(gi) === UNIT_TYPE_MP3 || packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE"
+                    class="w-100 min-w-0 ps-0 border-start ps-3 ms-1"
+                    style="border-left-width: 2px !important; border-color: var(--my-color-gray-2) !important;"
                   >
-                    ×
-                  </button>
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                      <template v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT">
+                        <button
+                          type="button"
+                          class="btn rounded-pill my-font-sm-400 my-button-gray-4 px-3 py-1"
+                          :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
+                          @click="onPackUnitTranscriptText(gi, group)"
+                        >
+                          讀取資料夾 .md
+                        </button>
+                      </template>
+                      <template v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3">
+                        <button
+                          type="button"
+                          class="btn rounded-pill my-font-sm-400 my-button-gray-4 px-3 py-1"
+                          :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
+                          @click="onPackUnitTranscriptAudio(gi, group)"
+                        >
+                          轉換逐字稿
+                        </button>
+                      </template>
+                      <template v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE">
+                        <button
+                          type="button"
+                          class="btn rounded-pill my-font-sm-400 my-button-gray-4 px-3 py-1"
+                          :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
+                          @click="onPackUnitTranscriptYoutube(gi, group)"
+                        >
+                          擷取 YouTube 字幕
+                        </button>
+                      </template>
+                    </div>
+                    <p
+                      v-if="currentState.packUnitTranscriptError?.[gi]"
+                      class="my-font-sm-400 text-danger mb-2"
+                    >
+                      {{ currentState.packUnitTranscriptError[gi] }}
+                    </p>
+                    <EnglishExamMarkdownEditor
+                      v-if="!packGroupsEditBlocked || (currentState.packUnitMarkdownTexts?.[gi] ?? '').trim() !== ''"
+                      class="my-pack-unit-md-editor"
+                      :textarea-id="'pack-unit-md-' + gi"
+                      :model-value="currentState.packUnitMarkdownTexts?.[gi] ?? ''"
+                      :disabled="packGroupsEditBlocked"
+                      :preview-only="packGroupsEditBlocked"
+                      @update:model-value="setPackUnitMarkdownAt(gi, $event)"
+                    />
+                  </div>
                 </div>
               </template>
             </div>
@@ -2990,10 +3222,14 @@ watch(
   background-color: var(--my-drop-pack-active-bg) !important;
   border-color: var(--my-color-blue) !important;
 }
-/* 深底稿頁：拖放啟用態在黑底 input 上可辨識 */
-.form-control.my-input-md.my-input-md--on-dark.my-pack-drop-target.my-pack-drop-active {
-  background-color: color-mix(in srgb, var(--my-color-blue) 22%, var(--my-color-black)) !important;
-  border-color: var(--my-color-blue) !important;
+/* 出題單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
+
+.my-pack-unit-md-editor :deep(.english-exam-md-editor-root) {
+  --english-md-preview-max-h: min(50vh, 22rem);
+}
+.my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll),
+.my-pack-unit-md-editor :deep(.english-exam-md-preview-panel) {
+  min-height: 200px;
 }
 
 </style>
