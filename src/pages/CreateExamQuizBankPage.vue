@@ -12,7 +12,7 @@
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；空白題 POST /rag/tab/unit/quiz/create；LLM 出題 POST /rag/tab/unit/quiz/llm-generate（body: rag_quiz_id、quiz_name、quiz_user_prompt_text）；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；「單元基本資訊」：user_type 1／2／234 顯示單元名稱；unit_type≠1 時顯示逐字稿（`transcription`）；來源（unit_type=2 為 `text_file_name`；3／4 為 `mp3_file_name`／`youtube_url`）；RAG（1）僅來源檔案；其餘（如 3）僅單元名稱
+ * - 單元子分頁：GET /rag/tab/units；空白題 POST /rag/tab/unit/quiz/create；LLM 出題 POST /rag/tab/unit/quiz/llm-generate（body: rag_quiz_id、quiz_name、quiz_user_prompt_text，後兩者可 ""；rag_tab_id／rag_unit_id 不需傳）；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；「單元基本資訊」：user_type 1／2／234 顯示單元名稱；unit_type≠1 時顯示逐字稿（`transcription`）；來源（unit_type=2 為 `text_file_name`；3／4 為 `mp3_file_name`／`youtube_url`）；RAG（1）僅來源檔案；其餘（如 3）僅單元名稱
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, onActivated, reactive } from 'vue';
@@ -1977,7 +1977,7 @@ async function createBlankUnitQuiz(slotIndex) {
   }
 }
 
-/** POST /rag/tab/unit/quiz/llm-generate：body 僅 rag_quiz_id、quiz_name、quiz_user_prompt_text；quizCardRow 必傳時以該列 rag_quiz_id／prompt 為準（多題同單元） */
+/** POST /rag/tab/unit/quiz/llm-generate：body 僅 rag_quiz_id、quiz_name、quiz_user_prompt_text（可空字串）；quizCardRow 傳入時以該列優先（多題同單元） */
 async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
   const slotState = getSlotFormState(slotIndex);
   const tab = activeUnitTabItem.value;
@@ -2020,18 +2020,11 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       ? String(quizCardRow.quizUserPromptText ?? '').trim()
       : '')
     || String(slotState.quizUserPromptText ?? '').trim();
-  if (!promptText) {
-    slotState.unitQuizCreateError = '請填寫出題prompt（quiz_user_prompt_text），再產生題目';
-    return;
-  }
   const quizNameOut =
-    quizCardRow != null && typeof quizCardRow === 'object'
+    (quizCardRow != null && typeof quizCardRow === 'object'
       ? String(quizCardRow.quizName ?? '').trim()
-      : '';
-  if (!quizNameOut) {
-    slotState.unitQuizCreateError = '請填寫題目名稱（quiz_name），再產生題目';
-    return;
-  }
+      : '')
+    || String(slotCard?.quizName ?? '').trim();
   slotState.unitQuizCreateLoading = true;
   slotState.unitQuizCreateError = '';
   try {

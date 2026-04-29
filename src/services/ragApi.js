@@ -393,11 +393,17 @@ export async function apiCreateRagUnitQuiz(body, personId) {
 /**
  * RAG + LLM 單元出題（與 POST /rag/tab/unit/quiz/create 分開）。
  * POST /rag/tab/unit/quiz/llm-generate — query：**person_id**（必填）。
- * Body 僅：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（建立頁空白題出題時前端對後兩者必填非空字串）。
  *
- * LLM Key 來自 Rag 對應 User；成功後更新 Rag_Quiz。
+ * Body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（後兩者可 **空字串**）。
+ * `rag_tab_id`／`rag_unit_id` **不需傳**，後端依 `rag_quiz_id` 自 DB 帶入。
+ * `quiz_name` 空則後端沿用 stem／單元名。
+ *
+ * unit_type 2／3／4：不載入 RAG ZIP，以 LLM 純生成（system = transcription、user = quiz_user_prompt_text）。
+ * 其餘：FAISS 檢索後出題。使用者須於個人設定填 LLM API Key。
+ *
+ * LLM Key 依 Rag.person_id 自 User；成功後更新 Rag_Quiz 錨點列並清空舊作答欄位（細節以後端為準）。
  * @param {{ rag_quiz_id: number, quiz_user_prompt_text?: string, quiz_name?: string }} body
- * @returns {Promise<object>} 後端 JSON，預期含 quiz_content、quiz_hint、quiz_reference_answer、rag_quiz_id、quiz_name 等。
+ * @returns {Promise<object>} 後端 JSON，預期含 quiz_content、quiz_hint、quiz_reference_answer、quiz_name、rag_quiz_id、transcription 等。
  */
 export async function apiRagUnitQuizLlmGenerate(body, personId) {
   const pid = String(personId ?? '').trim();

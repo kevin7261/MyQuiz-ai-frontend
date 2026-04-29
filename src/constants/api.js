@@ -134,7 +134,7 @@ export const API_RAG_TAB_UNITS = '/rag/tab/units';
  * POST /rag/tab/unit/quiz/create；query person_id；body: { rag_tab_id, rag_unit_id }
  */
 export const API_RAG_TAB_UNIT_QUIZ_CREATE = '/rag/tab/unit/quiz/create';
-/** POST /rag/tab/unit/quiz/llm-generate — body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`；query：`person_id` */
+/** POST /rag/tab/unit/quiz/llm-generate — body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（後兩者可 ""）；query：`person_id`（必填）。`rag_tab_id`／`rag_unit_id` 不需傳，後端依 rag_quiz_id 解析 */
 export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE = '/rag/tab/unit/quiz/llm-generate';
 /** Rag_Quiz 單題測驗用標記：POST /rag/tab/unit/quiz/for-exam — query person_id；body：`rag_quiz_id`、`rag_tab_id`、`rag_unit_id`（可 ""／0）；可選 `for_exam` 切換 true／false（與後端 OpenAPI 一致時） */
 export const API_RAG_TAB_UNIT_QUIZ_FOR_EXAM = '/rag/tab/unit/quiz/for-exam';
