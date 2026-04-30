@@ -5,7 +5,7 @@
  * 與 CreateExamQuizBankPage 版面類似（分頁、題目卡片、出題/評分），但無 RAG 建立/上傳/Pack；題目來源為 GET /exam/rag-for-exams／測驗分頁。POST /exam/tab/quiz/create 送 exam_tab_id 與 rag_unit_id、rag_quiz_id 建立並綁定題列；LLM 出題 POST /exam/tab/quiz/llm-generate 須 **exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id 皆必填**；`rag_tab_id` 後端用以載入 ZIP（不依賴 System_Setting）；列已有兩鍵須一致否則 400，列未寫入則自動綁定。
  *
  * 資料來源：
- * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改 prompt 為預覽）；不呼叫 GET /rag/tab/for-exam
+ * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score（或 quiz_grade）／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」）＋文字檔；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
  * 出題：須選單元＋題名；尚無列時 POST /exam/tab/quiz/create（exam_tab_id + rag_unit_id + rag_quiz_id）；再 POST llm-generate（同上三鍵 + 選填 unit_name／quiz_name；勿傳 quiz_user_prompt_text）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：POST /exam/tab/delete/{exam_tab_id}
  *
@@ -108,7 +108,7 @@ function isNotFoundLike(status, message) {
 
 /**
  * GET /exam/rag-for-exams 回傳包裝不一；整理成與題面既有邏輯相容的 rag 形狀（rag_id、rag_tab_id、outputs[]／rag_metadata 等）。
- * 若內嵌 Rag_Quiz：出題 prompt／批改 prompt 後端僅給預覽，前端勿當完整字串送去 LLM。
+ * 若內嵌 Rag_Quiz：出題規則／批改規則後端僅給預覽，前端勿當完整字串送去 LLM。
  *
  * 注意：此端點通常只回傳「測驗用」單元／題目（for_exam=true 等後端規則）。若全為 for_exam=false，回傳的 units 可能為 []，與其他 API（例如完整單元列表）長相不同。
  * @param {unknown} data

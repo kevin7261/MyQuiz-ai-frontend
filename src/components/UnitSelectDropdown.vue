@@ -2,6 +2,7 @@
 /**
  * 出題區「選擇單元」：Bootstrap 5 dropdown；行為等同原生 select + v-model。
  * 與 Design 08 一致：外層 .my-design-08-dropdown；觸發 rounded-2、my-button-white（白底、gray-2 邊）；選單 .dropdown-menu Bootstrap 預設。
+ * omitEmptyChoice：不列「清空」項，適用必選之單元切換列。
  */
 import { computed } from 'vue';
 import { unitSelectValue } from '../utils/rag.js';
@@ -19,6 +20,8 @@ const props = defineProps({
   optionLabel: { type: Function, default: null },
   /** disabled 時觸發鈕 title（例如「請先選擇單元」）；未設則用顯示文字 */
   hintWhenDisabled: { type: String, default: '' },
+  /** true 時不顯示「清空／清空至 placeholder」選項（僅列出 options，適用必選之單元切換） */
+  omitEmptyChoice: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -83,7 +86,7 @@ function select(val) {
       class="dropdown-menu dropdown-menu-start w-100 my-unit-select-dd-menu"
       :aria-labelledby="toggleId"
     >
-      <li>
+      <li v-if="!omitEmptyChoice">
         <button
           type="button"
           class="dropdown-item"

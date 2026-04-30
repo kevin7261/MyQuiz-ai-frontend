@@ -8,11 +8,11 @@ const difficultyOptions = QUIZ_LEVEL_LABELS;
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改 prompt、批改結果。
- * 可輸入答案並按「開始批改」送出評分；按鈕常駐，再次批改時 composable 會先將 confirmed 設為 false 再更新結果。
+ * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改規則、批改結果。
+ * 可輸入答案並按「開始批改」送出評分；按鈕常駐，再次批改時 composable 會先將 confirmed 設為 false 再更新結果。**RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
- * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 時批改指引仍不由前端於 POST 送出，欄位可編輯以相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（POST /rag/tab/unit/quiz/for-exam 用）、rag_quiz_for_exam（已標為測驗用試題）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示單元／難度、參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。
+ * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 時批改指引仍不由前端於 POST 送出，欄位可編輯以相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（POST /rag/tab/unit/quiz/for-exam 用）、rag_quiz_for_exam（已標為測驗用試題）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。hideRagQuizForExamToolbar：true 時不在卡內顯示「設為測驗用」（由建立頁題型列右上角承載）。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示單元／難度、參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。
  */
 const props = defineProps({
   /** 題目資料（含題目、提示、答案、批改結果等） */
@@ -37,12 +37,14 @@ const props = defineProps({
   hideUnitDifficulty: { type: Boolean, default: false },
   /** 父層已顯示「第 N 題」時，隱藏本卡題號（避免重複） */
   hideSlotIndex: { type: Boolean, default: false },
-  /** 測驗頁：隱藏「批改 prompt」Markdown 區（仍可依既有 gradingPrompt 送出） */
+  /** 測驗頁：隱藏「批改規則」Markdown 區（仍可依既有 gradingPrompt 送出） */
   hideGradingPrompt: { type: Boolean, default: false },
   /** 測驗頁：隱藏「批改結果」區塊 */
   hideGradingResult: { type: Boolean, default: false },
   /** 建立測驗題庫（單元題）：批改有結果後可標記 Rag_Quiz.for_exam（POST /rag/tab/unit/quiz/for-exam） */
   showRagQuizForExamAction: { type: Boolean, default: false },
+  /** true 時不在本卡「批改結果」下方顯示 for-exam 鈕（改由父層例如題型列右上角顯示） */
+  hideRagQuizForExamToolbar: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer', 'update:grading_prompt', 'rate-quiz', 'mark-rag-quiz-for-exam']);
@@ -77,6 +79,7 @@ const showGradingResultSection = computed(
 );
 
 const showRagQuizForExamToolbar = computed(() => {
+  if (props.hideRagQuizForExamToolbar) return false;
   if (!props.showRagQuizForExamAction || props.questionHintOnly) return false;
   if (!showGradingResultSection.value) return false;
   const raw = props.card?.rag_quiz_id ?? props.card?.quiz_id;
@@ -312,13 +315,18 @@ const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '')
           <label
             :for="`quiz-grading-prompt-${card.id}`"
             :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >批改 prompt</label>
+          >批改規則</label>
           <EnglishExamMarkdownEditor
             :model-value="String(card.gradingPrompt ?? '')"
             :textarea-id="`quiz-grading-prompt-${card.id}`"
-            :preview-only="false"
-            :disabled="answerInputDisabled || gradeSubmitting"
-            placeholder="輸入批改說明（可含教材重點、評分標準等，支援 Markdown）…"
+            :preview-only="card.rag_quiz_for_exam === true"
+            :preview-design-dark="card.rag_quiz_for_exam === true"
+            :disabled="
+              card.rag_quiz_for_exam === true
+                ? false
+                : answerInputDisabled || gradeSubmitting
+            "
+            placeholder="輸入批改規則（可含教材重點、評分標準等，支援 Markdown）…"
             @update:model-value="emit('update:grading_prompt', $event)"
           />
         </div>
@@ -363,8 +371,8 @@ const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '')
             type="button"
             :class="
               card?.rag_quiz_for_exam === true
-                ? 'btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-btn-outline-green-hollow px-3 py-2'
-                : 'btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-green px-3 py-2'
+                ? 'btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-btn-outline-green-hollow flex-shrink-0 px-3 py-1'
+                : 'btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-green flex-shrink-0 px-3 py-1'
             "
             :disabled="card.ragQuizForExamLoading"
             :aria-busy="card.ragQuizForExamLoading"
@@ -385,7 +393,7 @@ const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '')
 </template>
 
 <style scoped>
-/* EasyMDE 編輯區與出題 prompt 頁同 min-height；唯讀預覽高度由內容決定 */
+/* EasyMDE 編輯區與出題規則欄同 min-height；唯讀預覽高度由內容決定 */
 .quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-root) {
   --english-md-preview-max-h: min(60vh, 28rem);
 }

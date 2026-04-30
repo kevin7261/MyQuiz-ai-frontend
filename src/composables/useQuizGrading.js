@@ -22,7 +22,7 @@ import { loggedFetch } from '../utils/loggedFetch.js';
  *
  * @param {Object} item - 題目卡片物件，會被 mutate（confirmed、gradingResult、gradingResponseJson）
  * @param {Object} context - RAG：{ sourceTabId, ragId }；Exam：`gradingMode: 'exam'` 時 body 為 exam_quiz_id、quiz_content（字串，可 ""）、quiz_answer（對齊 OpenAPI）。
- * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時為 POST /exam/tab/quiz/llm-grade；RAG 預設 POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 僅在有非空白內容時才送，否則由後端自 Rag_Quiz 讀）；`item.gradingPrompt` 非空則併入 answer_user_prompt_text；extraGradeBody 僅合併至 **RAG** 請求
+ * @param {Object} [options] - quizGradeSubmissionPath、quizGradeResultPath；gradingMode: 'exam' 時為 POST /exam/tab/quiz/llm-grade；RAG 預設 POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 僅在有非空白內容時才送，否則由後端自 Rag_Quiz 讀）；`item.gradingPrompt`（批改規則）非空則併入 answer_user_prompt_text；extraGradeBody 僅合併至 **RAG** 請求
  */
 export async function submitGrade(item, context, options = {}) {
   const isExam = options.gradingMode === 'exam';

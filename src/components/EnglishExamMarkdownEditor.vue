@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
   scrollbar-gutter: stable;
 }
 
-/* 唯讀預覽：高度隨內容伸縮，不設 max-height（出題／批改 prompt 等長文一次看完） */
+/* 唯讀預覽：高度隨內容伸縮，不設 max-height（出題／批改規則等長文一次看完） */
 .english-exam-md-preview-panel--surface {
   border-color: var(--bs-border-color, #dee2e6) !important;
   overflow-x: auto;
