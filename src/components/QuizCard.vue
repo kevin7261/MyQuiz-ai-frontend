@@ -89,6 +89,16 @@ const showRagQuizForExamToolbar = computed(() => {
 
 /** 題幹有文字才顯示作答／「開始批改」等（後端空白列或未產出題文時不應出現批改流程） */
 const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '');
+
+/**
+ * designUi 時頂區為 flex gap-4 的子項之一；若第 N 題／單元／難度皆隱藏（如測驗頁、建立題庫 embedded），勿渲染空白包住器，否則與「題目」區之間會多出一格 gap。
+ */
+const showQuizCardHeaderBand = computed(
+  () =>
+    !props.designUi ||
+    !props.hideSlotIndex ||
+    (!props.questionHintOnly && !props.hideUnitDifficulty),
+);
 </script>
 
 <template>
@@ -104,7 +114,10 @@ const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '')
       class="text-start w-100 min-w-0"
       :class="designUi ? 'd-flex flex-column gap-4' : ''"
     >
-      <div :class="designUi ? 'd-flex flex-column gap-3 w-100 min-w-0' : ''">
+      <div
+        v-if="showQuizCardHeaderBand"
+        :class="designUi ? 'd-flex flex-column gap-3 w-100 min-w-0' : ''"
+      >
       <div
         v-if="!hideSlotIndex"
         class="my-font-lg-600 my-color-black"

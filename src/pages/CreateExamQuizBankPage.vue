@@ -12,7 +12,7 @@
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元題庫內容」：單元名稱僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 逐字稿區（可垂直捲動）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
+ * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元題庫內容」：單元僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 逐字稿區（可垂直捲動）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, onActivated, reactive } from 'vue';
@@ -390,7 +390,7 @@ const loadingOverlayText = computed(() => {
   if (deleteRagLoading.value) return '刪除中...';
   if (deleteUnitQuizLoading.value) return '刪除題型中...';
   if (renameRagTabSaving.value) return '儲存中...';
-  if (renameUnitQuizSaving.value) return '儲存題型名稱中...';
+  if (renameUnitQuizSaving.value) return '儲存題型中...';
   if (createRagLoading.value) return '建立中...';
   if (ragListLoading.value) return `載入${quizBankNoun.value}中`;
   return '處理中...';
@@ -3059,7 +3059,7 @@ async function confirmAnswer(item) {
       :initial-name="renameUnitQuizInitialName"
       :saving="renameUnitQuizSaving"
       :error="renameUnitQuizError"
-      title="修改題型名稱"
+      title="修改題型"
       @save="onRenameUnitQuizSave"
     />
     <Teleport to="body">
@@ -3379,7 +3379,7 @@ async function confirmAnswer(item) {
                 <div class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column">
                   <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
                     <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                      單元名稱
+                      單元
                     </div>
                     <div
                       class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
@@ -3679,7 +3679,7 @@ async function confirmAnswer(item) {
                   >
                     <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
                       <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                        單元名稱
+                        單元
                       </div>
                       <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
                         {{ row.title }}
@@ -4258,32 +4258,5 @@ async function confirmAnswer(item) {
   box-sizing: border-box;
   background: color-mix(in srgb, var(--my-color-white) 62%, transparent);
   backdrop-filter: blur(2px);
-}
-/* unit_type=2：單元題庫內容 Markdown 區；淺底區塊內捲軸需較深 thumb，否則貼近全站預設會過淡 */
-.my-rag-unit-type-text-scroll {
-  max-height: min(40vh, 20rem);
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  scrollbar-width: thin;
-  scrollbar-color: var(--my-color-gray-1) var(--my-color-gray-2);
-}
-.my-rag-unit-type-text-scroll::-webkit-scrollbar {
-  width: var(--my-scrollbar-size);
-}
-.my-rag-unit-type-text-scroll::-webkit-scrollbar-track {
-  background: var(--my-color-gray-2);
-  border-radius: calc(var(--my-scrollbar-size) / 2);
-}
-.my-rag-unit-type-text-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--my-color-gray-1);
-  background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
-  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-}
-.my-rag-unit-type-text-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-color-black);
 }
 </style>

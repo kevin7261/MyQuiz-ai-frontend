@@ -433,7 +433,7 @@ export async function apiUpdateRagQuizName(body, personId) {
   const rqid = Number(body?.rag_quiz_id);
   if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
   const qname = body?.quiz_name != null ? String(body.quiz_name).trim() : '';
-  if (!qname) throw new Error('請輸入題型名稱');
+  if (!qname) throw new Error('請輸入題型');
   const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
