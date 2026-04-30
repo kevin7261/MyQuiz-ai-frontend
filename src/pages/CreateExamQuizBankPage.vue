@@ -78,11 +78,13 @@ import { useRagList } from '../composables/useRagList.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
-import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import Design08OptionDropdown from '../components/Design08OptionDropdown.vue';
+import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
+
+void Design08OptionDropdown;
 
 defineProps({
   tabId: { type: String, required: true },
@@ -532,7 +534,7 @@ function packUnitTypeAt(gi) {
   return 1;
 }
 
-/** 出題單元類型：Design 08 下拉選項（數值與 API unit_type_list 對齊） */
+/** 出題單元類型：數值與後端 unit_types／unit_type_list 對齊（含 0 未選擇，供顯示／相容） */
 const PACK_UNIT_TYPE_OPTIONS = [
   { value: 0, label: '未選擇' },
   { value: 1, label: 'rag' },
@@ -590,6 +592,39 @@ function ensurePackUnitSidecarArrays() {
   stretch('packChunkOverlaps', DEFAULT_PACK_CHUNK_OVERLAP);
 }
 
+/**
+ * 重設第 N 個出題單元：類型→rag、分段長度／重疊為預設、逐字稿稿／YouTube 字串／錯誤／載入旗標清空。
+ * 不清除已拖入之資料夾標籤（避免 unit_list 僅剩空群組時與 packTasks 同步語意混淆）。
+ */
+function resetPackUnitGroup(groupIdx) {
+  if (packGroupsEditBlocked.value) return;
+  const gi = Number(groupIdx);
+  const state = currentState.value;
+  const list = state.packTasksList;
+  if (!Array.isArray(list) || !Number.isFinite(gi) || gi < 0 || gi >= list.length) return;
+  ensurePackUnitSidecarArrays();
+  const types = [...(state.packUnitTypes || [])];
+  while (types.length < list.length) types.push(UNIT_TYPE_RAG);
+  types[gi] = UNIT_TYPE_RAG;
+  state.packUnitTypes = types;
+  const sizes = [...(state.packChunkSizes || [])];
+  sizes[gi] = DEFAULT_PACK_CHUNK_SIZE;
+  state.packChunkSizes = sizes;
+  const overs = [...(state.packChunkOverlaps || [])];
+  overs[gi] = DEFAULT_PACK_CHUNK_OVERLAP;
+  state.packChunkOverlaps = overs;
+  setPackUnitMarkdownAt(gi, '');
+  const yu = [...(state.packUnitYoutubeUrls || [])];
+  yu[gi] = '';
+  state.packUnitYoutubeUrls = yu;
+  const err = [...(state.packUnitTranscriptError || [])];
+  err[gi] = '';
+  state.packUnitTranscriptError = err;
+  const load = [...(state.packUnitTranscriptLoading || [])];
+  load[gi] = false;
+  state.packUnitTranscriptLoading = load;
+}
+
 watch(
   () => currentState.value.packTasksList,
   () => {
@@ -617,6 +652,15 @@ function setPackUnitMarkdownAt(gi, text) {
 
 function packUnitTranscriptBusy(gi) {
   return !!(currentState.value.packUnitTranscriptLoading && currentState.value.packUnitTranscriptLoading[gi]);
+}
+
+/** 文字／音訊／YouTube 單元：稿為空且可編輯時，於編輯器上顯示半透明層與載入按鈕 */
+function showPackUnitMdTranscriptOverlay(gi) {
+  if (packGroupsEditBlocked.value) return false;
+  const ut = packUnitTypeAt(gi);
+  if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return false;
+  const md = String(currentState.value.packUnitMarkdownTexts?.[gi] ?? '').trim();
+  return md === '';
 }
 
 /**
@@ -3292,18 +3336,12 @@ async function confirmAnswer(item) {
               出題設定
             </div>
             <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-              <label
-                class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                for="rag-upload-zip-fn-prod-edit"
-              >上傳檔案名稱（檔案大小）</label>
-              <input
-                id="rag-upload-zip-fn-prod-edit"
-                type="text"
-                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
-                readonly
-                :value="uploadZipReadonlyInputValue"
-                autocomplete="off"
-              >
+              <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                上傳檔案名稱（檔案大小）
+              </div>
+              <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                {{ uploadZipReadonlyInputValue }}
+              </div>
             </div>
           <!-- 課程：可拖曳至出題單元 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
@@ -3333,22 +3371,25 @@ async function confirmAnswer(item) {
           <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">出題單元</div>
             <div
-              class="d-flex flex-wrap align-items-stretch justify-content-start gap-2 w-100 min-w-0"
+              class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
               role="group"
               aria-label="出題單元"
             >
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
-                <div class="w-100 min-w-0 d-flex flex-column gap-2">
-                  <div class="d-flex flex-nowrap align-items-center gap-2 w-100 min-w-0">
+                <div class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column">
+                  <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
+                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                      單元名稱
+                    </div>
                     <div
-                      class="form-control my-input-md my-input-md--on-dark rounded-2 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
-                      style="min-width: 120px; min-height: 2.5rem; flex: 1 1 auto;"
+                      class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
+                      style="min-height: 2.5rem;"
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
                       @dragleave="onDragLeave($event)"
                       @drop.prevent="onDropRagList($event, gi)"
                     >
-                      <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1">
+                      <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1 min-w-0">
                         <div
                           v-for="(tag, ti) in group"
                           :key="'t-' + gi + '-' + ti"
@@ -3368,124 +3409,144 @@ async function confirmAnswer(item) {
                         </div>
                         <span v-if="!group.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
                       </div>
-                      <button
-                        v-if="(currentState.packTasksList || []).length > 0"
-                        type="button"
-                        class="btn btn-link my-color-gray-4 text-decoration-none flex-shrink-0 p-0 ms-1"
-                        style="min-width: 1.5rem;"
-                        @click.stop="removeRagListGroup(gi)"
-                      >
-                        ×
-                      </button>
                     </div>
-                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                      <span class="my-font-sm-400 my-color-gray-1 text-nowrap">類型</span>
-                      <Design08OptionDropdown
-                        :menu-id="`pack-unit-type-${gi}`"
-                        :model-value="packUnitTypeAt(gi)"
-                        :options="PACK_UNIT_TYPE_OPTIONS"
-                        trigger-width="7.25rem"
-                        :aria-label="`出題單元 ${gi + 1} 類型`"
-                        @update:model-value="onPackUnitTypePick(gi, $event)"
-                      />
+                  </div>
+                  <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
+                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                      類型
                     </div>
+                    <Design08OptionDropdown
+                      :model-value="packUnitTypeAt(gi)"
+                      :options="PACK_UNIT_TYPE_OPTIONS"
+                      :menu-id="'pack-unit-type-' + gi"
+                      :disabled="packGroupsEditBlocked"
+                      block
+                      :aria-label="`出題單元 ${gi + 1} 類型`"
+                      @update:model-value="onPackUnitTypePick(gi, $event)"
+                    />
                   </div>
                   <div
                     v-if="packUnitTypeAt(gi) === UNIT_TYPE_RAG"
-                    class="w-100 min-w-0 ps-0 border-start ps-3 ms-1"
-                    style="border-left-width: 2px !important; border-color: var(--my-color-gray-2) !important;"
+                    class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
                   >
-                    <div class="d-flex flex-nowrap align-items-end gap-2 w-100 min-w-0">
-                      <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
-                        <label
-                          class="form-label my-font-sm-400 my-color-gray-1 mb-0"
-                          :for="'rag-pack-chunk-size-' + gi"
-                        >分段長度（字元）</label>
-                        <input
-                          :id="'rag-pack-chunk-size-' + gi"
-                          type="number"
-                          min="1"
-                          step="1"
-                          class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                          :disabled="packGroupsEditBlocked"
-                          :value="ensureNumber(currentState.packChunkSizes?.[gi], DEFAULT_PACK_CHUNK_SIZE)"
-                          :aria-label="`出題單元 ${gi + 1} 分段長度（字元）`"
-                          autocomplete="off"
-                          @input="onPackChunkSizeInput(gi, $event)"
-                        >
-                      </div>
-                      <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
-                        <label
-                          class="form-label my-font-sm-400 my-color-gray-1 mb-0"
-                          :for="'rag-pack-chunk-overlap-' + gi"
-                        >分段重疊（字元）</label>
-                        <input
-                          :id="'rag-pack-chunk-overlap-' + gi"
-                          type="number"
-                          min="0"
-                          step="1"
-                          class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                          :disabled="packGroupsEditBlocked"
-                          :value="ensureNumber(currentState.packChunkOverlaps?.[gi], DEFAULT_PACK_CHUNK_OVERLAP)"
-                          :aria-label="`出題單元 ${gi + 1} 分段重疊（字元）`"
-                          autocomplete="off"
-                          @input="onPackChunkOverlapInput(gi, $event)"
-                        >
-                      </div>
+                    <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
+                      <label
+                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                        :for="'rag-pack-chunk-size-' + gi"
+                      >分段長度（字元）</label>
+                      <input
+                        :id="'rag-pack-chunk-size-' + gi"
+                        type="number"
+                        min="1"
+                        step="1"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
+                        :disabled="packGroupsEditBlocked"
+                        :value="ensureNumber(currentState.packChunkSizes?.[gi], DEFAULT_PACK_CHUNK_SIZE)"
+                        :aria-label="`出題單元 ${gi + 1} 分段長度（字元）`"
+                        autocomplete="off"
+                        @input="onPackChunkSizeInput(gi, $event)"
+                      >
+                    </div>
+                    <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
+                      <label
+                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                        :for="'rag-pack-chunk-overlap-' + gi"
+                      >分段重疊（字元）</label>
+                      <input
+                        :id="'rag-pack-chunk-overlap-' + gi"
+                        type="number"
+                        min="0"
+                        step="1"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
+                        :disabled="packGroupsEditBlocked"
+                        :value="ensureNumber(currentState.packChunkOverlaps?.[gi], DEFAULT_PACK_CHUNK_OVERLAP)"
+                        :aria-label="`出題單元 ${gi + 1} 分段重疊（字元）`"
+                        autocomplete="off"
+                        @input="onPackChunkOverlapInput(gi, $event)"
+                      >
                     </div>
                   </div>
                   <div
                     v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT || packUnitTypeAt(gi) === UNIT_TYPE_MP3 || packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE"
-                    class="w-100 min-w-0 ps-0 border-start ps-3 ms-1"
-                    style="border-left-width: 2px !important; border-color: var(--my-color-gray-2) !important;"
+                    class="w-100 min-w-0"
                   >
-                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                      <template v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT">
+                    <div
+                      class="position-relative w-100 min-w-0 rounded-2 overflow-hidden"
+                    >
+                      <EnglishExamMarkdownEditor
+                        v-if="!packGroupsEditBlocked || (currentState.packUnitMarkdownTexts?.[gi] ?? '').trim() !== ''"
+                        class="my-pack-unit-md-editor"
+                        :textarea-id="'pack-unit-md-' + gi"
+                        :model-value="currentState.packUnitMarkdownTexts?.[gi] ?? ''"
+                        :disabled="packGroupsEditBlocked"
+                        :preview-only="packGroupsEditBlocked"
+                        @update:model-value="setPackUnitMarkdownAt(gi, $event)"
+                      />
+                      <div
+                        v-if="showPackUnitMdTranscriptOverlay(gi)"
+                        class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center gap-2 px-3 py-4 my-pack-unit-md-transcript-overlay"
+                      >
                         <button
+                          v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT"
                           type="button"
-                          class="btn rounded-pill my-font-sm-400 my-button-gray-4 px-3 py-1"
-                          :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
+                          :disabled="packUnitTranscriptBusy(gi)"
+                          :aria-busy="packUnitTranscriptBusy(gi)"
                           @click="onPackUnitTranscriptText(gi, group)"
                         >
                           讀取文字內容
                         </button>
-                      </template>
-                      <template v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3">
                         <button
+                          v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3"
                           type="button"
-                          class="btn rounded-pill my-font-sm-400 my-button-gray-4 px-3 py-1"
-                          :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
+                          :disabled="packUnitTranscriptBusy(gi)"
+                          :aria-busy="packUnitTranscriptBusy(gi)"
                           @click="onPackUnitTranscriptAudio(gi, group)"
                         >
                           轉換逐字稿
                         </button>
-                      </template>
-                      <template v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE">
                         <button
+                          v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE"
                           type="button"
-                          class="btn rounded-pill my-font-sm-400 my-button-gray-4 px-3 py-1"
-                          :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
+                          :disabled="packUnitTranscriptBusy(gi)"
+                          :aria-busy="packUnitTranscriptBusy(gi)"
                           @click="onPackUnitTranscriptYoutube(gi, group)"
                         >
                           轉換逐字稿
                         </button>
-                      </template>
+                      </div>
                     </div>
                     <p
                       v-if="currentState.packUnitTranscriptError?.[gi]"
-                      class="my-font-sm-400 my-color-red mb-2"
+                      class="my-font-sm-400 my-color-red mt-2 mb-0"
                     >
                       {{ currentState.packUnitTranscriptError[gi] }}
                     </p>
-                    <EnglishExamMarkdownEditor
-                      v-if="!packGroupsEditBlocked || (currentState.packUnitMarkdownTexts?.[gi] ?? '').trim() !== ''"
-                      class="my-pack-unit-md-editor"
-                      :textarea-id="'pack-unit-md-' + gi"
-                      :model-value="currentState.packUnitMarkdownTexts?.[gi] ?? ''"
+                  </div>
+                  <div
+                    v-if="(currentState.packTasksList || []).length > 0"
+                    class="d-flex flex-wrap justify-content-center align-items-center gap-2 w-100 min-w-0 pt-2 mt-1 mb-0"
+                  >
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
+                      aria-label="重設此單元"
                       :disabled="packGroupsEditBlocked"
-                      :preview-only="packGroupsEditBlocked"
-                      @update:model-value="setPackUnitMarkdownAt(gi, $event)"
-                    />
+                      @click.stop="resetPackUnitGroup(gi)"
+                    >
+                      重設
+                    </button>
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
+                      aria-label="刪除此單元"
+                      :disabled="packGroupsEditBlocked"
+                      @click.stop="removeRagListGroup(gi)"
+                    >
+                      刪除
+                    </button>
                   </div>
                 </div>
               </template>
@@ -4190,6 +4251,13 @@ async function confirmAnswer(item) {
 }
 .my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 200px;
+}
+/* 稿為空時覆蓋編輯區：淺色半透明＋中央中按鈕 */
+.my-pack-unit-md-transcript-overlay {
+  z-index: 5;
+  box-sizing: border-box;
+  background: color-mix(in srgb, var(--my-color-white) 62%, transparent);
+  backdrop-filter: blur(2px);
 }
 /* unit_type=2：單元題庫內容 Markdown 區；淺底區塊內捲軸需較深 thumb，否則貼近全站預設會過淡 */
 .my-rag-unit-type-text-scroll {

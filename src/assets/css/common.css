@@ -618,10 +618,10 @@ code {
   --bs-btn-bg: var(--my-color-gray-2);
   --bs-btn-border-color: transparent;
   --bs-btn-hover-color: var(--my-color-black);
-  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-2));
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-2));
   --bs-btn-hover-border-color: transparent;
   --bs-btn-active-color: var(--my-color-black);
-  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-2));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-2));
   --bs-btn-active-border-color: transparent;
   color: var(--my-color-black);
   background-color: var(--my-color-gray-2);
@@ -631,10 +631,10 @@ code {
   --bs-btn-bg: var(--my-color-gray-3);
   --bs-btn-border-color: transparent;
   --bs-btn-hover-color: var(--my-color-black);
-  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-3));
   --bs-btn-hover-border-color: transparent;
   --bs-btn-active-color: var(--my-color-black);
-  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-3));
   --bs-btn-active-border-color: transparent;
   color: var(--my-color-black);
   background-color: var(--my-color-gray-3);
