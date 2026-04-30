@@ -8,11 +8,11 @@
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
- * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與出題單元群組同序〕；已不再傳 system_prompt_instruction）
+ * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕；已不再傳 system_prompt_instruction）
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id），再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元題庫內容」：單元名稱僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 區（不另標「逐字稿」、可垂直捲動，不顯示檔名）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
+ * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id），再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元題庫內容」：單元名稱僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 逐字稿區（可垂直捲動）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, onActivated, reactive } from 'vue';
@@ -66,6 +66,7 @@ import {
   quizAnswerPresetFromReference,
   serializePackUnitTypesForApi,
   transcriptionsForBuildRagZip,
+  chunkSizesOverlapsStringsForBuildRagZip,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -210,11 +211,6 @@ const ragListReadonlyGroups = computed(() => {
   if (unitStr) return parsePackTasksList(unitStr);
   return [];
 });
-
-/** 唯讀出題單元：橫向純文字，群組間以 · 分隔、群內以 + */
-const ragListReadonlyInlineText = computed(() =>
-  ragListReadonlyGroups.value.map((g) => (Array.isArray(g) ? g.join(' + ') : '')).filter(Boolean).join(' · ')
-);
 
 /** 尚無法編輯出題單元（未上傳 ZIP 等）；與拖放、區塊鎖定一致，不包含「群組是否已填滿」 */
 const packGroupsEditBlocked = computed(() => {
@@ -485,7 +481,7 @@ const uploadZipFileSizeDisplay = computed(() => {
   return formatFileSize(raw, 'MB');
 });
 
-/** 唯讀 input 一列顯示：檔名 + 全形括號內檔案大小 */
+/** 唯讀顯示：檔名 + 全形括號內檔案大小（出題設定／純展示列） */
 const uploadZipReadonlyInputValue = computed(() => {
   const name = String(uploadedZipDisplayName.value ?? '').trim();
   const size = String(uploadZipFileSizeDisplay.value ?? '').trim();
@@ -779,6 +775,28 @@ function unitYoutubeUrl(unit) {
   return raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
 }
 
+/** Rag_Unit／GET /rag/tab/units／build-rag-zip output：逐字稿欄位（含 NDJSON output.transcript_plain） */
+function rawUnitTranscriptionString(unit) {
+  if (!unit || typeof unit !== 'object') return '';
+  const out = unit.output && typeof unit.output === 'object' ? unit.output : null;
+  const candidates = [
+    unit.transcription,
+    unit.transcript,
+    unit.transcript_plain,
+    unit.transcriptPlain,
+    unit.transcript_text,
+    unit.transcriptText,
+    out?.transcription,
+    out?.transcript,
+    out?.transcript_plain,
+    out?.transcriptPlain,
+  ];
+  for (const c of candidates) {
+    if (c != null && String(c).trim() !== '') return String(c).trim();
+  }
+  return '';
+}
+
 function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
   if (!unit || typeof unit !== 'object') return null;
   const rawName =
@@ -793,11 +811,11 @@ function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
   const anchorRagQuizId = firstRagQuizAnchorIdFromUnit(unit);
   const ragUnitId = ragUnitIdFromRawUnit(unit);
   const src = unitSourceFilename(unit);
-  const qptRaw = unit.transcription;
-  const transcription =
-    qptRaw != null && String(qptRaw).trim() !== '' ? String(qptRaw).trim() : '';
+  const transcription = rawUnitTranscriptionString(unit);
   const ut = Number(unit.unit_type ?? unit.unitType);
   const rag_mode = unit.rag_mode ?? unit.ragMode;
+  const csRaw = unit.chunk_size ?? unit.chunkSize;
+  const coRaw = unit.chunk_overlap ?? unit.chunkOverlap;
   return {
     rag_tab_id: tabId || safeName,
     filename: src || `${safeName}_rag.zip`,
@@ -811,6 +829,12 @@ function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
     text_file_name: unitTextFileName(unit),
     mp3_file_name: unitMp3FileName(unit),
     youtube_url: unitYoutubeUrl(unit),
+    ...(csRaw != null && String(csRaw).trim() !== '' && !Number.isNaN(Number(csRaw))
+      ? { chunk_size: ensureNumber(csRaw, DEFAULT_PACK_CHUNK_SIZE) }
+      : {}),
+    ...(coRaw != null && String(coRaw).trim() !== '' && !Number.isNaN(Number(coRaw))
+      ? { chunk_overlap: ensureNumber(coRaw, DEFAULT_PACK_CHUNK_OVERLAP) }
+      : {}),
   };
 }
 
@@ -846,9 +870,7 @@ function fallbackUnitsRawFromRag(rag) {
             ? String(o.rag_name).trim()
             : label;
       const unit_name = String(rawUnit || '').replace(/\+/g, '_') || label || sourceTabId;
-      const qpt = o.transcription;
-      const transcription =
-        qpt != null && String(qpt).trim() !== '' ? String(qpt).trim() : '';
+      const transcription = rawUnitTranscriptionString(o);
       const utMerged = Number(o.unit_type ?? o.unitType ?? typesArr[idx]);
       const merged = {
         ...o,
@@ -941,6 +963,14 @@ function buildUnitTabItem(unit, index = 0) {
   const ragUnitId =
     unit?.rag_unit_id != null ? Number(unit.rag_unit_id) : ragUnitIdFromRawUnit(unit);
   const unitType = tabUnitTypeFromUnit(unit);
+  const chunkSize =
+    unit.chunk_size != null && !Number.isNaN(Number(unit.chunk_size))
+      ? ensureNumber(unit.chunk_size, DEFAULT_PACK_CHUNK_SIZE)
+      : null;
+  const chunkOverlap =
+    unit.chunk_overlap != null && !Number.isNaN(Number(unit.chunk_overlap))
+      ? ensureNumber(unit.chunk_overlap, DEFAULT_PACK_CHUNK_OVERLAP)
+      : null;
   return {
     id: `${ragTabId || 'tab'}::${keyBase}::${index}`,
     label: unitTabLabelFromUnit(unit, index),
@@ -952,10 +982,12 @@ function buildUnitTabItem(unit, index = 0) {
     ragTabId,
     anchorRagQuizId: Number.isFinite(anchorRagQuizId) && anchorRagQuizId > 0 ? anchorRagQuizId : null,
     ragUnitDbId: Number.isFinite(ragUnitId) && ragUnitId > 0 ? ragUnitId : null,
-    transcription: String(unit?.transcription ?? '').trim(),
+    transcription: rawUnitTranscriptionString(unit),
     textFileName: unitTextFileName(unit),
     mp3FileName: unitMp3FileName(unit),
     youtubeUrl: unitYoutubeUrl(unit),
+    chunkSize,
+    chunkOverlap,
   };
 }
 
@@ -989,7 +1021,20 @@ const activeUnitTabItem = computed(() => {
   return tabs.find((t) => t.id === activeId) ?? null;
 });
 
-/** 「單元題庫內容」區：文字單元內嵌 Markdown（與全站 renderMarkdown 一致） */
+/** 逐字稿 Modal：唯讀「出題設定」列傳入全文時覆寫；否則用目前選定單元之 transcription */
+const ragUnitTranscriptModalMarkdownOverride = ref(/** @type {string | null} */ (null));
+
+const ragUnitTranscriptModalBodyHtml = computed(() => {
+  const override = ragUnitTranscriptModalMarkdownOverride.value;
+  if (override != null) {
+    return renderMarkdownToSafeHtml(String(override));
+  }
+  const tab = activeUnitTabItem.value;
+  const raw = tab?.transcription;
+  return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
+});
+
+/** 「單元題庫內容」文字單元：內嵌 Markdown（與唯讀出題設定之 markdown segment 同 render） */
 const activeUnitTranscriptionMdHtml = computed(() => {
   const tab = activeUnitTabItem.value;
   const raw = tab?.transcription;
@@ -1017,12 +1062,21 @@ const activeUnitYoutubeEmbedUrl = computed(() => {
 
 const ragUnitTranscriptModalOpen = ref(false);
 
-function openRagUnitTranscriptModal() {
+/** @param {unknown} [markdownOverride] 僅限 string：出題設定唯讀列傳入全文；來自 `@click` 時忽略事件物件 */
+function openRagUnitTranscriptModal(markdownOverride) {
+  const isStr = typeof markdownOverride === 'string';
+  const s = isStr ? String(markdownOverride).trim() : '';
+  if (isStr && s !== '') {
+    ragUnitTranscriptModalMarkdownOverride.value = s;
+  } else {
+    ragUnitTranscriptModalMarkdownOverride.value = null;
+  }
   ragUnitTranscriptModalOpen.value = true;
 }
 
 function closeRagUnitTranscriptModal() {
   ragUnitTranscriptModalOpen.value = false;
+  ragUnitTranscriptModalMarkdownOverride.value = null;
 }
 
 const activeUnitSlotIndex = computed(() => {
@@ -1353,6 +1407,192 @@ function hydratePackChunkArraysFromRag(rag, groupCount) {
     overs: overs.slice(0, count),
   };
 }
+
+/** 出題設定唯讀：unit_type → 下拉同款文字（0＝未選擇） */
+function packUnitTypeDisplayLabel(unitType) {
+  const hit = PACK_UNIT_TYPE_OPTIONS.find((o) => Number(o.value) === Number(unitType));
+  if (hit) return hit.label;
+  return 'rag';
+}
+
+/** 唯讀「出題設定」：RAG 分段參數顯示在與類型／來源檔同列（不外層縮排） */
+function quizBankReadonlyOutlineChunkFields(chunkSize, chunkOverlap) {
+  return [
+    { label: '分段長度（字元）', value: String(ensureNumber(chunkSize, DEFAULT_PACK_CHUNK_SIZE)) },
+    { label: '分段重疊（字元）', value: String(ensureNumber(chunkOverlap, DEFAULT_PACK_CHUNK_OVERLAP)) },
+  ];
+}
+
+/** 唯讀「出題設定」：來源檔一行（與單元 tab 欄位對齊） */
+function quizBankReadonlySourceDisplay(tab) {
+  if (!tab || typeof tab !== 'object') return '';
+  const ut = Number(tab.unitType ?? UNIT_TYPE_RAG);
+  if (ut === UNIT_TYPE_TEXT) return String(tab.textFileName ?? '').trim();
+  if (ut === UNIT_TYPE_MP3) return String(tab.mp3FileName ?? '').trim();
+  if (ut === UNIT_TYPE_YOUTUBE) return String(tab.youtubeUrl ?? '').trim();
+  if (ut === UNIT_TYPE_RAG) return String(tab.filename ?? '').trim();
+  return '';
+}
+
+/**
+ * 唯讀「出題設定」細節：MP3／YouTube 與「單元題庫內容」同層級（播放器／嵌入）；逐字稿另以「逐字稿」開 Modal。
+ * @returns {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', src: string } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]}
+ */
+function buildQuizBankReadonlyDetailSegments(tab) {
+  const ut = Number(tab?.unitType ?? UNIT_TYPE_RAG);
+  const trRaw = String(tab?.transcription ?? '').trim();
+  const trLen = trRaw.length;
+  const personId = getPersonId(authStore);
+  /** @type {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', src: string } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]} */
+  const segments = [];
+
+  if (ut === UNIT_TYPE_RAG) {
+    if (trLen) segments.push({ kind: 'transcript_button', markdown: trRaw });
+    return segments;
+  }
+  if (ut === UNIT_TYPE_TEXT) {
+    if (trLen) segments.push({ kind: 'markdown', markdown: trRaw });
+    else segments.push({ kind: 'field', label: '逐字稿', value: '尚未載入或無內容' });
+    return segments;
+  }
+  if (ut === UNIT_TYPE_MP3) {
+    const rag_tab_id = String(tab.ragTabId ?? '').trim();
+    const ru = tab.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
+    const src =
+      personId && rag_tab_id && Number.isFinite(ru) && ru > 0
+        ? buildRagTabUnitMp3FileUrl({ rag_tab_id, rag_unit_id: ru, personId })
+        : '';
+    if (src) segments.push({ kind: 'audio', src });
+    if (trLen) segments.push({ kind: 'transcript_button', markdown: trRaw });
+    return segments;
+  }
+  if (ut === UNIT_TYPE_YOUTUBE) {
+    const pageUrl = String(tab.youtubeUrl ?? '').trim();
+    const embedSrc = youtubeEmbedUrlFromInput(pageUrl);
+    segments.push({ kind: 'youtube', embedSrc, pageUrl });
+    if (trLen) segments.push({ kind: 'transcript_button', markdown: trRaw });
+    return segments;
+  }
+  return segments;
+}
+
+function quizBankReadonlyMarkdownHtml(md) {
+  return renderMarkdownToSafeHtml(md != null ? String(md) : '');
+}
+
+/** 唯讀「出題設定」逐字稿：API 省略全文時依本頁索引補 pack 稿／最近一次 build outputs／列表 rag.outputs */
+function resolveUnitSlotTranscription(index, tabLike, state, rag) {
+  const i = Number(index);
+  const fromTab = rawUnitTranscriptionString(tabLike ?? {});
+  if (fromTab) return fromTab;
+  const md = state?.packUnitMarkdownTexts?.[i];
+  if (md != null && String(md).trim() !== '') return String(md).trim();
+  const packOutputs = Array.isArray(state?.packResponseJson?.outputs) ? state.packResponseJson.outputs : null;
+  if (packOutputs && packOutputs[i] != null) {
+    const t2 = rawUnitTranscriptionString(packOutputs[i]);
+    if (t2) return t2;
+  }
+  if (rag && Array.isArray(rag.outputs) && rag.outputs[i] != null) {
+    const t3 = rawUnitTranscriptionString(rag.outputs[i]);
+    if (t3) return t3;
+  }
+  const metaParsed = rag ? parseRagMetadataObject(rag) : null;
+  const nested = metaParsed?.outputs;
+  if (Array.isArray(nested) && nested[i] != null) {
+    const t4 = rawUnitTranscriptionString(nested[i]);
+    if (t4) return t4;
+  }
+  return '';
+}
+
+function tabWithResolvedTranscription(tab, index, state, rag) {
+  const tr = resolveUnitSlotTranscription(index, tab, state, rag);
+  return { ...tab, transcription: tr };
+}
+
+/**
+ * 「出題設定」唯讀「出題單元」：優先現有 unit 子分頁列（後端／GET units 對齊）；
+ * 若尚未載入 tabs，fallback 資料夾群組 + Rag 列表之 unit_types／chunk_*。
+ */
+const quizBankSettingReadonlyUnitRows = computed(() => {
+  const state = currentState.value;
+  const rag = currentRagItem.value;
+  const tabs = state.unitTabOrder ?? [];
+  const nTabs = tabs.length;
+
+  if (nTabs > 0) {
+    const chunkHL = rag ? hydratePackChunkArraysFromRag(rag, nTabs) : { sizes: [], overs: [] };
+    return tabs.map((t, i) => {
+      const tResolved = tabWithResolvedTranscription(t, i, state, rag);
+      const srcDisp = quizBankReadonlySourceDisplay(tResolved);
+      const ut = Number(t.unitType ?? UNIT_TYPE_RAG);
+      const cs = t.chunkSize != null ? t.chunkSize : chunkHL.sizes[i] ?? DEFAULT_PACK_CHUNK_SIZE;
+      const co = t.chunkOverlap != null ? t.chunkOverlap : chunkHL.overs[i] ?? DEFAULT_PACK_CHUNK_OVERLAP;
+      return {
+        key: String(t?.id ?? `idx-${i}`),
+        title: String(t?.label ?? `單元 ${i + 1}`).trim() || `單元 ${i + 1}`,
+        unitType: t.unitType,
+        typeLabel: packUnitTypeDisplayLabel(t.unitType),
+        sourceDisplay: srcDisp || '—',
+        outlineChunkFields: ut === UNIT_TYPE_RAG ? quizBankReadonlyOutlineChunkFields(cs, co) : [],
+        detailSegments: buildQuizBankReadonlyDetailSegments(tResolved),
+      };
+    });
+  }
+
+  const groups = ragListReadonlyGroups.value;
+  if (!Array.isArray(groups) || groups.length === 0) return [];
+
+  const types = rag
+    ? parsePackUnitTypesFromRag(rag.unit_types ?? rag.unit_type_list, groups.length)
+    : [];
+  const chunkHL = rag ? hydratePackChunkArraysFromRag(rag, groups.length) : { sizes: [], overs: [] };
+  const unitsRow = rag ? unitsFromRagTabsRow(rag) : [];
+
+  return groups.map((g, i) => {
+    const folderLine = Array.isArray(g) ? g.filter(Boolean).join(' + ') : '';
+    const rawT = Number(types[i]);
+    const ut = rawT === 0 || rawT === 1 || rawT === 2 || rawT === 3 || rawT === 4 ? rawT : UNIT_TYPE_RAG;
+    const chunkSize = chunkHL.sizes[i] ?? DEFAULT_PACK_CHUNK_SIZE;
+    const chunkOverlap = chunkHL.overs[i] ?? DEFAULT_PACK_CHUNK_OVERLAP;
+
+    const synTab = unitsRow[i] != null ? buildUnitTabItem(unitsRow[i], i) : null;
+    /** @type {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', src: string } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]} */
+    let detailSegments = [{ kind: 'field', label: '資料夾', value: folderLine.trim() ? folderLine : '—' }];
+    let sourceDisplay = folderLine.trim() ? folderLine : '—';
+    /** @type {{ label: string, value: string }[]} */
+    let outlineChunkFields = [];
+    if (synTab) {
+      const cs = synTab.chunkSize != null ? synTab.chunkSize : chunkSize;
+      const co = synTab.chunkOverlap != null ? synTab.chunkOverlap : chunkOverlap;
+      const synResolved = tabWithResolvedTranscription(synTab, i, state, rag);
+      const s = quizBankReadonlySourceDisplay(synResolved);
+      if (String(s ?? '').trim() !== '') sourceDisplay = String(s).trim();
+      const utSyn = Number(synResolved.unitType ?? UNIT_TYPE_RAG);
+      if (utSyn === UNIT_TYPE_RAG) outlineChunkFields = quizBankReadonlyOutlineChunkFields(cs, co);
+      detailSegments = [
+        { kind: 'field', label: '資料夾', value: folderLine.trim() ? folderLine : '—' },
+        ...buildQuizBankReadonlyDetailSegments(synResolved),
+      ];
+    } else if (ut === UNIT_TYPE_RAG) {
+      outlineChunkFields = quizBankReadonlyOutlineChunkFields(chunkSize, chunkOverlap);
+    } else {
+      detailSegments.push({
+        kind: 'text',
+        text: `詳細來源請至下方「出題單元」區選擇「${folderLine || `單元 ${i + 1}`}」後，於「單元題庫內容」檢視。`,
+      });
+    }
+    return {
+      key: `fb-${i}-${String(folderLine).slice(0, 32)}`,
+      title: folderLine || `出題單元 ${i + 1}`,
+      unitType: ut,
+      typeLabel: packUnitTypeDisplayLabel(ut),
+      sourceDisplay,
+      outlineChunkFields,
+      detailSegments,
+    };
+  });
+});
 
 /** 從 Rag 項目同步到 tab state（packTasks、ragMetadata、chunk、quizzes 等） */
 function syncRagItemToState(rag, state) {
@@ -2080,11 +2320,14 @@ async function confirmPack() {
       state.packUnitMarkdownTexts ?? []
     );
     ensurePackUnitSidecarArrays();
-    const nUnits = state.packTasksList?.length ?? 0;
-    const chunkSizesForApi = (state.packChunkSizes || []).slice(0, nUnits).map((x) => ensureNumber(x, DEFAULT_PACK_CHUNK_SIZE));
-    const chunkOverlapsForApi = (state.packChunkOverlaps || []).slice(0, nUnits).map((x) => ensureNumber(x, DEFAULT_PACK_CHUNK_OVERLAP));
-    while (chunkSizesForApi.length < nUnits) chunkSizesForApi.push(DEFAULT_PACK_CHUNK_SIZE);
-    while (chunkOverlapsForApi.length < nUnits) chunkOverlapsForApi.push(DEFAULT_PACK_CHUNK_OVERLAP);
+    const { chunk_sizes: chunkSizesStr, chunk_overlaps: chunkOverlapsStr } =
+      chunkSizesOverlapsStringsForBuildRagZip(
+        unitTypesNormalized,
+        state.packChunkSizes,
+        state.packChunkOverlaps,
+        DEFAULT_PACK_CHUNK_SIZE,
+        DEFAULT_PACK_CHUNK_OVERLAP
+      );
     state.packResponseJson = await apiBuildRagZip(
       {
         rag_tab_id: fileId,
@@ -2092,8 +2335,8 @@ async function confirmPack() {
         unit_list: unitList,
         unit_types: serializePackUnitTypesForApi(unitTypesNormalized),
         unit_type_list: unitTypesIntArray,
-        chunk_sizes: chunkSizesForApi,
-        chunk_overlaps: chunkOverlapsForApi,
+        chunk_sizes: chunkSizesStr,
+        chunk_overlaps: chunkOverlapsStr,
         transcriptions,
       },
       (ev) => {
@@ -2755,9 +2998,9 @@ async function confirmAnswer(item) {
             </div>
             <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
               <div
-                v-if="activeUnitTranscriptionMdHtml"
+                v-if="ragUnitTranscriptModalBodyHtml"
                 class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                v-html="activeUnitTranscriptionMdHtml"
+                v-html="ragUnitTranscriptModalBodyHtml"
               />
               <span
                 v-else
@@ -3158,7 +3401,7 @@ async function confirmAnswer(item) {
                           :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
                           @click="onPackUnitTranscriptText(gi, group)"
                         >
-                          讀取資料夾 .md
+                          讀取文字內容
                         </button>
                       </template>
                       <template v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3">
@@ -3178,7 +3421,7 @@ async function confirmAnswer(item) {
                           :disabled="packGroupsEditBlocked || packUnitTranscriptBusy(gi)"
                           @click="onPackUnitTranscriptYoutube(gi, group)"
                         >
-                          擷取 YouTube 字幕
+                          轉換逐字稿
                         </button>
                       </template>
                     </div>
@@ -3302,26 +3545,177 @@ async function confirmAnswer(item) {
               出題設定
             </div>
             <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-              <label
-                class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                for="rag-upload-zip-fn-prod-ro"
-              >上傳檔案名稱（檔案大小）</label>
-              <input
-                id="rag-upload-zip-fn-prod-ro"
-                type="text"
-                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
-                readonly
-                :value="uploadZipReadonlyInputValue"
-                autocomplete="off"
-              >
+              <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                上傳檔案名稱（檔案大小）
+              </div>
+              <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                {{ uploadZipReadonlyInputValue }}
+              </div>
             </div>
               <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
                 <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">出題單元</div>
+                <template v-if="!quizBankSettingReadonlyUnitRows.length">
+                  <div
+                    class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
+                  >
+                    —
+                  </div>
+                </template>
                 <div
-                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break"
-                  :class="ragListReadonlyGroups.length ? 'my-color-white' : 'my-color-gray-4'"
+                  v-else
+                  class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
                 >
-                  {{ ragListReadonlyGroups.length ? ragListReadonlyInlineText : '—' }}
+                  <div
+                    v-for="row in quizBankSettingReadonlyUnitRows"
+                    :key="row.key"
+                    class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 border border-secondary border-opacity-25 d-flex flex-column"
+                  >
+                    <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
+                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                        單元名稱
+                      </div>
+                      <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                        {{ row.title }}
+                      </div>
+                    </div>
+                    <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
+                      <div
+                        class="d-flex flex-column gap-0 min-w-0"
+                        style="flex: 1 1 0;"
+                      >
+                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                          類型
+                        </div>
+                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                          {{ row.typeLabel }}
+                        </div>
+                      </div>
+                      <div
+                        class="d-flex flex-column gap-0 min-w-0"
+                        style="flex: 1 1 0;"
+                      >
+                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                          來源檔
+                        </div>
+                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                          {{ row.sourceDisplay }}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      v-if="row.outlineChunkFields.length"
+                      class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
+                    >
+                      <div
+                        v-for="(och, oi) in row.outlineChunkFields"
+                        :key="row.key + '-ochunk-' + oi"
+                        class="d-flex flex-column gap-0 min-w-0"
+                        style="flex: 1 1 0;"
+                      >
+                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                          {{ och.label }}
+                        </div>
+                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                          {{ och.value }}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      v-if="row.detailSegments.length"
+                      class="w-100 min-w-0"
+                    >
+                      <template
+                        v-for="(seg, li) in row.detailSegments"
+                        :key="row.key + '-seg-' + li"
+                      >
+                        <div
+                          v-if="seg.kind === 'text'"
+                          class="my-font-sm-400 lh-base my-color-black"
+                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                        >
+                          {{ seg.text }}
+                        </div>
+                        <div
+                          v-else-if="seg.kind === 'field'"
+                          class="d-flex flex-column gap-0 w-100 min-w-0"
+                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                        >
+                          <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                            {{ seg.label }}
+                          </div>
+                          <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                            {{ seg.value }}
+                          </div>
+                        </div>
+                        <div
+                          v-else-if="seg.kind === 'markdown'"
+                          class="my-rag-unit-type-text-scroll rounded-2 border border-secondary border-opacity-25 px-3 py-2 my-bgcolor-gray-4 min-w-0"
+                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          role="region"
+                          aria-label="單元逐字稿"
+                        >
+                          <div
+                            class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                            v-html="quizBankReadonlyMarkdownHtml(seg.markdown)"
+                          />
+                        </div>
+                        <div
+                          v-else-if="seg.kind === 'audio'"
+                          class="col-12 min-w-0"
+                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          style="padding: 0;"
+                        >
+                          <audio
+                            :key="seg.src"
+                            controls
+                            class="w-100"
+                            preload="none"
+                            :src="seg.src"
+                          />
+                        </div>
+                        <div
+                          v-else-if="seg.kind === 'youtube'"
+                          class="d-flex flex-column gap-2 min-w-0"
+                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                        >
+                          <div
+                            v-if="seg.embedSrc"
+                            class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden border border-secondary border-opacity-25"
+                          >
+                            <iframe
+                              class="border-0"
+                              title="YouTube 影片"
+                              :src="seg.embedSrc"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              referrerpolicy="strict-origin-when-cross-origin"
+                              allowfullscreen
+                            />
+                          </div>
+                          <span
+                            v-else-if="seg.pageUrl"
+                            class="my-font-md-400 my-color-black text-break"
+                          >{{ seg.pageUrl }}</span>
+                          <span
+                            v-else
+                            class="my-font-md-400 my-color-black text-break"
+                          >—</span>
+                        </div>
+                        <div
+                          v-else-if="seg.kind === 'transcript_button'"
+                          class="d-flex justify-content-center w-100 min-w-0 pt-1"
+                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                        >
+                          <button
+                            type="button"
+                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                            @click="openRagUnitTranscriptModal(seg.markdown)"
+                          >
+                            逐字稿
+                          </button>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
                 </div>
               </div>
           </div>
@@ -3461,6 +3855,28 @@ async function confirmAnswer(item) {
             <!-- ── 單元底下多題：題型 sub-tab + 列末「+」新增題庫；單一內容區（出題規則 + 題卡）── -->
             <template v-if="hasUnitSubTabs">
               <div
+                v-if="!activeUnitQuizCards.length"
+                class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                  title="新增題型"
+                  aria-label="新增題型"
+                  :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                  :disabled="
+                    getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                    || renameUnitQuizSaving
+                    || deleteUnitQuizLoading
+                  "
+                  @click="createBlankUnitQuiz(activeUnitSlotIndex)"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  新增題型
+                </button>
+              </div>
+              <div
+                v-else
                 class="w-100 my-rag-tabs-bar my-bgcolor-gray-4"
               >
                 <div class="d-flex justify-content-center align-items-center w-100">
@@ -3592,7 +4008,6 @@ async function confirmAnswer(item) {
                       v-if="activeUnitQuizCard.rag_quiz_for_exam !== true"
                       v-model="activeUnitQuizCard.quizUserPromptText"
                       :preview-only="false"
-                      placeholder="貼上或輸入出題規則（Markdown）…"
                       :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                       :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                     />

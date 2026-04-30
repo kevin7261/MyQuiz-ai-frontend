@@ -409,6 +409,50 @@ export function packUnitTypesIntArrayForApi(types) {
 }
 
 /**
+ * POST /rag/tab/build-rag-zip 的 chunk_sizes／chunk_overlaps：後端請求體為與 unit_list 群組序對齊的逗號分隔字串（非 JSON 陣列）。
+ * unit_type≠1（非 RAG）時為 0，與後端僅對 type 1 做分段／FAISS 一致。
+ *
+ * @param {number[]} unitTypes - parsePackUnitTypesFromRag 結果
+ * @param {unknown[]} [chunkSizes] - 與群組同序 UI 數值
+ * @param {unknown[]} [chunkOverlaps] - 同上
+ * @returns {{ chunk_sizes: string, chunk_overlaps: string }}
+ */
+export function chunkSizesOverlapsStringsForBuildRagZip(
+  unitTypes,
+  chunkSizes,
+  chunkOverlaps,
+  defaultSize = DEFAULT_PACK_CHUNK_SIZE,
+  defaultOverlap = DEFAULT_PACK_CHUNK_OVERLAP
+) {
+  const types = Array.isArray(unitTypes) ? unitTypes : [];
+  const szIn = Array.isArray(chunkSizes) ? chunkSizes : [];
+  const ovIn = Array.isArray(chunkOverlaps) ? chunkOverlaps : [];
+  const n = types.length;
+  const ds = Number(defaultSize);
+  const dov = Number(defaultOverlap);
+  const defS = Number.isFinite(ds) ? ds : DEFAULT_PACK_CHUNK_SIZE;
+  const defO = Number.isFinite(dov) ? dov : DEFAULT_PACK_CHUNK_OVERLAP;
+  const sizesNums = [];
+  const oversNums = [];
+  for (let i = 0; i < n; i++) {
+    const ut = Number(types[i]);
+    const sNum = Number(szIn[i]);
+    const oNum = Number(ovIn[i]);
+    if (ut === UNIT_TYPE_RAG) {
+      sizesNums.push(Number.isFinite(sNum) ? sNum : defS);
+      oversNums.push(Number.isFinite(oNum) ? oNum : defO);
+    } else {
+      sizesNums.push(0);
+      oversNums.push(0);
+    }
+  }
+  return {
+    chunk_sizes: sizesNums.join(','),
+    chunk_overlaps: oversNums.join(','),
+  };
+}
+
+/**
  * 將 GET /rag/tabs 回傳正規化為 RAG 陣列
  * 支援：直接陣列、{ rags, count }、{ items }、{ tabs }／{ data }（為陣列時）、或單一 RAG 物件
  * @param {unknown} data - API 回傳的資料
