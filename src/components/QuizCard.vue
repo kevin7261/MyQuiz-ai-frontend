@@ -1,11 +1,12 @@
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
+import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號（可隱藏）、題目內容、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改規則、批改結果。
+ * 顯示：題號（可隱藏）、題目內容、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改結果；測驗頁 hideGradingPrompt 時「批改規則」以 modal 按鈕置於批改結果內容下方。
  * 可輸入答案並按「開始批改」送出評分；按鈕常駐，再次批改時 composable 會先將 confirmed 設為 false 再更新結果。**RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
@@ -96,12 +97,29 @@ const answerUserPromptSnapshotTrimmed = computed(() =>
   String(props.card?.gradingPrompt ?? '').trim(),
 );
 
-const showExamLlmPromptSnapshots = computed(
-  () =>
-    props.hideGradingPrompt &&
-    hasQuizBody.value &&
-    (quizUserPromptSnapshotTrimmed.value !== '' || answerUserPromptSnapshotTrimmed.value !== ''),
+const promptModalKind = ref('');
+
+const promptModalTitle = computed(() =>
+  promptModalKind.value === 'question' ? '出題規則' : '批改規則'
 );
+
+const promptModalText = computed(() => {
+  if (promptModalKind.value === 'question') return quizUserPromptSnapshotTrimmed.value;
+  if (promptModalKind.value === 'grading') return answerUserPromptSnapshotTrimmed.value;
+  return '';
+});
+
+const promptModalHtml = computed(() => renderMarkdownToSafeHtml(promptModalText.value));
+
+function openPromptModal(kind) {
+  if (kind === 'question' && quizUserPromptSnapshotTrimmed.value === '') return;
+  if (kind === 'grading' && answerUserPromptSnapshotTrimmed.value === '') return;
+  promptModalKind.value = kind;
+}
+
+function closePromptModal() {
+  promptModalKind.value = '';
+}
 
 /**
  * designUi 時頂區為 flex gap-4 的子項之一；若第 N 題隱藏（如測驗頁、建立題庫 embedded），勿渲染空白包住器，否則與「題目」區之間會多出一格 gap。
@@ -112,14 +130,57 @@ const showQuizCardHeaderBand = computed(
 </script>
 
 <template>
-  <div
-    :class="[
-      designUi
-        ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-3 rounded-4 p-4 mb-0 w-100 min-w-0')
-        : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
-      { 'mt-4': !designUi && slotIndex > 1 },
-    ]"
-  >
+  <div>
+    <Teleport to="body">
+      <div
+        v-if="promptModalKind"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="`quiz-card-prompt-modal-title-${card.id}`"
+        @click.self="closePromptModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                :id="`quiz-card-prompt-modal-title-${card.id}`"
+                class="modal-title my-color-black"
+              >{{ promptModalTitle }}</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closePromptModal"
+              />
+            </div>
+            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <div
+                v-if="promptModalHtml"
+                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                v-html="promptModalHtml"
+              />
+              <span
+                v-else
+                class="my-font-md-400 my-color-black"
+              >—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <div
+      :class="[
+        designUi
+          ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-3 rounded-4 p-4 mb-0 w-100 min-w-0')
+          : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
+        { 'mt-4': !designUi && slotIndex > 1 },
+      ]"
+    >
     <div
       class="text-start w-100 min-w-0"
       :class="designUi ? 'd-flex flex-column gap-4' : ''"
@@ -138,9 +199,11 @@ const showQuizCardHeaderBand = computed(
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
-        <div
-          :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-        >題目</div>
+        <div class="d-flex justify-content-between align-items-center gap-2 w-100 min-w-0">
+          <div
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+          >題目</div>
+        </div>
         <div
           class="lh-base"
           :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
@@ -150,16 +213,29 @@ const showQuizCardHeaderBand = computed(
         <template v-if="designUi && showExamRating && hasQuizBody">
           <div
             class="d-flex flex-row flex-wrap align-items-center gap-2 w-100 min-w-0"
-            :class="hasHintText ? 'justify-content-between' : 'justify-content-end'"
+            :class="hasHintText || quizUserPromptSnapshotTrimmed !== '' ? 'justify-content-between' : 'justify-content-end'"
           >
-            <button
-              v-if="hasHintText"
-              type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-              @click="emit('toggle-hint', card)"
+            <div
+              v-if="hasHintText || quizUserPromptSnapshotTrimmed !== ''"
+              class="d-inline-flex flex-wrap align-items-center gap-2 min-w-0"
             >
-              {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
-            </button>
+              <button
+                v-if="hideGradingPrompt && quizUserPromptSnapshotTrimmed !== ''"
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                @click="openPromptModal('question')"
+              >
+                出題規則
+              </button>
+              <button
+                v-if="hasHintText"
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                @click="emit('toggle-hint', card)"
+              >
+                {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
+              </button>
+            </div>
             <div
               class="d-inline-flex justify-content-end align-items-center flex-shrink-0 gap-1"
               role="group"
@@ -209,6 +285,14 @@ const showQuizCardHeaderBand = computed(
             {{ card.hint }}
           </div>
         </template>
+        <button
+          v-else-if="hideGradingPrompt && hasQuizBody && quizUserPromptSnapshotTrimmed !== ''"
+          type="button"
+          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+          @click="openPromptModal('question')"
+        >
+          出題規則
+        </button>
       </div>
       <div
         v-if="!(designUi && showExamRating) && hasHintText"
@@ -229,38 +313,6 @@ const showQuizCardHeaderBand = computed(
           :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 mt-2'"
         >
           {{ card.hint }}
-        </div>
-      </div>
-      <div
-        v-if="showExamLlmPromptSnapshots"
-        class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-3 mb-0' : 'mb-3'"
-      >
-        <div
-          v-if="quizUserPromptSnapshotTrimmed !== ''"
-          class="d-flex flex-column gap-1 w-100 min-w-0"
-        >
-          <div
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >出題規則</div>
-          <div
-            class="my-font-sm-400 lh-base"
-            style="white-space: pre-wrap;"
-            :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-          >{{ quizUserPromptSnapshotTrimmed }}</div>
-        </div>
-        <div
-          v-if="answerUserPromptSnapshotTrimmed !== ''"
-          class="d-flex flex-column gap-1 w-100 min-w-0"
-        >
-          <div
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >批改規則</div>
-          <div
-            class="my-font-sm-400 lh-base"
-            style="white-space: pre-wrap;"
-            :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-          >{{ answerUserPromptSnapshotTrimmed }}</div>
         </div>
       </div>
       <div
@@ -288,23 +340,25 @@ const showQuizCardHeaderBand = computed(
             placeholder="請輸入您的答案..."
             maxlength="2000"
           />
-          <p
-            v-if="String(card.referenceAnswer ?? '').trim() !== '' && !card.confirmed"
-            :class="designUi ? 'my-font-sm-400 my-color-gray-4 mb-0 mt-1' : 'form-text my-font-sm-400 my-color-gray-4 mb-0 mt-1'"
-            role="note"
-          >
-            此欄預設為暫存參考答案，可自行修改。
-          </p>
-          <div
-            v-if="answerInputDisabled"
-            :class="designUi ? 'my-font-sm-400 my-color-red mt-1' : 'form-text my-font-sm-400 my-color-red'"
-          >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
         </template>
         <template v-else>
           <div
             class="my-font-sm-400 mb-2"
             :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
           >{{ card.quiz_answer }}</div>
+        </template>
+        <p
+          v-if="!card.confirmed && String(card.referenceAnswer ?? '').trim() !== ''"
+          :class="designUi ? 'my-font-sm-400 my-color-gray-4 mb-0 mt-1' : 'form-text my-font-sm-400 my-color-gray-4 mb-0 mt-1'"
+          role="note"
+        >
+          此欄預設為暫存參考答案，可自行修改。
+        </p>
+        <template v-if="!card.confirmed">
+          <div
+            v-if="answerInputDisabled"
+            :class="designUi ? 'my-font-sm-400 my-color-red mt-1' : 'form-text my-font-sm-400 my-color-red'"
+          >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
         </template>
         <div
           v-if="!hideGradingPrompt"
@@ -360,6 +414,14 @@ const showQuizCardHeaderBand = computed(
           style="white-space: pre-wrap;"
           :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
         >{{ card.gradingResult }}</div>
+        <button
+          v-if="hideGradingPrompt && answerUserPromptSnapshotTrimmed !== ''"
+          type="button"
+          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+          @click="openPromptModal('grading')"
+        >
+          批改規則
+        </button>
         <div
           v-if="showRagQuizForExamToolbar"
           class="w-100 min-w-0 d-flex flex-column align-items-center gap-2 mt-3"
@@ -386,6 +448,7 @@ const showQuizCardHeaderBand = computed(
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
 

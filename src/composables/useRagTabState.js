@@ -49,6 +49,8 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore) {
         packChunkSizes: [],
         /** 與 packTasksList 每群一筆：分段重疊（字元） */
         packChunkOverlaps: [],
+        /** 與 packTasksList 每群一筆：單元顯示名稱（POST build-rag-zip 可選 unit_names） */
+        packUnitNames: [],
         ragMetadata: '',
         withRag: true,
         packResponseJson: null,

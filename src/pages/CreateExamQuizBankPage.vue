@@ -8,7 +8,7 @@
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
- * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕；已不再傳 system_prompt_instruction）
+ * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
@@ -64,6 +64,7 @@ import {
   serializePackUnitTypesForApi,
   transcriptionsForBuildRagZip,
   chunkSizesOverlapsStringsForBuildRagZip,
+  serializePackUnitNamesForApi,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -179,7 +180,7 @@ function checkRagHasList(rag) {
   return getRagUnitListString(rag) !== '';
 }
 
-/** 至少一個單元組，且每個單元組至少一個單元（與「開始設定出題單元」按鈕啟用條件一致） */
+/** 至少一列出題單元，且每列至少一個課程標籤（與「開始設定單元」按鈕啟用條件一致） */
 function isPackTasksListReady(list) {
   if (!Array.isArray(list) || list.length < 1) return false;
   return list.every((g) => Array.isArray(g) && g.length >= 1);
@@ -192,7 +193,7 @@ const hasBuiltRagSummary = computed(
   () => hasRagListOrMetadata.value || currentState.value.packResponseJson != null
 );
 
-/** 後端已有 rag_metadata 時，設定出題單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
+/** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
 const ragListReadonlyGroups = computed(() => {
   const list = currentState.value.packTasksList;
   if (Array.isArray(list) && list.length > 0) {
@@ -213,7 +214,7 @@ const ragListReadonlyGroups = computed(() => {
   return [];
 });
 
-/** 尚無法編輯設定出題單元（未上傳 ZIP 等）；與拖放、區塊鎖定一致，不包含「群組是否已填滿」 */
+/** 尚無法編輯設定單元（未上傳 ZIP 等）；與拖放、區塊鎖定一致，不包含「群組是否已填滿」 */
 const packGroupsEditBlocked = computed(() => {
   if (hasRagMetadata.value) return true;
   if (hasRagListOrMetadata.value) return false;
@@ -356,7 +357,7 @@ const activeUnitQuizLoadingOverlayKind = computed(() => {
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
-/** 設定出題單元：文字／mp3／YouTube 逐字稿 GET 期間 */
+/** 設定單元：文字／mp3／YouTube 逐字稿 GET 期間 */
 const hasPackUnitTranscriptLoading = computed(() => {
   const arr = currentState.value?.packUnitTranscriptLoading;
   if (!Array.isArray(arr)) return false;
@@ -432,7 +433,7 @@ const loadingOverlaySubText = computed(() => {
   return '';
 });
 
-/** 用於顯示 file_metadata：上傳回傳的 zipResponseJson、GET /rag/tabs 的 file_metadata；若列表已建題庫但未內嵌 file_metadata，則由 rag 與 unit_list 合成，避免「設定出題單元」整塊被隱藏 */
+/** 用於顯示 file_metadata：上傳回傳的 zipResponseJson、GET /rag/tabs 的 file_metadata；若列表已建題庫但未內嵌 file_metadata，則由 rag 與 unit_list 合成，避免「設定單元」整塊被隱藏 */
 const fileMetadataToShow = computed(() => {
   const state = currentState.value;
   if (state.zipResponseJson != null) return state.zipResponseJson;
@@ -473,7 +474,7 @@ const examZipConfirmUploadDisabled = computed(() => {
 
 /**
  * Stepper 1–3 與畫面上可編輯區對齊：
- * 1 上傳檔案 → 2 設定出題單元（有檔中繼、尚未完成建置）→ 3 設定出題題型（已建置後：單元內容與題型設定）
+ * 1 上傳檔案 → 2 設定單元（有檔中繼、尚未完成建置）→ 3 設定單元題型（已建置後：單元內容與題型設定）
  */
 const createRagStepperPhase = computed(() => {
   if (!hasUploadedFileMetadata.value) return 1;
@@ -512,7 +513,7 @@ const uploadZipFileSizeDisplay = computed(() => {
   return formatFileSize(raw, 'MB');
 });
 
-/** 唯讀顯示：檔名 + 全形括號內檔案大小（設定出題單元／純展示列） */
+/** 唯讀顯示：檔名 + 全形括號內檔案大小（設定單元／純展示列） */
 const uploadZipReadonlyInputValue = computed(() => {
   const name = String(uploadedZipDisplayName.value ?? '').trim();
   const size = String(uploadZipFileSizeDisplay.value ?? '').trim();
@@ -547,7 +548,7 @@ function packUnitTypeAt(gi) {
   return 1;
 }
 
-/** 設定出題單元類型：數值與後端 unit_types／unit_type_list 對齊（含 0 未選擇，供顯示／相容） */
+/** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊（含 0 未選擇，供顯示／相容） */
 const PACK_UNIT_TYPE_OPTIONS = [
   { value: 0, label: '未選擇' },
   { value: 1, label: 'rag' },
@@ -588,6 +589,15 @@ function onPackChunkOverlapInput(gi, ev) {
   state.packChunkOverlaps = arr;
 }
 
+function onPackUnitNameInput(gi, ev) {
+  const state = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const arr = [...(state.packUnitNames || [])];
+  const raw = ev?.target?.value;
+  arr[gi] = raw != null ? String(raw) : '';
+  state.packUnitNames = arr;
+}
+
 function ensurePackUnitSidecarArrays() {
   const s = currentState.value;
   const n = s.packTasksList?.length ?? 0;
@@ -603,10 +613,11 @@ function ensurePackUnitSidecarArrays() {
   stretch('packUnitTranscriptError', '');
   stretch('packChunkSizes', DEFAULT_PACK_CHUNK_SIZE);
   stretch('packChunkOverlaps', DEFAULT_PACK_CHUNK_OVERLAP);
+  stretch('packUnitNames', '');
 }
 
 /**
- * 重設第 N 個設定出題單元：類型→rag、分段長度／重疊為預設、逐字稿稿／YouTube 字串／錯誤／載入旗標清空。
+ * 重設第 N 個設定單元：類型→rag、分段長度／重疊為預設、逐字稿稿／YouTube 字串／錯誤／載入旗標清空。
  * 不清除已拖入之資料夾標籤（避免 unit_list 僅剩空群組時與 packTasks 同步語意混淆）。
  */
 function resetPackUnitGroup(groupIdx) {
@@ -636,15 +647,11 @@ function resetPackUnitGroup(groupIdx) {
   const load = [...(state.packUnitTranscriptLoading || [])];
   load[gi] = false;
   state.packUnitTranscriptLoading = load;
+  const unm = [...(state.packUnitNames || [])];
+  while (unm.length < list.length) unm.push('');
+  unm[gi] = firstFolderNameInGroup(list[gi]) || '';
+  state.packUnitNames = unm;
 }
-
-watch(
-  () => currentState.value.packTasksList,
-  () => {
-    ensurePackUnitSidecarArrays();
-  },
-  { deep: true, immediate: true }
-);
 
 function ragTabIdForTranscript() {
   return String(currentState.value.zipTabId ?? activeTabId.value ?? '').trim();
@@ -654,6 +661,35 @@ function firstFolderNameInGroup(group) {
   if (!Array.isArray(group) || group.length === 0) return '';
   return String(group[0] ?? '').trim();
 }
+
+/** 單元名稱未填時，預設為該列資料夾組合的第一個資料夾名稱 */
+function fillDefaultPackUnitNamesWhereEmpty() {
+  const state = currentState.value;
+  const list = state.packTasksList;
+  if (!Array.isArray(list) || list.length === 0) return;
+  ensurePackUnitSidecarArrays();
+  const names = [...(state.packUnitNames || [])];
+  let changed = false;
+  for (let i = 0; i < list.length; i++) {
+    if (String(names[i] ?? '').trim() !== '') continue;
+    const def = firstFolderNameInGroup(list[i]);
+    if (!def) continue;
+    names[i] = def;
+    changed = true;
+  }
+  if (changed) {
+    state.packUnitNames = names;
+  }
+}
+
+watch(
+  () => currentState.value.packTasksList,
+  () => {
+    ensurePackUnitSidecarArrays();
+    fillDefaultPackUnitNamesWhereEmpty();
+  },
+  { deep: true, immediate: true }
+);
 
 function setPackUnitMarkdownAt(gi, text) {
   const s = currentState.value;
@@ -1068,7 +1104,7 @@ function buildUnitTabItem(unit, index = 0) {
   };
 }
 
-/** 設定出題單元子分頁：滿版下拉 value／label（UnitSelectDropdown） */
+/** 設定單元子分頁：滿版下拉 value／label（UnitSelectDropdown） */
 function unitSubTabDropdownValue(tab) {
   if (!tab || tab.id == null) return '';
   return String(tab.id);
@@ -1098,7 +1134,7 @@ const activeUnitTabItem = computed(() => {
   return tabs.find((t) => t.id === activeId) ?? null;
 });
 
-/** 逐字稿 Modal：唯讀「設定出題單元」列傳入全文時覆寫；否則用目前選定單元之 transcription */
+/** 逐字稿 Modal：唯讀「設定單元」列傳入全文時覆寫；否則用目前選定單元之 transcription */
 const ragUnitTranscriptModalMarkdownOverride = ref(/** @type {string | null} */ (null));
 
 const ragUnitTranscriptModalBodyHtml = computed(() => {
@@ -1111,7 +1147,7 @@ const ragUnitTranscriptModalBodyHtml = computed(() => {
   return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
 });
 
-/** 「單元內容」文字單元：內嵌 Markdown（與唯讀設定出題單元之 markdown segment 同 render） */
+/** 「單元內容」文字單元：內嵌 Markdown（與唯讀設定單元之 markdown segment 同 render） */
 const activeUnitTranscriptionMdHtml = computed(() => {
   const tab = activeUnitTabItem.value;
   const raw = tab?.transcription;
@@ -1139,7 +1175,7 @@ const activeUnitYoutubeEmbedUrl = computed(() => {
 
 const ragUnitTranscriptModalOpen = ref(false);
 
-/** @param {unknown} [markdownOverride] 僅限 string：設定出題單元唯讀列傳入全文；來自 `@click` 時忽略事件物件 */
+/** @param {unknown} [markdownOverride] 僅限 string：設定單元唯讀列傳入全文；來自 `@click` 時忽略事件物件 */
 function openRagUnitTranscriptModal(markdownOverride) {
   const isStr = typeof markdownOverride === 'string';
   const s = isStr ? String(markdownOverride).trim() : '';
@@ -1506,14 +1542,14 @@ function hydratePackChunkArraysFromRag(rag, groupCount) {
   };
 }
 
-/** 設定出題單元唯讀：unit_type → 下拉同款文字（0＝未選擇） */
+/** 設定單元唯讀：unit_type → 下拉同款文字（0＝未選擇） */
 function packUnitTypeDisplayLabel(unitType) {
   const hit = PACK_UNIT_TYPE_OPTIONS.find((o) => Number(o.value) === Number(unitType));
   if (hit) return hit.label;
   return 'rag';
 }
 
-/** 唯讀「設定出題單元」：RAG 分段參數顯示在與類型／來源檔同列（不外層縮排） */
+/** 唯讀「設定單元」：RAG 分段參數顯示在與類型／來源檔同列（不外層縮排） */
 function quizBankReadonlyOutlineChunkFields(chunkSize, chunkOverlap) {
   return [
     { label: '分段長度（字元）', value: String(ensureNumber(chunkSize, DEFAULT_PACK_CHUNK_SIZE)) },
@@ -1521,7 +1557,7 @@ function quizBankReadonlyOutlineChunkFields(chunkSize, chunkOverlap) {
   ];
 }
 
-/** 唯讀「設定出題單元」：來源檔一行（與單元 tab 欄位對齊） */
+/** 唯讀「設定單元」：來源檔一行（與單元 tab 欄位對齊） */
 function quizBankReadonlySourceDisplay(tab) {
   if (!tab || typeof tab !== 'object') return '';
   const ut = Number(tab.unitType ?? UNIT_TYPE_RAG);
@@ -1533,7 +1569,7 @@ function quizBankReadonlySourceDisplay(tab) {
 }
 
 /**
- * 唯讀「設定出題單元」細節：MP3／YouTube 與「單元內容」同層級（播放器／嵌入）；逐字稿另以「逐字稿」開 Modal。
+ * 唯讀「設定單元」細節：MP3／YouTube 與「單元內容」同層級（播放器／嵌入）；逐字稿另以「逐字稿」開 Modal。
  * @returns {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', src: string } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]}
  */
 function buildQuizBankReadonlyDetailSegments(tab) {
@@ -1578,7 +1614,7 @@ function quizBankReadonlyMarkdownHtml(md) {
   return renderMarkdownToSafeHtml(md != null ? String(md) : '');
 }
 
-/** 唯讀「設定出題單元」逐字稿：API 省略全文時依本頁索引補 pack 稿／最近一次 build outputs／列表 rag.outputs */
+/** 唯讀「設定單元」逐字稿：API 省略全文時依本頁索引補 pack 稿／最近一次 build outputs／列表 rag.outputs */
 function resolveUnitSlotTranscription(index, tabLike, state, rag) {
   const i = Number(index);
   const fromTab = rawUnitTranscriptionString(tabLike ?? {});
@@ -1609,7 +1645,7 @@ function tabWithResolvedTranscription(tab, index, state, rag) {
 }
 
 /**
- * 打包建置區唯讀「設定出題單元」：優先現有 unit 子分頁列（後端／GET units 對齊）；
+ * 打包建置區唯讀「設定單元」：優先現有 unit 子分頁列（後端／GET units 對齊）；
  * 若尚未載入 tabs，fallback 資料夾群組 + Rag 列表之 unit_types／chunk_*。
  */
 const quizBankSettingReadonlyUnitRows = computed(() => {
@@ -1629,6 +1665,7 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
       return {
         key: String(t?.id ?? `idx-${i}`),
         title: String(t?.label ?? `單元 ${i + 1}`).trim() || `單元 ${i + 1}`,
+        unitNameDisplay: String(t.unitName ?? t.label ?? '').trim() || '—',
         unitType: t.unitType,
         typeLabel: packUnitTypeDisplayLabel(t.unitType),
         sourceDisplay: srcDisp || '—',
@@ -1677,12 +1714,17 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
     } else {
       detailSegments.push({
         kind: 'text',
-        text: `詳細來源請至下方「設定出題題型」區選擇「${folderLine || `單元 ${i + 1}`}」後，於「單元內容」檢視。`,
+        text: `詳細來源請至下方「設定單元題型」區選擇「${folderLine || `單元 ${i + 1}`}」後，於「單元內容」檢視。`,
       });
     }
+    const synUnitName = synTab ? String(synTab.unitName ?? '').trim() : '';
+    const unitFromRow = unitsRow[i] ? String(unitsRow[i].unit_name ?? '').trim() : '';
+    const unitNameFromState = String(state.packUnitNames?.[i] ?? '').trim();
+    const unitNameDisplay = synUnitName || unitFromRow || unitNameFromState || '—';
     return {
       key: `fb-${i}-${String(folderLine).slice(0, 32)}`,
-      title: folderLine || `設定出題單元 ${i + 1}`,
+      title: folderLine || `設定單元 ${i + 1}`,
+      unitNameDisplay,
       unitType: ut,
       typeLabel: packUnitTypeDisplayLabel(ut),
       sourceDisplay,
@@ -1710,6 +1752,17 @@ function syncRagItemToState(rag, state) {
   const chunkHL = hydratePackChunkArraysFromRag(rag, nGroups);
   state.packChunkSizes = chunkHL.sizes;
   state.packChunkOverlaps = chunkHL.overs;
+  const unitsHydr = unitsFromRagTabsRow(rag);
+  const listForNames = state.packTasksList;
+  const packNamesHydr = [];
+  for (let i = 0; i < nGroups; i++) {
+    const u = unitsHydr[i];
+    const fromApi = u ? String(u.unit_name ?? u.rag_name ?? '').trim() : '';
+    const g = Array.isArray(listForNames) ? listForNames[i] : [];
+    const fromGroup = firstFolderNameInGroup(g);
+    packNamesHydr.push(fromApi || fromGroup || '');
+  }
+  state.packUnitNames = packNamesHydr;
   const filename = rag.file_metadata?.filename ?? rag.filename;
   if (filename != null && String(filename).trim() !== '') state.zipFileName = String(filename).trim();
   hydrateQuizCardsFromRag(rag, state);
@@ -2371,7 +2424,7 @@ async function confirmUploadZip() {
   }
 }
 
-/** POST /rag/tab/build-rag-zip（按鈕「開始設定出題單元」） */
+/** POST /rag/tab/build-rag-zip（按鈕「開始設定單元」） */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
@@ -2386,7 +2439,7 @@ async function confirmPack() {
     return;
   }
   if (!isPackTasksListReady(state.packTasksList ?? [])) {
-    state.packError = '請至少建立一個設定出題單元，且每個設定出題單元至少包含一個單元';
+    state.packError = '請至少建立一個設定單元，且每個設定單元至少於資料夾組合放入一個課程標籤';
     return;
   }
   if (!unitList) {
@@ -2420,6 +2473,10 @@ async function confirmPack() {
         DEFAULT_PACK_CHUNK_SIZE,
         DEFAULT_PACK_CHUNK_OVERLAP
       );
+    const unitNamesStr = serializePackUnitNamesForApi(
+      state.packUnitNames,
+      state.packTasksList?.length ?? 0
+    );
     state.packResponseJson = await apiBuildRagZip(
       {
         rag_tab_id: fileId,
@@ -2431,6 +2488,7 @@ async function confirmPack() {
         chunk_overlaps: chunkOverlapsStr,
         unit_types: serializePackUnitTypesForApi(unitTypesNormalized),
         transcriptions,
+        unit_names: unitNamesStr,
       },
       (ev) => {
         if (!ev || typeof ev !== 'object') return;
@@ -2913,10 +2971,8 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     if (idx >= 0) {
       const prev = sub[idx];
       card.id = prev.id;
-      const prevAns = prev.quiz_answer ?? '';
-      const preset = quizAnswerPresetFromReference(referenceAnswer);
-      card.quiz_answer =
-        String(prevAns).trim() !== '' ? prevAns : preset;
+      /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
+      card.quiz_answer = quizAnswerPresetFromReference(referenceAnswer);
       card.hintVisible = prev.hintVisible ?? false;
       card.confirmed = prev.confirmed ?? false;
       card.gradingResult = prev.gradingResult ?? '';
@@ -2971,7 +3027,7 @@ async function generateQuiz(slotIndex) {
     return;
   }
   if (!generateQuizUnits.value.length) {
-    slotState.error = '請先在「設定出題單元」按「開始設定出題單元」完成題庫建立，或重新整理頁面';
+    slotState.error = '請先在「設定單元」按「開始設定單元」完成題庫建立，或重新整理頁面';
     return;
   }
   slotState.loading = true;
@@ -3161,7 +3217,7 @@ async function confirmAnswer(item) {
                   v-if="activeTabId === item._tabId"
                   type="button"
                   class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4"
-                  :title="item._isExamRag ? '刪除此題庫（將取消試卷用設定）' : '刪除此設定出題單元'"
+                  :title="item._isExamRag ? '刪除此題庫（將取消試卷用設定）' : '刪除此設定單元'"
                   :disabled="deleteRagLoading || renameRagTabSaving || renameUnitQuizSaving || deleteUnitQuizLoading"
                   @click.stop="onDeleteRagTab(item._tabId)"
                 >
@@ -3254,7 +3310,7 @@ async function confirmAnswer(item) {
             <span
               class="my-create-rag-stepper-label"
               :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-            >設定出題單元</span>
+            >設定單元</span>
           </div>
           <div
             class="my-create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
@@ -3269,7 +3325,7 @@ async function confirmAnswer(item) {
             <span
               class="my-create-rag-stepper-label"
               :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-            >設定出題題型</span>
+            >設定單元題型</span>
           </div>
           </div>
         </div>
@@ -3322,13 +3378,13 @@ async function confirmAnswer(item) {
             </div>
         </div>
       </section>
-      <!-- 建立 RAG：要有 file_metadata 才顯示；未建置時僅可編輯「設定出題單元」卡，建置完成後另顯唯讀摘要卡（rounded-4 深灰） -->
+      <!-- 建立 RAG：要有 file_metadata 才顯示；未建置時僅可編輯「設定單元」卡，建置完成後另顯唯讀摘要卡（rounded-4 深灰） -->
       <template v-if="fileMetadataToShow != null">
         <div
           class="w-100"
           :class="{ 'pe-none my-color-gray-4': !hasRagMetadata && packGroupsEditBlocked }"
         >
-          <!-- 建置完成後僅保留下方唯讀「設定出題單元」卡，不重複檔名／已套用提示 -->
+          <!-- 建置完成後僅保留下方唯讀「設定單元」卡，不重複檔名／已套用提示 -->
           <section
             v-if="!hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
@@ -3339,7 +3395,7 @@ async function confirmAnswer(item) {
               role="heading"
               aria-level="2"
             >
-              設定出題單元
+              設定單元
             </div>
             <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
               <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
@@ -3349,7 +3405,7 @@ async function confirmAnswer(item) {
                 {{ uploadZipReadonlyInputValue }}
               </div>
             </div>
-          <!-- 課程：可拖曳至設定出題單元 -->
+          <!-- 課程：可拖曳至設定單元 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
             <div
@@ -3373,19 +3429,19 @@ async function confirmAnswer(item) {
             </div>
           </div>
 
-          <!-- 單元組：可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
+          <!-- 單元：外層列出各出題單元區塊；區塊內「資料夾組合」可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
           <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元組</div>
+            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
             <div
               class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
               role="group"
-              aria-label="單元組"
+              aria-label="單元"
             >
               <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
                 <div class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column">
                   <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
                     <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                      單元
+                      資料夾組合
                     </div>
                     <div
                       class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
@@ -3417,19 +3473,40 @@ async function confirmAnswer(item) {
                       </div>
                     </div>
                   </div>
-                  <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
-                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                      類型
+                  <div
+                    class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
+                  >
+                    <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
+                      <label
+                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                        :for="'rag-pack-unit-name-' + gi"
+                      >單元名稱</label>
+                      <input
+                        :id="'rag-pack-unit-name-' + gi"
+                        type="text"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
+                        :disabled="packGroupsEditBlocked"
+                        :value="currentState.packUnitNames?.[gi] ?? ''"
+                        :aria-label="`設定單元 ${gi + 1} 單元名稱`"
+                        autocomplete="off"
+                        placeholder="選填"
+                        @input="onPackUnitNameInput(gi, $event)"
+                      >
                     </div>
-                    <Design08OptionDropdown
-                      :model-value="packUnitTypeAt(gi)"
-                      :options="PACK_UNIT_TYPE_OPTIONS"
-                      :menu-id="'pack-unit-type-' + gi"
-                      :disabled="packGroupsEditBlocked"
-                      block
-                      :aria-label="`設定出題單元 ${gi + 1} 類型`"
-                      @update:model-value="onPackUnitTypePick(gi, $event)"
-                    />
+                    <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
+                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                        類型
+                      </div>
+                      <Design08OptionDropdown
+                        :model-value="packUnitTypeAt(gi)"
+                        :options="PACK_UNIT_TYPE_OPTIONS"
+                        :menu-id="'pack-unit-type-' + gi"
+                        :disabled="packGroupsEditBlocked"
+                        block
+                        :aria-label="`設定單元 ${gi + 1} 類型`"
+                        @update:model-value="onPackUnitTypePick(gi, $event)"
+                      />
+                    </div>
                   </div>
                   <div
                     v-if="packUnitTypeAt(gi) === UNIT_TYPE_RAG"
@@ -3448,7 +3525,7 @@ async function confirmAnswer(item) {
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
                         :disabled="packGroupsEditBlocked"
                         :value="ensureNumber(currentState.packChunkSizes?.[gi], DEFAULT_PACK_CHUNK_SIZE)"
-                        :aria-label="`設定出題單元 ${gi + 1} 分段長度（字元）`"
+                        :aria-label="`設定單元 ${gi + 1} 分段長度（字元）`"
                         autocomplete="off"
                         @input="onPackChunkSizeInput(gi, $event)"
                       >
@@ -3466,7 +3543,7 @@ async function confirmAnswer(item) {
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
                         :disabled="packGroupsEditBlocked"
                         :value="ensureNumber(currentState.packChunkOverlaps?.[gi], DEFAULT_PACK_CHUNK_OVERLAP)"
-                        :aria-label="`設定出題單元 ${gi + 1} 分段重疊（字元）`"
+                        :aria-label="`設定單元 ${gi + 1} 分段重疊（字元）`"
                         autocomplete="off"
                         @input="onPackChunkOverlapInput(gi, $event)"
                       >
@@ -3538,7 +3615,7 @@ async function confirmAnswer(item) {
                     <button
                       type="button"
                       class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
-                      aria-label="重設此單元"
+                      aria-label="重設此資料夾組合"
                       :disabled="packGroupsEditBlocked"
                       @click.stop="resetPackUnitGroup(gi)"
                     >
@@ -3547,7 +3624,7 @@ async function confirmAnswer(item) {
                     <button
                       type="button"
                       class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
-                      aria-label="刪除此單元"
+                      aria-label="刪除此資料夾組合"
                       :disabled="packGroupsEditBlocked"
                       @click.stop="removeRagListGroup(gi)"
                     >
@@ -3569,15 +3646,15 @@ async function confirmAnswer(item) {
                   @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
                   @click="addRagListGroup"
                 >
-                  + 新增設定出題單元
+                  + 新增設定單元
                 </button>
                 <button
                   type="button"
                   class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                   style="flex: 0 0 auto;"
                   :disabled="!(currentState.packTasksList || []).length"
-                  aria-label="刪除所有設定出題單元"
-                  title="清空所有設定出題單元（含空位）"
+                  aria-label="刪除所有設定單元"
+                  title="清空所有設定單元（含空位）"
                   @click="clearAllRagListGroups"
                 >
                   刪除所有單元
@@ -3596,7 +3673,7 @@ async function confirmAnswer(item) {
                   type="button"
                   class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-4 px-3 py-1"
                   :disabled="!secondFoldersFull.length"
-                  title="在現有設定出題單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                  title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
                   @click="setAllSecondFoldersAsSingleGroup"
                 >
                   每個資料夾合併單元
@@ -3615,10 +3692,10 @@ async function confirmAnswer(item) {
                 currentState.packLoading
               "
               :aria-busy="currentState.packLoading"
-              aria-label="開始設定出題單元"
+              aria-label="開始設定單元"
               @click="confirmPack"
             >
-              開始設定出題單元
+              開始設定單元
             </button>
           </div>
           <div
@@ -3655,7 +3732,7 @@ async function confirmAnswer(item) {
               role="heading"
               aria-level="2"
             >
-              設定出題單元
+              設定單元
             </div>
             <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
               <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
@@ -3666,7 +3743,7 @@ async function confirmAnswer(item) {
               </div>
             </div>
               <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元組</div>
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
                 <template v-if="!quizBankSettingReadonlyUnitRows.length">
                   <div
                     class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
@@ -3683,24 +3760,16 @@ async function confirmAnswer(item) {
                     :key="row.key"
                     class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column"
                   >
-                    <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
-                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                        單元
-                      </div>
-                      <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                        {{ row.title }}
-                      </div>
-                    </div>
                     <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
                       <div
                         class="d-flex flex-column gap-0 min-w-0"
                         style="flex: 1 1 0;"
                       >
                         <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          類型
+                          資料夾組合
                         </div>
                         <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ row.typeLabel }}
+                          {{ row.title }}
                         </div>
                       </div>
                       <div
@@ -3712,6 +3781,30 @@ async function confirmAnswer(item) {
                         </div>
                         <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
                           {{ row.sourceDisplay }}
+                        </div>
+                      </div>
+                    </div>
+                    <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
+                      <div
+                        class="d-flex flex-column gap-0 min-w-0"
+                        style="flex: 1 1 0;"
+                      >
+                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                          單元名稱
+                        </div>
+                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                          {{ row.unitNameDisplay }}
+                        </div>
+                      </div>
+                      <div
+                        class="d-flex flex-column gap-0 min-w-0"
+                        style="flex: 1 1 0;"
+                      >
+                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                          類型
+                        </div>
+                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                          {{ row.typeLabel }}
                         </div>
                       </div>
                     </div>
@@ -3835,7 +3928,7 @@ async function confirmAnswer(item) {
           </section>
         </div>
       </template>
-      <!-- 設定出題題型：標題在區塊外；每題（題卡或產生題目槽）各一 rounded-4 深灰塊 -->
+      <!-- 設定單元題型：標題在區塊外；每題（題卡或產生題目槽）各一 rounded-4 深灰塊 -->
       <div
         v-if="hasBuiltRagSummary"
         class="text-start my-page-block-spacing"
@@ -3846,7 +3939,7 @@ async function confirmAnswer(item) {
             aria-level="2"
           >
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">設定出題題型</span>
+            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">設定單元題型</span>
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
           </div>
           <div
@@ -4254,7 +4347,7 @@ async function confirmAnswer(item) {
   background-color: var(--my-drop-pack-active-bg) !important;
   border-color: var(--my-color-blue) !important;
 }
-/* 設定出題單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
+/* 設定單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
 /* 與英文測驗題庫「文字內容」同源 EasyMDE；略拉高編輯區高度對齊舊題說明文塊約 400px */
 .my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-root) {
   --english-md-preview-max-h: min(60vh, 28rem);

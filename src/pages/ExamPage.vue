@@ -2122,7 +2122,7 @@ onActivated(() => {
                           <label
                             class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
                             :for="`exam-slot-${slotIndex}-unit-toggle-filled`"
-                          >單元</label>
+                          >選擇單元</label>
                           <UnitSelectDropdown
                             v-model="getSlotFormState(slotIndex).examUnitSelectId"
                             :options="examUnitTabItems"
@@ -2221,7 +2221,7 @@ onActivated(() => {
                           <label
                             class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
                             :for="`exam-slot-${slotIndex}-quiz-dd-filled`"
-                          >題型</label>
+                          >選擇題型</label>
                           <UnitSelectDropdown
                             v-model="getSlotFormState(slotIndex).examQuizNamePick"
                             :options="examQuizDropdownItemsForSlot(slotIndex)"
@@ -2289,7 +2289,7 @@ onActivated(() => {
                             <label
                               class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
                               :for="`exam-slot-${slotIndex}-unit-toggle`"
-                            >單元</label>
+                            >選擇單元</label>
                             <UnitSelectDropdown
                               v-model="getSlotFormState(slotIndex).examUnitSelectId"
                               :options="examUnitTabItems"
@@ -2390,7 +2390,7 @@ onActivated(() => {
                             <label
                               class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
                               :for="`exam-slot-${slotIndex}-quiz-dd-new`"
-                            >題型</label>
+                            >選擇題型</label>
                             <UnitSelectDropdown
                               v-model="getSlotFormState(slotIndex).examQuizNamePick"
                               :options="examQuizDropdownItemsForSlot(slotIndex)"

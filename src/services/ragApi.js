@@ -244,7 +244,7 @@ export async function apiUpdateRagTabName(ragId, tabName) {
 /**
  * 建 RAG ZIP：POST /rag/tab/build-rag-zip（application/x-ndjson；請用 fetch 讀 response.body 逐行解析，勿對 200 本文使用 response.json()）
  *
- * Body（OpenAPI PackRequest）：rag_tab_id、person_id、unit_list、chunk_size、chunk_overlap、chunk_sizes、chunk_overlaps、unit_types、build_faiss、transcriptions。
+ * Body（OpenAPI PackRequest）：rag_tab_id、person_id、unit_list、chunk_size、chunk_overlap、chunk_sizes、chunk_overlaps、unit_types、build_faiss、transcriptions；後端若支援可另含 unit_names（與群組同序之逗號字串）。
  * chunk_sizes／chunk_overlaps 為逗號字串或陣列，與 unit_list 群組同序；transcriptions 與 unit_list 逗號分段同序，unit_type 2／3／4 索引為 Markdown 全文 UTF-8 原樣，供寫入 Rag_Unit.transcription／transcript.md。
  * Query：person_id（與 body 一致）；選填 repack_only=true（強制各 unit 不建 FAISS），請傳第三參數 `streamOptions.repack_only`，勿自行拼進 URL。
  *

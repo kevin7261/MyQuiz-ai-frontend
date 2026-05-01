@@ -107,6 +107,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const prevTypes = [...(state.packUnitTypes || [])];
     const prevChunkSizes = [...(state.packChunkSizes || [])];
     const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
+    const prevUnitNames = [...(state.packUnitNames || [])];
     let list = [...(state.packTasksList || [])];
 
     if (fromRagList && groupIdx >= 0) {
@@ -129,6 +130,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, list);
     state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, list, DEFAULT_PACK_CHUNK_SIZE);
     state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, list, DEFAULT_PACK_CHUNK_OVERLAP);
+    state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, list, '');
   }
 
   function removeFromRagList(groupIdx, tagIdx) {
@@ -137,6 +139,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const prevTypes = [...(state.packUnitTypes || [])];
     const prevChunkSizes = [...(state.packChunkSizes || [])];
     const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
+    const prevUnitNames = [...(state.packUnitNames || [])];
     const list = [...(state.packTasksList || [])];
     const g = list[groupIdx];
     if (!Array.isArray(g)) return;
@@ -147,6 +150,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, nextList);
     state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, nextList, DEFAULT_PACK_CHUNK_SIZE);
     state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, nextList, DEFAULT_PACK_CHUNK_OVERLAP);
+    state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, nextList, '');
   }
 
   function removeRagListGroup(groupIdx) {
@@ -156,16 +160,20 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     while (types.length < list.length) types.push(UNIT_TYPE_RAG);
     const sizes = [...(state.packChunkSizes || [])];
     const overs = [...(state.packChunkOverlaps || [])];
+    const names = [...(state.packUnitNames || [])];
     while (sizes.length < list.length) sizes.push(DEFAULT_PACK_CHUNK_SIZE);
     while (overs.length < list.length) overs.push(DEFAULT_PACK_CHUNK_OVERLAP);
+    while (names.length < list.length) names.push('');
     list.splice(groupIdx, 1);
     types.splice(groupIdx, 1);
     sizes.splice(groupIdx, 1);
     overs.splice(groupIdx, 1);
+    names.splice(groupIdx, 1);
     state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
     state.packUnitTypes = types;
     state.packChunkSizes = sizes;
     state.packChunkOverlaps = overs;
+    state.packUnitNames = names;
   }
 
   function addRagListGroup() {
@@ -174,6 +182,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitTypes = [...(state.packUnitTypes || []), UNIT_TYPE_RAG];
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
+    state.packUnitNames = [...(state.packUnitNames || []), ''];
   }
 
   function clearAllRagListGroups() {
@@ -182,6 +191,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     currentState.value.packUnitTypes = [];
     currentState.value.packChunkSizes = [];
     currentState.value.packChunkOverlaps = [];
+    currentState.value.packUnitNames = [];
   }
 
   function addAllSecondFoldersAsGroups() {
@@ -194,6 +204,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitTypes = [...(state.packUnitTypes || []), ...names.map(() => UNIT_TYPE_RAG)];
     state.packChunkSizes = [...(state.packChunkSizes || []), ...names.map(() => DEFAULT_PACK_CHUNK_SIZE)];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), ...names.map(() => DEFAULT_PACK_CHUNK_OVERLAP)];
+    state.packUnitNames = [...(state.packUnitNames || []), ...names.map(() => '')];
   }
 
   /** 在現有出題單元之後新增一個出題單元，內含全部單元（unit_list：a+b+c），不覆寫既有出題單元 */
@@ -206,6 +217,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitTypes = [...(state.packUnitTypes || []), UNIT_TYPE_RAG];
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
+    state.packUnitNames = [...(state.packUnitNames || []), ''];
   }
 
   watch(
@@ -224,6 +236,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       const prevYu = [...(state.packUnitYoutubeUrls || [])];
       const prevErr = [...(state.packUnitTranscriptError || [])];
       const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+      const prevNames = [...(state.packUnitNames || [])];
 
       state.packTasksList = parsed;
       state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, parsed);
@@ -243,6 +256,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, parsed, '');
       state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, parsed, '');
       state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, parsed);
+      state.packUnitNames = remapPackParallelStrings(prevList, prevNames, parsed, '');
     }
   );
   watch(

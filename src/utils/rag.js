@@ -439,6 +439,29 @@ export function chunkSizesOverlapsStringsForBuildRagZip(
 }
 
 /**
+ * POST /rag/tab/build-rag-zip 可選 body.unit_names：與 unit_list 群組同序的逗號字串（與 chunk_sizes 語意一致）。
+ * 名稱內逗號改為空白，避免與分隔歧義。
+ *
+ * @param {unknown[]} [names]
+ * @param {number} groupCount
+ * @returns {string}
+ */
+export function serializePackUnitNamesForApi(names, groupCount) {
+  const n = Math.max(0, Math.floor(Number(groupCount)) || 0);
+  const src = Array.isArray(names) ? names : [];
+  const parts = [];
+  for (let i = 0; i < n; i++) {
+    const raw = String(src[i] ?? '')
+      .trim()
+      .replace(/,/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    parts.push(raw);
+  }
+  return parts.join(',');
+}
+
+/**
  * 將 GET /rag/tabs 回傳正規化為 RAG 陣列
  * 支援：直接陣列、{ rags, count }、{ items }、{ tabs }／{ data }（為陣列時）、或單一 RAG 物件
  * @param {unknown} data - API 回傳的資料
