@@ -576,7 +576,7 @@ function examQuizPromptBundleForSlot(slotIndex, quizNameFallback = '') {
   const quizName =
     String(slotState.examQuizNamePick ?? '').trim()
     || String(quizNameFallback ?? '').trim();
-  const unitItem = examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uid);
+  const unitItem = findExamUnitDropdownItemBySelectId(uid);
   const row = findExamRagQuizRowBySelectedPick(unitItem, quizName);
   if (!row) {
     return { quiz_user_prompt_text: '', answer_user_prompt_text: '' };
@@ -591,7 +591,7 @@ function examQuizPromptBundleForSlot(slotIndex, quizNameFallback = '') {
 function examQuizDropdownItemsForSlot(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const uid = String(slotState.examUnitSelectId ?? '').trim();
-  const unitItem = examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uid);
+  const unitItem = findExamUnitDropdownItemBySelectId(uid);
   return examQuizDropdownItems(unitItem);
 }
 
@@ -645,7 +645,7 @@ function examSlotUnitTranscriptSection(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const uid = String(slotState.examUnitSelectId ?? '').trim();
   if (!uid) return null;
-  const uitem = examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uid);
+  const uitem = findExamUnitDropdownItemBySelectId(uid);
   const raw = uitem?.examRagUnitSource;
   if (!raw || typeof raw !== 'object') return null;
   const ut = Number(raw.unit_type ?? raw.unitType);
@@ -675,7 +675,7 @@ function examSlotMp3PlaybackUrl(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const uid = String(slotState.examUnitSelectId ?? '').trim();
   if (!uid) return '';
-  const uitem = examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uid);
+  const uitem = findExamUnitDropdownItemBySelectId(uid);
   if (!uitem) return '';
   const raw = uitem.examRagUnitSource;
   if (!raw || typeof raw !== 'object') return '';
@@ -846,6 +846,27 @@ const generateQuizUnits = computed(() => {
   return [];
 });
 
+/**
+ * 「選擇單元」下拉選項：優先由 units／outputs 建成之 examUnitTabItems；
+ * 若該列缺欄位導致 tab 為空，則沿用 generateQuizUnits 之後備（與出題 API 推導一致），避免「沒選項卻鎖 UI」。
+ */
+const examUnitSelectDropdownOptions = computed(() => {
+  const tabs = examUnitTabItems.value;
+  if (tabs.length > 0) return tabs;
+  const rag = forExamRag.value;
+  const gq = generateQuizUnits.value;
+  if (!rag || !Array.isArray(gq) || gq.length === 0) return [];
+  const fid = String(rag.rag_tab_id ?? '');
+  return gq.map((u, i) => examBuildUnitTabItem(u, i, fid)).filter(Boolean);
+});
+
+/** 依 examUnitSelectId 解析目前選中之單元列（與下拉 options 同源） */
+function findExamUnitDropdownItemBySelectId(uid) {
+  const id = String(uid ?? '').trim();
+  if (!id) return null;
+  return examUnitSelectDropdownOptions.value.find((it) => examUnitSelectValue(it) === id) ?? null;
+}
+
 /** 與題卡 rag_id 比對：試題用 RAG 的 rag_id（與 CreateExamQuizBankPage currentRagIdForQuizCards 對齊） */
 const currentRagIdForQuizCards = computed(() => {
   const rag = forExamRag.value;
@@ -926,7 +947,7 @@ watch(examList, (list) => {
 }, { immediate: true });
 
 /** 試卷單元列變動時，清除已不存在的單元選取，並重置該槽未完成的草稿請求 */
-watch(examUnitTabItems, (tabs) => {
+watch(examUnitSelectDropdownOptions, (tabs) => {
   const state = currentState.value;
   const count = state.quizSlotsCount || 0;
   const validIds = new Set(tabs.map((t) => t.id));
@@ -1018,7 +1039,7 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
 /** 將 GET /exam/tabs 題卡上的 unit／題名對到試卷題庫下拉（需已載入 GET /exam/rag-for-exams） */
 function hydrateExamSlotFromRagCard(slotState, card) {
   if (!slotState || !card) return;
-  const items = examUnitTabItems.value;
+  const items = examUnitSelectDropdownOptions.value;
   const uidNum = Number(card.rag_unit_id);
   let match =
     Number.isFinite(uidNum) && uidNum >= 1
@@ -1355,10 +1376,7 @@ function examLlmRagIdsForSlot(slotIndex, prevExamQuizDisplayName = '') {
     String(slotState.examQuizNamePick ?? '').trim()
     || String(prevExamQuizDisplayName ?? '').trim();
   const uidSel = String(slotState.examUnitSelectId ?? '').trim();
-  const unitItemForLlm =
-    examUnitTabItems.value.length > 0
-      ? examUnitTabItems.value.find((it) => examUnitSelectValue(it) === uidSel)
-      : null;
+  const unitItemForLlm = findExamUnitDropdownItemBySelectId(uidSel);
   const ragRowForLlm = findExamRagQuizRowBySelectedPick(unitItemForLlm, resolvedQuizName);
   const ragTabId = String(unitItemForLlm?.ragTabId ?? '').trim();
   const ragUnitId =
@@ -1386,11 +1404,10 @@ function examSlotRagChoicesLocked(slotIndex) {
   return examSlotQuizBodyTrim(slotIndex) !== '';
 }
 
-/** 單元下拉：無選項、產生題目中、或已產生題幹時停用 */
+/** 單元下拉：產生題目中、或已產生題幹時停用（無選項時仍可操作，僅顯示 placeholder） */
 function examUnitSelectDropdownDisabled(slotIndex) {
   const s = getSlotFormState(slotIndex);
   if (s.loading) return true;
-  if (examUnitTabItems.value.length === 0) return true;
   if (examSlotRagChoicesLocked(slotIndex)) return true;
   return false;
 }
@@ -1398,7 +1415,6 @@ function examUnitSelectDropdownDisabled(slotIndex) {
 function examUnitSelectHintWhenDisabled(slotIndex) {
   if (getSlotFormState(slotIndex).loading) return '產生題目中…';
   if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更單元';
-  if (examUnitTabItems.value.length === 0) return '目前無可用單元';
   return '';
 }
 
@@ -1412,20 +1428,17 @@ function examSlotHasAnchoredExamQuizId(slotIndex) {
   return Number.isFinite(id) && id >= 1;
 }
 
-/** 題型下拉：須先選單元；LLM 產生中或已產生題幹後停用 */
+/** 題型下拉：LLM 產生中或已產生題幹後停用（無單元／無題型選項時仍可開啟，僅顯示 placeholder） */
 function examQuizNameDropdownDisabled(slotIndex) {
   const s = getSlotFormState(slotIndex);
   if (s.loading) return true;
-  if (examUnitTabItems.value.length === 0) return true;
   if (examSlotRagChoicesLocked(slotIndex)) return true;
-  return !String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim();
+  return false;
 }
 
 function examQuizNameHintWhenDisabled(slotIndex) {
   if (getSlotFormState(slotIndex).loading) return '產生題目中…';
   if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更題型';
-  if (examUnitTabItems.value.length === 0) return '目前無可用題型';
-  if (!String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim()) return '請先選擇單元';
   return '';
 }
 
@@ -1434,7 +1447,7 @@ function examGenerateQuizButtonDisabled(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const base =
     slotState.loading || slotState.draftCreating || generateQuizBlocked.value;
-  if (examUnitTabItems.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
+  if (examUnitSelectDropdownOptions.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
     return true;
   }
   const quizOpts = examQuizDropdownItemsForSlot(slotIndex);
@@ -1546,7 +1559,7 @@ function getSlotFormState(slotIndex) {
   return slot;
 }
 
-watch(examUnitTabItems, () => {
+watch(examUnitSelectDropdownOptions, () => {
   const state = currentState.value;
   const n = Number(state.quizSlotsCount) || 0;
   for (let i = 1; i <= n; i++) {
@@ -1706,7 +1719,7 @@ async function generateQuiz(slotIndex) {
     return;
   }
 
-  if (examUnitTabItems.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
+  if (examUnitSelectDropdownOptions.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
     slotState.error = '請先選擇單元';
     return;
   }
@@ -1777,10 +1790,7 @@ async function generateQuiz(slotIndex) {
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const hintText = data.quiz_hint ?? data.hint ?? '';
-    const unitTab =
-      examUnitTabItems.value.length > 0
-        ? examUnitTabItems.value.find((t) => t.id === String(slotState.examUnitSelectId ?? '').trim())
-        : null;
+    const unitTab = findExamUnitDropdownItemBySelectId(slotState.examUnitSelectId);
     const targetFilename =
       data.file_name ?? data.unit_filename ?? data.target_filename ?? unitTab?.filename ?? null;
     const referenceAnswerText =
@@ -2125,7 +2135,7 @@ onActivated(() => {
                           >選擇單元</label>
                           <UnitSelectDropdown
                             v-model="getSlotFormState(slotIndex).examUnitSelectId"
-                            :options="examUnitTabItems"
+                            :options="examUnitSelectDropdownOptions"
                             :option-value="examUnitSelectValue"
                             :option-label="(u) => String(u.label ?? '').trim() || '—'"
                             placeholder="— 請選擇單元 —"
@@ -2292,7 +2302,7 @@ onActivated(() => {
                             >選擇單元</label>
                             <UnitSelectDropdown
                               v-model="getSlotFormState(slotIndex).examUnitSelectId"
-                              :options="examUnitTabItems"
+                              :options="examUnitSelectDropdownOptions"
                               :option-value="examUnitSelectValue"
                               :option-label="(u) => String(u.label ?? '').trim() || '—'"
                               placeholder="— 請選擇單元 —"

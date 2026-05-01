@@ -12,8 +12,8 @@ import {
   API_RAG_UNIT_NAME,
   API_BUILD_RAG_ZIP,
   API_RAG_TRANSCRIPT_TEXT,
-  API_RAG_TRANSCRIPT_AUDIO,
-  API_RAG_TRANSCRIPT_YOUTUBE,
+  API_RAG_UNIT_AUDIO_FILE,
+  API_RAG_UNIT_YOUTUBE_URL,
   API_RAG_TAB_UNITS,
   API_RAG_TAB_UNIT_MP3_FILE,
   API_RAG_TAB_UNIT_QUIZ_CREATE,
@@ -72,6 +72,9 @@ function buildTranscriptUrl(path, params) {
   const u = new URL(`${base}${path}`);
   u.searchParams.set('rag_tab_id', String(params.rag_tab_id ?? '').trim());
   u.searchParams.set('folder_name', String(params.folder_name ?? '').trim());
+  if (params.personId != null && String(params.personId).trim() !== '') {
+    u.searchParams.set('person_id', String(params.personId).trim());
+  }
   return u.toString();
 }
 
@@ -87,7 +90,7 @@ export async function apiRagTranscriptText(params) {
   const folder_name = String(params.folder_name ?? '').trim();
   if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
   if (!folder_name) throw new Error('缺少 folder_name');
-  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_TEXT, { rag_tab_id, folder_name });
+  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_TEXT, { rag_tab_id, folder_name, personId: params.personId });
   const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
@@ -95,33 +98,35 @@ export async function apiRagTranscriptText(params) {
 }
 
 /**
- * GET /rag/transcript/audio — ZIP 內 folder_name 資料夾取第一個音訊檔，以 Deepgram 轉 Markdown（unit_type=3 mp3 單元）
+ * GET /rag/unit/audio-file — ZIP 內 folder_name 資料夾取恰好一個音訊檔，回傳音訊本體（unit_type=3 mp3 單元）
  * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
- * @returns {Promise<object>}
+ * @returns {Promise<Blob>}
  */
-export async function apiRagTranscriptAudioByFolder(params) {
+export async function apiRagUnitAudioFileByFolder(params) {
   const rag_tab_id = String(params.rag_tab_id ?? '').trim();
   const folder_name = String(params.folder_name ?? '').trim();
   if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
   if (!folder_name) throw new Error('缺少 folder_name');
-  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_AUDIO, { rag_tab_id, folder_name });
+  const url = buildTranscriptUrl(API_RAG_UNIT_AUDIO_FILE, { rag_tab_id, folder_name, personId: params.personId });
   const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
-  const text = await res.text();
-  if (!res.ok) throw new Error(parseFetchError(res, text));
-  return parseJson(text);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(parseFetchError(res, text));
+  }
+  return res.blob();
 }
 
 /**
- * GET /rag/transcript/youtube — ZIP 內 folder_name 資料夾 .md 解析 YouTube 連結後擷取 en 字幕（unit_type=4）
+ * GET /rag/unit/youtube-url — ZIP 內 folder_name 資料夾 .md/.txt/.doc/.docx 解析 YouTube URL 或 video_id（unit_type=4）
  * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
  * @returns {Promise<object>}
  */
-export async function apiRagTranscriptYoutubeByFolder(params) {
+export async function apiRagUnitYoutubeUrlByFolder(params) {
   const rag_tab_id = String(params.rag_tab_id ?? '').trim();
   const folder_name = String(params.folder_name ?? '').trim();
   if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
   if (!folder_name) throw new Error('缺少 folder_name');
-  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_YOUTUBE, { rag_tab_id, folder_name });
+  const url = buildTranscriptUrl(API_RAG_UNIT_YOUTUBE_URL, { rag_tab_id, folder_name, personId: params.personId });
   const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));

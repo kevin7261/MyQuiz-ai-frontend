@@ -183,6 +183,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
     state.packUnitNames = [...(state.packUnitNames || []), ''];
+    state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ''];
   }
 
   function clearAllRagListGroups() {
@@ -234,6 +235,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       const prevOvers = [...(state.packChunkOverlaps || [])];
       const prevMd = [...(state.packUnitMarkdownTexts || [])];
       const prevYu = [...(state.packUnitYoutubeUrls || [])];
+      const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
       const prevErr = [...(state.packUnitTranscriptError || [])];
       const prevLoad = [...(state.packUnitTranscriptLoading || [])];
       const prevNames = [...(state.packUnitNames || [])];
@@ -254,6 +256,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       );
       state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, parsed, '');
       state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, parsed, '');
+      state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, parsed, '');
       state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, parsed, '');
       state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, parsed);
       state.packUnitNames = remapPackParallelStrings(prevList, prevNames, parsed, '');

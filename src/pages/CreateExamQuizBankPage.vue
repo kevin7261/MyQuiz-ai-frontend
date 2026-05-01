@@ -29,8 +29,8 @@ import {
   apiUpdateRagTabName,
   apiBuildRagZip,
   apiRagTranscriptText,
-  apiRagTranscriptAudioByFolder,
-  apiRagTranscriptYoutubeByFolder,
+  apiRagUnitAudioFileByFolder,
+  apiRagUnitYoutubeUrlByFolder,
   transcriptResponseMarkdown,
   apiGetRagTabUnits,
   apiCreateRagUnitQuiz,
@@ -659,6 +659,10 @@ function onPackUnitTypePick(gi, rawVal) {
   const next = parsePackUnitTypesFromRag(state.packUnitTypes, n);
   next[gi] = v;
   state.packUnitTypes = next;
+  clearPackUnitPreviewAt(gi);
+  if (v === UNIT_TYPE_TEXT || v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE) {
+    void loadPackUnitPreviewForType(gi, state.packTasksList?.[gi]);
+  }
 }
 
 function onPackChunkSizeInput(gi, ev) {
@@ -703,6 +707,7 @@ function ensurePackUnitSidecarArrays() {
   };
   stretch('packUnitMarkdownTexts', '');
   stretch('packUnitYoutubeUrls', '');
+  stretch('packUnitMp3PreviewUrls', '');
   stretch('packUnitTranscriptLoading', false);
   stretch('packUnitTranscriptError', '');
   stretch('packChunkSizes', DEFAULT_PACK_CHUNK_SIZE);
@@ -731,10 +736,7 @@ function resetPackUnitGroup(groupIdx) {
   const overs = [...(state.packChunkOverlaps || [])];
   overs[gi] = DEFAULT_PACK_CHUNK_OVERLAP;
   state.packChunkOverlaps = overs;
-  setPackUnitMarkdownAt(gi, '');
-  const yu = [...(state.packUnitYoutubeUrls || [])];
-  yu[gi] = '';
-  state.packUnitYoutubeUrls = yu;
+  clearPackUnitPreviewAt(gi);
   const err = [...(state.packUnitTranscriptError || [])];
   err[gi] = '';
   state.packUnitTranscriptError = err;
@@ -793,24 +795,52 @@ function setPackUnitMarkdownAt(gi, text) {
   s.packUnitMarkdownTexts = arr;
 }
 
+function setPackUnitYoutubeUrlAt(gi, url) {
+  const s = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const arr = [...s.packUnitYoutubeUrls];
+  arr[gi] = url != null ? String(url) : '';
+  s.packUnitYoutubeUrls = arr;
+}
+
+function revokePackUnitMp3PreviewUrl(url) {
+  const s = String(url ?? '').trim();
+  if (!s || !s.startsWith('blob:')) return;
+  try {
+    URL.revokeObjectURL(s);
+  } catch {
+    // ignore browser object URL revoke failures
+  }
+}
+
+function setPackUnitMp3PreviewUrlAt(gi, url) {
+  const s = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const arr = [...s.packUnitMp3PreviewUrls];
+  revokePackUnitMp3PreviewUrl(arr[gi]);
+  arr[gi] = url != null ? String(url) : '';
+  s.packUnitMp3PreviewUrls = arr;
+}
+
+function clearPackUnitPreviewAt(gi) {
+  setPackUnitMarkdownAt(gi, '');
+  setPackUnitYoutubeUrlAt(gi, '');
+  setPackUnitMp3PreviewUrlAt(gi, '');
+  const s = currentState.value;
+  const err = [...(s.packUnitTranscriptError || [])];
+  err[gi] = '';
+  s.packUnitTranscriptError = err;
+}
+
 function packUnitTranscriptBusy(gi) {
   return !!(currentState.value.packUnitTranscriptLoading && currentState.value.packUnitTranscriptLoading[gi]);
 }
 
-/** 文字／音訊／YouTube 單元：稿為空且可編輯時，於編輯器上顯示半透明層與載入按鈕 */
-function showPackUnitMdTranscriptOverlay(gi) {
-  if (packGroupsEditBlocked.value) return false;
-  const ut = packUnitTypeAt(gi);
-  if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return false;
-  const md = String(currentState.value.packUnitMarkdownTexts?.[gi] ?? '').trim();
-  return md === '';
-}
-
 /**
- * 共用：確認 folder / rag_tab_id / personId，準備逐字稿呼叫。
+ * 共用：確認 folder / rag_tab_id / personId，準備設定單元預覽呼叫。
  * 成功回傳 { folder, rag_tab_id, personId }；失敗已寫入 err[gi] 並回傳 null。
  */
-function prepareTranscriptCall(gi, group) {
+function preparePackUnitPreviewCall(gi, group) {
   const s = currentState.value;
   ensurePackUnitSidecarArrays();
   const folder = firstFolderNameInGroup(group);
@@ -840,45 +870,93 @@ function prepareTranscriptCall(gi, group) {
   return { folder, rag_tab_id, personId };
 }
 
-async function runTranscriptCall(gi, apiFn) {
+function markPackUnitPreviewDone(gi) {
+  const s = currentState.value;
+  const lo = [...s.packUnitTranscriptLoading];
+  lo[gi] = false;
+  s.packUnitTranscriptLoading = lo;
+}
+
+function markPackUnitPreviewFormatError(gi) {
+  const s = currentState.value;
+  const err = [...s.packUnitTranscriptError];
+  err[gi] = '資料夾格式不符';
+  s.packUnitTranscriptError = err;
+}
+
+function youtubeUrlFromUnitUrlResponse(data) {
+  if (!data || typeof data !== 'object') return '';
+  const candidates = [
+    data.youtube_url,
+    data.youtubeUrl,
+    data.url,
+    data.watch_url,
+    data.watchUrl,
+    data.video_url,
+    data.videoUrl,
+  ];
+  for (const c of candidates) {
+    if (c != null && String(c).trim() !== '') return String(c).trim();
+  }
+  const id = data.video_id ?? data.videoId;
+  return id != null && String(id).trim() !== ''
+    ? `https://www.youtube.com/watch?v=${String(id).trim()}`
+    : '';
+}
+
+function packUnitTextPreviewHtml(gi) {
+  const raw = currentState.value.packUnitMarkdownTexts?.[gi];
+  return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
+}
+
+function packUnitYoutubeEmbedUrl(gi) {
+  const raw = currentState.value.packUnitYoutubeUrls?.[gi];
+  return youtubeEmbedUrlFromInput(raw != null ? String(raw) : '');
+}
+
+async function loadPackUnitPreviewForType(gi, group) {
+  const ut = packUnitTypeAt(gi);
+  if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return;
+  const ctx = preparePackUnitPreviewCall(gi, group);
+  if (!ctx) return;
   try {
-    const data = await apiFn();
-    setPackUnitMarkdownAt(gi, transcriptResponseMarkdown(data));
-  } catch (e) {
+    if (ut === UNIT_TYPE_TEXT) {
+      const data = await apiRagTranscriptText({
+        rag_tab_id: ctx.rag_tab_id,
+        folder_name: ctx.folder,
+        personId: ctx.personId,
+      });
+      const md = transcriptResponseMarkdown(data);
+      if (!String(md ?? '').trim()) throw new Error('empty text');
+      setPackUnitMarkdownAt(gi, md);
+    } else if (ut === UNIT_TYPE_MP3) {
+      const blob = await apiRagUnitAudioFileByFolder({
+        rag_tab_id: ctx.rag_tab_id,
+        folder_name: ctx.folder,
+        personId: ctx.personId,
+      });
+      if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('empty audio');
+      setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(blob));
+    } else if (ut === UNIT_TYPE_YOUTUBE) {
+      const data = await apiRagUnitYoutubeUrlByFolder({
+        rag_tab_id: ctx.rag_tab_id,
+        folder_name: ctx.folder,
+        personId: ctx.personId,
+      });
+      const url = youtubeUrlFromUnitUrlResponse(data);
+      if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
+      setPackUnitYoutubeUrlAt(gi, url);
+    }
     const s = currentState.value;
     const err = [...s.packUnitTranscriptError];
-    err[gi] = e?.message ?? String(e);
+    err[gi] = '';
     s.packUnitTranscriptError = err;
+  } catch {
+    clearPackUnitPreviewAt(gi);
+    markPackUnitPreviewFormatError(gi);
   } finally {
-    const s = currentState.value;
-    const lo = [...s.packUnitTranscriptLoading];
-    lo[gi] = false;
-    s.packUnitTranscriptLoading = lo;
+    markPackUnitPreviewDone(gi);
   }
-}
-
-async function onPackUnitTranscriptText(gi, group) {
-  const ctx = prepareTranscriptCall(gi, group);
-  if (!ctx) return;
-  await runTranscriptCall(gi, () =>
-    apiRagTranscriptText({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
-  );
-}
-
-async function onPackUnitTranscriptAudio(gi, group) {
-  const ctx = prepareTranscriptCall(gi, group);
-  if (!ctx) return;
-  await runTranscriptCall(gi, () =>
-    apiRagTranscriptAudioByFolder({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
-  );
-}
-
-async function onPackUnitTranscriptYoutube(gi, group) {
-  const ctx = prepareTranscriptCall(gi, group);
-  if (!ctx) return;
-  await runTranscriptCall(gi, () =>
-    apiRagTranscriptYoutubeByFolder({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
-  );
 }
 
 // ─── RAG Tab 項目與 Unit（單元）解析 ──────────────────────────────────────────
@@ -987,6 +1065,35 @@ function folderCombinationFromUnitRaw(unit) {
   if (!unit || typeof unit !== 'object') return '';
   const raw = unit.folder_combination ?? unit.folderCombination;
   return raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
+}
+
+/**
+ * 後端 folder_combination：`資料夾A/t資料夾B/t資料夾C`（以 `/t` 串多個資料夾名）；
+ * 若無則將 fallback（unit_list 群組之「a + b」）拆成與拖曳 tag 相同的一列名稱。
+ * @param {string} folderCombinationStr
+ * @param {string} [fallbackFolderLine]
+ * @returns {string[]}
+ */
+function parseFolderCombinationTags(folderCombinationStr, fallbackFolderLine) {
+  const fc = String(folderCombinationStr ?? '').trim();
+  if (fc) {
+    if (fc.includes('/t')) {
+      return fc.split('/t').map((s) => s.trim()).filter(Boolean);
+    }
+    if (/\t/.test(fc)) {
+      return fc.split(/\t+/).map((s) => s.trim()).filter(Boolean);
+    }
+    if (fc.includes(' + ')) {
+      return fc.split(/\s*\+\s*/).map((s) => s.trim()).filter(Boolean);
+    }
+    return [fc];
+  }
+  const line = String(fallbackFolderLine ?? '').trim();
+  if (!line) return [];
+  if (line.includes(' + ')) {
+    return line.split(/\s*\+\s*/).map((s) => s.trim()).filter(Boolean);
+  }
+  return [line];
 }
 
 /** Rag_Unit／GET /rag/tab/units／build-rag-zip output：逐字稿欄位（含 NDJSON output.transcript_plain） */
@@ -1773,11 +1880,15 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
           ? groupsRo[i].filter(Boolean).join(' + ')
           : '';
       const fc = String(t.folderCombination ?? '').trim();
+      const folderComboTags = parseFolderCombinationTags(fc, folderLineRo);
       const folderComboTitle =
-        fc || folderLineRo || String(t?.label ?? `單元 ${i + 1}`).trim() || `單元 ${i + 1}`;
+        folderComboTags.length > 0
+          ? folderComboTags.join(' + ')
+          : (fc || folderLineRo || String(t?.label ?? `單元 ${i + 1}`).trim() || `單元 ${i + 1}`);
       return {
         key: String(t?.id ?? `idx-${i}`),
         title: folderComboTitle,
+        folderComboTags,
         unitNameDisplay: String(t.unitName ?? t.label ?? '').trim() || '—',
         unitType: t.unitType,
         typeLabel: packUnitTypeDisplayLabel(t.unitType),
@@ -1808,7 +1919,10 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
     const synTab = unitsRow[i] != null ? buildUnitTabItem(unitsRow[i], i) : null;
     /** @type {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', src: string } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]} */
     const folderFieldLine = fcRow || (folderLine.trim() ? folderLine : '');
-    let detailSegments = [{ kind: 'field', label: '資料夾', value: folderFieldLine || '—' }];
+    const folderComboTags = parseFolderCombinationTags(fcRow, folderLine);
+    const folderFieldLineForDetail =
+      folderComboTags.length > 0 ? folderComboTags.join(' + ') : (folderFieldLine || '—');
+    let detailSegments = [{ kind: 'field', label: '資料夾', value: folderFieldLineForDetail }];
     let sourceDisplay = folderFieldLine || '—';
     /** @type {{ label: string, value: string }[]} */
     let outlineChunkFields = [];
@@ -1821,7 +1935,7 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
       const utSyn = Number(synResolved.unitType ?? UNIT_TYPE_RAG);
       if (utSyn === UNIT_TYPE_RAG) outlineChunkFields = quizBankReadonlyOutlineChunkFields(cs, co);
       detailSegments = [
-        { kind: 'field', label: '資料夾', value: folderFieldLine || '—' },
+        { kind: 'field', label: '資料夾', value: folderFieldLineForDetail },
         ...buildQuizBankReadonlyDetailSegments(synResolved),
       ];
     } else if (ut === UNIT_TYPE_RAG) {
@@ -1836,9 +1950,14 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
     const unitFromRow = unitsRow[i] ? String(unitsRow[i].unit_name ?? '').trim() : '';
     const unitNameFromState = String(state.packUnitNames?.[i] ?? '').trim();
     const unitNameDisplay = synUnitName || unitFromRow || unitNameFromState || '—';
+    const folderComboTitleFb =
+      folderComboTags.length > 0
+        ? folderComboTags.join(' + ')
+        : (fcRow || folderLine || `設定單元 ${i + 1}`);
     return {
       key: `fb-${i}-${String(folderLine).slice(0, 32)}`,
-      title: fcRow || folderLine || `設定單元 ${i + 1}`,
+      title: folderComboTitleFb,
+      folderComboTags,
       unitNameDisplay,
       unitType: ut,
       typeLabel: packUnitTypeDisplayLabel(ut),
@@ -3688,51 +3807,59 @@ async function confirmAnswer(item) {
                     v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT || packUnitTypeAt(gi) === UNIT_TYPE_MP3 || packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE"
                     class="w-100 min-w-0"
                   >
-                    <div
-                      class="position-relative w-100 min-w-0 rounded-2 overflow-hidden"
-                    >
-                      <EnglishExamMarkdownEditor
-                        v-if="!packGroupsEditBlocked || (currentState.packUnitMarkdownTexts?.[gi] ?? '').trim() !== ''"
-                        class="my-pack-unit-md-editor"
-                        :textarea-id="'pack-unit-md-' + gi"
-                        :model-value="currentState.packUnitMarkdownTexts?.[gi] ?? ''"
-                        :disabled="packGroupsEditBlocked"
-                        :preview-only="packGroupsEditBlocked"
-                        @update:model-value="setPackUnitMarkdownAt(gi, $event)"
+                    <div class="d-flex flex-column gap-2 w-100 min-w-0">
+                      <div
+                        v-if="packUnitTranscriptBusy(gi)"
+                        class="my-font-sm-400 my-color-gray-4 text-center py-3"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        讀取中…
+                      </div>
+                      <div
+                        v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT && (currentState.packUnitMarkdownTexts?.[gi] ?? '').trim() !== ''"
+                        class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
+                        role="region"
+                        aria-label="文字內容"
+                      >
+                        <div
+                          class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                          v-html="packUnitTextPreviewHtml(gi)"
+                        />
+                      </div>
+                      <audio
+                        v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[gi] ?? '').trim() !== ''"
+                        :key="currentState.packUnitMp3PreviewUrls[gi]"
+                        controls
+                        class="w-100"
+                        preload="none"
+                        :src="currentState.packUnitMp3PreviewUrls[gi]"
                       />
                       <div
-                        v-if="showPackUnitMdTranscriptOverlay(gi)"
-                        class="position-absolute top-0 start-0 w-100 h-100 d-flex flex-column align-items-center justify-content-center gap-2 px-3 py-4 my-pack-unit-md-transcript-overlay"
+                        v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE && packUnitYoutubeEmbedUrl(gi)"
+                        class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                      >
+                        <iframe
+                          class="border-0"
+                          title="YouTube 影片"
+                          :src="packUnitYoutubeEmbedUrl(gi)"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          referrerpolicy="strict-origin-when-cross-origin"
+                          allowfullscreen
+                        />
+                      </div>
+                      <div
+                        v-else
+                        class="d-flex justify-content-center py-2"
                       >
                         <button
-                          v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT"
                           type="button"
                           class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
                           :disabled="packUnitTranscriptBusy(gi)"
                           :aria-busy="packUnitTranscriptBusy(gi)"
-                          @click="onPackUnitTranscriptText(gi, group)"
+                          @click="loadPackUnitPreviewForType(gi, group)"
                         >
-                          讀取文字內容
-                        </button>
-                        <button
-                          v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3"
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
-                          :disabled="packUnitTranscriptBusy(gi)"
-                          :aria-busy="packUnitTranscriptBusy(gi)"
-                          @click="onPackUnitTranscriptAudio(gi, group)"
-                        >
-                          轉換逐字稿
-                        </button>
-                        <button
-                          v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE"
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
-                          :disabled="packUnitTranscriptBusy(gi)"
-                          :aria-busy="packUnitTranscriptBusy(gi)"
-                          @click="onPackUnitTranscriptYoutube(gi, group)"
-                        >
-                          轉換逐字稿
+                          重新讀取
                         </button>
                       </div>
                     </div>
@@ -3903,11 +4030,26 @@ async function confirmAnswer(item) {
                         <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
                           資料夾組合
                         </div>
-                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ row.title }}
+                        <div
+                          class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0"
+                          role="group"
+                          aria-label="資料夾組合"
+                        >
+                          <template v-if="row.folderComboTags?.length">
+                            <span
+                              v-for="(tag, ti) in row.folderComboTags"
+                              :key="`${row.key}-fc-${ti}`"
+                              class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                            >{{ tag }}</span>
+                          </template>
+                          <span
+                            v-else
+                            class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
+                          >{{ row.title }}</span>
                         </div>
                       </div>
                       <div
+                        v-if="Number(row.unitType) !== UNIT_TYPE_RAG"
                         class="d-flex flex-column gap-0 min-w-0"
                         style="flex: 1 1 0;"
                       >

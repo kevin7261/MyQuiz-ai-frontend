@@ -2,6 +2,10 @@
 /**
  * EnglishExamMarkdownEditor — Markdown 編輯／預覽元件
  *
+ * 編輯模式使用 CodeMirror 5：視窗縮放、版面重排、側欄開合、預覽區塊出現等都會改變編輯器實際寬度或裝置像素比例，
+ * 必須在變動後呼叫 `codemirror.refresh()`，否則游標與點選位置會與顯示脫離、工具列對位異常。
+ * 元件內以 ResizeObserver、`window.resize` 與 `visualViewport` 事件合併觸發 refresh。
+ *
  * 雙模式設計：
  * - **編輯模式**（previewOnly=false）：掛載 EasyMDE 富文字編輯器（工具列含預覽、粗體、清單等）；
  *   輸入內容以 `update:modelValue` emit 至父層。
@@ -38,8 +42,60 @@ const previewHtml = computed(() => renderMarkdownToSafeHtml(props.modelValue));
 const previewEmpty = computed(() => !(props.modelValue != null && String(props.modelValue).trim()));
 
 const textareaRef = ref(null);
+const editorWrapRef = ref(null);
+/** @type {null | ResizeObserver} */
+let editorResizeObserver = null;
+/** @type {null | number} */
+let codemirrorRefreshRafId = null;
+
 /** @type {null | { value: (v?: string) => string, codemirror: { setOption: (k: string, v: unknown) => void, refresh: () => void }, toTextArea: () => void }} */
 let easyMDE = null;
+
+function scheduleCodemirrorRefresh() {
+  if (!easyMDE?.codemirror?.refresh) return;
+  if (codemirrorRefreshRafId != null) return;
+  codemirrorRefreshRafId = requestAnimationFrame(() => {
+    codemirrorRefreshRafId = null;
+    try {
+      easyMDE?.codemirror?.refresh();
+    } catch {
+      /* noop */
+    }
+  });
+}
+
+function detachEditorResizeObservers() {
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('resize', scheduleCodemirrorRefresh);
+  }
+  const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+  if (vv) {
+    vv.removeEventListener('resize', scheduleCodemirrorResize);
+    vv.removeEventListener('scroll', scheduleCodemirrorResize);
+  }
+  if (editorResizeObserver) {
+    editorResizeObserver.disconnect();
+    editorResizeObserver = null;
+  }
+}
+
+function scheduleCodemirrorResize() {
+  scheduleCodemirrorRefresh();
+}
+
+function attachEditorResizeObservers() {
+  detachEditorResizeObservers();
+  const wrap = editorWrapRef.value;
+  if (!wrap || props.previewOnly || !easyMDE?.codemirror) return;
+  editorResizeObserver = new ResizeObserver(() => scheduleCodemirrorRefresh());
+  editorResizeObserver.observe(wrap);
+  window.addEventListener('resize', scheduleCodemirrorRefresh);
+  if (window.visualViewport) {
+    const vv = window.visualViewport;
+    vv.addEventListener('resize', scheduleCodemirrorResize);
+    vv.addEventListener('scroll', scheduleCodemirrorResize);
+  }
+}
 
 function syncReadOnly() {
   if (!easyMDE?.codemirror) return;
@@ -67,9 +123,18 @@ function initEasyMde() {
     emit('update:modelValue', easyMDE.value());
   });
   syncReadOnly();
+  nextTick(() => {
+    attachEditorResizeObservers();
+    scheduleCodemirrorRefresh();
+  });
 }
 
 function destroyEasyMde() {
+  detachEditorResizeObservers();
+  if (codemirrorRefreshRafId != null) {
+    cancelAnimationFrame(codemirrorRefreshRafId);
+    codemirrorRefreshRafId = null;
+  }
   if (easyMDE) {
     easyMDE.toTextArea();
     easyMDE = null;
@@ -91,6 +156,7 @@ watch(
     const next = v ?? '';
     if (easyMDE.value() !== next) {
       easyMDE.value(next);
+      scheduleCodemirrorRefresh();
     }
   }
 );
@@ -111,7 +177,7 @@ watch(
       nextTick(() => {
         initEasyMde();
         nextTick(() => {
-          easyMDE?.codemirror?.refresh();
+          scheduleCodemirrorRefresh();
         });
       });
     }
@@ -155,6 +221,7 @@ onBeforeUnmount(() => {
     </template>
     <template v-else>
       <div
+        ref="editorWrapRef"
         id="english-exam-md-editor-panel"
         class="english-exam-md-editor-wrap min-w-0"
         role="region"

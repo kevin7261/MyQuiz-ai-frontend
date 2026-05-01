@@ -43,6 +43,8 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore) {
         /** 出題單元為文字／mp3／YouTube 時之逐字稿 Markdown（與 packTasksList 序對齊） */
         packUnitMarkdownTexts: [],
         packUnitYoutubeUrls: [],
+        /** 逐字稿 GET 回傳之暫存音檔 URL（建置前預覽；與 packTasksList 同序） */
+        packUnitMp3PreviewUrls: [],
         packUnitTranscriptLoading: [],
         packUnitTranscriptError: [],
         /** 與 packTasksList 每群一筆：分段長度（字元） */
