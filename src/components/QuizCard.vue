@@ -1,18 +1,15 @@
 <script setup>
 import { computed } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
-import { QUIZ_LEVEL_LABELS, normalizeQuizLevelLabel } from '../utils/rag.js';
 
-/** 與 Design 頁、建立題庫「難度」群組選項一致 */
-const difficultyOptions = QUIZ_LEVEL_LABELS;
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號、單元/難度、題目內容、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改規則、批改結果。
+ * 顯示：題號（可隱藏）、題目內容、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改規則、批改結果。
  * 可輸入答案並按「開始批改」送出評分；按鈕常駐，再次批改時 composable 會先將 confirmed 設為 false 再更新結果。**RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
- * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 時批改指引仍不由前端於 POST 送出，欄位可編輯以相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, generateLevel, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（POST /rag/tab/unit/quiz/for-exam 用）、rag_quiz_for_exam（已標為測驗用試題）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。hideRagQuizForExamToolbar：true 時不在卡內顯示「設為測驗用」（由建立頁題型區塊下方置中承載）。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示單元／難度、參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。
+ * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 時批改指引仍不由前端於 POST 送出，欄位可編輯以相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError、quiz_user_prompt_text（可選；POST /exam/tab/quiz/llm-generate 回傳之出題模板快照，與 gradingPrompt 一併在 hideGradingPrompt 時唯讀顯示）；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（狀態／其他 API）、rag_quiz_for_exam（已標為測驗用試題；for-exam 僅送 rag_quiz_id／for_exam）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。hideRagQuizForExamToolbar：true 時不在卡內顯示「設為測驗用」（由建立頁題型區塊下方置中承載）。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。
  */
 const props = defineProps({
   /** 題目資料（含題目、提示、答案、批改結果等） */
@@ -33,8 +30,6 @@ const props = defineProps({
   showExamRating: { type: Boolean, default: false },
   /** 建立英文測驗題庫：僅題目＋提示，版式與本元件 designUi 相同，其餘區塊隱藏 */
   questionHintOnly: { type: Boolean, default: false },
-  /** designUi「建立測驗題庫」已用單元分頁標題時：隱藏單元／難度列 */
-  hideUnitDifficulty: { type: Boolean, default: false },
   /** 父層已顯示「第 N 題」時，隱藏本卡題號（避免重複） */
   hideSlotIndex: { type: Boolean, default: false },
   /** 測驗頁：隱藏「批改規則」Markdown 區（仍可依既有 gradingPrompt 送出） */
@@ -48,11 +43,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['toggle-hint', 'confirm-answer', 'update:quiz_answer', 'update:grading_prompt', 'rate-quiz', 'mark-rag-quiz-for-exam']);
-
-function isDifficultyPillActive(opt) {
-  const normalized = normalizeQuizLevelLabel(props.card?.generateLevel);
-  return normalized != null && normalized === opt;
-}
 
 /** 兩邊 rag_id 皆已知且不一致 → 不可在此 RAG 下作答 */
 const answerInputDisabled = computed(() => {
@@ -90,19 +80,34 @@ const showRagQuizForExamToolbar = computed(() => {
 /** 題幹有文字才顯示作答／「開始批改」等（後端空白列或未產出題文時不應出現批改流程） */
 const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '');
 
-/** 已取得批改結果內容時不再顯示「開始批改」 */
-const hasPersistedGradingResult = computed(
-  () => String(props.card?.gradingResult ?? '').trim() !== ''
+/** 無提示內容時不顯示「顯示提示」與空白提示區 */
+const hasHintText = computed(() => String(props.card?.hint ?? '').trim() !== '');
+
+/** 測驗頁 hideGradingPrompt：顯示 llm-generate／Exam_Quiz 之出題模板（quiz_user_prompt_text） */
+const quizUserPromptSnapshotTrimmed = computed(() => {
+  const c = props.card;
+  if (!c || typeof c !== 'object') return '';
+  const raw = c.quiz_user_prompt_text ?? c.quizUserPromptText;
+  return String(raw ?? '').trim();
+});
+
+/** 測驗頁 hideGradingPrompt：批改模板對應 gradingPrompt（answer_user_prompt_text） */
+const answerUserPromptSnapshotTrimmed = computed(() =>
+  String(props.card?.gradingPrompt ?? '').trim(),
+);
+
+const showExamLlmPromptSnapshots = computed(
+  () =>
+    props.hideGradingPrompt &&
+    hasQuizBody.value &&
+    (quizUserPromptSnapshotTrimmed.value !== '' || answerUserPromptSnapshotTrimmed.value !== ''),
 );
 
 /**
- * designUi 時頂區為 flex gap-4 的子項之一；若第 N 題／單元／難度皆隱藏（如測驗頁、建立題庫 embedded），勿渲染空白包住器，否則與「題目」區之間會多出一格 gap。
+ * designUi 時頂區為 flex gap-4 的子項之一；若第 N 題隱藏（如測驗頁、建立題庫 embedded），勿渲染空白包住器，否則與「題目」區之間會多出一格 gap。
  */
 const showQuizCardHeaderBand = computed(
-  () =>
-    !props.designUi ||
-    !props.hideSlotIndex ||
-    (!props.questionHintOnly && !props.hideUnitDifficulty),
+  () => !props.designUi || !props.hideSlotIndex,
 );
 </script>
 
@@ -128,65 +133,6 @@ const showQuizCardHeaderBand = computed(
         class="my-font-lg-600 my-color-black"
         :class="designUi ? 'mb-0' : 'mb-3'"
       >第 {{ slotIndex }} 題</div>
-      <!-- 單元與難度（唯讀）；questionHintOnly / hideUnitDifficulty 時隱藏 -->
-      <div
-        v-if="!questionHintOnly && !hideUnitDifficulty"
-        class="d-flex flex-row align-items-end gap-3 w-100 min-w-0"
-        :class="[designUi ? 'flex-nowrap mb-0' : 'flex-wrap mb-3']"
-      >
-        <div
-          class="d-flex flex-column min-w-0"
-          :class="designUi ? 'flex-grow-1 gap-1' : 'w-100 flex-shrink-0 gap-0'"
-        >
-          <div
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >單元</div>
-          <div
-            v-if="designUi"
-            class="d-flex justify-content-between align-items-center my-font-md-400 my-color-black w-100 min-w-0 px-3 py-2 rounded-2 my-bgcolor-white my-border-gray-2"
-            :title="card.ragName || '—'"
-            role="presentation"
-          >
-            <span class="text-truncate text-start pe-2">{{ card.ragName || '—' }}</span>
-            <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0 opacity-50" aria-hidden="true" />
-          </div>
-          <div
-            v-else
-            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2 d-flex align-items-center"
-            :style="{ minHeight: '31px' }"
-          >{{ card.ragName || '—' }}</div>
-        </div>
-        <div
-          class="d-flex flex-column"
-          :class="designUi ? 'flex-shrink-0 gap-1' : 'flex-shrink-0 w-100 gap-0'"
-        >
-          <div
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >難度</div>
-          <div
-            v-if="designUi"
-            class="btn-group my-btn-group-pill flex-shrink-0 pe-none"
-            role="group"
-            aria-label="難度（唯讀）"
-          >
-            <button
-              v-for="opt in difficultyOptions"
-              :key="'diff-pill-' + opt"
-              type="button"
-              class="btn d-flex justify-content-center align-items-center my-font-md-400 px-3 py-2"
-              :class="isDifficultyPillActive(opt) ? 'my-button-white' : 'my-button-gray-3'"
-              tabindex="-1"
-            >
-              {{ opt }}
-            </button>
-          </div>
-          <div
-            v-else
-            class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2 d-flex align-items-center"
-            :style="{ minHeight: '31px' }"
-          >{{ card.generateLevel || '—' }}</div>
-        </div>
-      </div>
       </div>
       <div
         class="w-100 min-w-0"
@@ -203,9 +149,11 @@ const showQuizCardHeaderBand = computed(
         </div>
         <template v-if="designUi && showExamRating && hasQuizBody">
           <div
-            class="d-flex flex-row flex-wrap justify-content-between align-items-center gap-2 w-100 min-w-0"
+            class="d-flex flex-row flex-wrap align-items-center gap-2 w-100 min-w-0"
+            :class="hasHintText ? 'justify-content-between' : 'justify-content-end'"
           >
             <button
+              v-if="hasHintText"
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
               @click="emit('toggle-hint', card)"
@@ -254,6 +202,7 @@ const showQuizCardHeaderBand = computed(
             {{ card.rateError }}
           </div>
           <div
+            v-if="hasHintText"
             v-show="card.hintVisible"
             class="my-font-sm-400 form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4"
           >
@@ -262,7 +211,7 @@ const showQuizCardHeaderBand = computed(
         </template>
       </div>
       <div
-        v-if="!(designUi && showExamRating)"
+        v-if="!(designUi && showExamRating) && hasHintText"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
@@ -280,6 +229,38 @@ const showQuizCardHeaderBand = computed(
           :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2 mt-2'"
         >
           {{ card.hint }}
+        </div>
+      </div>
+      <div
+        v-if="showExamLlmPromptSnapshots"
+        class="w-100 min-w-0"
+        :class="designUi ? 'd-flex flex-column gap-3 mb-0' : 'mb-3'"
+      >
+        <div
+          v-if="quizUserPromptSnapshotTrimmed !== ''"
+          class="d-flex flex-column gap-1 w-100 min-w-0"
+        >
+          <div
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+          >出題規則</div>
+          <div
+            class="my-font-sm-400 lh-base"
+            style="white-space: pre-wrap;"
+            :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+          >{{ quizUserPromptSnapshotTrimmed }}</div>
+        </div>
+        <div
+          v-if="answerUserPromptSnapshotTrimmed !== ''"
+          class="d-flex flex-column gap-1 w-100 min-w-0"
+        >
+          <div
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+          >批改規則</div>
+          <div
+            class="my-font-sm-400 lh-base"
+            style="white-space: pre-wrap;"
+            :class="designUi ? 'form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+          >{{ answerUserPromptSnapshotTrimmed }}</div>
         </div>
       </div>
       <div
@@ -343,12 +324,10 @@ const showQuizCardHeaderBand = computed(
                 ? false
                 : answerInputDisabled || gradeSubmitting
             "
-            placeholder="輸入批改規則（可含教材重點、評分標準等，支援 Markdown）…"
             @update:model-value="emit('update:grading_prompt', $event)"
           />
         </div>
         <div
-          v-if="!hasPersistedGradingResult"
           :class="designUi ? 'd-flex justify-content-center mt-2' : 'd-flex justify-content-end mt-2'"
         >
           <button

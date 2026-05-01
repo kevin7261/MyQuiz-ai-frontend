@@ -7,22 +7,20 @@
  * - currentState：依 activeTabId / newTabIds / ragList 解析出「目前分頁」的狀態
  */
 import { computed, reactive } from 'vue';
-import { generateTabId, isNewTabId as checkIsNewTabId, DEFAULT_SYSTEM_INSTRUCTION } from '../utils/rag.js';
+import { generateTabId, isNewTabId as checkIsNewTabId } from '../utils/rag.js';
 
 /**
  * @param {import('vue').Ref<string>} activeTabId - 目前選中的 RAG tab id
  * @param {import('vue').Ref<string[]>} newTabIds - 尚未寫入後端的「新增」tab id 列表
  * @param {import('vue').Ref<object[]>} ragList - GET /rag/tabs 回傳的 RAG 列表
  * @param {object} authStore - Pinia auth store（用於 generateTabId(person_id)）
- * @param {object} [options] - defaultSystemInstruction 等
  */
-export function useRagTabState(activeTabId, newTabIds, ragList, authStore, options = {}) {
-  const defaultSystemInstruction = options.defaultSystemInstruction ?? DEFAULT_SYSTEM_INSTRUCTION;
+export function useRagTabState(activeTabId, newTabIds, ragList, authStore) {
   /** 每個 tab id 對應的狀態物件（lazy 建立） */
   const tabStateMap = reactive({});
 
   /**
-   * 取得指定 id 的 tab 狀態；若不存在會建立一筆預設狀態（含 zip、pack、cardList、systemInstruction 等）
+   * 取得指定 id 的 tab 狀態；若不存在會建立一筆預設狀態（含 zip、pack、cardList 等）
    * @param {string} [id]
    */
   function getTabState(id) {
@@ -87,7 +85,6 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore, optio
         _synced: false,
         forExamLoading: false,
         forExamError: '',
-        systemInstruction: defaultSystemInstruction,
       });
     }
     return tabStateMap[id];

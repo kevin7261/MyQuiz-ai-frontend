@@ -11,8 +11,8 @@
  * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕；已不再傳 system_prompt_instruction）
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
- * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為測驗用 Rag_Quiz POST /rag/tab/unit/quiz/for-exam（body: rag_quiz_id、rag_tab_id、rag_unit_id；for_exam 可切 true／false）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 逐字稿區（可垂直捲動）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
+ * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
+ * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 逐字稿區（可垂直捲動）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, onActivated, reactive } from 'vue';
@@ -56,8 +56,6 @@ import {
   packUnitTypesIntArrayForApi,
   parsePackUnitTypesFromRag,
   parseRagMetadataObject,
-  DEFAULT_SYSTEM_INSTRUCTION,
-  normalizeQuizLevelLabel,
   unitSelectValue,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
@@ -84,8 +82,6 @@ import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 
-void Design08OptionDropdown;
-
 defineProps({
   tabId: { type: String, required: true },
 });
@@ -93,6 +89,8 @@ defineProps({
 const pageTitle = computed(() => '建立測驗題庫');
 /** 用於載入中、新增、錯誤訊息等可讀名詞 */
 const quizBankNoun = computed(() => '測驗題庫');
+
+// ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
 
 let cardIdSeq = 0;
 function nextCardId() {
@@ -115,6 +113,8 @@ function fileHasAllowedUploadExtension(file) {
 }
 
 const authStore = useAuthStore();
+
+// ─── RAG 列表與分頁狀態 ────────────────────────────────────────────────────────
 
 const { ragList, ragListLoading, ragListError, fetchRagList } = useRagList();
 const createRagLoading = ref(false);
@@ -140,7 +140,7 @@ const activeTabId = ref(null);
 const showFormWhenNoData = ref(false);
 const newTabIds = ref([]);
 
-const { getTabState, currentState, isNewTabId } = useRagTabState(activeTabId, newTabIds, ragList, authStore, { defaultSystemInstruction: DEFAULT_SYSTEM_INSTRUCTION });
+const { getTabState, currentState, isNewTabId } = useRagTabState(activeTabId, newTabIds, ragList, authStore);
 
 const zipFileInputAccept = UPLOAD_ACCEPT_ATTR;
 
@@ -271,9 +271,10 @@ const generateQuizUnits = computed(() => {
   return generateQuizUnitsFromRag.value;
 });
 
+// ─── 當前 tab / RAG 資料存取 ──────────────────────────────────────────────────
+
 /** 確保為數字，空字串/null/undefined/NaN 時回傳預設值 */
 function ensureNumber(val, defaultVal) {
-  if (val === '' || val == null) return defaultVal;
   const n = Number(val);
   return (n === n && isFinite(n)) ? n : defaultVal;
 }
@@ -539,6 +540,8 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
+// ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
+
 function packUnitTypeAt(gi) {
   const t = currentState.value.packUnitTypes?.[gi];
   if (t === 0 || t === 1 || t === 2 || t === 3 || t === 4) return t;
@@ -748,6 +751,8 @@ async function onPackUnitTranscriptYoutube(gi, group) {
     apiRagTranscriptYoutubeByFolder({ rag_tab_id: ctx.rag_tab_id, folder_name: ctx.folder, personId: ctx.personId })
   );
 }
+
+// ─── RAG Tab 項目與 Unit（單元）解析 ──────────────────────────────────────────
 
 /** Tab 列用：rag 項目含 _tabId、_label、_isExamRag（試卷用者分頁列綠點／刪除確認） */
 const ragItems = computed(() =>
@@ -1159,7 +1164,7 @@ const activeUnitSlotIndex = computed(() => {
   return idx >= 0 ? idx + 1 : 1;
 });
 
-/** 目前單元槽對應之 rag_tab_id／rag_unit_id（供單題設為測驗用 POST /rag/tab/unit/quiz/for-exam） */
+/** 目前單元槽對應之 rag_tab_id／rag_unit_id（供題卡狀態與其他 API；for-exam 僅送 rag_quiz_id／for_exam） */
 function getRagQuizUnitMeta(slotIndex) {
   const state = currentState.value;
   const tabs = state.unitTabOrder ?? [];
@@ -1171,6 +1176,8 @@ function getRagQuizUnitMeta(slotIndex) {
     rag_unit_id: Number.isFinite(ru) && ru >= 0 ? ru : 0,
   };
 }
+
+// ─── 題目卡片：for_exam 標記與 Quiz Sub-Tab 管理 ──────────────────────────────
 
 /** 切換 Rag_Quiz.for_exam（需已批改有結果；題卡綠／線框鈕與試卷試題來源對齊） */
 async function onMarkRagQuizForExam(card) {
@@ -1186,14 +1193,6 @@ async function onMarkRagQuizForExam(card) {
   const meta = getRagQuizUnitMeta(slotIndex);
   const rag = currentRagItem.value;
   const state = currentState.value;
-  const ragTabId =
-    String(card.rag_tab_id ?? meta.rag_tab_id ?? '').trim()
-    || String(rag?.rag_tab_id ?? activeTabId.value ?? state.zipTabId ?? '').trim();
-  let ragUnitId =
-    card.rag_unit_id != null && card.rag_unit_id !== ''
-      ? Number(card.rag_unit_id)
-      : Number(meta.rag_unit_id);
-  if (!Number.isFinite(ragUnitId) || ragUnitId < 0) ragUnitId = 0;
   const nextForExam = !(card.rag_quiz_for_exam === true || card.rag_quiz_for_exam === 1);
   card.ragQuizForExamLoading = true;
   card.ragQuizForExamError = '';
@@ -1201,15 +1200,21 @@ async function onMarkRagQuizForExam(card) {
     await apiMarkRagQuizForExam(
       {
         rag_quiz_id: rqid,
-        rag_tab_id: ragTabId,
-        rag_unit_id: ragUnitId,
         for_exam: nextForExam,
       },
       personId
     );
     card.rag_quiz_for_exam = nextForExam;
-    card.rag_tab_id = ragTabId;
-    card.rag_unit_id = ragUnitId;
+    const ragTabId =
+      String(card.rag_tab_id ?? meta.rag_tab_id ?? '').trim()
+      || String(rag?.rag_tab_id ?? activeTabId.value ?? state.zipTabId ?? '').trim();
+    let ragUnitId =
+      card.rag_unit_id != null && card.rag_unit_id !== ''
+        ? Number(card.rag_unit_id)
+        : Number(meta.rag_unit_id);
+    if (!Number.isFinite(ragUnitId) || ragUnitId < 0) ragUnitId = 0;
+    if (ragTabId) card.rag_tab_id = ragTabId;
+    if (Number.isFinite(ragUnitId) && ragUnitId >= 1) card.rag_unit_id = ragUnitId;
   } catch (err) {
     card.ragQuizForExamError = err?.message || String(err);
   } finally {
@@ -1778,7 +1783,7 @@ function positiveRagQuizIdFromCard(card) {
   return null;
 }
 
-/** 由 /rag/tabs 的 quiz 組題卡：批改優先 quiz.answers 末筆；若無則讀列上 answer_content／quiz_score（或 quiz_grade）／answer_critique（Rag_Quiz 內嵌欄位） */
+/** 由 /rag/tabs 的 quiz 組題卡：批改優先 quiz.answers 末筆；若無則讀列上 answer_content／quiz_score／answer_critique（Rag_Quiz 內嵌欄位） */
 function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
@@ -1786,7 +1791,7 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     latestAnswer?.quiz_answer ?? latestAnswer?.student_answer ?? null;
   const refA = quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? '';
   const critStr = quiz.answer_critique != null ? String(quiz.answer_critique).trim() : '';
-  const embeddedScore = quiz.quiz_score ?? quiz.quiz_grade;
+  const embeddedScore = quiz.quiz_score;
   const hasEmbeddedScore =
     embeddedScore != null && String(embeddedScore).trim() !== '';
   const answerContentStr = quiz.answer_content != null ? String(quiz.answer_content) : '';
@@ -1839,7 +1844,6 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
         ? parsedCritique
         : {
             quiz_score: embeddedScore,
-            quiz_grade: embeddedScore,
             answer_critique: quiz.answer_critique,
             answer_content: quiz.answer_content,
           };
@@ -1847,7 +1851,6 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   }
 
   const gradingPrompt = String(quiz.answer_user_prompt_text ?? '').trim();
-  const generateLevel = normalizeQuizLevelLabel(quiz.quiz_level);
   const rid = quiz.rag_id ?? quiz.ragId ?? ragIdFallback;
   const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
   const fe =
@@ -1875,8 +1878,6 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     gradingResponseJson,
     generateQuizResponseJson: null,
     quizUserPromptText: extractQuizUserPromptText(quiz),
-    generateLevel: generateLevel ?? null,
-    systemInstructionUsed: null,
     rag_quiz_id: positiveRagQuizIdFromQuizRow(quiz),
     rag_tab_id: rtid,
     rag_unit_id: ruid,
@@ -1923,13 +1924,6 @@ watch(
 
 watch(activeUnitTabItem, (tab) => {
   if (!tab) return;
-  const state = currentState.value;
-  if (tab.unitType === UNIT_TYPE_RAG) {
-    state.systemInstruction = DEFAULT_SYSTEM_INSTRUCTION;
-  } else {
-    const unitPrompt = String(tab.transcription ?? '').trim();
-    if (unitPrompt) state.systemInstruction = unitPrompt;
-  }
   const slot = getSlotFormState(activeUnitSlotIndex.value);
   if (!slot) return;
   slot.generateQuizTabId = tab.generateQuizTabId;
@@ -2004,6 +1998,8 @@ async function refreshUnitSubTabsFromApi(tabId) {
 
 /** GET /rag/tabs 由 useRagList 內 watch(immediate) 首次載入；每次從側欄再進入本頁（KeepAlive onActivated）再抓 GET /rag/tabs */
 const createBankActivatedOnce = ref(false);
+
+// ─── 生命週期：頁面啟動與初始載入 ────────────────────────────────────────────
 onActivated(() => {
   if (!createBankActivatedOnce.value) {
     createBankActivatedOnce.value = true;
@@ -2016,6 +2012,8 @@ onActivated(() => {
 onMounted(() => {
   clearZipFileInput();
 });
+
+// ─── RAG Tab CRUD（新增 / 刪除 / 更名） ───────────────────────────────────────
 
 /** 刪除 RAG */
 async function deleteRag(rag, e) {
@@ -2320,6 +2318,8 @@ function openZipFileDialog() {
   if (zipFileInputRef.value) zipFileInputRef.value.click();
 }
 
+// ─── 上傳 ZIP 與 Pack（Build RAG ZIP） ────────────────────────────────────────
+
 /** 上傳 ZIP */
 async function confirmUploadZip() {
   if (currentState.value.zipLoading) return;
@@ -2548,8 +2548,6 @@ function createLocalDraftUnitQuizCard() {
     gradingResult: '',
     gradingResponseJson: null,
     generateQuizResponseJson: null,
-    generateLevel: null,
-    systemInstructionUsed: null,
     rag_quiz_id: null,
     rag_tab_id: ragTabId,
     rag_unit_id: ragUnitId,
@@ -2562,6 +2560,8 @@ function createLocalDraftUnitQuizCard() {
     quizUserPromptText: '',
   };
 }
+
+// ─── 題目生成（LLM）與評分（Grading） ────────────────────────────────────────
 
 /**
  * 題型列「+」新增題庫：POST /rag/tab/unit/quiz/create 建立空白 Rag_Quiz（不呼叫 LLM），回傳 rag_quiz_id 後推入題列並展開出題區。
@@ -2802,8 +2802,6 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       referenceAnswerText,
       ragName,
       data,
-      null,
-      (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
       ragId,
       ragQuizId,
       quizCardRow
@@ -2830,7 +2828,7 @@ function openNextQuizSlot() {
  * 將第 slotIndex 題設為指定卡片（每題獨立，不連動）。
  * @param {object | null} [mergeTargetRow] - 單元多題時：優先合併此列（與 unitSlotQuizCards 內同一引用），避免該列無 rag_quiz_id 時誤 push 新列導致 UI 仍顯示空白出題規則。
  */
-function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed, ragId, ragQuizId, mergeTargetRow = null) {
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, ragId, ragQuizId, mergeTargetRow = null) {
   const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
@@ -2887,8 +2885,6 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     gradingResult: '',
     gradingResponseJson: null,
     generateQuizResponseJson: generateQuizResponseJson ?? null,
-    generateLevel: generateLevel ?? null,
-    systemInstructionUsed: systemInstructionUsed ?? null,
     rag_quiz_id: ragQuizId ?? null,
     quizUserPromptText: promptSnap,
     gradingPrompt: '',
@@ -2999,8 +2995,6 @@ async function generateQuiz(slotIndex) {
       referenceAnswerText,
       ragName,
       data,
-      null,
-      (state.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
       ragId,
       ragQuizId
     );
@@ -4133,7 +4127,6 @@ async function confirmAnswer(item) {
                   :slot-index="activeUnitQuizTypeIdxResolved + 1"
                   :current-rag-id="currentRagIdForQuizCards"
                   design-embedded
-                  hide-unit-difficulty
                   hide-slot-index
                   :grade-submitting="
                     gradingSubmittingCardId != null &&

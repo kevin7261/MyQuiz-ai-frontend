@@ -11,11 +11,8 @@ import { API_BASE, API_QUIZZES_BY_PERSON } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { downloadSummaryExcel } from '../utils/exportExcel.js';
 import {
-  normalizeQuizLevelLabel,
-  examQuizLevelFromRow,
   normalizeAnalysisQuizzesListResponse,
   mergeQuizzesWithTopLevelAnswers,
-  QUIZ_LEVEL_LABELS,
 } from '../utils/rag.js';
 import { formatGradingResult, formatQuizGradeDisplay, getAnswerScoreValue } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
@@ -63,13 +60,6 @@ function extractJsonFromWeaknessReport(text) {
 }
 
 const weaknessReportParsed = computed(() => extractJsonFromWeaknessReport(weaknessReport.value));
-
-/** 難度顯示：API 字串「基礎」「進階」或舊版 0／1 */
-function getDifficultyLabel(quizLevel) {
-  const label = normalizeQuizLevelLabel(quizLevel);
-  if (label) return label;
-  return quizLevel != null && String(quizLevel).trim() !== '' ? String(quizLevel) : '—';
-}
 
 /** 每題可能多筆作答，與測驗頁一致取最後一筆（最新提交） */
 function getSingleAnswer(item) {
@@ -134,27 +124,19 @@ function getSummaryRows() {
   return items.value.map((item, idx) => [
     idx + 1,
     item.rag_name ?? item.exam_name ?? '—',
-    getDifficultyLabel(examQuizLevelFromRow(item) ?? item.quiz_level),
     formatQuizGradeDisplay(getAnswerScoreValue(getSingleAnswer(item))),
     getSingleAnswer(item)?.created_at ?? '—'
   ]);
 }
 
 async function onDownloadExcel() {
-  const headers = ['題號', '單元', '難度', '分數', '時間'];
+  const headers = ['題號', '單元', '分數', '時間'];
   await downloadSummaryExcel(headers, getSummaryRows(), '作答弱點分析-作答紀錄摘要.xlsx');
 }
 
 onMounted(() => {
   fetchQuizAnswers();
 });
-
-const difficultyOptions = QUIZ_LEVEL_LABELS;
-
-function isDifficultyPillActiveForItem(item, opt) {
-  const label = normalizeQuizLevelLabel(examQuizLevelFromRow(item) ?? item.quiz_level);
-  return label != null && label === opt;
-}
 </script>
 
 <template>
@@ -238,7 +220,6 @@ function isDifficultyPillActiveForItem(item, opt) {
                           <tr>
                             <th class="my-font-md-600">題號</th>
                             <th class="my-font-md-600">單元</th>
-                            <th class="my-font-md-600">難度</th>
                             <th class="my-font-md-600">分數</th>
                             <th class="my-font-md-600">時間</th>
                           </tr>
@@ -247,7 +228,6 @@ function isDifficultyPillActiveForItem(item, opt) {
                           <tr v-for="(item, idx) in items" :key="item.exam_quiz_id ?? item.rag_quiz_id ?? idx">
                             <td>{{ idx + 1 }}</td>
                             <td>{{ item.rag_name ?? item.exam_name ?? '—' }}</td>
-                            <td>{{ getDifficultyLabel(examQuizLevelFromRow(item) ?? item.quiz_level) }}</td>
                             <td>{{ formatQuizGradeDisplay(getAnswerScoreValue(getSingleAnswer(item))) }}</td>
                             <td>{{ getSingleAnswer(item)?.created_at ?? '—' }}</td>
                           </tr>
@@ -281,25 +261,6 @@ function isDifficultyPillActiveForItem(item, opt) {
                           >
                             <span class="text-truncate text-start pe-2">{{ item.rag_name ?? item.exam_name ?? '—' }}</span>
                             <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0 opacity-50" aria-hidden="true" />
-                          </div>
-                        </div>
-                        <div class="d-flex flex-column flex-shrink-0 gap-1">
-                          <div class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">難度</div>
-                          <div
-                            class="btn-group my-btn-group-pill flex-shrink-0 pe-none"
-                            role="group"
-                            aria-label="難度（唯讀）"
-                          >
-                            <button
-                              v-for="opt in difficultyOptions"
-                              :key="'weakness-diff-' + idx + '-' + opt"
-                              type="button"
-                              class="btn d-flex justify-content-center align-items-center my-font-md-400 px-3 py-2"
-                              :class="isDifficultyPillActiveForItem(item, opt) ? 'my-button-white' : 'my-button-gray-3'"
-                              tabindex="-1"
-                            >
-                              {{ opt }}
-                            </button>
                           </div>
                         </div>
                       </div>

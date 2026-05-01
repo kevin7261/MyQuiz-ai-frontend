@@ -29,8 +29,9 @@ import { loggedFetch } from '../utils/loggedFetch.js';
 
 const RETRY_500_DELAY_MS = 2000;
 
+// ─── 工具函式（內部用） ────────────────────────────────────────────────────────
+
 /**
- * 從 authStore 取得目前使用者的 person_id
  * @param {object} authStore - Pinia auth store 實例
  * @returns {string | null} 未登入或無 person_id 時為 null
  */
@@ -74,8 +75,10 @@ function buildTranscriptUrl(path, params) {
   return u.toString();
 }
 
+// ─── 逐字稿（Transcript）API ─────────────────────────────────────────────────
+
 /**
- * GET /rag/transcript/text — ZIP 內指定資料夾所有 .md 依檔名排序合併（unit_type=2 文字單元）
+ * GET /rag/transcript/text
  * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
  * @returns {Promise<object>}
  */
@@ -124,6 +127,8 @@ export async function apiRagTranscriptYoutubeByFolder(params) {
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);
 }
+
+// ─── RAG Tab 管理（CRUD） ─────────────────────────────────────────────────────
 
 /**
  * GET /rag/tab/unit/mp3-file — 音訊單元（Rag_Unit.unit_type=3）原始音訊。
@@ -233,6 +238,8 @@ export async function apiUpdateRagTabName(ragId, tabName) {
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);
 }
+
+// ─── RAG ZIP 建立（串流 NDJSON） ──────────────────────────────────────────────
 
 /**
  * 建 RAG ZIP：POST /rag/tab/build-rag-zip（application/x-ndjson；請用 fetch 讀 response.body 逐行解析，勿對 200 本文使用 response.json()）
@@ -368,6 +375,8 @@ export async function apiBuildRagZip(body, onStreamEvent, streamOptions = {}) {
     built_failed: lastComplete.built_failed,
   };
 }
+
+// ─── Unit 查詢與 Quiz CRUD ────────────────────────────────────────────────────
 
 /**
  * 依 rag_tab_id 列出該 tab 下所有未刪除 Rag_Unit（含 quizzes），依 created_at 舊→新。
@@ -509,8 +518,10 @@ export async function apiRagUnitQuizLlmGenerate(body, personId) {
 }
 
 /**
- * 將單題 Rag_Quiz 標記為測驗用：POST /rag/tab/unit/quiz/for-exam — query person_id；body rag_quiz_id、rag_tab_id、rag_unit_id；可選 for_exam 切換 true／false。
- * @param {{ rag_quiz_id: number, rag_tab_id?: string, rag_unit_id?: number, for_exam?: boolean }} body
+ * 更新 Rag_Quiz.for_exam：POST /rag/tab/unit/quiz/for-exam — query person_id（必填）。
+ * Body **僅** `rag_quiz_id`、`for_exam`（true＝測驗用、false＝取消）；以 rag_quiz_id 定位列。
+ *
+ * @param {{ rag_quiz_id: number, for_exam: boolean }} body
  * @param {string | number} personId
  */
 export async function apiMarkRagQuizForExam(body, personId) {
@@ -518,21 +529,10 @@ export async function apiMarkRagQuizForExam(body, personId) {
   if (!pid) throw new Error('person_id 為必填');
   const rqid = Number(body?.rag_quiz_id);
   if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
-  const tid = body?.rag_tab_id != null ? String(body.rag_tab_id).trim() : '';
-  const uid =
-    body?.rag_unit_id != null && body.rag_unit_id !== ''
-      ? Number(body.rag_unit_id)
-      : 0;
-  if (!Number.isFinite(uid) || uid < 0) throw new Error('無效的 rag_unit_id');
-  /** @type {Record<string, unknown>} */
   const payload = {
-    rag_quiz_id: rqid,
-    rag_tab_id: tid,
-    rag_unit_id: uid,
+    rag_quiz_id: Math.trunc(rqid),
+    for_exam: !!body?.for_exam,
   };
-  if (body?.for_exam !== undefined) {
-    payload.for_exam = !!body.for_exam;
-  }
   const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_FOR_EXAM}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -547,6 +547,8 @@ export async function apiMarkRagQuizForExam(body, personId) {
     return {};
   }
 }
+
+// ─── 舊版題目產生（相容層） ───────────────────────────────────────────────────
 
 /**
  * 產生題目：POST /rag/tab/quiz/create（quiz_level 已取消，不再送出）
@@ -577,6 +579,8 @@ export async function apiGenerateQuiz(ragId, ragTabId, unitName) {
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);
 }
+
+// ─── 錯誤判斷輔助 ─────────────────────────────────────────────────────────────
 
 /**
  * 判斷是否為 504 或網路錯誤（Failed to fetch）

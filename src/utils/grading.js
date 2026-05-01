@@ -2,8 +2,8 @@
  * 評分結果格式化工具
  *
  * 將評分 API 回傳的 JSON 轉成顯示用純文字：不外加標題／項目符號等，依欄位原樣以換行串接。
- * 批改 result 總分欄位為 quiz_score（滿分 5）；相容 quiz_grade、舊版 score。評語陣列欄位為 quiz_comments。
- * GET /exam/tabs、/person-analysis/quizzes 等作答列可能將 quiz_comments 放在 quiz_grade_metadata 內（與頂層 quiz_grade 並存），會一併讀取。其餘為舊制 rubric 等仍相容顯示。
+ * 批改 result 總分欄位為 quiz_score（滿分 5）；另相容舊版頂層 score。評語陣列欄位為 quiz_comments。
+ * 作答列可將 quiz_score／quiz_comments 放在 quiz_score_metadata（JSON 字串或物件），會與頂層欄位合併讀取。其餘為舊制 rubric 等仍相容顯示。
  */
 
 /** @param {Record<string, unknown>} data */
@@ -16,7 +16,7 @@ function getQuizCommentsArray(data) {
 /** @param {Record<string, unknown>} data */
 function getOverallQuizScore(data) {
   if (data == null || typeof data !== 'object') return null;
-  const v = data.quiz_score ?? data.quiz_grade ?? data.score;
+  const v = data.quiz_score ?? data.score;
   if (v == null || String(v).trim() === '') return null;
   return v;
 }
@@ -36,13 +36,13 @@ function unwrapMetadata(meta) {
 }
 
 /**
- * 作答列分數原始值（與 API：quiz_score 為主；列表可能仍為 quiz_grade）
+ * 作答列分數原始值（API：quiz_score）
  * @param {Record<string, unknown> | null | undefined} answer
  * @returns {unknown}
  */
 export function getAnswerScoreValue(answer) {
   if (answer == null || typeof answer !== 'object') return undefined;
-  return answer.quiz_score ?? answer.quiz_grade;
+  return answer.quiz_score;
 }
 
 /**
@@ -60,7 +60,7 @@ export function formatQuizGradeDisplay(value) {
 /**
  * 將評分 API 回傳的 JSON 字串转为顯示用文字（無外加【評語】等標籤）。
  *
- * 新制 RAG／測驗批改：總分 quiz_score（0–5 滿分）、quiz_comments（字串陣列）；列表 API 作答列可將兩者放在 quiz_grade_metadata。RAG 輪詢 result 另含 rag_answer_id（不列入純文字批改區塊）。
+ * 新制 RAG／測驗批改：總分 quiz_score（0–5 滿分）、quiz_comments（字串陣列）；可將兩者放在 quiz_score_metadata。RAG 輪詢 result 另含 rag_answer_id（不列入純文字批改區塊）。
  * 舊制：另含 level、rubric、strengths、weaknesses 等。
  *
  * @param {string} [text] - API 回傳的 JSON 字串或一般文字
@@ -86,7 +86,7 @@ export function formatGradingResult(text) {
       }
     }
 
-    const gradeMeta = unwrapMetadata(raw.quiz_grade_metadata);
+    const gradeMeta = unwrapMetadata(raw.quiz_score_metadata);
     if (gradeMeta && typeof gradeMeta === 'object') {
       data =
         data && typeof data === 'object'

@@ -10,9 +10,10 @@
 import { computed, watch } from 'vue';
 import {
   parsePackTasksList,
-  parsePackUnitTypesFromRag,
   remapPackUnitTypes,
   remapPackParallelNumbers,
+  remapPackParallelStrings,
+  remapPackParallelBools,
   serializePackTasksList,
   UNIT_TYPE_RAG,
   DEFAULT_PACK_CHUNK_SIZE,
@@ -210,15 +211,38 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
   watch(
     () => currentState.value.packTasks,
     (val) => {
+      const state = currentState.value;
       const parsed = parsePackTasksList(val);
-      const current = currentState.value.packTasksList;
-      if (JSON.stringify(parsed) !== JSON.stringify(current)) {
-        currentState.value.packTasksList = parsed;
-        currentState.value.packUnitTypes = parsePackUnitTypesFromRag(undefined, parsed.length);
-        const n = parsed.length;
-        currentState.value.packChunkSizes = Array(n).fill(DEFAULT_PACK_CHUNK_SIZE);
-        currentState.value.packChunkOverlaps = Array(n).fill(DEFAULT_PACK_CHUNK_OVERLAP);
-      }
+      const current = state.packTasksList;
+      if (JSON.stringify(parsed) === JSON.stringify(current)) return;
+
+      const prevList = JSON.parse(JSON.stringify(current || []));
+      const prevTypes = [...(state.packUnitTypes || [])];
+      const prevSizes = [...(state.packChunkSizes || [])];
+      const prevOvers = [...(state.packChunkOverlaps || [])];
+      const prevMd = [...(state.packUnitMarkdownTexts || [])];
+      const prevYu = [...(state.packUnitYoutubeUrls || [])];
+      const prevErr = [...(state.packUnitTranscriptError || [])];
+      const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+
+      state.packTasksList = parsed;
+      state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, parsed);
+      state.packChunkSizes = remapPackParallelNumbers(
+        prevList,
+        prevSizes,
+        parsed,
+        DEFAULT_PACK_CHUNK_SIZE
+      );
+      state.packChunkOverlaps = remapPackParallelNumbers(
+        prevList,
+        prevOvers,
+        parsed,
+        DEFAULT_PACK_CHUNK_OVERLAP
+      );
+      state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, parsed, '');
+      state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, parsed, '');
+      state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, parsed, '');
+      state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, parsed);
     }
   );
   watch(

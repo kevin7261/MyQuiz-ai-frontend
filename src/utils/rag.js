@@ -5,52 +5,6 @@
  * 不依賴 Vue 或 API，僅為資料轉換與 ID 產生邏輯。
  */
 
-/** 建 RAG 時預設的系統提示（題目生成指令） */
-export const DEFAULT_SYSTEM_INSTRUCTION = '題目字數不超過200字';
-/** 題目難度選項與 tab/quiz/create API 的 quiz_level 字串值 */
-export const QUIZ_LEVEL_LABELS = ['基礎', '進階'];
-
-/**
- * POST /rag/tab/quiz/create、/exam/tab/quiz/create 的 quiz_level：固定為「基礎」或「進階」
- * @param {unknown} selected - UI 選取值，或舊版 0／1
- * @returns {string}
- */
-export function quizLevelStringForApi(selected) {
-  if (selected === 0 || selected === 1) return QUIZ_LEVEL_LABELS[selected];
-  const s = String(selected ?? '').trim();
-  if (s === '0') return QUIZ_LEVEL_LABELS[0];
-  if (s === '1') return QUIZ_LEVEL_LABELS[1];
-  if (QUIZ_LEVEL_LABELS.includes(s)) return s;
-  return QUIZ_LEVEL_LABELS[0];
-}
-
-/**
- * 將 API／DB 的 quiz_level 轉成顯示用文字；支援字串「基礎」「進階」與舊版 0／1
- * @param {unknown} level
- * @returns {string | null} 無法辨識時 null
- */
-export function normalizeQuizLevelLabel(level) {
-  if (level === 0 || level === 1) return QUIZ_LEVEL_LABELS[level];
-  const s = String(level ?? '').trim();
-  if (s === '0') return QUIZ_LEVEL_LABELS[0];
-  if (s === '1') return QUIZ_LEVEL_LABELS[1];
-  if (QUIZ_LEVEL_LABELS.includes(s)) return s;
-  return null;
-}
-
-/**
- * public."Exam_Quiz" 列（或 POST /exam/tab/quiz/create 回傳）：難度可能在 quiz_level 或 quiz_metadata.quiz_level
- * @param {object | null | undefined} quiz
- * @returns {string | null}
- */
-export function examQuizLevelFromRow(quiz) {
-  if (!quiz || typeof quiz !== 'object') return null;
-  const meta = quiz.quiz_metadata;
-  const fromMeta =
-    meta != null && typeof meta === 'object' && meta.quiz_level != null ? meta.quiz_level : undefined;
-  return normalizeQuizLevelLabel(quiz.quiz_level ?? fromMeta);
-}
-
 /**
  * 產生 RAG tab 用唯一 id
  * 規則：有 person_id 時為 {person_id}_yymmddhhmmss；無則 fallback 為 UUID
@@ -174,32 +128,6 @@ export function ragQuizSelectValue(opt) {
 }
 
 /**
- * GET /exam/rag-for-exams 之 quizzes[] 更新後，對齊 slot.generateQuizTabId（存 rag_quiz_id 字串）
- * @param {{ generateQuizTabId?: string }} slot
- * @param {object[]} quizzes
- */
-export function reconcileRagQuizSelectSlot(slot, quizzes) {
-  if (!slot || !Array.isArray(quizzes)) return;
-  const raw = slot.generateQuizTabId;
-  if (raw == null || String(raw).trim() === '') return;
-  const key = String(raw).trim();
-  if (quizzes.some((q) => ragQuizSelectValue(q) === key)) return;
-  slot.generateQuizTabId = '';
-}
-
-/**
- * 依下拉目前值找出試卷題庫題目列
- * @param {object[]} quizzes
- * @param {string} [generateQuizTabId]
- * @returns {object | undefined}
- */
-export function findRagQuizBySlotSelection(quizzes, generateQuizTabId) {
-  const key = String(generateQuizTabId ?? '').trim();
-  if (!key || !Array.isArray(quizzes)) return undefined;
-  return quizzes.find((q) => ragQuizSelectValue(q) === key);
-}
-
-/**
  * 將 GET /rag/tabs 單筆的 rag_metadata 正規化為物件。
  * 後端常將 rag_metadata 存成 JSON 字串，若直接用 rag.rag_metadata.outputs 會讀不到。
  * @param {object} [rag]
@@ -256,7 +184,6 @@ export function serializePackTasksList(list) {
 }
 
 /** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 未選、1 rag→PDF／Office、2 文字→.md、3 mp3→.mp3、4 youtube→.md（預設 rag） */
-export const UNIT_TYPE_NONE = 0;
 export const UNIT_TYPE_RAG = 1;
 export const UNIT_TYPE_TEXT = 2;
 export const UNIT_TYPE_MP3 = 3;
@@ -356,6 +283,65 @@ export function remapPackParallelNumbers(oldList, oldVals, newList, defaultVal) 
       }
     }
     return d;
+  });
+}
+
+/**
+ * 與 remapPackParallelNumbers 相同簽章對齊語意，用於 markdown、YouTube URL、錯誤訊息等字串陣列。
+ * @param {string[][]} oldList
+ * @param {unknown[]} oldVals
+ * @param {string[][]} newList
+ * @param {string} [emptyVal]
+ * @returns {string[]}
+ */
+export function remapPackParallelStrings(oldList, oldVals, newList, emptyVal = '') {
+  const ol = oldList || [];
+  const nl = newList || [];
+  const ev = emptyVal != null ? String(emptyVal) : '';
+  const ov = [...(oldVals || [])].map((x) => (x != null ? String(x) : ev));
+  while (ov.length < ol.length) ov.push(ev);
+  ov.length = ol.length;
+  const used = new Set();
+  return nl.map((g) => {
+    const s = groupSig(g);
+    if (!s) return ev;
+    for (let i = 0; i < ol.length; i++) {
+      if (used.has(i)) continue;
+      if (groupSig(ol[i]) === s) {
+        used.add(i);
+        const v = ov[i];
+        return v != null ? String(v) : ev;
+      }
+    }
+    return ev;
+  });
+}
+
+/**
+ * 同上，用於逐字稿載入中等布林陣列（新群組或無對應舊群組時為 false）。
+ * @param {string[][]} oldList
+ * @param {unknown[]} oldVals
+ * @param {string[][]} newList
+ * @returns {boolean[]}
+ */
+export function remapPackParallelBools(oldList, oldVals, newList) {
+  const ol = oldList || [];
+  const nl = newList || [];
+  const ov = [...(oldVals || [])].map((x) => !!x);
+  while (ov.length < ol.length) ov.push(false);
+  ov.length = ol.length;
+  const used = new Set();
+  return nl.map((g) => {
+    const s = groupSig(g);
+    if (!s) return false;
+    for (let i = 0; i < ol.length; i++) {
+      if (used.has(i)) continue;
+      if (groupSig(ol[i]) === s) {
+        used.add(i);
+        return !!ov[i];
+      }
+    }
+    return false;
   });
 }
 
@@ -527,14 +513,14 @@ export function examOrRagAnswerRowKey(a) {
 }
 
 /**
- * GET /exam/tabs 新版：Exam_Quiz 上可內嵌作答 answer_content／quiz_score（或 quiz_grade）／answer_critique（無獨立 Exam_Answer 陣列時）
+ * GET /exam/tabs 新版：Exam_Quiz 上可內嵌作答 answer_content／quiz_score／answer_critique（無獨立 Exam_Answer 陣列時）
  * @param {object | null | undefined} q
  * @returns {boolean}
  */
 function examQuizHasEmbeddedAnswerFields(q) {
   if (!q || typeof q !== 'object') return false;
   const c = q.answer_content;
-  const g = q.quiz_score ?? q.quiz_grade;
+  const g = q.quiz_score;
   const crit = q.answer_critique;
   return (
     (c != null && String(c).trim() !== '')
@@ -551,12 +537,11 @@ function examQuizHasEmbeddedAnswerFields(q) {
 function answersFromEmbeddedExamQuizFields(q) {
   if (!examQuizHasEmbeddedAnswerFields(q)) return [];
   const crit = q.answer_critique;
-  const score = q.quiz_score ?? q.quiz_grade;
+  const score = q.quiz_score;
   const row = {
     quiz_answer: q.answer_content ?? '',
     student_answer: q.answer_content ?? '',
     quiz_score: score,
-    quiz_grade: score,
     exam_quiz_id: q.exam_quiz_id,
   };
   if (crit != null && String(crit).trim() !== '') {

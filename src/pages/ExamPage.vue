@@ -6,10 +6,10 @@
  *
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
- * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score（或 quiz_grade）／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
- * 出題：須選單元＋題名；尚無列時 POST /exam/tab/quiz/create（exam_tab_id + rag_unit_id + rag_quiz_id）；再 POST llm-generate（同上三鍵 + 選填 unit_name／quiz_name；勿傳 quiz_user_prompt_text）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
+ * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
+ * 出題：須選單元＋題名；尚無列時 POST /exam/tab/quiz/create（exam_tab_id + rag_unit_id + rag_quiz_id）；再 POST llm-generate（body 僅 exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
- * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name；難度優先 quiz_level，否則 quiz_metadata.quiz_level。
+ * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
 import { ref, computed, watch, onActivated, reactive, nextTick } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
@@ -29,14 +29,11 @@ import {
 import {
   parseRagMetadataObject,
   getRagUnitListString,
-  normalizeQuizLevelLabel,
-  examQuizLevelFromRow,
   normalizeExamListResponse,
   mergeQuizzesWithTopLevelAnswers,
   parsePackUnitTypesFromRag,
   quizAnswerPresetFromReference,
   ragQuizSelectValue,
-  DEFAULT_SYSTEM_INSTRUCTION as RAG_DEFAULT_SYSTEM_INSTRUCTION,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -64,12 +61,13 @@ defineProps({
 
 const authStore = useAuthStore();
 
+// ─── 頁面描述常數 ──────────────────────────────────────────────────────────────
+
 /** 與 CreateExamQuizBankPage 相同命名，供標題／載入文案／空狀態按鈕共用 */
 const pageTitle = computed(() => '測驗');
 const quizBankNoun = computed(() => '試卷');
 
-/** 與後端／出題 API 預設系統提示一致（見 rag.js） */
-const DEFAULT_SYSTEM_INSTRUCTION = RAG_DEFAULT_SYSTEM_INSTRUCTION;
+// ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
 
 /** test_tab_id 規則：與 RAG 頁一致 → {person_id}_yymmddhhmmss；無 person_id 時 fallback 為 UUID */
 function generateTabId(personId) {
@@ -356,7 +354,7 @@ function nextCardId() {
   return `card-${++cardIdSeq}`;
 }
 
-/** 與後端 Exam_Quiz.quiz_rate 一致：僅 -1、0、1 */
+// ─── 試卷題庫資料（GET /exam/rag-for-exams） ──────────────────────────────────
 function normalizeExamQuizRate(v) {
   const n = Number(v);
   if (n === 1 || n === -1 || n === 0) return n;
@@ -727,11 +725,6 @@ function examQuizDraftAbortKey(slotIndex) {
   return `${tid || '__no_tab__'}::${slotIndex}`;
 }
 
-/** 試卷題庫（GET /exam/rag-for-exams）帶來的 system instruction（由 watch forExamRag 填入） */
-const forExamState = reactive({
-  systemInstruction: DEFAULT_SYSTEM_INSTRUCTION,
-});
-
 /** 測驗列表（GET /exam/tabs 載入；按 + 呼叫 POST /exam/tab/create 新增） */
 const examList = ref([]);
 const examListLoading = ref(false);
@@ -740,12 +733,17 @@ const createExamLoading = ref(false);
 const createExamError = ref('');
 /** 當前選中的 tab = 該測驗的 test_tab_id / exam_tab_id */
 const activeTabId = ref(null);
+
+// ─── 分頁更名 Modal 狀態 ────────────────────────────────────────────────────────
+
 const examRenameModalOpen = ref(false);
 /** PUT /exam/tab/tab-name 用 Exam 主鍵 */
 const examRenameDraftExamId = ref(null);
 const examRenameInitialName = ref('');
 const examRenameSaving = ref(false);
 const examRenameError = ref('');
+
+// ─── 分頁題目卡片狀態（每個 tab 獨立） ───────────────────────────────────────
 
 /** 每個 tab（test_tab_id）的狀態 */
 const tabStateMap = reactive({});
@@ -907,15 +905,6 @@ watch(
 /** 「產生題目」「新增題目」：試卷題庫清單載入中則暫停（建立空白列僅需 exam_tab_id，不依賴 rag_unit_id） */
 const generateQuizBlocked = computed(() => forExamLoading.value);
 
-/** 當試卷題庫摘要（forExamRag）載入後，填入 system instruction */
-watch(forExamRag, (rag) => {
-  if (!rag || typeof rag !== 'object') return;
-  const tx = rag.transcription;
-  if (tx != null && String(tx).trim() !== '') {
-    forExamState.systemInstruction = String(tx).trim();
-  }
-}, { immediate: true });
-
 /**
  * 載入 GET /exam/tabs：watch(person_id) immediate；並載入 GET /exam/rag-for-exams。
  * KeepAlive onActivated：再抓兩者；首次 onActivated 僅補抓試卷題庫，避免與 immediate 雙重 GET /exam/tabs。
@@ -990,7 +979,6 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
   const gradingResult = latestAnswer
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))
     : '';
-  const generateLevel = examQuizLevelFromRow(quiz);
   const quizId = quiz.exam_quiz_id ?? quiz.quiz_id ?? null;
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
   const rid = quiz.rag_id ?? quiz.ragId ?? fallbackRagId;
@@ -1019,11 +1007,10 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     gradingResult,
     gradingResponseJson: latestAnswer ?? null,
     generateQuizResponseJson: null,
-    generateLevel: generateLevel ?? null,
-    systemInstructionUsed: null,
     exam_quiz_id: quizId,
     answer_id: answerId,
-    gradingPrompt: '',
+    gradingPrompt: extractAnswerUserPromptFromExamRagRow(quiz).trim(),
+    quiz_user_prompt_text: extractQuizUserPromptFromExamRagRow(quiz).trim(),
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
   };
 }
@@ -1112,6 +1099,8 @@ watch(
   },
   { immediate: true }
 );
+
+// ─── 使用者身分與 API 資料載入 ────────────────────────────────────────────────
 
 /** 取得當前使用者的 person_id（與 RAG 頁一致；後端若只回傳 user_id 則用 user_id 當 person_id） */
 function getCurrentPersonId() {
@@ -1409,11 +1398,12 @@ function examUnitSelectDropdownDisabled(slotIndex) {
 function examUnitSelectHintWhenDisabled(slotIndex) {
   if (getSlotFormState(slotIndex).loading) return '產生題目中…';
   if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更單元';
+  if (examUnitTabItems.value.length === 0) return '目前無可用單元';
   return '';
 }
 
 /**
- * 題幹仍空白但後端已有 Exam_Quiz 列：POST llm-generate 須送 exam_quiz_id、rag_unit_id、rag_quiz_id（與列上已存值一致）；勿傳 quiz_user_prompt_text。
+ * 題幹仍空白但後端已有 Exam_Quiz 列：產生題目時 POST llm-generate 送四鍵；列已存 rag_unit_id／rag_quiz_id 時須與請求一致；提示文字勿傳（後端自 Rag_Quiz 讀）。
  */
 function examSlotHasAnchoredExamQuizId(slotIndex) {
   const c = currentState.value.cardList[slotIndex - 1];
@@ -1434,6 +1424,7 @@ function examQuizNameDropdownDisabled(slotIndex) {
 function examQuizNameHintWhenDisabled(slotIndex) {
   if (getSlotFormState(slotIndex).loading) return '產生題目中…';
   if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更題型';
+  if (examUnitTabItems.value.length === 0) return '目前無可用題型';
   if (!String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim()) return '請先選擇單元';
   return '';
 }
@@ -1492,6 +1483,8 @@ const loadingOverlayText = computed(() => {
 /** 預留與題庫頁相同的 subText API（測驗頁無 Pack 串流進度） */
 const loadingOverlaySubText = computed(() => '');
 
+// ─── 測驗 CRUD（新增 / 刪除 / 更名） ──────────────────────────────────────────
+
 const deleteExamError = ref('');
 async function deleteExam(examTabId) {
   if (!examTabId) return;
@@ -1527,9 +1520,9 @@ async function deleteExam(examTabId) {
 function getDefaultExamSlotForm() {
   return {
     examUnitSelectId: '',
-    /** 對應試卷 quizzes[].quiz_name；非空白時才納入 POST llm-generate body */
+    /** 對應試卷 quizzes[].quiz_name；用於解析 rag_quiz_id 與顯示（llm-generate body 不帶 quiz_name） */
     examQuizNamePick: '',
-    /** POST /exam/tab/quiz/create 成功後之 exam_quiz_id；產生題目時送 llm-generate */
+    /** POST /exam/tab/quiz/create 成功後之 exam_quiz_id；產生題目時併入 llm-generate 之 exam_quiz_id */
     draftExamQuizId: null,
     /** 正在送出空白列 create */
     draftCreating: false,
@@ -1662,7 +1655,7 @@ async function openNextQuizSlot() {
   await nextTick();
 }
 
-function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, generateLevel, systemInstructionUsed, quizId, ragId) {
+function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, quizId, ragId) {
   const state = currentState.value;
   while (state.cardList.length < slotIndex) {
     state.cardList.push(null);
@@ -1684,18 +1677,17 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     gradingResult: '',
     gradingResponseJson: null,
     generateQuizResponseJson: generateQuizResponseJson ?? null,
-    generateLevel: generateLevel ?? null,
-    systemInstructionUsed: systemInstructionUsed ?? null,
     exam_quiz_id: quizId ?? null,
     gradingPrompt: '',
+    quiz_user_prompt_text: '',
     examQuizDisplayName: '',
   };
 }
 
 /**
- * 「產生題目」：POST /exam/tab/quiz/llm-generate；body **exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id 皆必填**；兩個 rag 數值鍵若列已存則須一致，否則 400；quiz_user_prompt_text 勿傳。
+ * 「產生題目」：POST /exam/tab/quiz/llm-generate；body **僅** exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；列已存有效兩鍵時須與請求一致否則 400，列未寫入則後端以請求綁定；勿傳出題／批改提示文字。
  * - 尚無列：POST /exam/tab/quiz/create（exam_tab_id + rag_unit_id + rag_quiz_id）再 llm-generate。
- * - 題幹空白且列已錨定：檢查 UI 選取與列存值一致後呼叫 LLM。
+ * - 題幹空白且列已錨定：若列已有兩鍵則檢查 UI 選取與列一致；缺鍵則直接送 LLM 由後端綁定。
  */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
@@ -1731,8 +1723,6 @@ async function generateQuiz(slotIndex) {
     ragTabId: ragTabIdForLlm,
     ragUnitId: ragUnitIdForLlm,
     ragQuizId: ragQuizIdForLlm,
-    resolvedQuizName,
-    unitItemForLlm,
   } = examLlmRagIdsForSlot(slotIndex, prevExamQuizDisplayName);
 
   if (!ragTabIdForLlm) {
@@ -1748,11 +1738,7 @@ async function generateQuiz(slotIndex) {
     const storedU = existingCard.rag_unit_id != null ? Number(existingCard.rag_unit_id) : NaN;
     const storedQ = existingCard.rag_quiz_id != null ? Number(existingCard.rag_quiz_id) : NaN;
     const hasStored = Number.isFinite(storedU) && storedU >= 1 && Number.isFinite(storedQ) && storedQ >= 1;
-    if (!hasStored) {
-      slotState.error = '此題列尚未寫入 rag_unit_id／rag_quiz_id，無法出題。請重新綁定試卷題庫或新增題目。';
-      return;
-    }
-    if (storedU !== ragUnitIdForLlm || storedQ !== ragQuizIdForLlm) {
+    if (hasStored && (storedU !== ragUnitIdForLlm || storedQ !== ragQuizIdForLlm)) {
       slotState.error = '單元／題目選擇與此題列已儲存之 rag_unit_id／rag_quiz_id 不一致，請對齊後再試。';
       return;
     }
@@ -1779,18 +1765,16 @@ async function generateQuiz(slotIndex) {
     }
 
     const promptBundle = examQuizPromptBundleForSlot(slotIndex, prevExamQuizDisplayName);
-    const unitNameForLlm = String(unitItemForLlm?.label ?? unitItemForLlm?.unitName ?? '').trim();
 
-    const llmGenerateBody = {
-      exam_quiz_id: draftEq,
-      rag_tab_id: ragTabIdForLlm,
-      rag_unit_id: ragUnitIdForLlm,
-      rag_quiz_id: ragQuizIdForLlm,
-    };
-    if (unitNameForLlm !== '') llmGenerateBody.unit_name = unitNameForLlm;
-    if (resolvedQuizName !== '') llmGenerateBody.quiz_name = resolvedQuizName;
-
-    const data = await apiExamTabQuizLlmGenerate(llmGenerateBody, personId);
+    const data = await apiExamTabQuizLlmGenerate(
+      {
+        exam_quiz_id: draftEq,
+        rag_tab_id: ragTabIdForLlm,
+        rag_unit_id: ragUnitIdForLlm,
+        rag_quiz_id: ragQuizIdForLlm,
+      },
+      personId
+    );
 
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
@@ -1818,9 +1802,6 @@ async function generateQuiz(slotIndex) {
       data.exam_quiz_id != null
         ? Number(data.exam_quiz_id)
         : (data.quiz_id != null ? Number(data.quiz_id) : draftEq);
-    const resolvedLevel =
-      examQuizLevelFromRow(data)
-      ?? normalizeQuizLevelLabel(data?.quiz_level);
     const fr = forExamRag.value;
     const cardRagId = data.rag_id ?? data.ragId ?? fr?.rag_id ?? fr?.id;
     setCardAtSlot(
@@ -1831,8 +1812,6 @@ async function generateQuiz(slotIndex) {
       referenceAnswerText,
       displayRagName,
       data,
-      resolvedLevel,
-      (forExamState.systemInstruction ?? '').trim() || DEFAULT_SYSTEM_INSTRUCTION,
       quizId,
       cardRagId
     );
@@ -1844,7 +1823,10 @@ async function generateQuiz(slotIndex) {
       const fromApi = String(data.quiz_name ?? '').trim();
       const fromDraft = String(slotState.examQuizNamePick ?? '').trim();
       newCard.examQuizDisplayName = fromApi || fromDraft || prevExamQuizDisplayName || '';
-      const ap = promptBundle.answer_user_prompt_text;
+      const qpFromResponse = extractQuizUserPromptFromExamRagRow(data).trim();
+      newCard.quiz_user_prompt_text = qpFromResponse || promptBundle.quiz_user_prompt_text;
+      const apFromResponse = extractAnswerUserPromptFromExamRagRow(data).trim();
+      const ap = apFromResponse || promptBundle.answer_user_prompt_text;
       if (ap) newCard.gradingPrompt = ap;
     }
     slotState.draftExamQuizId = null;
@@ -1858,6 +1840,8 @@ async function generateQuiz(slotIndex) {
 function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
+
+// ─── 題目評分（讚 / 差）與作答評改 ───────────────────────────────────────────
 
 /** 題目讚(1)／差(-1)；再點同一顆送 quiz_rate=0 取消。POST /exam/tab/quiz/rate；畫面立即變化，背景送出成功時可與回傳之 quiz_rate 同步 */
 function rateExamQuiz(item, direction) {
@@ -1948,6 +1932,8 @@ async function confirmAnswer(item) {
 
 /** 與使用者管理頁相同：每次「打開」測驗頁（含從快取恢復）拉 GET /exam/tabs、GET /exam/rag-for-exams */
 const examPageActivatedOnce = ref(false);
+
+// ─── 生命週期：頁面啟動與初始載入 ────────────────────────────────────────────
 onActivated(() => {
   if (!examPageActivatedOnce.value) {
     examPageActivatedOnce.value = true;
@@ -2132,7 +2118,6 @@ onActivated(() => {
                         第 {{ slotIndex }} 題
                       </div>
                       <div
-                        v-if="examUnitTabItems.length > 0"
                         class="d-flex flex-column gap-3 w-100 min-w-0"
                       >
                         <div class="d-flex flex-column gap-0 w-100 min-w-0">
@@ -2260,7 +2245,6 @@ onActivated(() => {
                         show-exam-rating
                         design-ui
                         design-embedded
-                        hide-unit-difficulty
                         hide-slot-index
                         hide-grading-prompt
                         :grade-submitting="examCardGradeSubmitting(currentState.cardList[slotIndex - 1])"
@@ -2302,7 +2286,6 @@ onActivated(() => {
                           class="d-flex flex-column gap-3 w-100 min-w-0"
                         >
                           <div
-                            v-if="examUnitTabItems.length > 0"
                             class="d-flex flex-column gap-0 w-100 min-w-0"
                           >
                             <label
@@ -2404,7 +2387,6 @@ onActivated(() => {
                             </button>
                           </div>
                           <div
-                            v-if="examUnitTabItems.length > 0"
                             class="d-flex flex-column gap-0 w-100 min-w-0"
                           >
                             <label

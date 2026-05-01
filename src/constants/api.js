@@ -105,7 +105,7 @@ export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
 /** 評分 API 表單欄位：測驗題目內容（與後端 quiz_content、Quiz 表一致） */
 export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
-/** RAG 單元題評分：POST /rag/tab/unit/quiz/llm-grade（Rag Grade Quiz，非同步）；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text；unit_type 2／3／4 時以 transcription 純 LLM 批改，其餘依 rag_id 載入 RAG ZIP；回傳 202 + job_id；GET /rag/tab/unit/quiz/grade-result/{job_id} 輪詢；ready 時 result: quiz_grade、quiz_comments、rag_quiz_id、rag_answer_id 等 */
+/** RAG 單元題評分：POST /rag/tab/unit/quiz/llm-grade（Rag Grade Quiz，非同步）；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text；unit_type 2／3／4 時以 transcription 純 LLM 批改，其餘依 rag_id 載入 RAG ZIP；回傳 202 + job_id；GET /rag/tab/unit/quiz/grade-result/{job_id} 輪詢；ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id 等 */
 export const API_RAG_QUIZ_GRADE = '/rag/tab/unit/quiz/llm-grade';
 export const API_RAG_QUIZ_GRADE_RESULT = '/rag/tab/unit/quiz/grade-result';
 
@@ -142,7 +142,7 @@ export const API_RAG_TAB_UNIT_QUIZ_CREATE = '/rag/tab/unit/quiz/create';
 export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE = '/rag/tab/unit/quiz/llm-generate';
 /** 更新 Rag_Quiz 題名：PUT /rag/tab/unit/quiz/quiz-name；body 以 rag_quiz_id 比對（僅 deleted=false）；回傳 rag_quiz_id、rag_tab_id、rag_unit_id、person_id、quiz_name、updated_at 等 */
 export const API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME = '/rag/tab/unit/quiz/quiz-name';
-/** Rag_Quiz 單題測驗用標記：POST /rag/tab/unit/quiz/for-exam — query person_id；body：`rag_quiz_id`、`rag_tab_id`、`rag_unit_id`（可 ""／0）；可選 `for_exam` 切換 true／false（與後端 OpenAPI 一致時） */
+/** Rag_Quiz.for_exam：POST /rag/tab/unit/quiz/for-exam — query person_id；body 僅 `rag_quiz_id`、`for_exam`（true＝測驗用、false＝取消） */
 export const API_RAG_TAB_UNIT_QUIZ_FOR_EXAM = '/rag/tab/unit/quiz/for-exam';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';
@@ -161,7 +161,7 @@ export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
 /** 學生作答分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
-/** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／local 篩選；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz），題列可內嵌 answer_content／quiz_score（或 quiz_grade）／answer_critique */
+/** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／local 篩選；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz），題列可內嵌 answer_content／quiz_score／answer_critique */
 export const API_EXAM_TESTS = '/exam/tabs';
 /** Exam：POST /exam/tab/create；query person_id 必填；body 可選 exam_tab_id（未傳則後端產生）、person_id、tab_name、local（預設 false；本機前端應傳 true 與 RAG tab/create 一致）；回傳 exam_id、exam_tab_id、person_id、tab_name、local、created_at */
 export const API_CREATE_EXAM = '/exam/tab/create';
@@ -181,7 +181,7 @@ export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /**
  * POST /exam/tab/quiz/llm-generate — Rag LLM Generate Quiz；query：`person_id`（必填）。
- * Body：**`exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id` 皆必填**；三 RAG 鍵須對應同一 Tab（後端用 `rag_tab_id` 載入 ZIP，不依賴 System_Setting）；列已有兩鍵時請求須一致否則 400，列未寫入時自動綁定寫回。`quiz_user_prompt_text` 勿傳（後端自 Rag_Quiz 讀）。選填 `unit_name`、`quiz_name`。`unit_type` 1=RAG ZIP／向量；2–4=transcription 純 LLM。成功後更新該列（含 `rag_tab_id`）並清空作答欄位。
+ * Body：**僅** `exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id`（皆必填）；三 RAG 鍵須對應同一 Tab；列已有有效兩鍵時請求須一致否則 400，列未寫入時以此請求綁定寫回。勿傳出題／批改提示文字（後端自 Rag_Quiz 讀並寫回 Exam_Quiz）。`unit_type` 1=RAG／向量；2–4=transcription 純 LLM。成功後更新該列並清空作答欄位。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */

@@ -8,7 +8,7 @@
 /**
  * 將作答紀錄摘要匯出為 Excel（.xlsx）並觸發瀏覽器下載
  *
- * @param {string[]} headers - 表頭列，例如 ['題號', '單元', '難度', '分數', '時間']
+ * @param {string[]} headers - 表頭列，例如 ['題號', '單元', '分數', '時間']
  * @param {Array<unknown[]>} rows - 資料列（二維陣列，每列為一筆作答摘要）
  * @param {string} filename - 下載檔名，例如 '作答弱點分析-作答紀錄摘要.xlsx'
  */

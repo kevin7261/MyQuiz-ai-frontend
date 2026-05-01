@@ -1,8 +1,19 @@
 <script setup>
 /**
- * 建立英文測驗題庫「文字內容」用：EasyMDE（工具列含預覽等）。
- * previewOnly：讀入／build-system 完成等唯讀時僅顯示 HTML 預覽（marked + DOMPurify，與全站 renderMarkdown 一致），不掛 EasyMDE。
- * previewDesignDark：僅在 previewOnly 時生效；黑底白字預覽（與 DesignPage `.my-design-swatch-row` + `my-bgcolor-black` 示範一致）。
+ * EnglishExamMarkdownEditor — Markdown 編輯／預覽元件
+ *
+ * 雙模式設計：
+ * - **編輯模式**（previewOnly=false）：掛載 EasyMDE 富文字編輯器（工具列含預覽、粗體、清單等）；
+ *   輸入內容以 `update:modelValue` emit 至父層。
+ * - **預覽模式**（previewOnly=true）：僅渲染 HTML 預覽（marked + DOMPurify，與全站
+ *   `renderMarkdownToSafeHtml` 一致），不掛 EasyMDE，適用於讀入完成 / build 完成的唯讀場合。
+ *
+ * previewDesignDark：僅在 previewOnly=true 時生效，切換為黑底白字預覽
+ * （與 DesignPage `.my-bgcolor-black` 區塊示範一致）。
+ *
+ * disabled：僅影響 EasyMDE CodeMirror 的 readOnly 選項，不影響預覽模式。
+ *
+ * 供 CreateExamQuizBankPage 文字單元逐字稿輸入、QuizCard 批改規則預覽使用。
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import EasyMDE from 'easymde';
@@ -42,7 +53,8 @@ function initEasyMde() {
   easyMDE = new EasyMDE({
     element: el,
     initialValue: props.modelValue ?? '',
-    placeholder: props.placeholder ? String(props.placeholder) : undefined,
+    /** 空字串：不出現編輯器預設提示文案（出題／批改欄不寫佔位） */
+    placeholder: String(props.placeholder ?? ''),
     spellChecker: false,
     autoDownloadFontAwesome: false,
     status: false,
@@ -135,11 +147,10 @@ onBeforeUnmount(() => {
         />
         <div
           v-else
-          class="english-exam-md-preview-empty px-3 py-4 my-font-sm-400 text-center"
+          class="english-exam-md-preview-empty px-3 py-2 min-w-0"
           :class="previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4'"
-        >
-          尚無內容可預覽
-        </div>
+          aria-hidden="true"
+        />
       </div>
     </template>
     <template v-else>

@@ -1,6 +1,19 @@
 <script setup>
 /**
- * 分頁名稱編輯：Bootstrap 5 風格 modal（半透明底）
+ * TabRenameModal — 分頁重新命名 Modal
+ *
+ * Bootstrap 5 風格 Modal（半透明背景底層），透過 Teleport 掛至 body 避免 z-index 問題。
+ *
+ * Props:
+ *   modelValue   Boolean  v-model：是否顯示（父層控制開關）
+ *   initialName  String   開啟時表單的初始名稱
+ *   saving       Boolean  是否正在儲存（停用按鈕、禁止關閉）
+ *   error        String   儲存失敗時的錯誤訊息（由父層傳入）
+ *   title        String   Modal 標題列文字（預設「修改名稱」）
+ *
+ * Emits:
+ *   update:modelValue  開啟／關閉狀態變更（v-model 綁定用）
+ *   save               使用者按下確定，帶出 trim 後的名稱字串
  */
 import { ref, watch } from 'vue';
 
