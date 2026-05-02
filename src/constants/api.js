@@ -123,8 +123,12 @@ export const API_RAG_TAB_QUIZ_DELETE = '/rag/tab/quiz/delete';
 export const API_RAG_UNIT_NAME = '/rag/tab/tab-name';
 /** 建 RAG ZIP：POST /rag/tab/build-rag-zip；body 依 OpenAPI PackRequest：rag_tab_id、person_id、unit_list、chunk_size、chunk_overlap、chunk_sizes、chunk_overlaps、unit_types、build_faiss、transcriptions；後端若支援可加 unit_names（與群組同序逗號字串）；query：person_id（必填）、repack_only（選填，true 時強制不建 FAISS）；成功時 application/x-ndjson（fetch 讀 response.body，勿 response.json）；整批成敗以最後 complete.success；POST /rag/tab/build-rag-zip-stream 行為相同（OpenAPI 隱藏） */
 export const API_BUILD_RAG_ZIP = '/rag/tab/build-rag-zip';
-/** RAG 文字單元逐字稿：GET /rag/transcript/text；query：rag_tab_id、folder_name（unit_type=2，ZIP 內該資料夾所有 .md 依檔名排序合併）、person_id */
+/** RAG 文字單元（unit_type 2）：GET /rag/transcript/text；query：`rag_tab_id`、`folder_name`、`person_id`。讀 ZIP 內該資料夾**一個** .md／.txt／.doc／.docx */
 export const API_RAG_TRANSCRIPT_TEXT = '/rag/transcript/text';
+/** RAG 音訊單元逐字稿：GET /rag/transcript/audio；query：`rag_tab_id`、`folder_name`、`person_id`（ZIP 內該資料夾之音訊轉寫） */
+export const API_RAG_TRANSCRIPT_AUDIO = '/rag/transcript/audio';
+/** RAG YouTube 單元逐字稿：GET /rag/transcript/youtube；query：同上；選填 `youtube_url`（與播放器解析網址一致時可帶） */
+export const API_RAG_TRANSCRIPT_YOUTUBE = '/rag/transcript/youtube';
 /** RAG 音訊單元原始音檔：GET /rag/unit/audio-file；query：rag_tab_id、folder_name、person_id */
 export const API_RAG_UNIT_AUDIO_FILE = '/rag/unit/audio-file';
 /** RAG YouTube 單元 URL：GET /rag/unit/youtube-url；query：rag_tab_id、folder_name、person_id */

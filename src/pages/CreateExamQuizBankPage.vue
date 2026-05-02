@@ -9,10 +9,11 @@
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
+ * - 設定單元「載入逐字稿」預覽：unit_type 2→GET `/rag/transcript/text`；3→GET `/rag/transcript/audio`；4→GET `/rag/transcript/youtube`（有嵌入網址時追加 query `youtube_url`）；音訊／影片預覽仍為 GET `/rag/unit/audio-file`、`/rag/unit/youtube-url`
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；unit_type=2 內嵌 Markdown 逐字稿區（可垂直捲動）；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與「逐字稿」Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
+ * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「產生題目」POST /rag/tab/unit/quiz/llm-generate；若列上尚無 rag_quiz_id（舊本機草稿），「產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，未載入逐字稿前以模糊遮罩擋住，且不能開始設定單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onMounted, onActivated, reactive, nextTick } from 'vue';
@@ -29,6 +30,8 @@ import {
   apiUpdateRagTabName,
   apiBuildRagZip,
   apiRagTranscriptText,
+  apiRagTranscriptAudio,
+  apiRagTranscriptYoutube,
   apiRagUnitAudioFileByFolder,
   apiRagUnitYoutubeUrlByFolder,
   transcriptResponseMarkdown,
@@ -642,6 +645,10 @@ function packUnitTypeAt(gi) {
   return 1;
 }
 
+function isTranscriptPackUnitType(ut) {
+  return ut === UNIT_TYPE_TEXT || ut === UNIT_TYPE_MP3 || ut === UNIT_TYPE_YOUTUBE;
+}
+
 /** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊（含 0 未選擇，供顯示／相容） */
 const PACK_UNIT_TYPE_OPTIONS = [
   { value: 0, label: '未選擇' },
@@ -660,8 +667,8 @@ function onPackUnitTypePick(gi, rawVal) {
   next[gi] = v;
   state.packUnitTypes = next;
   clearPackUnitPreviewAt(gi);
-  if (v === UNIT_TYPE_TEXT || v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE) {
-    void loadPackUnitPreviewForType(gi, state.packTasksList?.[gi]);
+  if (v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE) {
+    void loadPackUnitMediaPreviewForType(gi, state.packTasksList?.[gi]);
   }
 }
 
@@ -709,6 +716,7 @@ function ensurePackUnitSidecarArrays() {
   stretch('packUnitYoutubeUrls', '');
   stretch('packUnitMp3PreviewUrls', '');
   stretch('packUnitTranscriptLoading', false);
+  stretch('packUnitTranscriptLoaded', false);
   stretch('packUnitTranscriptError', '');
   stretch('packChunkSizes', DEFAULT_PACK_CHUNK_SIZE);
   stretch('packChunkOverlaps', DEFAULT_PACK_CHUNK_OVERLAP);
@@ -743,6 +751,9 @@ function resetPackUnitGroup(groupIdx) {
   const load = [...(state.packUnitTranscriptLoading || [])];
   load[gi] = false;
   state.packUnitTranscriptLoading = load;
+  const loaded = [...(state.packUnitTranscriptLoaded || [])];
+  loaded[gi] = false;
+  state.packUnitTranscriptLoaded = loaded;
   const unm = [...(state.packUnitNames || [])];
   while (unm.length < list.length) unm.push('');
   unm[gi] = firstFolderNameInGroup(list[gi]) || '';
@@ -780,9 +791,25 @@ function fillDefaultPackUnitNamesWhereEmpty() {
 
 watch(
   () => currentState.value.packTasksList,
-  () => {
+  (list, prevList) => {
     ensurePackUnitSidecarArrays();
     fillDefaultPackUnitNamesWhereEmpty();
+    if (!Array.isArray(list)) return;
+    for (let gi = 0; gi < list.length; gi++) {
+      const ut = packUnitTypeAt(gi);
+      if (ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) continue;
+      const folderNow = firstFolderNameInGroup(list[gi]);
+      const folderWas =
+        Array.isArray(prevList) && prevList[gi] != null ? firstFolderNameInGroup(prevList[gi]) : '';
+      if (!folderNow) {
+        setPackUnitMp3PreviewUrlAt(gi, '');
+        setPackUnitYoutubeUrlAt(gi, '');
+        continue;
+      }
+      if (folderNow !== folderWas) {
+        void loadPackUnitMediaPreviewForType(gi, list[gi]);
+      }
+    }
   },
   { deep: true, immediate: true }
 );
@@ -822,10 +849,19 @@ function setPackUnitMp3PreviewUrlAt(gi, url) {
   s.packUnitMp3PreviewUrls = arr;
 }
 
+function setPackUnitTranscriptLoadedAt(gi, loaded) {
+  const s = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const arr = [...s.packUnitTranscriptLoaded];
+  arr[gi] = !!loaded;
+  s.packUnitTranscriptLoaded = arr;
+}
+
 function clearPackUnitPreviewAt(gi) {
   setPackUnitMarkdownAt(gi, '');
   setPackUnitYoutubeUrlAt(gi, '');
   setPackUnitMp3PreviewUrlAt(gi, '');
+  setPackUnitTranscriptLoadedAt(gi, false);
   const s = currentState.value;
   const err = [...(s.packUnitTranscriptError || [])];
   err[gi] = '';
@@ -834,6 +870,32 @@ function clearPackUnitPreviewAt(gi) {
 
 function packUnitTranscriptBusy(gi) {
   return !!(currentState.value.packUnitTranscriptLoading && currentState.value.packUnitTranscriptLoading[gi]);
+}
+
+function packUnitTranscriptLoadedAt(gi) {
+  return !!(currentState.value.packUnitTranscriptLoaded && currentState.value.packUnitTranscriptLoaded[gi]);
+}
+
+function packUnitTranscriptTextAt(gi) {
+  const raw = currentState.value.packUnitMarkdownTexts?.[gi];
+  return raw != null ? String(raw) : '';
+}
+
+function packUnitTranscriptReadyAt(gi) {
+  const ut = packUnitTypeAt(gi);
+  if (!isTranscriptPackUnitType(ut)) return true;
+  return packUnitTranscriptLoadedAt(gi) && packUnitTranscriptTextAt(gi).trim() !== '';
+}
+
+function missingPackUnitTranscriptIndexes(state = currentState.value) {
+  const list = Array.isArray(state?.packTasksList) ? state.packTasksList : [];
+  return list
+    .map((_, i) => i)
+    .filter((i) => isTranscriptPackUnitType(packUnitTypeAt(i)) && !packUnitTranscriptReadyAt(i));
+}
+
+function arePackUnitTranscriptsReadyForBuild(state = currentState.value) {
+  return missingPackUnitTranscriptIndexes(state).length === 0;
 }
 
 /**
@@ -870,6 +932,67 @@ function preparePackUnitPreviewCall(gi, group) {
   return { folder, rag_tab_id, personId };
 }
 
+/**
+ * 載入 mp3／YouTube 來源預覽（不經過逐字稿 GET、不套用 packUnitTranscriptLoading 遮罩）
+ */
+function preparePackUnitMediaPreviewCall(gi, group) {
+  const folder = firstFolderNameInGroup(group);
+  const rag_tab_id = ragTabIdForTranscript();
+  const personId = getPersonId(authStore);
+  if (!folder || !rag_tab_id || !personId) return null;
+  return { folder, rag_tab_id, personId };
+}
+
+async function refreshPackUnitMediaAssets(gi, ut, ctx) {
+  try {
+    if (ut === UNIT_TYPE_MP3) {
+      const blob = await apiRagUnitAudioFileByFolder({
+        rag_tab_id: ctx.rag_tab_id,
+        folder_name: ctx.folder,
+        personId: ctx.personId,
+      });
+      if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('empty audio');
+      setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(blob));
+      return true;
+    }
+    if (ut === UNIT_TYPE_YOUTUBE) {
+      const ytData = await apiRagUnitYoutubeUrlByFolder({
+        rag_tab_id: ctx.rag_tab_id,
+        folder_name: ctx.folder,
+        personId: ctx.personId,
+      });
+      const url = youtubeUrlFromUnitUrlResponse(ytData);
+      if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
+      setPackUnitYoutubeUrlAt(gi, url);
+      return true;
+    }
+  } catch {
+    // noop：由呼叫端決定是否要寫錯誤／是否影響逐字稿
+  }
+  return false;
+}
+
+/** 自動或手動載入來源播放器（zip 資料夾內 mp3 / YouTube）；失敗時不動逐字稿 */
+async function loadPackUnitMediaPreviewForType(gi, group) {
+  const ut = packUnitTypeAt(gi);
+  if (ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return;
+  const ctx = preparePackUnitMediaPreviewCall(gi, group);
+  if (!ctx) return;
+  ensurePackUnitSidecarArrays();
+  const ok = await refreshPackUnitMediaAssets(gi, ut, ctx);
+  const s = currentState.value;
+  const err = [...s.packUnitTranscriptError];
+  const prev = String(err[gi] ?? '');
+  const mediaMsg =
+    '來源影音預覽載入失敗（請確認 ZIP 資料夾內有對應音訊／YouTube 說明檔）；仍可嘗試「載入逐字稿」';
+  if (ok) {
+    if (prev.startsWith('來源影音')) err[gi] = '';
+  } else if (!prev.startsWith('逐字稿')) {
+    err[gi] = mediaMsg;
+  }
+  s.packUnitTranscriptError = err;
+}
+
 function markPackUnitPreviewDone(gi) {
   const s = currentState.value;
   const lo = [...s.packUnitTranscriptLoading];
@@ -877,11 +1000,23 @@ function markPackUnitPreviewDone(gi) {
   s.packUnitTranscriptLoading = lo;
 }
 
-function markPackUnitPreviewFormatError(gi) {
+const PACK_UNIT_TRANSCRIPT_ERROR_FALLBACK =
+  '逐字稿讀取失敗：請確認已上傳教材 ZIP／資料夾名稱與 ZIP 內二層資料夾一致，且資料夾內有可作為逐字稿的內容。';
+
+/** 將「載入逐字稿」fetch 異常／空內容寫入對列（若有 Error.message 會一併顯示以利除錯） */
+function packUnitPreviewTranscriptError(gi, caught) {
   const s = currentState.value;
-  const err = [...s.packUnitTranscriptError];
-  err[gi] = '資料夾格式不符';
-  s.packUnitTranscriptError = err;
+  ensurePackUnitSidecarArrays();
+  const arr = [...s.packUnitTranscriptError];
+  let detail =
+    caught instanceof Error
+      ? String(caught.message ?? '').trim()
+      : String(caught ?? '').trim();
+  if (/^empty transcript$/i.test(detail))
+    detail = '伺服器回傳的逐字稿為空（可能無對應 .md 或可讀欄位）；請檢查該資料夾內容。';
+  if (detail && detail.length > 600) detail = `${detail.slice(0, 597)}…`;
+  arr[gi] = detail ? `逐字稿讀取失敗：${detail}` : PACK_UNIT_TRANSCRIPT_ERROR_FALLBACK;
+  s.packUnitTranscriptError = arr;
 }
 
 function youtubeUrlFromUnitUrlResponse(data) {
@@ -904,56 +1039,62 @@ function youtubeUrlFromUnitUrlResponse(data) {
     : '';
 }
 
-function packUnitTextPreviewHtml(gi) {
-  const raw = currentState.value.packUnitMarkdownTexts?.[gi];
-  return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
-}
-
 function packUnitYoutubeEmbedUrl(gi) {
   const raw = currentState.value.packUnitYoutubeUrls?.[gi];
   return youtubeEmbedUrlFromInput(raw != null ? String(raw) : '');
 }
 
+/**
+ * 「載入逐字稿」依 unit_type：文字 → GET `/rag/transcript/text`；mp3 → `/rag/transcript/audio`；YouTube → `/rag/transcript/youtube`（有嵌入網址時附 `youtube_url`）。
+ * 播放器預覽仍見 `loadPackUnitMediaPreviewForType`。
+ */
 async function loadPackUnitPreviewForType(gi, group) {
   const ut = packUnitTypeAt(gi);
-  if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return;
+  if (!isTranscriptPackUnitType(ut)) return;
   const ctx = preparePackUnitPreviewCall(gi, group);
   if (!ctx) return;
   try {
+    let data;
     if (ut === UNIT_TYPE_TEXT) {
-      const data = await apiRagTranscriptText({
+      data = await apiRagTranscriptText({
         rag_tab_id: ctx.rag_tab_id,
         folder_name: ctx.folder,
         personId: ctx.personId,
       });
-      const md = transcriptResponseMarkdown(data);
-      if (!String(md ?? '').trim()) throw new Error('empty text');
-      setPackUnitMarkdownAt(gi, md);
     } else if (ut === UNIT_TYPE_MP3) {
-      const blob = await apiRagUnitAudioFileByFolder({
+      data = await apiRagTranscriptAudio({
         rag_tab_id: ctx.rag_tab_id,
         folder_name: ctx.folder,
         personId: ctx.personId,
       });
-      if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('empty audio');
-      setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(blob));
     } else if (ut === UNIT_TYPE_YOUTUBE) {
-      const data = await apiRagUnitYoutubeUrlByFolder({
+      const pageUrl =
+        String(currentState.value.packUnitYoutubeUrls?.[gi] ?? '').trim() || '';
+      data = await apiRagTranscriptYoutube({
         rag_tab_id: ctx.rag_tab_id,
         folder_name: ctx.folder,
         personId: ctx.personId,
+        ...(pageUrl ? { youtubeUrl: pageUrl } : {}),
       });
-      const url = youtubeUrlFromUnitUrlResponse(data);
-      if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
-      setPackUnitYoutubeUrlAt(gi, url);
+    } else {
+      throw new Error('不支援此單元類型的逐字稿載入');
+    }
+    const md = transcriptResponseMarkdown(data);
+    if (!String(md ?? '').trim()) throw new Error('empty transcript');
+    setPackUnitMarkdownAt(gi, md);
+    setPackUnitTranscriptLoadedAt(gi, true);
+    const mediaCtx = preparePackUnitMediaPreviewCall(gi, group);
+    if (mediaCtx) {
+      await refreshPackUnitMediaAssets(gi, ut, mediaCtx);
     }
     const s = currentState.value;
     const err = [...s.packUnitTranscriptError];
     err[gi] = '';
     s.packUnitTranscriptError = err;
-  } catch {
-    clearPackUnitPreviewAt(gi);
-    markPackUnitPreviewFormatError(gi);
+  } catch (e) {
+    setPackUnitMarkdownAt(gi, '');
+    setPackUnitTranscriptLoadedAt(gi, false);
+    packUnitPreviewTranscriptError(gi, e);
   } finally {
     markPackUnitPreviewDone(gi);
   }
@@ -2696,6 +2837,16 @@ async function confirmPack() {
     state.packError = '請至少建立一個設定單元，且每個設定單元至少於資料夾組合放入一個課程標籤';
     return;
   }
+  if (hasPackUnitTranscriptLoading.value) {
+    state.packError = '逐字稿仍在載入中，請稍候再開始設定單元';
+    return;
+  }
+  const missingTranscriptIndexes = missingPackUnitTranscriptIndexes(state);
+  if (missingTranscriptIndexes.length > 0) {
+    const labels = missingTranscriptIndexes.map((i) => `單元 ${i + 1}`).join('、');
+    state.packError = `${labels} 尚未載入逐字稿，請先在文字框上方按「載入逐字稿」`;
+    return;
+  }
   if (!unitList) {
     state.packError = '請輸入單元清單（例：220222+220301 或 220222,220301+220302）';
     return;
@@ -3808,27 +3959,8 @@ async function confirmAnswer(item) {
                     class="w-100 min-w-0"
                   >
                     <div class="d-flex flex-column gap-2 w-100 min-w-0">
-                      <div
-                        v-if="packUnitTranscriptBusy(gi)"
-                        class="my-font-sm-400 my-color-gray-4 text-center py-3"
-                        role="status"
-                        aria-live="polite"
-                      >
-                        讀取中…
-                      </div>
-                      <div
-                        v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT && (currentState.packUnitMarkdownTexts?.[gi] ?? '').trim() !== ''"
-                        class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                        role="region"
-                        aria-label="文字內容"
-                      >
-                        <div
-                          class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                          v-html="packUnitTextPreviewHtml(gi)"
-                        />
-                      </div>
                       <audio
-                        v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[gi] ?? '').trim() !== ''"
+                        v-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[gi] ?? '').trim() !== ''"
                         :key="currentState.packUnitMp3PreviewUrls[gi]"
                         controls
                         class="w-100"
@@ -3836,7 +3968,7 @@ async function confirmAnswer(item) {
                         :src="currentState.packUnitMp3PreviewUrls[gi]"
                       />
                       <div
-                        v-else-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE && packUnitYoutubeEmbedUrl(gi)"
+                        v-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE && packUnitYoutubeEmbedUrl(gi)"
                         class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
                       >
                         <iframe
@@ -3849,18 +3981,36 @@ async function confirmAnswer(item) {
                         />
                       </div>
                       <div
-                        v-else
-                        class="d-flex justify-content-center py-2"
+                        class="my-pack-unit-md-editor min-w-0"
+                        :class="{ 'my-pack-unit-md-editor--blocked': !packUnitTranscriptLoadedAt(gi) || packUnitTranscriptBusy(gi) }"
+                        role="region"
+                        aria-label="逐字稿 Markdown"
                       >
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
-                          :disabled="packUnitTranscriptBusy(gi)"
-                          :aria-busy="packUnitTranscriptBusy(gi)"
-                          @click="loadPackUnitPreviewForType(gi, group)"
+                        <div
+                          class="position-relative min-w-0"
                         >
-                          重新讀取
-                        </button>
+                          <EnglishExamMarkdownEditor
+                            :model-value="packUnitTranscriptTextAt(gi)"
+                            :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(gi) || packUnitTranscriptBusy(gi)"
+                            :preview-only="false"
+                            :textarea-id="'pack-unit-transcript-md-' + gi"
+                            @update:model-value="(v) => setPackUnitMarkdownAt(gi, v)"
+                          />
+                          <div
+                            v-if="!packUnitTranscriptLoadedAt(gi) || packUnitTranscriptBusy(gi)"
+                            class="my-pack-unit-md-transcript-overlay position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center rounded-2"
+                          >
+                            <button
+                              type="button"
+                              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
+                              :disabled="packUnitTranscriptBusy(gi) || packGroupsEditBlocked"
+                              :aria-busy="packUnitTranscriptBusy(gi)"
+                              @click="loadPackUnitPreviewForType(gi, group)"
+                            >
+                              {{ packUnitTranscriptBusy(gi) ? '載入中…' : '載入逐字稿' }}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <p
@@ -3951,6 +4101,8 @@ async function confirmAnswer(item) {
               :disabled="
                 packGroupsEditBlocked ||
                 !isPackTasksListReady(currentState.packTasksList ?? []) ||
+                !arePackUnitTranscriptsReadyForBuild(currentState) ||
+                hasPackUnitTranscriptLoading ||
                 currentState.packLoading
               "
               :aria-busy="currentState.packLoading"
@@ -4640,7 +4792,7 @@ async function confirmAnswer(item) {
 }
 /* 稿為空時覆蓋編輯區：淺色半透明＋中央中按鈕 */
 .my-pack-unit-md-transcript-overlay {
-  z-index: 5;
+  z-index: 1060;
   box-sizing: border-box;
   background: color-mix(in srgb, var(--my-color-white) 62%, transparent);
   backdrop-filter: blur(2px);

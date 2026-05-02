@@ -12,6 +12,8 @@ import {
   API_RAG_UNIT_NAME,
   API_BUILD_RAG_ZIP,
   API_RAG_TRANSCRIPT_TEXT,
+  API_RAG_TRANSCRIPT_AUDIO,
+  API_RAG_TRANSCRIPT_YOUTUBE,
   API_RAG_UNIT_AUDIO_FILE,
   API_RAG_UNIT_YOUTUBE_URL,
   API_RAG_TAB_UNITS,
@@ -51,20 +53,38 @@ function parseJson(text) {
 }
 
 /**
- * 自 RAG 轉錄／讀檔 API 回傳取出 markdown 字串（相容 markdown／text 欄位）
+ * 自 RAG 轉錄／讀檔 API 回傳取出 markdown 字串（相容多種欄位名）
  * @param {unknown} data
  * @returns {string}
  */
 export function transcriptResponseMarkdown(data) {
   if (!data || typeof data !== 'object') return '';
-  const m = data.markdown ?? data.text;
-  return m != null ? String(m) : '';
+  const candidates = [
+    data.markdown,
+    data.text,
+    data.transcription,
+    data.transcript,
+    data.transcript_plain,
+    data.transcriptPlain,
+    data.transcript_text,
+    data.transcriptText,
+    data.transcript_md,
+    data.transcriptMd,
+    data.content,
+    data.body,
+    data.data,
+    data.result,
+  ];
+  for (const c of candidates) {
+    if (c != null && String(c).trim() !== '') return String(c);
+  }
+  return '';
 }
 
 /**
- * 共用：建立三支逐字稿 GET API 的 URL（rag_tab_id、folder_name、person_id 皆為 query）
+ * 共用：建立 `/rag/transcript/*`／`/rag/unit/*` 等 GET URL（預設含 `rag_tab_id`、`folder_name`、`person_id`；YouTube 逐字稿可選 `youtube_url`）
  * @param {string} path - API 路徑
- * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
+ * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null, youtubeUrl?: string | null, youtube_url?: string | null }} params
  * @returns {string}
  */
 function buildTranscriptUrl(path, params) {
@@ -74,6 +94,11 @@ function buildTranscriptUrl(path, params) {
   u.searchParams.set('folder_name', String(params.folder_name ?? '').trim());
   if (params.personId != null && String(params.personId).trim() !== '') {
     u.searchParams.set('person_id', String(params.personId).trim());
+  }
+  const yuRaw = params.youtubeUrl ?? params.youtube_url;
+  const yu = yuRaw != null ? String(yuRaw).trim() : '';
+  if (yu) {
+    u.searchParams.set('youtube_url', yu);
   }
   return u.toString();
 }
@@ -91,6 +116,41 @@ export async function apiRagTranscriptText(params) {
   if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
   if (!folder_name) throw new Error('缺少 folder_name');
   const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_TEXT, { rag_tab_id, folder_name, personId: params.personId });
+  const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * GET /rag/transcript/audio — ZIP 資料夾內音訊轉為逐字稿 JSON（與 `transcriptResponseMarkdown` 相容欄位為佳）
+ */
+export async function apiRagTranscriptAudio(params) {
+  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
+  const folder_name = String(params.folder_name ?? '').trim();
+  if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
+  if (!folder_name) throw new Error('缺少 folder_name');
+  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_AUDIO, { rag_tab_id, folder_name, personId: params.personId });
+  const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * GET /rag/transcript/youtube — ZIP 資料夾／URL 對應之影片逐字稿；選填 query `youtube_url`
+ */
+export async function apiRagTranscriptYoutube(params) {
+  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
+  const folder_name = String(params.folder_name ?? '').trim();
+  if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
+  if (!folder_name) throw new Error('缺少 folder_name');
+  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_YOUTUBE, {
+    rag_tab_id,
+    folder_name,
+    personId: params.personId,
+    youtubeUrl: params.youtubeUrl ?? params.youtube_url,
+  });
   const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));

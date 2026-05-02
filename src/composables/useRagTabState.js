@@ -46,6 +46,7 @@ export function useRagTabState(activeTabId, newTabIds, ragList, authStore) {
         /** 逐字稿 GET 回傳之暫存音檔 URL（建置前預覽；與 packTasksList 同序） */
         packUnitMp3PreviewUrls: [],
         packUnitTranscriptLoading: [],
+        packUnitTranscriptLoaded: [],
         packUnitTranscriptError: [],
         /** 與 packTasksList 每群一筆：分段長度（字元） */
         packChunkSizes: [],

@@ -108,6 +108,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const prevChunkSizes = [...(state.packChunkSizes || [])];
     const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
     const prevUnitNames = [...(state.packUnitNames || [])];
+    const prevMd = [...(state.packUnitMarkdownTexts || [])];
+    const prevYu = [...(state.packUnitYoutubeUrls || [])];
+    const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const prevErr = [...(state.packUnitTranscriptError || [])];
+    const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+    const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
     let list = [...(state.packTasksList || [])];
 
     if (fromRagList && groupIdx >= 0) {
@@ -131,6 +137,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, list, DEFAULT_PACK_CHUNK_SIZE);
     state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, list, DEFAULT_PACK_CHUNK_OVERLAP);
     state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, list, '');
+    state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, list, '');
+    state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, list, '');
+    state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, list, '');
+    state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, list, '');
+    state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, list);
+    state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, list);
   }
 
   function removeFromRagList(groupIdx, tagIdx) {
@@ -140,6 +152,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const prevChunkSizes = [...(state.packChunkSizes || [])];
     const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
     const prevUnitNames = [...(state.packUnitNames || [])];
+    const prevMd = [...(state.packUnitMarkdownTexts || [])];
+    const prevYu = [...(state.packUnitYoutubeUrls || [])];
+    const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const prevErr = [...(state.packUnitTranscriptError || [])];
+    const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+    const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
     const list = [...(state.packTasksList || [])];
     const g = list[groupIdx];
     if (!Array.isArray(g)) return;
@@ -151,6 +169,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, nextList, DEFAULT_PACK_CHUNK_SIZE);
     state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, nextList, DEFAULT_PACK_CHUNK_OVERLAP);
     state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, nextList, '');
+    state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, nextList, '');
+    state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, nextList, '');
+    state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, nextList, '');
+    state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, nextList, '');
+    state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, nextList);
+    state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, nextList);
   }
 
   function removeRagListGroup(groupIdx) {
@@ -161,19 +185,43 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const sizes = [...(state.packChunkSizes || [])];
     const overs = [...(state.packChunkOverlaps || [])];
     const names = [...(state.packUnitNames || [])];
+    const md = [...(state.packUnitMarkdownTexts || [])];
+    const yu = [...(state.packUnitYoutubeUrls || [])];
+    const mp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const loading = [...(state.packUnitTranscriptLoading || [])];
+    const loaded = [...(state.packUnitTranscriptLoaded || [])];
+    const err = [...(state.packUnitTranscriptError || [])];
     while (sizes.length < list.length) sizes.push(DEFAULT_PACK_CHUNK_SIZE);
     while (overs.length < list.length) overs.push(DEFAULT_PACK_CHUNK_OVERLAP);
     while (names.length < list.length) names.push('');
+    while (md.length < list.length) md.push('');
+    while (yu.length < list.length) yu.push('');
+    while (mp3.length < list.length) mp3.push('');
+    while (loading.length < list.length) loading.push(false);
+    while (loaded.length < list.length) loaded.push(false);
+    while (err.length < list.length) err.push('');
     list.splice(groupIdx, 1);
     types.splice(groupIdx, 1);
     sizes.splice(groupIdx, 1);
     overs.splice(groupIdx, 1);
     names.splice(groupIdx, 1);
+    md.splice(groupIdx, 1);
+    yu.splice(groupIdx, 1);
+    mp3.splice(groupIdx, 1);
+    loading.splice(groupIdx, 1);
+    loaded.splice(groupIdx, 1);
+    err.splice(groupIdx, 1);
     state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
     state.packUnitTypes = types;
     state.packChunkSizes = sizes;
     state.packChunkOverlaps = overs;
     state.packUnitNames = names;
+    state.packUnitMarkdownTexts = md;
+    state.packUnitYoutubeUrls = yu;
+    state.packUnitMp3PreviewUrls = mp3;
+    state.packUnitTranscriptLoading = loading;
+    state.packUnitTranscriptLoaded = loaded;
+    state.packUnitTranscriptError = err;
   }
 
   function addRagListGroup() {
@@ -183,7 +231,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
     state.packUnitNames = [...(state.packUnitNames || []), ''];
+    state.packUnitMarkdownTexts = [...(state.packUnitMarkdownTexts || []), ''];
+    state.packUnitYoutubeUrls = [...(state.packUnitYoutubeUrls || []), ''];
     state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ''];
+    state.packUnitTranscriptLoading = [...(state.packUnitTranscriptLoading || []), false];
+    state.packUnitTranscriptLoaded = [...(state.packUnitTranscriptLoaded || []), false];
+    state.packUnitTranscriptError = [...(state.packUnitTranscriptError || []), ''];
   }
 
   function clearAllRagListGroups() {
@@ -193,6 +246,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     currentState.value.packChunkSizes = [];
     currentState.value.packChunkOverlaps = [];
     currentState.value.packUnitNames = [];
+    currentState.value.packUnitMarkdownTexts = [];
+    currentState.value.packUnitYoutubeUrls = [];
+    currentState.value.packUnitMp3PreviewUrls = [];
+    currentState.value.packUnitTranscriptLoading = [];
+    currentState.value.packUnitTranscriptLoaded = [];
+    currentState.value.packUnitTranscriptError = [];
   }
 
   function addAllSecondFoldersAsGroups() {
@@ -206,6 +265,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packChunkSizes = [...(state.packChunkSizes || []), ...names.map(() => DEFAULT_PACK_CHUNK_SIZE)];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), ...names.map(() => DEFAULT_PACK_CHUNK_OVERLAP)];
     state.packUnitNames = [...(state.packUnitNames || []), ...names.map(() => '')];
+    state.packUnitMarkdownTexts = [...(state.packUnitMarkdownTexts || []), ...names.map(() => '')];
+    state.packUnitYoutubeUrls = [...(state.packUnitYoutubeUrls || []), ...names.map(() => '')];
+    state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ...names.map(() => '')];
+    state.packUnitTranscriptLoading = [...(state.packUnitTranscriptLoading || []), ...names.map(() => false)];
+    state.packUnitTranscriptLoaded = [...(state.packUnitTranscriptLoaded || []), ...names.map(() => false)];
+    state.packUnitTranscriptError = [...(state.packUnitTranscriptError || []), ...names.map(() => '')];
   }
 
   /** 在現有出題單元之後新增一個出題單元，內含全部單元（unit_list：a+b+c），不覆寫既有出題單元 */
@@ -219,6 +284,12 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
     state.packUnitNames = [...(state.packUnitNames || []), ''];
+    state.packUnitMarkdownTexts = [...(state.packUnitMarkdownTexts || []), ''];
+    state.packUnitYoutubeUrls = [...(state.packUnitYoutubeUrls || []), ''];
+    state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ''];
+    state.packUnitTranscriptLoading = [...(state.packUnitTranscriptLoading || []), false];
+    state.packUnitTranscriptLoaded = [...(state.packUnitTranscriptLoaded || []), false];
+    state.packUnitTranscriptError = [...(state.packUnitTranscriptError || []), ''];
   }
 
   watch(
@@ -238,6 +309,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
       const prevErr = [...(state.packUnitTranscriptError || [])];
       const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+      const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
       const prevNames = [...(state.packUnitNames || [])];
 
       state.packTasksList = parsed;
@@ -259,6 +331,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, parsed, '');
       state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, parsed, '');
       state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, parsed);
+      state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, parsed);
       state.packUnitNames = remapPackParallelStrings(prevList, prevNames, parsed, '');
     }
   );
