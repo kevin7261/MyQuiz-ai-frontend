@@ -54,7 +54,7 @@ const routes = [
     component: HomeView,
     meta: { title: '測驗 - MyQuiz.ai' },
   },
-  // 舊網址相容（書籤）：/main/... → 新路徑；create-test-bank 已併入 create-exam-bank
+  // 舊網址相容（書籤）：/main/... → 新路徑
   {
     path: '/main',
     redirect: (to) => ({ path: '/exam', query: to.query }),
@@ -89,14 +89,6 @@ const routes = [
   },
   {
     path: '/create-rag',
-    redirect: '/create-exam-bank',
-  },
-  {
-    path: '/create-test-bank',
-    redirect: '/create-exam-bank',
-  },
-  {
-    path: '/main/create-test-bank',
     redirect: '/create-exam-bank',
   },
   {
