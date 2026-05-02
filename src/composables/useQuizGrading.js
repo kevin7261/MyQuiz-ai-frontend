@@ -154,7 +154,7 @@ function buildHttpErrorMessage(res, text, isExam) {
   const statusHint =
     res.status === 400
       ? isExam
-        ? '（請至「系統設定」確認已填寫 AI 服務 API 金鑰）\n\n'
+        ? '（請至「設定」確認已填寫 AI 服務 API 金鑰）\n\n'
         : '（請至「個人設定」確認已填寫 LLM API 金鑰）\n\n'
       : res.status === 502
         ? '（服務忙碌或暫時無法回應，請稍後再試）\n\n'

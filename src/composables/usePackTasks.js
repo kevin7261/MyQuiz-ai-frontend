@@ -111,6 +111,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const prevMd = [...(state.packUnitMarkdownTexts || [])];
     const prevYu = [...(state.packUnitYoutubeUrls || [])];
     const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const prevSf = [...(state.packUnitSourceFileLoading || [])];
     const prevErr = [...(state.packUnitTranscriptError || [])];
     const prevLoad = [...(state.packUnitTranscriptLoading || [])];
     const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
@@ -140,6 +141,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, list, '');
     state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, list, '');
     state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, list, '');
+    state.packUnitSourceFileLoading = remapPackParallelBools(prevList, prevSf, list);
     state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, list, '');
     state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, list);
     state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, list);
@@ -155,6 +157,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const prevMd = [...(state.packUnitMarkdownTexts || [])];
     const prevYu = [...(state.packUnitYoutubeUrls || [])];
     const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const prevSf = [...(state.packUnitSourceFileLoading || [])];
     const prevErr = [...(state.packUnitTranscriptError || [])];
     const prevLoad = [...(state.packUnitTranscriptLoading || [])];
     const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
@@ -172,6 +175,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, nextList, '');
     state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, nextList, '');
     state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, nextList, '');
+    state.packUnitSourceFileLoading = remapPackParallelBools(prevList, prevSf, nextList);
     state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, nextList, '');
     state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, nextList);
     state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, nextList);
@@ -188,6 +192,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const md = [...(state.packUnitMarkdownTexts || [])];
     const yu = [...(state.packUnitYoutubeUrls || [])];
     const mp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const sourceFileLoading = [...(state.packUnitSourceFileLoading || [])];
     const loading = [...(state.packUnitTranscriptLoading || [])];
     const loaded = [...(state.packUnitTranscriptLoaded || [])];
     const err = [...(state.packUnitTranscriptError || [])];
@@ -197,6 +202,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     while (md.length < list.length) md.push('');
     while (yu.length < list.length) yu.push('');
     while (mp3.length < list.length) mp3.push('');
+    while (sourceFileLoading.length < list.length) sourceFileLoading.push(false);
     while (loading.length < list.length) loading.push(false);
     while (loaded.length < list.length) loaded.push(false);
     while (err.length < list.length) err.push('');
@@ -208,6 +214,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     md.splice(groupIdx, 1);
     yu.splice(groupIdx, 1);
     mp3.splice(groupIdx, 1);
+    sourceFileLoading.splice(groupIdx, 1);
     loading.splice(groupIdx, 1);
     loaded.splice(groupIdx, 1);
     err.splice(groupIdx, 1);
@@ -219,6 +226,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitMarkdownTexts = md;
     state.packUnitYoutubeUrls = yu;
     state.packUnitMp3PreviewUrls = mp3;
+    state.packUnitSourceFileLoading = sourceFileLoading;
     state.packUnitTranscriptLoading = loading;
     state.packUnitTranscriptLoaded = loaded;
     state.packUnitTranscriptError = err;
@@ -234,6 +242,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitMarkdownTexts = [...(state.packUnitMarkdownTexts || []), ''];
     state.packUnitYoutubeUrls = [...(state.packUnitYoutubeUrls || []), ''];
     state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ''];
+    state.packUnitSourceFileLoading = [...(state.packUnitSourceFileLoading || []), false];
     state.packUnitTranscriptLoading = [...(state.packUnitTranscriptLoading || []), false];
     state.packUnitTranscriptLoaded = [...(state.packUnitTranscriptLoaded || []), false];
     state.packUnitTranscriptError = [...(state.packUnitTranscriptError || []), ''];
@@ -249,6 +258,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     currentState.value.packUnitMarkdownTexts = [];
     currentState.value.packUnitYoutubeUrls = [];
     currentState.value.packUnitMp3PreviewUrls = [];
+    currentState.value.packUnitSourceFileLoading = [];
     currentState.value.packUnitTranscriptLoading = [];
     currentState.value.packUnitTranscriptLoaded = [];
     currentState.value.packUnitTranscriptError = [];
@@ -268,6 +278,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitMarkdownTexts = [...(state.packUnitMarkdownTexts || []), ...names.map(() => '')];
     state.packUnitYoutubeUrls = [...(state.packUnitYoutubeUrls || []), ...names.map(() => '')];
     state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ...names.map(() => '')];
+    state.packUnitSourceFileLoading = [...(state.packUnitSourceFileLoading || []), ...names.map(() => false)];
     state.packUnitTranscriptLoading = [...(state.packUnitTranscriptLoading || []), ...names.map(() => false)];
     state.packUnitTranscriptLoaded = [...(state.packUnitTranscriptLoaded || []), ...names.map(() => false)];
     state.packUnitTranscriptError = [...(state.packUnitTranscriptError || []), ...names.map(() => '')];
@@ -287,6 +298,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     state.packUnitMarkdownTexts = [...(state.packUnitMarkdownTexts || []), ''];
     state.packUnitYoutubeUrls = [...(state.packUnitYoutubeUrls || []), ''];
     state.packUnitMp3PreviewUrls = [...(state.packUnitMp3PreviewUrls || []), ''];
+    state.packUnitSourceFileLoading = [...(state.packUnitSourceFileLoading || []), false];
     state.packUnitTranscriptLoading = [...(state.packUnitTranscriptLoading || []), false];
     state.packUnitTranscriptLoaded = [...(state.packUnitTranscriptLoaded || []), false];
     state.packUnitTranscriptError = [...(state.packUnitTranscriptError || []), ''];
@@ -307,6 +319,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       const prevMd = [...(state.packUnitMarkdownTexts || [])];
       const prevYu = [...(state.packUnitYoutubeUrls || [])];
       const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+      const prevSf = [...(state.packUnitSourceFileLoading || [])];
       const prevErr = [...(state.packUnitTranscriptError || [])];
       const prevLoad = [...(state.packUnitTranscriptLoading || [])];
       const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
@@ -329,6 +342,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
       state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, parsed, '');
       state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, parsed, '');
       state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, parsed, '');
+      state.packUnitSourceFileLoading = remapPackParallelBools(prevList, prevSf, parsed);
       state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, parsed, '');
       state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, parsed);
       state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, parsed);

@@ -162,25 +162,41 @@ export function getRagUnitListString(rag) {
 }
 
 /**
+ * unit_list／packTasks 序列化占位：該列出題單元「資料夾組合為空」。僅前端狀態用；POST build-rag-zip 前有 isPackTasksListReady。
+ * （勿與實際資料夾名稱雷同；字面 __PQ_EMPTY_ROW__ unlikely as course folder）
+ */
+export const PACK_ROW_EMPTY_UNIT_LIST_MARKER = '__PQ_EMPTY_ROW__';
+
+/**
  * 將 unit_list 字串解析為虛擬資料夾群組（供建 RAG 時分組）
- * 格式：'a+b,c' → [['a','b'],['c']]，逗號分隔群組，加號分隔同群組內的資料夾
+ * 格式：'a+b,c' → [['a','b'],['c']]，逗號分隔群組，加號分隔同群組內的資料夾。
+ * 占位 {@link PACK_ROW_EMPTY_UNIT_LIST_MARKER} 對應空資料夾列（沿用列數）。
  * @param {string} [str]
  * @returns {string[][]}
  */
 export function parsePackTasksList(str) {
   const s = String(str ?? '').trim();
   if (!s) return [];
-  return s.split(',').map((part) => part.split('+').map((x) => x.trim()).filter(Boolean)).filter((g) => g.length > 0);
+  const emptyMark = PACK_ROW_EMPTY_UNIT_LIST_MARKER;
+  return s.split(',').map((part) => {
+    const trimmed = String(part ?? '').trim();
+    if (trimmed === emptyMark) return [];
+    return trimmed.split('+').map((x) => x.trim()).filter(Boolean);
+  });
 }
 
 /**
  * 將虛擬資料夾群組序列化為後端 unit_list 字串
- * @param {string[][]} list - 二維陣列，每群組為一組資料夾名稱
+ * @param {string[][]} list - 二維陣列，每群組為一組資料夾名稱；[] 對應 {@link PACK_ROW_EMPTY_UNIT_LIST_MARKER}
  * @returns {string}
  */
 export function serializePackTasksList(list) {
   if (!Array.isArray(list) || list.length === 0) return '';
-  return list.map((g) => (Array.isArray(g) ? g.filter(Boolean).join('+') : '')).filter(Boolean).join(',');
+  const emptyMark = PACK_ROW_EMPTY_UNIT_LIST_MARKER;
+  return list.map((g) => {
+    if (!Array.isArray(g) || g.length === 0) return emptyMark;
+    return g.filter(Boolean).join('+');
+  }).join(',');
 }
 
 /** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 未選、1 rag→PDF／Office、2 文字→.md、3 mp3→.mp3、4 youtube→.md（預設 rag） */

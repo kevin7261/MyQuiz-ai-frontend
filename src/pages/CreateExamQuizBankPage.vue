@@ -9,7 +9,7 @@
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id）
  * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；unit_list、unit_types、transcriptions〔與逗號分段同序〕、chunk_sizes／chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
- * - 設定單元「載入逐字稿」預覽：unit_type 2→GET `/rag/transcript/text`；3→GET `/rag/transcript/audio`；4→GET `/rag/transcript/youtube`（有嵌入網址時追加 query `youtube_url`）；音訊／影片預覽仍為 GET `/rag/unit/audio-file`、`/rag/unit/youtube-url`
+ * - 設定單元：GET `/rag/transcript/text`、`/rag/unit/audio-file`、`/rag/unit/youtube-url` 時區塊內顯示「檔案讀取中」；`/rag/transcript/text|audio|youtube`（載入逐字稿）按下後遮罩／按鈕顯示「分析逐字稿中」。
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：僅依 GET /rag/tabs 每筆 `for_exam` 顯示分頁列綠點（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）、GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
@@ -454,14 +454,15 @@ const activeUnitQuizLoadingOverlayKind = computed(() => {
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
-/** 設定單元：GET /rag/transcript/text、/rag/unit/audio-file、/rag/unit/youtube-url 期間 */
+/** 設定單元：逐字稿分析中（載入逐字稿）或檔案讀取（/rag/transcript/text、/rag/unit/audio-file、youtube-url）期間，禁「開始設定單元」等 */
 const hasPackUnitTranscriptLoading = computed(() => {
-  const arr = currentState.value?.packUnitTranscriptLoading;
-  if (!Array.isArray(arr)) return false;
-  return arr.some(Boolean);
+  const st = currentState.value;
+  const t = Array.isArray(st?.packUnitTranscriptLoading) && st.packUnitTranscriptLoading.some(Boolean);
+  const sf = Array.isArray(st?.packUnitSourceFileLoading) && st.packUnitSourceFileLoading.some(Boolean);
+  return t || sf;
 });
 
-/** 全螢幕 LoadingOverlay：列表／建立分頁／刪除／更名／ZIP 上傳（上傳區 UI 不變，僅 overlay）／建題庫／產生題目／批改 */
+/** 全螢幕 LoadingOverlay：列表／建立分頁／刪除／更名／ZIP 上傳（上傳區 UI 不變，僅 overlay）／建題庫／產生題目／批改（不含設定單元逐字稿；該區用區塊內文案） */
 const loadingOverlayVisible = computed(
   () =>
     ragListLoading.value ||
@@ -473,8 +474,7 @@ const loadingOverlayVisible = computed(
     !!currentState.value?.zipLoading ||
     !!currentState.value?.packLoading ||
     hasAnySlotGenerating.value ||
-    isGradingSubmitting.value ||
-    hasPackUnitTranscriptLoading.value
+    isGradingSubmitting.value
 );
 
 const loadingOverlayText = computed(() => {
@@ -484,7 +484,6 @@ const loadingOverlayText = computed(() => {
   const st = currentState.value;
   if (st?.zipLoading) return '上傳中...';
   if (st?.packLoading) return '建立題庫中...';
-  if (hasPackUnitTranscriptLoading.value) return '檔案讀取中';
   if (deleteRagLoading.value) return '刪除中...';
   if (deleteUnitQuizLoading.value) return '刪除題型中...';
   if (renameRagTabSaving.value) return '儲存中...';
@@ -517,15 +516,6 @@ const loadingOverlaySubText = computed(() => {
   if (st?.packLoading) {
     if (packBuildOverlayLines.value.length) return packBuildOverlayLines.value.join('\n');
     return '正在連線並準備建置…';
-  }
-  if (hasPackUnitTranscriptLoading.value) {
-    const load = st?.packUnitTranscriptLoading;
-    if (!Array.isArray(load)) return '';
-    const gi = load.findIndex(Boolean);
-    if (gi < 0) return '';
-    const group = st.packTasksList?.[gi];
-    const folder = Array.isArray(group) && group.length ? String(group[0]).trim() : '';
-    return folder ? `資料夾：${folder}` : '';
   }
   return '';
 });
@@ -640,8 +630,9 @@ const {
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
 function packUnitTypeAt(gi) {
-  const t = currentState.value.packUnitTypes?.[gi];
-  if (t === 0 || t === 1 || t === 2 || t === 3 || t === 4) return t;
+  const raw = currentState.value.packUnitTypes?.[gi];
+  const t = Number(raw);
+  if (Number.isFinite(t) && (t === 0 || t === 1 || t === 2 || t === 3 || t === 4)) return t;
   return 1;
 }
 
@@ -715,6 +706,7 @@ function ensurePackUnitSidecarArrays() {
   stretch('packUnitMarkdownTexts', '');
   stretch('packUnitYoutubeUrls', '');
   stretch('packUnitMp3PreviewUrls', '');
+  stretch('packUnitSourceFileLoading', false);
   stretch('packUnitTranscriptLoading', false);
   stretch('packUnitTranscriptLoaded', false);
   stretch('packUnitTranscriptError', '');
@@ -724,8 +716,7 @@ function ensurePackUnitSidecarArrays() {
 }
 
 /**
- * 重設第 N 個設定單元：類型→rag、分段長度／重疊為預設、逐字稿稿／YouTube 字串／錯誤／載入旗標清空。
- * 不清除已拖入之資料夾標籤（避免 unit_list 僅剩空群組時與 packTasks 同步語意混淆）。
+ * 重設第 N 個設定單元：清空該列「資料夾組合」，其餘類型→rag、分段長度／重疊為預設、單元名稱清空並清除逐字稿／預覽／錯誤／載入旗標。
  */
 function resetPackUnitGroup(groupIdx) {
   if (packGroupsEditBlocked.value) return;
@@ -734,8 +725,13 @@ function resetPackUnitGroup(groupIdx) {
   const list = state.packTasksList;
   if (!Array.isArray(list) || !Number.isFinite(gi) || gi < 0 || gi >= list.length) return;
   ensurePackUnitSidecarArrays();
+
+  const nextList = [...list];
+  nextList[gi] = [];
+  state.packTasksList = nextList;
+
   const types = [...(state.packUnitTypes || [])];
-  while (types.length < list.length) types.push(UNIT_TYPE_RAG);
+  while (types.length < nextList.length) types.push(UNIT_TYPE_RAG);
   types[gi] = UNIT_TYPE_RAG;
   state.packUnitTypes = types;
   const sizes = [...(state.packChunkSizes || [])];
@@ -755,8 +751,8 @@ function resetPackUnitGroup(groupIdx) {
   loaded[gi] = false;
   state.packUnitTranscriptLoaded = loaded;
   const unm = [...(state.packUnitNames || [])];
-  while (unm.length < list.length) unm.push('');
-  unm[gi] = firstFolderNameInGroup(list[gi]) || '';
+  while (unm.length < nextList.length) unm.push('');
+  unm[gi] = '';
   state.packUnitNames = unm;
 }
 
@@ -857,10 +853,19 @@ function setPackUnitTranscriptLoadedAt(gi, loaded) {
   s.packUnitTranscriptLoaded = arr;
 }
 
+function setPackUnitSourceFileLoadingAt(gi, on) {
+  const s = currentState.value;
+  ensurePackUnitSidecarArrays();
+  const sf = [...(s.packUnitSourceFileLoading || [])];
+  sf[gi] = !!on;
+  s.packUnitSourceFileLoading = sf;
+}
+
 function clearPackUnitPreviewAt(gi) {
   setPackUnitMarkdownAt(gi, '');
   setPackUnitYoutubeUrlAt(gi, '');
   setPackUnitMp3PreviewUrlAt(gi, '');
+  setPackUnitSourceFileLoadingAt(gi, false);
   setPackUnitTranscriptLoadedAt(gi, false);
   const s = currentState.value;
   const err = [...(s.packUnitTranscriptError || [])];
@@ -870,6 +875,10 @@ function clearPackUnitPreviewAt(gi) {
 
 function packUnitTranscriptBusy(gi) {
   return !!(currentState.value.packUnitTranscriptLoading && currentState.value.packUnitTranscriptLoading[gi]);
+}
+
+function packUnitSourceFileBusy(gi) {
+  return !!(currentState.value.packUnitSourceFileLoading && currentState.value.packUnitSourceFileLoading[gi]);
 }
 
 function packUnitTranscriptLoadedAt(gi) {
@@ -898,9 +907,21 @@ function arePackUnitTranscriptsReadyForBuild(state = currentState.value) {
   return missingPackUnitTranscriptIndexes(state).length === 0;
 }
 
+/** 「開始設定單元」按鈕：unit_type 2／3／4 時須已取得非空逐字稿；另需資料夾就緒、不在載入中、未在建置中 */
+const startPackUnitBuildDisabled = computed(() => {
+  const st = currentState.value;
+  return (
+    packGroupsEditBlocked.value ||
+    !isPackTasksListReady(st.packTasksList ?? []) ||
+    !arePackUnitTranscriptsReadyForBuild(st) ||
+    hasPackUnitTranscriptLoading.value ||
+    !!st.packLoading
+  );
+});
+
 /**
- * 共用：確認 folder / rag_tab_id / personId，準備設定單元預覽呼叫。
- * 成功回傳 { folder, rag_tab_id, personId }；失敗已寫入 err[gi] 並回傳 null。
+ * 準備載入逐字稿：確認 folder／rag_tab_id／personId；成功後設 packUnitTranscriptLoading（區塊內為「分析逐字稿」狀態，非全螢幕）。
+ * 失敗已寫入 err[gi] 並回傳 null。
  */
 function preparePackUnitPreviewCall(gi, group) {
   const s = currentState.value;
@@ -933,7 +954,7 @@ function preparePackUnitPreviewCall(gi, group) {
 }
 
 /**
- * 載入 mp3／YouTube 來源預覽（不經過逐字稿 GET、不套用 packUnitTranscriptLoading 遮罩）
+ * 載入 mp3／YouTube 來源預覽：GET `/rag/unit/audio-file`、`/rag/unit/youtube-url`（期間區塊內「檔案讀取中」）
  */
 function preparePackUnitMediaPreviewCall(gi, group) {
   const folder = firstFolderNameInGroup(group);
@@ -944,32 +965,38 @@ function preparePackUnitMediaPreviewCall(gi, group) {
 }
 
 async function refreshPackUnitMediaAssets(gi, ut, ctx) {
+  if (ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return false;
+  setPackUnitSourceFileLoadingAt(gi, true);
   try {
-    if (ut === UNIT_TYPE_MP3) {
-      const blob = await apiRagUnitAudioFileByFolder({
-        rag_tab_id: ctx.rag_tab_id,
-        folder_name: ctx.folder,
-        personId: ctx.personId,
-      });
-      if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('empty audio');
-      setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(blob));
-      return true;
+    try {
+      if (ut === UNIT_TYPE_MP3) {
+        const blob = await apiRagUnitAudioFileByFolder({
+          rag_tab_id: ctx.rag_tab_id,
+          folder_name: ctx.folder,
+          personId: ctx.personId,
+        });
+        if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('empty audio');
+        setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(blob));
+        return true;
+      }
+      if (ut === UNIT_TYPE_YOUTUBE) {
+        const ytData = await apiRagUnitYoutubeUrlByFolder({
+          rag_tab_id: ctx.rag_tab_id,
+          folder_name: ctx.folder,
+          personId: ctx.personId,
+        });
+        const url = youtubeUrlFromUnitUrlResponse(ytData);
+        if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
+        setPackUnitYoutubeUrlAt(gi, url);
+        return true;
+      }
+    } catch {
+      // noop：由呼叫端決定是否要寫錯誤／是否影響逐字稿
     }
-    if (ut === UNIT_TYPE_YOUTUBE) {
-      const ytData = await apiRagUnitYoutubeUrlByFolder({
-        rag_tab_id: ctx.rag_tab_id,
-        folder_name: ctx.folder,
-        personId: ctx.personId,
-      });
-      const url = youtubeUrlFromUnitUrlResponse(ytData);
-      if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
-      setPackUnitYoutubeUrlAt(gi, url);
-      return true;
-    }
-  } catch {
-    // noop：由呼叫端決定是否要寫錯誤／是否影響逐字稿
+    return false;
+  } finally {
+    setPackUnitSourceFileLoadingAt(gi, false);
   }
-  return false;
 }
 
 /** 自動或手動載入來源播放器（zip 資料夾內 mp3 / YouTube）；失敗時不動逐字稿 */
@@ -1056,11 +1083,16 @@ async function loadPackUnitPreviewForType(gi, group) {
   try {
     let data;
     if (ut === UNIT_TYPE_TEXT) {
-      data = await apiRagTranscriptText({
-        rag_tab_id: ctx.rag_tab_id,
-        folder_name: ctx.folder,
-        personId: ctx.personId,
-      });
+      setPackUnitSourceFileLoadingAt(gi, true);
+      try {
+        data = await apiRagTranscriptText({
+          rag_tab_id: ctx.rag_tab_id,
+          folder_name: ctx.folder,
+          personId: ctx.personId,
+        });
+      } finally {
+        setPackUnitSourceFileLoadingAt(gi, false);
+      }
     } else if (ut === UNIT_TYPE_MP3) {
       data = await apiRagTranscriptAudio({
         rag_tab_id: ctx.rag_tab_id,
@@ -1703,7 +1735,7 @@ watch(
   }
 );
 
-/** 與 Profile LLM Key／來源一致：user_type 1／2／234 才顯示「單元內容」區塊（依 unit_type）；其餘僅見上方單元分頁標籤 */
+/** user_type 1／2／234 才顯示「單元內容」區塊（依 unit_type）；其餘僅見上方單元分頁標籤。與個人設定之 AI／LLM 服務 API 金鑰無關（僅角色權限）。 */
 const canSeeRagUnitSourceFilename = computed(() => {
   const t = Number(authStore.user?.user_type);
   return t === 1 || t === 2 || t === 234;
@@ -2838,7 +2870,7 @@ async function confirmPack() {
     return;
   }
   if (hasPackUnitTranscriptLoading.value) {
-    state.packError = '逐字稿仍在載入中，請稍候再開始設定單元';
+    state.packError = '逐字稿尚在分析或檔案讀取中，請稍候再開始設定單元';
     return;
   }
   const missingTranscriptIndexes = missingPackUnitTranscriptIndexes(state);
@@ -3890,7 +3922,7 @@ async function confirmAnswer(item) {
                         :id="'rag-pack-unit-name-' + gi"
                         type="text"
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked"
+                        :disabled="packGroupsEditBlocked || group.length === 0"
                         :value="currentState.packUnitNames?.[gi] ?? ''"
                         :aria-label="`設定單元 ${gi + 1} 單元名稱`"
                         autocomplete="off"
@@ -3906,7 +3938,7 @@ async function confirmAnswer(item) {
                         :model-value="packUnitTypeAt(gi)"
                         :options="PACK_UNIT_TYPE_OPTIONS"
                         :menu-id="'pack-unit-type-' + gi"
-                        :disabled="packGroupsEditBlocked"
+                        :disabled="packGroupsEditBlocked || group.length === 0"
                         block
                         :aria-label="`設定單元 ${gi + 1} 類型`"
                         @update:model-value="onPackUnitTypePick(gi, $event)"
@@ -3928,7 +3960,7 @@ async function confirmAnswer(item) {
                         min="1"
                         step="1"
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked"
+                        :disabled="packGroupsEditBlocked || group.length === 0"
                         :value="ensureNumber(currentState.packChunkSizes?.[gi], DEFAULT_PACK_CHUNK_SIZE)"
                         :aria-label="`設定單元 ${gi + 1} 分段長度（字元）`"
                         autocomplete="off"
@@ -3946,7 +3978,7 @@ async function confirmAnswer(item) {
                         min="0"
                         step="1"
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked"
+                        :disabled="packGroupsEditBlocked || group.length === 0"
                         :value="ensureNumber(currentState.packChunkOverlaps?.[gi], DEFAULT_PACK_CHUNK_OVERLAP)"
                         :aria-label="`設定單元 ${gi + 1} 分段重疊（字元）`"
                         autocomplete="off"
@@ -3959,6 +3991,14 @@ async function confirmAnswer(item) {
                     class="w-100 min-w-0"
                   >
                     <div class="d-flex flex-column gap-2 w-100 min-w-0">
+                      <p
+                        v-if="packUnitSourceFileBusy(gi)"
+                        class="my-font-sm-400 my-color-gray-1 mb-0 text-center py-2 w-100 rounded-2 my-bgcolor-gray-4"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        檔案讀取中…
+                      </p>
                       <audio
                         v-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[gi] ?? '').trim() !== ''"
                         :key="currentState.packUnitMp3PreviewUrls[gi]"
@@ -4005,9 +4045,10 @@ async function confirmAnswer(item) {
                               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
                               :disabled="packUnitTranscriptBusy(gi) || packGroupsEditBlocked"
                               :aria-busy="packUnitTranscriptBusy(gi)"
+                              :aria-label="packUnitTranscriptBusy(gi) ? '分析逐字稿中' : '載入逐字稿'"
                               @click="loadPackUnitPreviewForType(gi, group)"
                             >
-                              {{ packUnitTranscriptBusy(gi) ? '載入中…' : '載入逐字稿' }}
+                              {{ packUnitTranscriptBusy(gi) ? '分析逐字稿中…' : '載入逐字稿' }}
                             </button>
                           </div>
                         </div>
@@ -4098,13 +4139,7 @@ async function confirmAnswer(item) {
             <button
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
-              :disabled="
-                packGroupsEditBlocked ||
-                !isPackTasksListReady(currentState.packTasksList ?? []) ||
-                !arePackUnitTranscriptsReadyForBuild(currentState) ||
-                hasPackUnitTranscriptLoading ||
-                currentState.packLoading
-              "
+              :disabled="startPackUnitBuildDisabled"
               :aria-busy="currentState.packLoading"
               aria-label="開始設定單元"
               @click="confirmPack"
