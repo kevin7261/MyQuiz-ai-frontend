@@ -2,12 +2,12 @@
 /**
  * ExamPage - 測驗頁面
  *
- * 與 CreateExamQuizBankPage 版面類似（分頁、題目卡片、出題/評分），但無 RAG 建立/上傳/Pack；題目來源為 GET /exam/rag-for-exams／測驗分頁。POST /exam/tab/quiz/create 送 exam_tab_id 與 rag_unit_id、rag_quiz_id 建立並綁定題列；LLM 出題 POST /exam/tab/quiz/llm-generate 須 **exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id 皆必填**；`rag_tab_id` 後端用以載入 ZIP（不依賴 System_Setting）；列已有兩鍵須一致否則 400，列未寫入則自動綁定。
+ * 與 CreateExamQuizBankPage 版面類似（分頁、題目卡片、出題/評分），但無 RAG 建立/上傳/Pack；題目來源為 GET /exam/rag-for-exams／測驗分頁。**新增題目** POST /exam/tab/quiz/create（Exam Create Quiz, no LLM；body 僅 exam_tab_id）建立空白列並取得 exam_quiz_id；**產生題目** POST /exam/tab/quiz/llm-generate（Rag LLM Generate Quiz）須 **exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id 皆必填**；`rag_tab_id` 後端用以載入 ZIP（不依賴 System_Setting）；列已有兩鍵須一致否則 400，列未寫入則自動綁定。
  *
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
- * 出題：須選單元＋題名；尚無列時 POST /exam/tab/quiz/create（body 僅 exam_tab_id）；再 POST llm-generate（body 僅 exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
+ * 出題：須先「新增題目」建立列（POST /exam/tab/quiz/create），再選單元＋題名後「產生題目」POST llm-generate（body 僅 exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
@@ -923,7 +923,7 @@ watch(
   }
 );
 
-/** 「產生題目」「新增題目」：試卷題庫清單載入中則暫停（建立空白列僅需 exam_tab_id，不依賴 rag_unit_id） */
+/** 「產生題目」「新增題目」：試卷題庫清單載入中則暫停（create 僅需 exam_tab_id，不依賴 rag_unit_id） */
 const generateQuizBlocked = computed(() => forExamLoading.value);
 
 /**
@@ -969,12 +969,17 @@ watch(examUnitSelectDropdownOptions, (tabs) => {
 /** 試卷／Exam_Quiz 列上顯示用題名（rag-for-exams、GET /exam/tabs 與 llm-generate 回傳之 quiz_name） */
 function examQuizDisplayNameFromRow(quiz) {
   if (!quiz || typeof quiz !== 'object') return '';
-  if (quiz.quiz_name != null && String(quiz.quiz_name).trim() !== '') {
-    return String(quiz.quiz_name).trim();
+  const direct =
+    quiz.quiz_name ?? quiz.quizName ?? quiz.QuizName;
+  if (direct != null && String(direct).trim() !== '') {
+    return String(direct).trim();
   }
-  const meta = quiz.quiz_metadata;
-  if (meta != null && typeof meta === 'object' && meta.quiz_name != null && String(meta.quiz_name).trim() !== '') {
-    return String(meta.quiz_name).trim();
+  const meta = quiz.quiz_metadata ?? quiz.quizMetadata;
+  if (meta != null && typeof meta === 'object') {
+    const mn = meta.quiz_name ?? meta.quizName;
+    if (mn != null && String(mn).trim() !== '') {
+      return String(mn).trim();
+    }
   }
   return '';
 }
@@ -1351,6 +1356,8 @@ async function addNewTab() {
 const deleteExamLoading = ref(false);
 /** 正在送出批改的題卡 id（全螢幕 LoadingOverlay「批改中...」；結果區待回傳） */
 const gradingSubmittingCardId = ref(null);
+/** 「新增題目」正在 POST /exam/tab/quiz/create */
+const examAddQuestionSubmitting = ref(false);
 
 function examCardGradeSubmitting(card) {
   if (!card) return false;
@@ -1364,6 +1371,71 @@ function examCardGradeSubmitting(card) {
 function examSlotQuizBodyTrim(slotIndex) {
   const c = currentState.value.cardList[slotIndex - 1];
   return c ? String(c.quiz ?? '').trim() : '';
+}
+
+/** 已出題並鎖定下拉時：僅顯示之單元名稱 */
+function examSlotLockedStaticUnitLabel(slotIndex) {
+  const slotState = getSlotFormState(slotIndex);
+  const uid = String(slotState.examUnitSelectId ?? '').trim();
+  if (uid) {
+    const item = findExamUnitDropdownItemBySelectId(uid);
+    const lab = item && String(item.label ?? '').trim();
+    if (lab) return lab;
+  }
+  const card = currentState.value.cardList[slotIndex - 1];
+  if (card && typeof card === 'object') {
+    const rn = String(card.ragName ?? '').trim();
+    if (rn) return rn;
+  }
+  return '—';
+}
+
+/**
+ * 題卡為 UI 物件（含 quiz 題幹字串等），勿對其呼叫 examQuizDisplayNameFromRow（僅適用 Exam_Quiz／llm-generate 列）。
+ * 依 rag_unit_id／槽位選單對齊試卷題庫預覽列後取 quiz_name。
+ */
+function examSlotQuizNameFromForExamRagPreview(slotIndex, card) {
+  if (!card || typeof card !== 'object') return '';
+  const rq = Number(card.rag_quiz_id);
+  if (!Number.isFinite(rq) || rq < 1) return '';
+  const uidSel = String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim();
+  let unitItem = uidSel ? findExamUnitDropdownItemBySelectId(uidSel) : null;
+  const uidCard = Number(card.rag_unit_id);
+  if (
+    (!unitItem || examQuizzesForUnitTabItem(unitItem).length === 0)
+    && Number.isFinite(uidCard)
+    && uidCard >= 1
+  ) {
+    unitItem =
+      examUnitSelectDropdownOptions.value.find(
+        (it) => it?.ragUnitId != null && Number(it.ragUnitId) === uidCard,
+      ) ?? null;
+  }
+  if (!unitItem) return '';
+  const row = examQuizzesForUnitTabItem(unitItem).find(
+    (q) => Number(ragQuizSelectValue(q)) === rq,
+  );
+  return row && typeof row === 'object' ? examQuizDisplayNameFromRow(row) : '';
+}
+
+/** 已出題並鎖定下拉時：僅顯示之題型（quiz_name） */
+function examSlotLockedStaticQuizTypeLabel(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  if (card && typeof card === 'object') {
+    const dn = String(card.examQuizDisplayName ?? '').trim();
+    if (dn) return dn;
+    const gj = card.generateQuizResponseJson;
+    if (gj && typeof gj === 'object') {
+      const fromGen = examQuizDisplayNameFromRow(gj);
+      if (fromGen) return fromGen;
+    }
+    const fromRag = examSlotQuizNameFromForExamRagPreview(slotIndex, card);
+    if (fromRag) return fromRag;
+  }
+  const slotState = getSlotFormState(slotIndex);
+  const pick = String(slotState.examQuizNamePick ?? '').trim();
+  if (pick) return pick;
+  return '—';
 }
 
 /**
@@ -1442,11 +1514,15 @@ function examQuizNameHintWhenDisabled(slotIndex) {
   return '';
 }
 
-/** 「產生題目」：須選單元；該單元有 quizzes[] 時須選 quiz_name */
+/** 「產生題目」：須已有 exam_quiz_id（「新增題目」create 或後端已錨定之列）；須選單元；該單元有 quizzes[] 時須選 quiz_name */
 function examGenerateQuizButtonDisabled(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const base =
     slotState.loading || slotState.draftCreating || generateQuizBlocked.value;
+  const hasExamRowId =
+    examSlotHasAnchoredExamQuizId(slotIndex)
+    || (slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1);
+  if (!hasExamRowId) return true;
   if (examUnitSelectDropdownOptions.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
     return true;
   }
@@ -1535,9 +1611,9 @@ function getDefaultExamSlotForm() {
     examUnitSelectId: '',
     /** 對應試卷 quizzes[].quiz_name；用於解析 rag_quiz_id 與顯示（llm-generate body 不帶 quiz_name） */
     examQuizNamePick: '',
-    /** POST /exam/tab/quiz/create 成功後之 exam_quiz_id；產生題目時併入 llm-generate 之 exam_quiz_id */
+    /** 「新增題目」POST /exam/tab/quiz/create 成功後之 exam_quiz_id；產生題目時併入 llm-generate */
     draftExamQuizId: null,
-    /** 正在送出空白列 create */
+    /** 正在送出 POST /exam/tab/quiz/create（新增題目） */
     draftCreating: false,
     loading: false,
     error: '',
@@ -1570,35 +1646,25 @@ watch(examUnitSelectDropdownOptions, () => {
   }
 });
 
-/** 題型下拉變更：清除草稿 exam_quiz_id（rag 鍵變更須重新 create） */
-function onExamSlotQuizPickChange(slotIndex) {
-  if (examSlotRagChoicesLocked(slotIndex)) return;
-  const slot = getSlotFormState(slotIndex);
-  slot.draftExamQuizId = null;
-  const k = examQuizDraftAbortKey(slotIndex);
-  examQuizDraftAbortBySlotIndex.get(k)?.abort();
-  examQuizDraftAbortBySlotIndex.delete(k);
-}
-
 /**
- * POST /exam/tab/quiz/create（不呼叫 LLM）；body 僅送 exam_tab_id。
- * @param {number} ragUnitId
- * @param {number} ragQuizId
+ * POST /exam/tab/quiz/create（Exam Create Quiz, no LLM）；body 僅 exam_tab_id。
+ * 由「新增題目」呼叫；成功後寫入 slot.draftExamQuizId 供後續 llm-generate。
  */
-async function tryCreateDraftExamQuizForSlot(slotIndex, ragUnitId, ragQuizId) {
+async function examTabQuizCreateDraftRow(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   if (slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1) return;
   if (slotState.draftCreating) return;
 
-  const ru = Number(ragUnitId);
-  const rq = Number(ragQuizId);
-  if (!Number.isFinite(ru) || ru < 1 || !Number.isFinite(rq) || rq < 1) {
-    throw new Error('建立題列前須選定試卷題庫單元與題目（rag_unit_id、rag_quiz_id）');
-  }
-
   const examTabStr = activeTabId.value != null && activeTabId.value !== '' ? String(activeTabId.value).trim() : '';
   const personId = getCurrentPersonId();
-  if (!examTabStr || !personId) return;
+  if (!examTabStr) {
+    slotState.error = '請先選擇測驗分頁，或按「＋」建立測驗';
+    return;
+  }
+  if (!personId) {
+    slotState.error = '請先登入';
+    return;
+  }
 
   const abortKey = examQuizDraftAbortKey(slotIndex);
   examQuizDraftAbortBySlotIndex.get(abortKey)?.abort();
@@ -1644,10 +1710,6 @@ async function onExamSlotUnitChange(slotIndex) {
   const slot = getSlotFormState(slotIndex);
   slot.examQuizNamePick = '';
   slot.error = '';
-  const abortKeyCh = examQuizDraftAbortKey(slotIndex);
-  examQuizDraftAbortBySlotIndex.get(abortKeyCh)?.abort();
-  examQuizDraftAbortBySlotIndex.delete(abortKeyCh);
-  slot.draftExamQuizId = null;
   await nextTick();
 }
 async function openNextQuizSlot() {
@@ -1664,6 +1726,12 @@ async function openNextQuizSlot() {
   slot.error = '';
   slot.examUnitSelectId = '';
   await nextTick();
+  examAddQuestionSubmitting.value = true;
+  try {
+    await examTabQuizCreateDraftRow(idx);
+  } finally {
+    examAddQuestionSubmitting.value = false;
+  }
 }
 
 function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, quizId, ragId) {
@@ -1697,8 +1765,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 
 /**
  * 「產生題目」：POST /exam/tab/quiz/llm-generate；body **僅** exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；列已存有效兩鍵時須與請求一致否則 400，列未寫入則後端以請求綁定；勿傳出題／批改提示文字。
- * - 尚無列：POST /exam/tab/quiz/create（exam_tab_id）再 llm-generate。
- * - 題幹空白且列已錨定：若列已有兩鍵則檢查 UI 選取與列一致；缺鍵則直接送 LLM 由後端綁定。
+ * exam_quiz_id 須已由「新增題目」POST /exam/tab/quiz/create 取得，或為題幹空白且後端已錨定之列。
  */
 async function generateQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
@@ -1756,25 +1823,19 @@ async function generateQuiz(slotIndex) {
   }
 
   let draftEq = anchoredId;
+  if (draftEq == null) {
+    const d = Number(slotState.draftExamQuizId);
+    if (Number.isFinite(d) && d >= 1) draftEq = d;
+  }
+  if (draftEq == null) {
+    slotState.error = '請先按「新增題目」建立空白題列，或稍候建立完成。';
+    return;
+  }
 
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
   try {
-    if (draftEq == null) {
-      await tryCreateDraftExamQuizForSlot(slotIndex, ragUnitIdForLlm, ragQuizIdForLlm);
-      draftEq =
-        slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1
-          ? Number(slotState.draftExamQuizId)
-          : null;
-      if (draftEq == null) {
-        if (!String(slotState.error ?? '').trim()) {
-          slotState.error = '無法建立題目列，請稍候後再試';
-        }
-        return;
-      }
-    }
-
     const promptBundle = examQuizPromptBundleForSlot(slotIndex, prevExamQuizDisplayName);
 
     const data = await apiExamTabQuizLlmGenerate(
@@ -1828,7 +1889,7 @@ async function generateQuiz(slotIndex) {
       newCard.rag_unit_id = ragUnitIdForLlm;
       newCard.rag_quiz_id = ragQuizIdForLlm;
       newCard.quiz_rate = normalizeExamQuizRate(data.quiz_rate);
-      const fromApi = String(data.quiz_name ?? '').trim();
+      const fromApi = examQuizDisplayNameFromRow(data);
       const fromDraft = String(slotState.examQuizNamePick ?? '').trim();
       newCard.examQuizDisplayName = fromApi || fromDraft || prevExamQuizDisplayName || '';
       const qpFromResponse = extractQuizUserPromptFromExamRagRow(data).trim();
@@ -2128,22 +2189,74 @@ onActivated(() => {
                       <div
                         class="d-flex flex-column gap-3 w-100 min-w-0"
                       >
-                        <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                          <label
-                            class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                            :for="`exam-slot-${slotIndex}-unit-toggle-filled`"
-                          >選擇單元</label>
-                          <UnitSelectDropdown
-                            v-model="getSlotFormState(slotIndex).examUnitSelectId"
-                            :options="examUnitSelectDropdownOptions"
-                            :option-value="examUnitSelectValue"
-                            :option-label="(u) => String(u.label ?? '').trim() || '—'"
-                            placeholder="— 請選擇單元 —"
-                            :menu-id="`exam-slot-${slotIndex}-unit-filled`"
-                            :disabled="examUnitSelectDropdownDisabled(slotIndex)"
-                            :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
-                            @update:model-value="onExamSlotUnitChange(slotIndex)"
-                          />
+                        <div
+                          class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3"
+                        >
+                          <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                            <div class="d-flex flex-column gap-0 w-100 min-w-0">
+                              <template v-if="examSlotRagChoicesLocked(slotIndex)">
+                                <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
+                                  單元
+                                </div>
+                                <div
+                                  class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                                  role="status"
+                                  :aria-label="`單元：${examSlotLockedStaticUnitLabel(slotIndex)}`"
+                                >
+                                  {{ examSlotLockedStaticUnitLabel(slotIndex) }}
+                                </div>
+                              </template>
+                              <template v-else>
+                                <label
+                                  class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
+                                  :for="`exam-slot-${slotIndex}-unit-toggle-filled`"
+                                >選擇單元</label>
+                                <UnitSelectDropdown
+                                  v-model="getSlotFormState(slotIndex).examUnitSelectId"
+                                  :options="examUnitSelectDropdownOptions"
+                                  :option-value="examUnitSelectValue"
+                                  :option-label="(u) => String(u.label ?? '').trim() || '—'"
+                                  placeholder="— 請選擇單元 —"
+                                  :menu-id="`exam-slot-${slotIndex}-unit-filled`"
+                                  :disabled="examUnitSelectDropdownDisabled(slotIndex)"
+                                  :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
+                                  @update:model-value="onExamSlotUnitChange(slotIndex)"
+                                />
+                              </template>
+                            </div>
+                          </div>
+                          <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                            <div class="d-flex flex-column gap-0 w-100 min-w-0">
+                              <template v-if="examSlotRagChoicesLocked(slotIndex)">
+                                <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
+                                  題型
+                                </div>
+                                <div
+                                  class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                                  role="status"
+                                  :aria-label="`題型：${examSlotLockedStaticQuizTypeLabel(slotIndex)}`"
+                                >
+                                  {{ examSlotLockedStaticQuizTypeLabel(slotIndex) }}
+                                </div>
+                              </template>
+                              <template v-else>
+                                <label
+                                  class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
+                                  :for="`exam-slot-${slotIndex}-quiz-dd-filled`"
+                                >選擇題型</label>
+                                <UnitSelectDropdown
+                                  v-model="getSlotFormState(slotIndex).examQuizNamePick"
+                                  :options="examQuizDropdownItemsForSlot(slotIndex)"
+                                  :option-value="examQuizPickSelectValue"
+                                  :option-label="(q) => String(q.quiz_name ?? '').trim() || '—'"
+                                  placeholder="— 請選擇題型 —"
+                                  :menu-id="`exam-slot-${slotIndex}-quiz-dd-filled`"
+                                  :disabled="examQuizNameDropdownDisabled(slotIndex)"
+                                  :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
+                                />
+                              </template>
+                            </div>
+                          </div>
                         </div>
                         <template v-if="examSlotUnitTranscriptSection(slotIndex)">
                           <div
@@ -2227,23 +2340,6 @@ onActivated(() => {
                             逐字稿
                           </button>
                         </div>
-                        <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                          <label
-                            class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                            :for="`exam-slot-${slotIndex}-quiz-dd-filled`"
-                          >選擇題型</label>
-                          <UnitSelectDropdown
-                            v-model="getSlotFormState(slotIndex).examQuizNamePick"
-                            :options="examQuizDropdownItemsForSlot(slotIndex)"
-                            :option-value="examQuizPickSelectValue"
-                            :option-label="(q) => String(q.quiz_name ?? '').trim() || '—'"
-                            placeholder="— 請選擇題型 —"
-                            :menu-id="`exam-slot-${slotIndex}-quiz-dd-filled`"
-                            :disabled="examQuizNameDropdownDisabled(slotIndex)"
-                            :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
-                            @update:model-value="() => onExamSlotQuizPickChange(slotIndex)"
-                          />
-                        </div>
                       </div>
                       <QuizCard
                         v-if="examSlotQuizBodyTrim(slotIndex) !== ''"
@@ -2294,23 +2390,73 @@ onActivated(() => {
                           class="d-flex flex-column gap-3 w-100 min-w-0"
                         >
                           <div
-                            class="d-flex flex-column gap-0 w-100 min-w-0"
+                            class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3"
                           >
-                            <label
-                              class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                              :for="`exam-slot-${slotIndex}-unit-toggle`"
-                            >選擇單元</label>
-                            <UnitSelectDropdown
-                              v-model="getSlotFormState(slotIndex).examUnitSelectId"
-                              :options="examUnitSelectDropdownOptions"
-                              :option-value="examUnitSelectValue"
-                              :option-label="(u) => String(u.label ?? '').trim() || '—'"
-                              placeholder="— 請選擇單元 —"
-                              :menu-id="`exam-slot-${slotIndex}-unit`"
-                              :disabled="examUnitSelectDropdownDisabled(slotIndex)"
-                              :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
-                              @update:model-value="onExamSlotUnitChange(slotIndex)"
-                            />
+                            <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                              <div class="d-flex flex-column gap-0 w-100 min-w-0">
+                                <template v-if="examSlotRagChoicesLocked(slotIndex)">
+                                  <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
+                                    單元
+                                  </div>
+                                  <div
+                                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                                    role="status"
+                                    :aria-label="`單元：${examSlotLockedStaticUnitLabel(slotIndex)}`"
+                                  >
+                                    {{ examSlotLockedStaticUnitLabel(slotIndex) }}
+                                  </div>
+                                </template>
+                                <template v-else>
+                                  <label
+                                    class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
+                                    :for="`exam-slot-${slotIndex}-unit-toggle`"
+                                  >選擇單元</label>
+                                  <UnitSelectDropdown
+                                    v-model="getSlotFormState(slotIndex).examUnitSelectId"
+                                    :options="examUnitSelectDropdownOptions"
+                                    :option-value="examUnitSelectValue"
+                                    :option-label="(u) => String(u.label ?? '').trim() || '—'"
+                                    placeholder="— 請選擇單元 —"
+                                    :menu-id="`exam-slot-${slotIndex}-unit`"
+                                    :disabled="examUnitSelectDropdownDisabled(slotIndex)"
+                                    :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
+                                    @update:model-value="onExamSlotUnitChange(slotIndex)"
+                                  />
+                                </template>
+                              </div>
+                            </div>
+                            <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                              <div class="d-flex flex-column gap-0 w-100 min-w-0">
+                                <template v-if="examSlotRagChoicesLocked(slotIndex)">
+                                  <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
+                                    題型
+                                  </div>
+                                  <div
+                                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                                    role="status"
+                                    :aria-label="`題型：${examSlotLockedStaticQuizTypeLabel(slotIndex)}`"
+                                  >
+                                    {{ examSlotLockedStaticQuizTypeLabel(slotIndex) }}
+                                  </div>
+                                </template>
+                                <template v-else>
+                                  <label
+                                    class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
+                                    :for="`exam-slot-${slotIndex}-quiz-dd-new`"
+                                  >選擇題型</label>
+                                  <UnitSelectDropdown
+                                    v-model="getSlotFormState(slotIndex).examQuizNamePick"
+                                    :options="examQuizDropdownItemsForSlot(slotIndex)"
+                                    :option-value="examQuizPickSelectValue"
+                                    :option-label="(q) => String(q.quiz_name ?? '').trim() || '—'"
+                                    placeholder="— 請選擇題型 —"
+                                    :menu-id="`exam-slot-${slotIndex}-quiz-dd-new`"
+                                    :disabled="examQuizNameDropdownDisabled(slotIndex)"
+                                    :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
+                                  />
+                                </template>
+                              </div>
+                            </div>
                           </div>
                           <template v-if="examSlotUnitTranscriptSection(slotIndex)">
                             <div
@@ -2394,25 +2540,6 @@ onActivated(() => {
                               逐字稿
                             </button>
                           </div>
-                          <div
-                            class="d-flex flex-column gap-0 w-100 min-w-0"
-                          >
-                            <label
-                              class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                              :for="`exam-slot-${slotIndex}-quiz-dd-new`"
-                            >選擇題型</label>
-                            <UnitSelectDropdown
-                              v-model="getSlotFormState(slotIndex).examQuizNamePick"
-                              :options="examQuizDropdownItemsForSlot(slotIndex)"
-                              :option-value="examQuizPickSelectValue"
-                              :option-label="(q) => String(q.quiz_name ?? '').trim() || '—'"
-                              placeholder="— 請選擇題型 —"
-                              :menu-id="`exam-slot-${slotIndex}-quiz-dd-new`"
-                              :disabled="examQuizNameDropdownDisabled(slotIndex)"
-                              :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
-                              @update:model-value="() => onExamSlotQuizPickChange(slotIndex)"
-                            />
-                          </div>
                         </div>
                         <div class="d-flex justify-content-center mt-3">
                           <button
@@ -2443,7 +2570,8 @@ onActivated(() => {
                     class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
                     title="新增題目"
                     aria-label="新增題目"
-                    :disabled="generateQuizBlocked"
+                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                    :aria-busy="examAddQuestionSubmitting"
                     @click="openNextQuizSlot"
                   >
                     <i class="fa-solid fa-plus" aria-hidden="true" />

@@ -163,6 +163,10 @@ function readCreateBankTabUiPersisted(personId) {
       rag_tab_id: o.rag_tab_id != null ? String(o.rag_tab_id) : '',
       unit_tab_id: o.unit_tab_id != null ? String(o.unit_tab_id) : '',
       quiz_type_index: Number(o.quiz_type_index) || 0,
+      rag_unit_id:
+        o.rag_unit_id != null && String(o.rag_unit_id).trim() !== ''
+          ? Number(o.rag_unit_id)
+          : 0,
     };
   } catch {
     return null;
@@ -178,6 +182,7 @@ function writeCreateBankTabUiPersisted(personId, payload) {
         rag_tab_id: payload.rag_tab_id,
         unit_tab_id: payload.unit_tab_id,
         quiz_type_index: payload.quiz_type_index,
+        rag_unit_id: payload.rag_unit_id,
       })
     );
   } catch {
@@ -199,11 +204,41 @@ function persistCreateBankTabUiSelection() {
   const ragTab = String(activeTabId.value ?? '').trim();
   if (!ragTab) return;
   const state = currentState.value;
+  const tabs = state.unitTabOrder ?? [];
+  const activeUid = String(state.activeUnitTabId ?? '').trim();
+  const activeRow = tabs.find((t) => t.id === activeUid);
+  const ru =
+    activeRow?.ragUnitDbId != null && Number(activeRow.ragUnitDbId) > 0
+      ? Number(activeRow.ragUnitDbId)
+      : 0;
   writeCreateBankTabUiPersisted(personId, {
     rag_tab_id: ragTab,
-    unit_tab_id: String(state.activeUnitTabId ?? '').trim(),
+    unit_tab_id: activeUid,
     quiz_type_index: Number(state.activeUnitQuizTypeIndex ?? 0) || 0,
+    rag_unit_id: Number.isFinite(ru) ? ru : 0,
   });
+}
+
+/** 與 session 儲存之 unit_tab_id 對齊：含舊版 `tab::name::index` 與 rag_unit_id 後備（API 單元順序與列表不同時仍要能還原） */
+function resolvePersistedUnitTabId(tabs, persisted) {
+  const list = Array.isArray(tabs) ? tabs : [];
+  const wantUnit = String(persisted?.unit_tab_id ?? '').trim();
+  if (wantUnit && list.some((t) => t.id === wantUnit)) return wantUnit;
+  const ru = Number(persisted?.rag_unit_id);
+  if (Number.isFinite(ru) && ru > 0) {
+    const hit = list.find((t) => Number(t.ragUnitDbId) === ru);
+    if (hit) return String(hit.id);
+  }
+  if (wantUnit) {
+    const parts = wantUnit.split('::');
+    if (parts.length >= 3) {
+      const legacyIdx = Number(parts[parts.length - 1]);
+      if (Number.isFinite(legacyIdx) && legacyIdx >= 0 && legacyIdx < list.length) {
+        return String(list[legacyIdx].id);
+      }
+    }
+  }
+  return '';
 }
 
 /**
@@ -218,9 +253,9 @@ function applyPersistedUnitSubTabsIfActive(tabId) {
   if (!persisted || String(persisted.rag_tab_id) !== id) return;
   const state = getTabState(id);
   const tabs = state.unitTabOrder ?? [];
-  const wantUnit = String(persisted.unit_tab_id ?? '').trim();
-  if (wantUnit && tabs.some((t) => t.id === wantUnit)) {
-    state.activeUnitTabId = wantUnit;
+  const resolvedUnit = resolvePersistedUnitTabId(tabs, persisted);
+  if (resolvedUnit) {
+    state.activeUnitTabId = resolvedUnit;
   }
   const qiPersist = Number(persisted.quiz_type_index);
   nextTick(() => {
@@ -1459,6 +1494,7 @@ function buildUnitTabItem(unit, index = 0) {
       : firstRagQuizAnchorIdFromUnit(unit);
   const ragUnitId =
     unit?.rag_unit_id != null ? Number(unit.rag_unit_id) : ragUnitIdFromRawUnit(unit);
+  const ruStable = Number.isFinite(ragUnitId) && ragUnitId > 0;
   const unitType = tabUnitTypeFromUnit(unit);
   const chunkSize =
     unit.chunk_size != null && !Number.isNaN(Number(unit.chunk_size))
@@ -1469,7 +1505,9 @@ function buildUnitTabItem(unit, index = 0) {
       ? ensureNumber(unit.chunk_overlap, DEFAULT_PACK_CHUNK_OVERLAP)
       : null;
   return {
-    id: `${ragTabId || 'tab'}::${keyBase}::${index}`,
+    id: ruStable
+      ? `${ragTabId || 'tab'}::ru-${ragUnitId}`
+      : `${ragTabId || 'tab'}::${keyBase}::${index}`,
     label: unitTabLabelFromUnit(unit, index),
     generateQuizTabId: unitSelectValue(unit),
     unitName: unitName || unitTabLabelFromUnit(unit, index),
@@ -1599,7 +1637,7 @@ function getRagQuizUnitMeta(slotIndex) {
 
 // ─── 題目卡片：for_exam 標記與 Quiz Sub-Tab 管理 ──────────────────────────────
 
-/** 切換 Rag_Quiz.for_exam（需已批改有結果；題卡綠／線框鈕與試卷試題來源對齊） */
+/** 切換 Rag_Quiz.for_exam；「設為測驗用」置於題型區塊最下方常駐，未出題或未批改時按鈕 disabled（見 isRagQuizForExamToolbarButtonDisabled） */
 async function onMarkRagQuizForExam(card) {
   if (!card || typeof card !== 'object') return;
   const personId = getPersonId(authStore);
@@ -1642,21 +1680,6 @@ async function onMarkRagQuizForExam(card) {
   } finally {
     card.ragQuizForExamLoading = false;
   }
-}
-
-/** 與 QuizCard showRagQuizForExamToolbar 一致：有批改結果、有效 rag_quiz_id、非批改送出中時，於目前題型 sub-tab 內容區塊下方置中顯示 for-exam 鈕 */
-function showRagQuizForExamToolbarRow(card) {
-  if (!card || typeof card !== 'object') return false;
-  if (String(card.gradingResult ?? '').trim() === '') return false;
-  if (
-    gradingSubmittingCardId.value != null &&
-    String(gradingSubmittingCardId.value) === String(card.id)
-  ) {
-    return false;
-  }
-  const raw = card.rag_quiz_id ?? card.quiz_id;
-  const n = Number(raw);
-  return Number.isFinite(n) && n >= 1;
 }
 
 /** 單元題型列／草稿預設名稱（無後端 quiz_name、使用者未填時） */
@@ -1744,6 +1767,43 @@ const canSeeRagUnitSourceFilename = computed(() => {
 /** quiz_content（card.quiz）為空與否：出題規則欄皆為編輯器；空白列顯示「產生題目」等仍用此判斷（不依賴 showGenerateForm／草稿對齊；多筆各自綁 quizUserPromptText） */
 function quizRowQuizEmpty(card) {
   return !String(card?.quiz ?? '').trim();
+}
+
+/** 題卡已標為試卷／測驗用 Rag_Quiz.for_exam */
+function isRagQuizMarkedForExam(card) {
+  if (!card || typeof card !== 'object') return false;
+  return card.rag_quiz_for_exam === true || card.rag_quiz_for_exam === 1;
+}
+
+/**
+ * 「設為測驗用」常駐顯示；不可操作時為 true。
+ * — 標為測驗用後「取消設為測驗用」仍應可操作（不依賴當前有無題文／批改）。
+ * — 標記前須已有題目與批改結果；送批改中／API 請求中也停用。
+ */
+function isRagQuizForExamToolbarButtonDisabled(card) {
+  if (!card || typeof card !== 'object') return true;
+  if (card.ragQuizForExamLoading) return true;
+  if (
+    gradingSubmittingCardId.value != null &&
+    String(gradingSubmittingCardId.value) === String(card.id)
+  ) {
+    return true;
+  }
+  const raw = card.rag_quiz_id ?? card.quiz_id;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return true;
+
+  if (isRagQuizMarkedForExam(card)) return false;
+
+  const hasQuiz = String(card.quiz ?? '').trim() !== '';
+  const hasGrade = String(card.gradingResult ?? '').trim() !== '';
+  return !hasQuiz || !hasGrade;
+}
+
+/** 「產生題目」可按：須有非空白之出題規則（與是否標為測驗用無關） */
+function canEnableUnitQuizGenerate(card, slotIndex) {
+  if (!card || typeof card !== 'object') return false;
+  return !!promptTextForQuizRow(card, slotIndex);
 }
 
 /** 該列出題文字：優先題卡本身，再以 slot（舊相容）回填 */
@@ -2318,7 +2378,8 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   const fe =
     quiz.for_exam === true
     || quiz.for_exam === 1
-    || quiz.rag_quiz_for_exam === true;
+    || quiz.rag_quiz_for_exam === true
+    || quiz.rag_quiz_for_exam === 1;
   const rtid = quiz.rag_tab_id != null ? String(quiz.rag_tab_id).trim() : '';
   const ruidRaw = quiz.rag_unit_id != null ? Number(quiz.rag_unit_id) : NaN;
   const ruid = Number.isFinite(ruidRaw) && ruidRaw >= 0 ? ruidRaw : 0;
@@ -3153,7 +3214,7 @@ async function createBlankUnitQuiz(slotIndex) {
 }
 
 /**
- * POST /rag/tab/unit/quiz/llm-generate：body 僅 rag_quiz_id、quiz_name、quiz_user_prompt_text（可空字串）。
+ * POST /rag/tab/unit/quiz/llm-generate：body 僅 rag_quiz_id、quiz_name、quiz_user_prompt_text（API 允許空字串；前端按鈕仍須已填出題規則）。
  * 若該列尚無 rag_quiz_id（相容舊本機草稿），先 POST /rag/tab/unit/quiz/create 再 llm-generate；一般流程已由題型列「+」先 create。
  */
 async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
@@ -3200,6 +3261,10 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
     || String(slotCard?.quizName ?? '').trim();
   const quizNameOut =
     quizNameRaw !== '' ? quizNameRaw : DEFAULT_UNIT_QUIZ_DISPLAY_NAME;
+  if (!String(promptText ?? '').trim()) {
+    slotState.unitQuizCreateError = '請填寫出題規則';
+    return;
+  }
   slotState.unitQuizCreateLoading = true;
   slotState.unitQuizLoadingOverlayKind = 'llm-generate';
   slotState.unitQuizCreateError = '';
@@ -3287,6 +3352,15 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       slotState.unitQuizCreateError = '產生失敗：後端回傳 quiz_content 為空，請調整出題規則後重試';
       return;
     }
+
+    /** 同一題重新產生：立即隱藏舊批改結果（合併 setCardAtSlot 亦會清空，避免短暫殘留） */
+    if (quizCardRow != null && typeof quizCardRow === 'object') {
+      quizCardRow.confirmed = false;
+      quizCardRow.gradingResult = '';
+      quizCardRow.gradingResponseJson = null;
+      quizCardRow.answer_id = null;
+    }
+
     slotState.unitDraftRagQuizId = null;
     slotState.lastSuccessfulCreatedRagQuizId = null;
     slotState.quizUserPromptText = promptText;
@@ -3411,10 +3485,11 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
       card.quiz_answer = quizAnswerPresetFromReference(referenceAnswer);
       card.hintVisible = prev.hintVisible ?? false;
-      card.confirmed = prev.confirmed ?? false;
-      card.gradingResult = prev.gradingResult ?? '';
-      card.gradingResponseJson = prev.gradingResponseJson ?? null;
-      card.answer_id = prev.answer_id ?? null;
+      /** 題幹已由 LLM 更新，勿沿用上一版批改／作答對應（否則仍顯示舊評語） */
+      card.confirmed = false;
+      card.gradingResult = '';
+      card.gradingResponseJson = null;
+      card.answer_id = null;
       card.quizUserPromptText = promptSnap || prev.quizUserPromptText || '';
       card.gradingPrompt = prev.gradingPrompt ?? '';
       card.quizName = computeQuizName(prev);
@@ -3503,9 +3578,13 @@ function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
 }
 
-/** 評分：POST /rag/tab/unit/quiz/llm-grade；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text（題卡「批改規則」gradingPrompt）；回傳 202 + job_id；輪詢 GET /rag/tab/unit/quiz/grade-result/{job_id}。 */
+/** 評分：POST /rag/tab/unit/quiz/llm-grade；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text（題卡「批改規則」gradingPrompt，前端須先有內容才允許送出）；回傳 202 + job_id；輪詢 GET /rag/tab/unit/quiz/grade-result/{job_id}。 */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
+  if (!String(item.gradingPrompt ?? '').trim()) {
+    item.gradingResult = '請填寫批改規則';
+    return;
+  }
   const state = currentState.value;
   const rag = currentRagItem.value;
   const activeRagId = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
@@ -4417,7 +4496,7 @@ async function confirmAnswer(item) {
               <label
                 class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
                 :for="`rag-exam-unit-subtab-${activeTabId}-toggle`"
-              >選擇單元</label>
+              >選擇單元 ({{ (currentState.unitTabOrder || []).length }})</label>
               <UnitSelectDropdown
                 v-model="currentState.activeUnitTabId"
                 :options="currentState.unitTabOrder"
@@ -4425,7 +4504,7 @@ async function confirmAnswer(item) {
                 :option-label="unitSubTabDropdownLabel"
                 :menu-id="`rag-exam-unit-subtab-${activeTabId}`"
                 omit-empty-choice
-                placeholder="選擇單元"
+                :placeholder="`選擇單元 (${(currentState.unitTabOrder || []).length})`"
               />
             </div>
             <div
@@ -4587,7 +4666,7 @@ async function confirmAnswer(item) {
                             <i class="fa-solid fa-pen" aria-hidden="true" />
                           </button>
                           <span
-                            v-if="qRow.rag_quiz_for_exam === true || qRow.rag_quiz_for_exam === 1"
+                            v-if="isRagQuizMarkedForExam(qRow)"
                             class="d-inline-flex justify-content-center align-items-center flex-shrink-0 my-tab-nav-action-btn"
                             title="測驗用題型"
                             role="img"
@@ -4655,13 +4734,17 @@ async function confirmAnswer(item) {
                 <div class="d-flex flex-column gap-0 min-w-0">
                   <label
                     class="form-label my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                    :for="activeUnitQuizCard.rag_quiz_for_exam === true ? undefined : `rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                    :for="
+                      isRagQuizMarkedForExam(activeUnitQuizCard)
+                        ? undefined
+                        : `rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`
+                    "
                   >
                     出題規則
                   </label>
                   <div class="my-rag-unit-quiz-prompt-editor min-w-0">
                     <EnglishExamMarkdownEditor
-                      v-if="activeUnitQuizCard.rag_quiz_for_exam !== true"
+                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
                       v-model="activeUnitQuizCard.quizUserPromptText"
                       :preview-only="false"
                       :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
@@ -4682,8 +4765,7 @@ async function confirmAnswer(item) {
                     class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
                     :disabled="
                       getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                      activeUnitQuizCard.rag_quiz_for_exam === true ||
-                      !promptTextForQuizRow(activeUnitQuizCard, activeUnitSlotIndex)
+                      !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)
                     "
                     :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                     @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
@@ -4710,31 +4792,29 @@ async function confirmAnswer(item) {
                   @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                   @update:grading_prompt="(val) => { activeUnitQuizCard.gradingPrompt = val }"
                 />
-                <template v-if="showRagQuizForExamToolbarRow(activeUnitQuizCard)">
-                  <div class="d-flex flex-column align-items-center gap-2 w-100 min-w-0 pt-1">
-                    <button
-                      type="button"
-                      :class="
-                        activeUnitQuizCard?.rag_quiz_for_exam === true
-                          ? 'btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-green-hollow px-3 py-2'
-                          : 'btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-green px-3 py-2'
-                      "
-                      :disabled="activeUnitQuizCard.ragQuizForExamLoading"
-                      :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
-                      @click="onMarkRagQuizForExam(activeUnitQuizCard)"
-                    >
-                      {{ activeUnitQuizCard?.rag_quiz_for_exam === true ? '取消設為測驗用' : '設為測驗用' }}
-                    </button>
-                    <div
-                      v-if="String(activeUnitQuizCard.ragQuizForExamError ?? '').trim()"
-                      class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
-                      style="max-width: 42rem"
-                      role="alert"
-                    >
-                      {{ activeUnitQuizCard.ragQuizForExamError }}
-                    </div>
+                <div class="d-flex flex-column align-items-center gap-2 w-100 min-w-0 pt-1">
+                  <button
+                    type="button"
+                    :class="
+                      isRagQuizMarkedForExam(activeUnitQuizCard)
+                        ? 'btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-green-hollow px-3 py-2'
+                        : 'btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-green px-3 py-2'
+                    "
+                    :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
+                    :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
+                    @click="onMarkRagQuizForExam(activeUnitQuizCard)"
+                  >
+                    {{ isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消設為測驗用' : '設為測驗用' }}
+                  </button>
+                  <div
+                    v-if="String(activeUnitQuizCard.ragQuizForExamError ?? '').trim()"
+                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
+                    style="max-width: 42rem"
+                    role="alert"
+                  >
+                    {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
-                </template>
+                </div>
               </div>
             </template>
             <template v-else-if="!hasUnitSubTabs">
