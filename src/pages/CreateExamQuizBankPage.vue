@@ -4009,7 +4009,10 @@ async function confirmAnswer(item) {
                         @input="onPackUnitNameInput(gi, $event)"
                       >
                     </div>
-                    <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
+                    <div
+                      class="d-flex flex-column gap-0 min-w-0 my-pack-unit-type-dropdown"
+                      style="flex: 1 1 0;"
+                    >
                       <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
                         類型
                       </div>
@@ -4195,7 +4198,7 @@ async function confirmAnswer(item) {
               <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
                 <button
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-4 px-3 py-1"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-2 px-3 py-1"
                   :disabled="!secondFoldersFull.length"
                   @click="addAllSecondFoldersAsGroups"
                 >
@@ -4203,7 +4206,7 @@ async function confirmAnswer(item) {
                 </button>
                 <button
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-4 px-3 py-1"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-2 px-3 py-1"
                   :disabled="!secondFoldersFull.length"
                   title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
                   @click="setAllSecondFoldersAsSingleGroup"
@@ -4905,9 +4908,14 @@ async function confirmAnswer(item) {
 .my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 200px;
 }
-/* 稿為空時覆蓋編輯區：淺色半透明＋中央中按鈕 */
+/* 類型下拉：須疊在下方逐字稿霧化層之上（選單常向下展開至編輯區） */
+.my-pack-unit-type-dropdown {
+  position: relative;
+  z-index: 20;
+}
+/* 稿為空時覆蓋編輯區：淺色半透明＋中央按鈕；z-index 僅高於同區塊內 CodeMirror，勿高於 Bootstrap 下拉選單 */
 .my-pack-unit-md-transcript-overlay {
-  z-index: 1060;
+  z-index: 2;
   box-sizing: border-box;
   background: color-mix(in srgb, var(--my-color-white) 62%, transparent);
   backdrop-filter: blur(2px);
