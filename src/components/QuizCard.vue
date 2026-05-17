@@ -6,8 +6,11 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號（可隱藏）、題目內容（Markdown，marked + DOMPurify）、提示（可切換顯示）、答案區（預設帶入暫存參考答案，並於欄位下方註明）、批改結果；測驗頁 hideGradingPrompt 時「批改規則」以 modal 按鈕置於批改結果內容下方。
- * 可輸入答案並按「開始批改」送出評分；**測驗頁**（hideGradingPrompt）在已批改（card.confirmed）後不顯示此鈕；建立題庫等未帶 hideGradingPrompt 時鈕仍顯示，再次批改時 composable 會先將 confirmed 設為 false 再更新結果。顯示「批改規則」區時須先有非空白內容才可按「開始批改」。**RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致。
+ * 顯示：題號（可隱藏）、題目內容（Markdown，marked + DOMPurify）、提示（可切換顯示）、參考答案（有內容時與題目同款區塊）、答案區（作答輸入預設空白）、批改結果；測驗頁 hideGradingPrompt 時「批改規則」以 modal 按鈕置於批改結果內容下方。
+ * 可輸入答案並按「開始批改」送出評分；**測驗頁**（hideGradingPrompt）在已批改（card.confirmed）後不顯示此鈕；建立題庫等未帶 hideGradingPrompt 時仍顯示按鈕群。
+ * 單元題區塊內「儲存並開始批改／開始批改」（llm-grade／llm-grade-db）按鈕啟停用對齊「儲存並產生題目／產生題目」：批改規則須相對 baseline 已改動才可儲存送出；載入過／已同步之規則可「開始批改」；並檢 rag_quiz_id。
+ * 「答案」不因 rag_id 與題庫不一致而停用（仍可鍵入；並顯示警示）；**已批改後（card.confirmed）仍為可編輯 textarea**（僅 readOnlyAnswer／分析頁為靜態）。
+ * **RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
  * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 時批改指引仍不由前端於 POST 送出，欄位可編輯以相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError、quiz_user_prompt_text（可選；POST /exam/tab/quiz/llm-generate 回傳之出題模板快照，與 gradingPrompt 一併在 hideGradingPrompt 時唯讀顯示）；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（狀態／其他 API）、rag_quiz_for_exam（已標為測驗用試題；for-exam 僅送 rag_quiz_id／for_exam）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。hideRagQuizForExamToolbar：true 時不在卡內顯示「設為測驗用」（由建立頁置於題型區塊最下方（題目卡片之後）常駐；未出題或未批改為 disabled）。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。readOnlyAnswer：作答弱點分析／學生作答分析等純顯示頁，答案區唯讀、不顯示「開始批改」。
@@ -17,7 +20,7 @@ const props = defineProps({
   card: { type: Object, required: true },
   /** 題號（從 1 開始，用於顯示「第 N 題」） */
   slotIndex: { type: Number, required: true },
-  /** 目前分頁／試題用 RAG 的 rag_id；與 card.rag_id 皆有值且不同時，停用答案輸入與確定 */
+  /** 目前分頁／試題用 RAG 的 rag_id；與 card.rag_id 皆知且不同時仍顯示警示（答案欄不依此停用）；若需略過請用 skipRagMismatchGuard */
   currentRagId: { type: [String, Number], default: null },
   /** 為 true 時略過上述 rag_id 比對（介面稿頁用） */
   skipRagMismatchGuard: { type: Boolean, default: false },
@@ -39,8 +42,8 @@ const props = defineProps({
   hideGradingPrompt: { type: Boolean, default: false },
   /** 測驗頁：隱藏「批改結果」區塊 */
   hideGradingResult: { type: Boolean, default: false },
-  /** 建立測驗題庫（單元題）：批改有結果後可標記 Rag_Quiz.for_exam（POST /rag/tab/unit/quiz/for-exam） */
-  showRagQuizForExamAction: { type: Boolean, default: false },
+  /** 建立測驗題庫（單元題）：顯示「開始批改」（POST llm-grade-db，使用後端已存批改規則）；僅與顯示「批改規則」編輯區時併用 */
+  showRagGradeDbButton: { type: Boolean, default: false },
   /** true 時不在本卡「批改結果」下方顯示 for-exam 鈕（改由父層例如題型區塊下方置中顯示） */
   hideRagQuizForExamToolbar: { type: Boolean, default: false },
   /** true 時答案區唯讀、不顯示「開始批改」（仍顯示批改結果區；與 hideGradingPrompt 併用於分析頁） */
@@ -50,6 +53,7 @@ const props = defineProps({
 const emit = defineEmits([
   'toggle-hint',
   'confirm-answer',
+  'confirm-grade-db',
   'update:quiz_answer',
   'update:grading_prompt',
   'reset-grading-prompt',
@@ -57,8 +61,10 @@ const emit = defineEmits([
   'mark-rag-quiz-for-exam',
 ]);
 
-/** 兩邊 rag_id 皆已知且不一致 → 不可在此 RAG 下作答 */
-const answerInputDisabled = computed(() => {
+/**
+ * rag_id 與目前題庫不一致時仍顯示提示，但作答框依需求保持可編輯（不依此停用 input）。
+ */
+const ragMismatchWarning = computed(() => {
   if (props.skipRagMismatchGuard) return false;
   const cur =
     props.currentRagId != null && String(props.currentRagId).trim() !== ''
@@ -147,6 +153,15 @@ const promptModalHtml = computed(() => renderMarkdownToSafeHtml(promptModalMarkd
 /** 題幹以 Markdown 渲染（與出題／批改規則 modal 同 pipeline：marked + DOMPurify） */
 const quizMarkdownHtml = computed(() => renderMarkdownToSafeHtml(props.card?.quiz));
 
+/** 有參考答案文字時才顯示「參考答案」區塊（版式與題目區一致） */
+const hasReferenceAnswerText = computed(
+  () => String(props.card?.referenceAnswer ?? '').trim() !== '',
+);
+
+const referenceAnswerMarkdownHtml = computed(() =>
+  renderMarkdownToSafeHtml(props.card?.referenceAnswer),
+);
+
 function openPromptModal(kind) {
   if (kind === 'question' && quizUserPromptSnapshotTrimmed.value === '') return;
   if (kind === 'grading' && answerUserPromptSnapshotTrimmed.value === '') return;
@@ -183,16 +198,84 @@ const gradingSectionDirty = computed(() => {
   );
 });
 
-/** 已批改成功後，須再編輯批改規則或答案才可再次送出 */
-const blockStartGradeUntilSectionDirty = computed(
-  () => props.card?.confirmed === true && !gradingSectionDirty.value,
+/**
+ * 與題庫頁 canEnableUnitQuizGenerate 對齊：批改規則（gradingPrompt vs baseline）
+ * — 對應 isQuizUserPromptDirty（quizUserPromptText vs quizUserPromptBaseline）。
+ */
+const isGradingPromptDirtyVsBaseline = computed(() => {
+  const c = props.card;
+  if (!c || typeof c !== 'object') return false;
+  return String(c.gradingPrompt ?? '') !== String(c.gradingPromptBaseline ?? '');
+});
+
+/**
+ * 對應 canEnableUnitQuizGenerateFromDb 之「規則與後端對齊」判斷：未改動批改規則才可按「開始批改」。
+ */
+const isGradingPromptSyncedWithBaseline = computed(
+  () => !isGradingPromptDirtyVsBaseline.value,
+);
+
+/**
+ * hideGradingPrompt（如測驗頁）時仍可依「規則或答案是否相對 baseline 曾改過」決定可否再送批改；
+ * 顯示批改規則編輯區時則對齊出題區邏輯，僅以批改規則 dirty 為準（與 isQuizUserPromptDirty 對稱）。
+ */
+const blockExamStyleGradeResubmitUntilDirty = computed(
+  () =>
+    props.hideGradingPrompt
+    && props.card?.confirmed === true
+    && !gradingSectionDirty.value,
+);
+
+/** 已儲存之 rag_quiz_id（對應 canEnableUnitQuizGenerateFromDb 之 rag quiz id） */
+const ragQuizIdLooksValid = computed(() => {
+  const raw = props.card?.rag_quiz_id ?? props.card?.quiz_id;
+  const n = Number(raw);
+  return Number.isFinite(n) && n >= 1;
+});
+
+const gradingPromptNonEmptyTrimmed = computed(() =>
+  String(props.card?.gradingPrompt ?? '').trim() !== '',
+);
+
+/**
+ * 「儲存並開始批改」— 對應「儲存並產生題目」(canEnableUnitQuizGenerate)：
+ * 须有非空白批改規則，且內容與 baseline 不同。
+ */
+const saveAndGradeButtonDisabled = computed(
+  () =>
+    props.gradeSubmitting
+    || !gradingPromptNonEmptyTrimmed.value
+    || !isGradingPromptDirtyVsBaseline.value,
+);
+
+/**
+ * 「開始批改」(llm-grade-db) — 對應「產生題目」(canEnableUnitQuizGenerateFromDb)：
+ * 曾完成儲存流程／載入即有規則、批改規則未在編輯器改動、有效 rag_quiz_id。
+ */
+const ragGradeDbButtonDisabled = computed(
+  () =>
+    !props.showRagGradeDbButton
+    || props.card?.hasUsedSaveAndGradeOnce !== true
+    || !ragQuizIdLooksValid.value
+    || !isGradingPromptSyncedWithBaseline.value
+    || props.gradeSubmitting,
+);
+
+/**
+ * hideGradingPrompt 時唯一「開始批改」鈕（POST llm-grade）：須有可送之批改模板；
+ * confirmed 後須規則或答案相對 baseline 至少一項已改過才可再送出。
+ */
+const standaloneStartGradeButtonDisabled = computed(
+  () =>
+    props.gradeSubmitting
+    || !gradingPromptNonEmptyTrimmed.value
+    || blockExamStyleGradeResubmitUntilDirty.value,
 );
 
 const gradingPromptResetDisabled = computed(
   () =>
     cardMarkedForExam.value
     || props.gradeSubmitting
-    || answerInputDisabled.value
     || String(props.card?.gradingPrompt ?? '')
       === String(props.card?.gradingPromptBaseline ?? ''),
 );
@@ -397,6 +480,34 @@ const gradingPromptResetDisabled = computed(
         </div>
       </div>
       <div
+        v-if="!questionHintOnly && hasReferenceAnswerText"
+        class="w-100 min-w-0"
+        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
+      >
+        <div
+          class="d-flex justify-content-between align-items-center gap-2 w-100 min-w-0"
+          :class="designUi ? '' : 'mb-1'"
+        >
+          <div
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+          >參考答案</div>
+        </div>
+        <div
+          class="lh-base mb-0 quiz-card-reference-answer"
+          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+        >
+          <div
+            v-if="referenceAnswerMarkdownHtml"
+            class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+            v-html="referenceAnswerMarkdownHtml"
+          />
+          <span
+            v-else
+            class="my-font-md-400 my-color-black text-break"
+          >{{ card.referenceAnswer }}</span>
+        </div>
+      </div>
+      <div
         v-if="!questionHintOnly && hasQuizBody"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
@@ -418,34 +529,20 @@ const gradingPromptResetDisabled = computed(
             :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
           >{{ card.quiz_answer }}</div>
         </template>
-        <template v-else-if="!card.confirmed">
+        <template v-else>
           <textarea
             :id="`quiz-answer-${card.id}`"
             :value="card.quiz_answer"
             class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
-            :readonly="answerInputDisabled || gradeSubmitting"
             @input="emit('update:quiz_answer', $event.target.value)"
             rows="4"
             placeholder="請輸入您的答案..."
             maxlength="2000"
           />
         </template>
-        <template v-else>
+        <template v-if="!readOnlyAnswer">
           <div
-            class="my-font-sm-400 mb-0"
-            :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-          >{{ card.quiz_answer }}</div>
-        </template>
-        <p
-          v-if="!readOnlyAnswer && !card.confirmed && String(card.referenceAnswer ?? '').trim() !== ''"
-          :class="designUi ? 'my-font-sm-400 my-color-gray-4 mb-0 mt-1' : 'form-text my-font-sm-400 my-color-gray-4 mb-0 mt-1'"
-          role="note"
-        >
-          此欄預設為暫存參考答案，可自行修改。
-        </p>
-        <template v-if="!readOnlyAnswer && !card.confirmed">
-          <div
-            v-if="answerInputDisabled"
+            v-if="ragMismatchWarning"
             :class="designUi ? 'my-font-sm-400 my-color-red mt-1' : 'form-text my-font-sm-400 my-color-red'"
           >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
         </template>
@@ -462,11 +559,7 @@ const gradingPromptResetDisabled = computed(
             :textarea-id="`quiz-grading-prompt-${card.id}`"
             :preview-only="cardMarkedForExam"
             :preview-design-dark="cardMarkedForExam"
-            :disabled="
-              cardMarkedForExam
-                ? false
-                : answerInputDisabled || gradeSubmitting
-            "
+            :disabled="cardMarkedForExam ? false : gradeSubmitting"
             @update:model-value="emit('update:grading_prompt', $event)"
           />
           <!-- 與建立題庫「出題規則」同款：編輯區下方同一列，重設在左、儲存並開始批改在右 -->
@@ -490,17 +583,22 @@ const gradingPromptResetDisabled = computed(
               重設
             </button>
             <button
+              v-if="showRagGradeDbButton && showStartGradeButton"
+              type="button"
+              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+              title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
+              :disabled="ragGradeDbButtonDisabled"
+              :aria-busy="gradeSubmitting"
+              aria-label="開始批改"
+              @click="emit('confirm-grade-db', card)"
+            >
+              開始批改
+            </button>
+            <button
               v-if="showStartGradeButton"
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
-              :disabled="
-                answerInputDisabled ||
-                gradeSubmitting ||
-                blockStartGradeUntilSectionDirty ||
-                !String(card.quiz_answer ?? '').trim().length ||
-                (!hideGradingPrompt &&
-                  !String(card.gradingPrompt ?? '').trim().length)
-              "
+              :disabled="saveAndGradeButtonDisabled"
               :aria-busy="gradeSubmitting"
               aria-label="儲存並開始批改"
               @click="emit('confirm-answer', card)"
@@ -521,14 +619,7 @@ const gradingPromptResetDisabled = computed(
           <button
             type="button"
             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
-            :disabled="
-              answerInputDisabled ||
-              gradeSubmitting ||
-              blockStartGradeUntilSectionDirty ||
-              !String(card.quiz_answer ?? '').trim().length ||
-              (!hideGradingPrompt &&
-                !String(card.gradingPrompt ?? '').trim().length)
-            "
+            :disabled="standaloneStartGradeButtonDisabled"
             :aria-busy="gradeSubmitting"
             aria-label="開始批改"
             @click="emit('confirm-answer', card)"
@@ -594,12 +685,13 @@ const gradingPromptResetDisabled = computed(
 .quiz-card-quiz-stem :deep(.my-markdown-rendered > :last-child) {
   margin-bottom: 0;
 }
-/* EasyMDE 編輯區與出題規則欄同 min-height；唯讀預覽高度由內容決定 */
+/*
+ * EasyMDE 編輯區選擇器與 CreateExamQuizBankPage「出題規則」(.my-rag-unit-quiz-prompt-editor) 對齊，
+ * 避免批改規則額外套 .CodeMirror min-height 與出題區高度不一致。
+ * 唯讀預覽高度仍由元件內文決定。
+ */
 .quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-root) {
   --english-md-preview-max-h: min(60vh, 28rem);
-}
-.quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror) {
-  min-height: 400px !important;
 }
 .quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 400px;

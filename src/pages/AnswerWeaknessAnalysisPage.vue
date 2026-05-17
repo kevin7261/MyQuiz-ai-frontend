@@ -14,7 +14,6 @@ import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.v
 import {
   normalizeAnalysisQuizzesListResponse,
   mergeQuizzesWithTopLevelAnswers,
-  quizAnswerPresetFromReference,
 } from '../utils/rag.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
@@ -390,12 +389,10 @@ function weaknessItemToQuizCard(item, index) {
     (item?.answer_content != null && String(item.answer_content).trim() !== ''
       ? String(item.answer_content)
       : null);
-  const refA =
-    item?.quiz_answer_reference ?? item?.quiz_reference_answer ?? item?.reference_answer ?? '';
   const quiz_answer =
     latestSubmitted != null && String(latestSubmitted).trim() !== ''
       ? String(latestSubmitted)
-      : quizAnswerPresetFromReference(refA);
+      : '';
   const gradingResult = latestAnswer
     ? (formatGradingResult(JSON.stringify(latestAnswer)) ||
         (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))

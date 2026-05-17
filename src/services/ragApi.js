@@ -20,6 +20,7 @@ import {
   API_RAG_TAB_UNIT_MP3_FILE,
   API_RAG_TAB_UNIT_QUIZ_CREATE,
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE,
+  API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_DB,
   API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME,
   API_RAG_TAB_UNIT_QUIZ_FOR_EXAM,
   API_RAG_TAB_QUIZ_DELETE,
@@ -595,6 +596,34 @@ export async function apiRagUnitQuizLlmGenerate(body, personId) {
       rag_quiz_id: rqid,
       quiz_name: qname,
       quiz_user_prompt_text: uxt,
+    }),
+  }, { personId: pid });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * RAG + LLM 單元出題（使用 Rag_Quiz 已儲存之 quiz_user_prompt_text，請求不帶該欄）。
+ * POST /rag/tab/unit/quiz/llm-generate-db — query：**person_id**（必填）。
+ *
+ * Body：**僅** `rag_quiz_id`、`quiz_name`（可空字串）。
+ *
+ * @param {{ rag_quiz_id: number, quiz_name?: string }} body
+ * @returns {Promise<object>} 與 {@link apiRagUnitQuizLlmGenerate} 成功回應格式一致之前端預期欄位。
+ */
+export async function apiRagUnitQuizLlmGenerateDb(body, personId) {
+  const pid = String(personId ?? '').trim();
+  if (!pid) throw new Error('person_id 為必填');
+  const rqid = Number(body?.rag_quiz_id);
+  if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
+  const qname = body?.quiz_name != null ? String(body.quiz_name) : '';
+  const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_DB}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rag_quiz_id: rqid,
+      quiz_name: qname,
     }),
   }, { personId: pid });
   const text = await res.text();

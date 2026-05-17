@@ -32,7 +32,6 @@ import {
   normalizeExamListResponse,
   mergeQuizzesWithTopLevelAnswers,
   parsePackUnitTypesFromRag,
-  quizAnswerPresetFromReference,
   ragQuizSelectValue,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
@@ -995,12 +994,10 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     (quiz.answer_content != null && String(quiz.answer_content).trim() !== ''
       ? String(quiz.answer_content)
       : null);
-  const refA =
-    quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? quiz.reference_answer ?? '';
   const quiz_answer =
     latestSubmitted != null && String(latestSubmitted).trim() !== ''
       ? String(latestSubmitted)
-      : quizAnswerPresetFromReference(refA);
+      : '';
   const gradingResult = latestAnswer
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))
     : '';
@@ -1747,7 +1744,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     sourceFilename: sourceFilename ?? null,
     ragName: ragName ?? null,
     rag_id: ragIdStr,
-    quiz_answer: quizAnswerPresetFromReference(referenceAnswer),
+    quiz_answer: '',
     hintVisible: false,
     quiz_rate: 0,
     rateError: '',

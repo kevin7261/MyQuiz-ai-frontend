@@ -4,7 +4,8 @@
  * 職責：送出評分請求、輪詢 job_id 取得結果、將回傳 JSON 格式化為易讀文字。
  *
  * 支援兩種批改模式：
- * - RAG 模式（預設）：POST /rag/tab/unit/quiz/llm-grade；body 以 rag_id、rag_quiz_id、quiz_answer 為核心。
+ * - RAG 模式（預設）：POST /rag/tab/unit/quiz/llm-grade；body 可含 answer_user_prompt_text（非空時）。
+ * - RAG 模式（options.ragGradeUsesStoredPrompt）：POST /rag/tab/unit/quiz/llm-grade-db；body 不含 answer_user_prompt_text。
  * - Exam 模式（gradingMode: 'exam'）：POST /exam/tab/quiz/llm-grade；body 以 exam_quiz_id、quiz_content、quiz_answer 為核心。
  *
  * 流程：
@@ -22,6 +23,7 @@ import {
   API_BASE,
   API_EXAM_QUIZ_GRADE,
   API_RAG_QUIZ_GRADE,
+  API_RAG_QUIZ_GRADE_DB,
   API_RAG_QUIZ_GRADE_RESULT,
 } from '../constants/api.js';
 import { formatGradingResult } from '../utils/grading.js';
@@ -98,6 +100,43 @@ function buildRagGradeBody(item, context, options = {}) {
   body.quiz_answer = item.quiz_answer.trim();
 
   // 合併額外欄位（如 unit_type）
+  const extra = options.extraGradeBody;
+  if (extra && typeof extra === 'object') {
+    for (const key of Object.keys(extra)) {
+      const val = extra[key];
+      if (val !== undefined && val !== null) body[key] = val;
+    }
+  }
+
+  return body;
+}
+
+/**
+ * RAG 批改（後端已儲存 answer_user_prompt_text）：不送批改規則欄位。
+ */
+function buildRagGradeDbBody(item, context, options = {}) {
+  const { sourceTabId, ragId } = context;
+
+  const ragQuizRaw =
+    item.rag_quiz_id != null && String(item.rag_quiz_id).trim() !== ''
+      ? item.rag_quiz_id
+      : item.quiz_id != null
+        ? item.quiz_id
+        : '';
+
+  const body = {
+    rag_id: String(ragId ?? ''),
+    rag_quiz_id: String(ragQuizRaw),
+  };
+
+  const tabId = sourceTabId != null ? String(sourceTabId).trim() : '';
+  if (tabId !== '') body.rag_tab_id = tabId;
+
+  const quizStr = item.quiz != null ? String(item.quiz) : '';
+  if (quizStr.trim() !== '') body.quiz_content = quizStr;
+
+  body.quiz_answer = String(item.quiz_answer ?? '').trim();
+
   const extra = options.extraGradeBody;
   if (extra && typeof extra === 'object') {
     for (const key of Object.keys(extra)) {
@@ -217,9 +256,10 @@ async function pollGradeResult(item, jobId, gradeResultPath, gradeSubmissionPath
       // 回寫 answer_id（RAG / Exam 分別對應不同欄位）
       if (result && typeof result === 'object') {
         if (
-          gradeSubmissionPath === API_RAG_QUIZ_GRADE &&
-          result.rag_answer_id != null &&
-          String(result.rag_answer_id).trim() !== ''
+          (gradeSubmissionPath === API_RAG_QUIZ_GRADE
+            || gradeSubmissionPath === API_RAG_QUIZ_GRADE_DB)
+          && result.rag_answer_id != null
+          && String(result.rag_answer_id).trim() !== ''
         ) {
           const rid = Number(result.rag_answer_id);
           item.answer_id = Number.isFinite(rid) ? rid : result.rag_answer_id;
@@ -269,21 +309,27 @@ async function pollGradeResult(item, jobId, gradeResultPath, gradeSubmissionPath
  *   - `gradingMode`：'exam' 為測驗批改，其餘為 RAG 批改
  *   - `quizGradeSubmissionPath`：POST 路徑（預設各模式路徑）
  *   - `quizGradeResultPath`：輪詢 GET 路徑（預設各模式路徑）
- *   - `extraGradeBody`：僅 RAG 模式合併的額外 body 欄位（如 unit_type）
+ *   - `ragGradeUsesStoredPrompt`：RAG 模式且為 true 時 POST {@link API_RAG_QUIZ_GRADE_DB}，body 不含 answer_user_prompt_text
  */
 export async function submitGrade(item, context, options = {}) {
   const isExam = options.gradingMode === 'exam';
+  const ragGradeUsesStoredPrompt = !isExam && options.ragGradeUsesStoredPrompt === true;
 
   // 解析路徑設定（支援新舊兩種 option 鍵名以相容）
-  const quizGradeSubmissionPath =
+  let quizGradeSubmissionPath =
     options.quizGradeSubmissionPath ?? options.gradeSubmissionPath ?? API_RAG_QUIZ_GRADE;
+  if (ragGradeUsesStoredPrompt) {
+    quizGradeSubmissionPath = API_RAG_QUIZ_GRADE_DB;
+  }
   const quizGradeResultPath =
     options.quizGradeResultPath ?? options.gradeResultPath ?? API_RAG_QUIZ_GRADE_RESULT;
 
   // 組裝批改請求 body
   const gradeBody = isExam
     ? buildExamGradeBody(item)
-    : buildRagGradeBody(item, context, options);
+    : ragGradeUsesStoredPrompt
+      ? buildRagGradeDbBody(item, context, options)
+      : buildRagGradeBody(item, context, options);
 
   // Exam 模式驗證 exam_quiz_id
   if (isExam) {

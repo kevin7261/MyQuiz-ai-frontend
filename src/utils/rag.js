@@ -659,7 +659,7 @@ export function mergeQuizzesWithTopLevelAnswers(item) {
 }
 
 /**
- * 尚無已存作答時：以暫存參考答案預填「答案」輸入（與 QuizCard 拆區後之單一答案欄一致）
+ * 尚無已存作答時，舊版曾以參考答案預填「答案」欄；目前題卡改為獨立「參考答案」區與空白作答欄，此函式多數路徑已不再使用。
  * @param {unknown} referenceAnswer
  * @returns {string}
  */

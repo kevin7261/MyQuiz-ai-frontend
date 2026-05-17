@@ -107,6 +107,11 @@ export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
 /** RAG 單元題評分：POST /rag/tab/unit/quiz/llm-grade（Rag Grade Quiz，非同步）；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text；unit_type 2／3／4 時以 transcription 純 LLM 批改，其餘依 rag_id 載入 RAG ZIP；回傳 202 + job_id；GET /rag/tab/unit/quiz/grade-result/{job_id} 輪詢；ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id 等 */
 export const API_RAG_QUIZ_GRADE = '/rag/tab/unit/quiz/llm-grade';
+/**
+ * POST /rag/tab/unit/quiz/llm-grade-db — Rag Grade Quiz（stored answer_user_prompt_text）
+ * 與 llm-grade 相同非同步輪詢 grade-result；body **勿**帶 answer_user_prompt_text，後端使用 Rag_Quiz 已儲存之批改規則。
+ */
+export const API_RAG_QUIZ_GRADE_DB = '/rag/tab/unit/quiz/llm-grade-db';
 export const API_RAG_QUIZ_GRADE_RESULT = '/rag/tab/unit/quiz/grade-result';
 
 /** Create Tab（RAG）：POST /rag/tab/create；僅建立一筆 Rag；body 必填 rag_tab_id、person_id、tab_name，選填 local（預設 false；本機前端可傳 true）；回傳建立欄位（尚無檔案時不含 file_size） */
@@ -144,6 +149,11 @@ export const API_RAG_TAB_UNIT_MP3_FILE = '/rag/tab/unit/mp3-file';
 export const API_RAG_TAB_UNIT_QUIZ_CREATE = '/rag/tab/unit/quiz/create';
 /** POST /rag/tab/unit/quiz/llm-generate — body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（後兩者可 ""）；query：`person_id`（必填）。`rag_tab_id`／`rag_unit_id` 不需傳，後端依 rag_quiz_id 解析 */
 export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE = '/rag/tab/unit/quiz/llm-generate';
+/**
+ * POST /rag/tab/unit/quiz/llm-generate-db — Rag LLM Generate Quiz（stored quiz_user_prompt_text）
+ * query：`person_id`（必填）。Body：**僅** `rag_quiz_id`、`quiz_name`（可 ""）；勿傳 `quiz_user_prompt_text`，後端一律使用 Rag_Quiz 該列既有欄位（行為等同 llm-generate 傳空字串）。
+ */
+export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_DB = '/rag/tab/unit/quiz/llm-generate-db';
 /** 更新 Rag_Quiz 題名：PUT /rag/tab/unit/quiz/quiz-name；body 以 rag_quiz_id 比對（僅 deleted=false）；回傳 rag_quiz_id、rag_tab_id、rag_unit_id、person_id、quiz_name、updated_at 等 */
 export const API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME = '/rag/tab/unit/quiz/quiz-name';
 /** Rag_Quiz.for_exam：POST /rag/tab/unit/quiz/for-exam — query person_id；body 僅 `rag_quiz_id`、`for_exam`（true＝測驗用、false＝取消） */
