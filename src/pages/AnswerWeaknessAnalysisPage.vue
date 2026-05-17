@@ -421,6 +421,7 @@ function weaknessItemToQuizCard(item, index) {
         : null,
     quiz_answer,
     hintVisible: false,
+    referenceAnswerVisible: false,
     quiz_rate: normalizeExamQuizRate(item?.quiz_rate),
     rateError: '',
     confirmed: !!latestAnswer,
@@ -438,6 +439,11 @@ function weaknessItemToQuizCard(item, index) {
 function toggleWeaknessHint(card) {
   if (!card || typeof card !== 'object') return;
   card.hintVisible = !card.hintVisible;
+}
+
+function toggleWeaknessReferenceAnswer(card) {
+  if (!card || typeof card !== 'object') return;
+  card.referenceAnswerVisible = !card.referenceAnswerVisible;
 }
 
 watch(
@@ -703,6 +709,7 @@ function weaknessSlotQuizBodyTrim(idx) {
                       hide-slot-index
                       hide-grading-prompt
                       @toggle-hint="toggleWeaknessHint"
+                      @toggle-reference-answer="toggleWeaknessReferenceAnswer"
                     />
                   </div>
                 </div>

@@ -661,6 +661,28 @@ function examSlotUnitTranscriptSection(slotIndex) {
   };
 }
 
+/**
+ * 文字／YouTube／MP3 單元之逐字稿與播放器：須先選妥單元與題型（條件對齊「產生題目」）；已產生題幹後一律顯示。
+ * @param {number} slotIndex
+ */
+function examSlotShowUnitTranscriptUi(slotIndex) {
+  const sec = examSlotUnitTranscriptSection(slotIndex);
+  if (!sec) return false;
+  if (examSlotRagChoicesLocked(slotIndex)) return true;
+  const slotState = getSlotFormState(slotIndex);
+  if (
+    examUnitSelectDropdownOptions.value.length > 0
+    && !String(slotState.examUnitSelectId ?? '').trim()
+  ) {
+    return false;
+  }
+  const quizOpts = examQuizDropdownItemsForSlot(slotIndex);
+  if (quizOpts.length > 0 && !String(slotState.examQuizNamePick ?? '').trim()) {
+    return false;
+  }
+  return true;
+}
+
 /** 測驗頁單元逐字稿：Markdown → 安全 HTML（與建立題庫頁「單元內容」區一致） */
 function examSlotUnitTranscriptMdHtml(slotIndex) {
   const sec = examSlotUnitTranscriptSection(slotIndex);
@@ -1023,6 +1045,7 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
         : null,
     quiz_answer,
     hintVisible: false,
+    referenceAnswerVisible: false,
     quiz_rate: normalizeExamQuizRate(quiz.quiz_rate),
     rateError: '',
     confirmed: !!latestAnswer,
@@ -1481,7 +1504,7 @@ function examUnitSelectDropdownDisabled(slotIndex) {
 }
 
 function examUnitSelectHintWhenDisabled(slotIndex) {
-  if (getSlotFormState(slotIndex).loading) return '儲存並產生題目中…';
+  if (getSlotFormState(slotIndex).loading) return '產生題目中…';
   if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更單元';
   return '';
 }
@@ -1505,7 +1528,7 @@ function examQuizNameDropdownDisabled(slotIndex) {
 }
 
 function examQuizNameHintWhenDisabled(slotIndex) {
-  if (getSlotFormState(slotIndex).loading) return '儲存並產生題目中…';
+  if (getSlotFormState(slotIndex).loading) return '產生題目中…';
   if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更題型';
   return '';
 }
@@ -1557,7 +1580,7 @@ const loadingOverlayVisible = computed(
 
 const loadingOverlayText = computed(() => {
   if (isGradingSubmitting.value) return '批改中...';
-  if (examGenerateQuizOverlayVisible.value) return '儲存並產生題目中...';
+  if (examGenerateQuizOverlayVisible.value) return '產生題目中...';
   if (deleteExamLoading.value) return '刪除中...';
   if (examRenameSaving.value) return '儲存中...';
   if (createExamLoading.value) return '建立中...';
@@ -1746,6 +1769,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     rag_id: ragIdStr,
     quiz_answer: '',
     hintVisible: false,
+    referenceAnswerVisible: false,
     quiz_rate: 0,
     rateError: '',
     confirmed: false,
@@ -1904,6 +1928,10 @@ async function generateQuiz(slotIndex) {
 
 function toggleHint(item) {
   item.hintVisible = !item.hintVisible;
+}
+
+function toggleReferenceAnswer(item) {
+  item.referenceAnswerVisible = !item.referenceAnswerVisible;
 }
 
 // ─── 題目評分（讚 / 差）與作答評改 ───────────────────────────────────────────
@@ -2253,7 +2281,7 @@ onActivated(() => {
                             </div>
                           </div>
                         </div>
-                        <template v-if="examSlotUnitTranscriptSection(slotIndex)">
+                        <template v-if="examSlotShowUnitTranscriptUi(slotIndex)">
                           <div
                             v-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_TEXT"
                             class="w-100 min-w-0"
@@ -2311,13 +2339,13 @@ onActivated(() => {
                           :key="mp3Props ? `exam-mp3-${slotIndex}-${mp3Props.ragTabId}-${mp3Props.ragUnitId}` : `exam-mp3-empty-${slotIndex}`"
                         >
                           <RagTabUnitMp3Player
-                            v-if="mp3Props"
+                            v-if="mp3Props && examSlotShowUnitTranscriptUi(slotIndex)"
                             :rag-tab-id="mp3Props.ragTabId"
                             :rag-unit-id="mp3Props.ragUnitId"
                           />
                         </template>
                         <div
-                          v-if="examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
+                          v-if="examSlotShowUnitTranscriptUi(slotIndex) && examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
                           class="d-flex justify-content-center w-100 min-w-0 pt-1"
                         >
                           <button
@@ -2341,6 +2369,7 @@ onActivated(() => {
                         hide-grading-prompt
                         :grade-submitting="examCardGradeSubmitting(currentState.cardList[slotIndex - 1])"
                         @toggle-hint="toggleHint"
+                        @toggle-reference-answer="toggleReferenceAnswer"
                         @confirm-answer="confirmAnswer"
                         @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[slotIndex - 1], dir)"
                         @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
@@ -2353,10 +2382,10 @@ onActivated(() => {
                             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
                             :disabled="examGenerateQuizButtonDisabled(slotIndex)"
                             :aria-busy="getSlotFormState(slotIndex).loading || getSlotFormState(slotIndex).draftCreating"
-                            aria-label="儲存並產生題目"
+                            aria-label="產生題目"
                             @click="generateQuiz(slotIndex)"
                           >
-                            儲存並產生題目
+                            產生題目
                           </button>
                         </div>
                         <div
@@ -2446,7 +2475,7 @@ onActivated(() => {
                               </div>
                             </div>
                           </div>
-                          <template v-if="examSlotUnitTranscriptSection(slotIndex)">
+                          <template v-if="examSlotShowUnitTranscriptUi(slotIndex)">
                             <div
                               v-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_TEXT"
                               class="w-100 min-w-0"
@@ -2504,13 +2533,13 @@ onActivated(() => {
                             :key="mp3Props ? `exam-mp3-${slotIndex}-${mp3Props.ragTabId}-${mp3Props.ragUnitId}` : `exam-mp3-empty-${slotIndex}`"
                           >
                             <RagTabUnitMp3Player
-                              v-if="mp3Props"
+                              v-if="mp3Props && examSlotShowUnitTranscriptUi(slotIndex)"
                               :rag-tab-id="mp3Props.ragTabId"
                               :rag-unit-id="mp3Props.ragUnitId"
                             />
                           </template>
                           <div
-                            v-if="examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
+                            v-if="examSlotShowUnitTranscriptUi(slotIndex) && examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
                             class="d-flex justify-content-center w-100 min-w-0 pt-1"
                           >
                             <button
@@ -2528,10 +2557,10 @@ onActivated(() => {
                             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
                             :disabled="examGenerateQuizButtonDisabled(slotIndex)"
                             :aria-busy="getSlotFormState(slotIndex).loading || getSlotFormState(slotIndex).draftCreating"
-                            aria-label="儲存並產生題目"
+                            aria-label="產生題目"
                             @click="generateQuiz(slotIndex)"
                           >
-                            儲存並產生題目
+                            產生題目
                           </button>
                         </div>
                         <div

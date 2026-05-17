@@ -132,6 +132,7 @@ function studentItemToQuizCard(item, index) {
         : null,
     quiz_answer,
     hintVisible: false,
+    referenceAnswerVisible: false,
     quiz_rate: normalizeExamQuizRate(item?.quiz_rate),
     rateError: '',
     confirmed: !!latestAnswer,
@@ -149,6 +150,11 @@ function studentItemToQuizCard(item, index) {
 function toggleStudentHint(card) {
   if (!card || typeof card !== 'object') return;
   card.hintVisible = !card.hintVisible;
+}
+
+function toggleStudentReferenceAnswer(card) {
+  if (!card || typeof card !== 'object') return;
+  card.referenceAnswerVisible = !card.referenceAnswerVisible;
 }
 
 watch(
@@ -287,6 +293,7 @@ onMounted(() => {
                       hide-slot-index
                       hide-grading-prompt
                       @toggle-hint="toggleStudentHint"
+                      @toggle-reference-answer="toggleStudentReferenceAnswer"
                     />
                   </div>
                 </div>

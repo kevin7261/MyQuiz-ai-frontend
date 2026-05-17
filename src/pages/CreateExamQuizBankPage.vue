@@ -2044,6 +2044,24 @@ function canEnableUnitQuizGenerateFromDb(card, slotIndex) {
   return rqid != null && rqid >= 1;
 }
 
+/** 「儲存並開始批改」可按：對齊 {@link canEnableUnitQuizGenerate}—trim 後非空批改規則且與 baseline 不同（不依賴 slot 回填，規則僅在題卡）。 */
+function canEnableUnitQuizGrade(card, slotIndex) {
+  void slotIndex;
+  if (!card || typeof card !== 'object') return false;
+  const gpTrim = String(card.gradingPrompt ?? '').trim();
+  if (!gpTrim) return false;
+  return String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '');
+}
+
+/** 「開始批改」（llm-grade-db）：對齊 {@link canEnableUnitQuizGenerateFromDb}—hasUsedSaveAndGradeOnce、規則未改動、{@link resolveUnitQuizRagQuizIdForLlm} 有效 */
+function canEnableUnitQuizGradeDb(card, slotIndex) {
+  if (!card || typeof card !== 'object') return false;
+  if (card.hasUsedSaveAndGradeOnce !== true) return false;
+  if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
+  const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, card);
+  return rqid != null && rqid >= 1;
+}
+
 /** 該列出題文字：優先題卡本身，再以 slot（舊相容）回填 */
 function promptTextForQuizRow(card, slotIndex) {
   const row = String(card?.quizUserPromptText ?? '').trim();
@@ -2611,7 +2629,13 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     answer_id = quiz.rag_answer_id ?? null;
   }
 
-  const gradingPrompt = String(quiz.answer_user_prompt_text ?? '').trim();
+  const gradingPrompt = String(
+    quiz.answer_user_prompt_text
+    ?? quiz.answerUserPromptText
+    ?? quiz.grading_prompt
+    ?? quiz.gradingPrompt
+    ?? '',
+  ).trim();
   const rid = quiz.rag_id ?? quiz.ragId ?? ragIdFallback;
   const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
   const fe =
@@ -2639,6 +2663,7 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     rag_id: ragIdStr,
     quiz_answer,
     hintVisible: false,
+    referenceAnswerVisible: false,
     confirmed,
     gradingResult,
     gradingResponseJson,
@@ -3353,6 +3378,7 @@ function createLocalDraftUnitQuizCard() {
     rag_id: ragIdStr,
     quiz_answer: '',
     hintVisible: false,
+    referenceAnswerVisible: false,
     confirmed: false,
     gradingResult: '',
     gradingResponseJson: null,
@@ -3750,6 +3776,57 @@ function openNextQuizSlot() {
 }
 
 /**
+ * 產題 API JSON 之批改規則（answer_user_prompt_text）：鍵名或巢狀層級不一時多處嘗試。
+ * @param {object | null | undefined} gj
+ */
+function extractAnswerUserPromptFromGenerateResponse(gj) {
+  if (!gj || typeof gj !== 'object') return '';
+  const pick = (v) => {
+    if (v == null) return '';
+    const s = String(v).trim();
+    return s;
+  };
+  let s = pick(
+    gj.answer_user_prompt_text
+    ?? gj.answerUserPromptText
+    ?? gj.grading_prompt
+    ?? gj.gradingPrompt,
+  );
+  if (s) return s;
+  const rq = gj.rag_quiz;
+  if (rq && typeof rq === 'object') {
+    s = pick(
+      rq.answer_user_prompt_text
+      ?? rq.answerUserPromptText
+      ?? rq.grading_prompt
+      ?? rq.gradingPrompt,
+    );
+    if (s) return s;
+  }
+  const qz = gj.quiz;
+  if (qz && typeof qz === 'object') {
+    s = pick(
+      qz.answer_user_prompt_text
+      ?? qz.answerUserPromptText
+      ?? qz.grading_prompt
+      ?? qz.gradingPrompt,
+    );
+    if (s) return s;
+  }
+  const res = gj.result;
+  if (res && typeof res === 'object') {
+    s = pick(
+      res.answer_user_prompt_text
+      ?? res.answerUserPromptText
+      ?? res.grading_prompt
+      ?? res.gradingPrompt,
+    );
+    if (s) return s;
+  }
+  return '';
+}
+
+/**
  * 將第 slotIndex 題設為指定卡片（每題獨立，不連動）。
  * @param {object | null} [mergeTargetRow] - 單元多題時：優先合併此列（與 unitSlotQuizCards 內同一引用），避免該列無 rag_quiz_id 時誤 push 新列導致 UI 仍顯示空白出題規則。
  */
@@ -3764,6 +3841,8 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     generateQuizResponseJson != null && typeof generateQuizResponseJson === 'object'
       ? generateQuizResponseJson
       : null;
+  /** llm-generate／整庫產題回傳之批改規則快照（對應 Rag_Quiz.answer_user_prompt_text） */
+  const answerPromptFromApi = extractAnswerUserPromptFromGenerateResponse(gj);
   const apiQuizName = gj ? String(gj.quiz_name ?? gj.quizName ?? '').trim() : '';
   const mergeRowName =
     mergeTargetRow != null && typeof mergeTargetRow === 'object'
@@ -3806,16 +3885,17 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     rag_id: ragIdStr,
     quiz_answer: '',
     hintVisible: false,
+    referenceAnswerVisible: false,
     confirmed: false,
     gradingResult: '',
     gradingResponseJson: null,
     generateQuizResponseJson: generateQuizResponseJson ?? null,
     rag_quiz_id: ragQuizId ?? null,
     quizUserPromptText: promptSnap,
-    gradingPrompt: '',
+    gradingPrompt: answerPromptFromApi,
     quizName: computeQuizName(null),
     hasUsedSaveAndGenerateOnce: false,
-    hasUsedSaveAndGradeOnce: false,
+    hasUsedSaveAndGradeOnce: answerPromptFromApi !== '',
     ...unitExamDefaults,
   };
 
@@ -3842,20 +3922,24 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
       card.quiz_answer = '';
       card.hintVisible = prev.hintVisible ?? false;
+      card.referenceAnswerVisible = prev.referenceAnswerVisible ?? false;
       /** 題幹已由 LLM 更新，勿沿用上一版批改／作答對應（否則仍顯示舊評語） */
       card.confirmed = false;
       card.gradingResult = '';
       card.gradingResponseJson = null;
       card.answer_id = null;
       card.quizUserPromptText = promptSnap || prev.quizUserPromptText || '';
-      card.gradingPrompt = prev.gradingPrompt ?? '';
+      card.gradingPrompt =
+        answerPromptFromApi !== ''
+          ? answerPromptFromApi
+          : String(prev.gradingPrompt ?? '');
       card.quizName = computeQuizName(prev);
       if (typeof prev.hasUsedSaveAndGenerateOnce === 'boolean') {
         card.hasUsedSaveAndGenerateOnce = prev.hasUsedSaveAndGenerateOnce;
       }
-      if (typeof prev.hasUsedSaveAndGradeOnce === 'boolean') {
-        card.hasUsedSaveAndGradeOnce = prev.hasUsedSaveAndGradeOnce;
-      }
+      card.hasUsedSaveAndGradeOnce =
+        String(card.gradingPrompt ?? '').trim() !== ''
+        || (typeof prev.hasUsedSaveAndGradeOnce === 'boolean' && prev.hasUsedSaveAndGradeOnce);
       card.rag_tab_id =
         prev.rag_tab_id != null && String(prev.rag_tab_id).trim() !== ''
           ? prev.rag_tab_id
@@ -5187,7 +5271,7 @@ async function confirmAnswer(item) {
                       v-else
                       :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
                       preview-only
-                      preview-design-dark
+                      :preview-design-dark="String(activeUnitQuizCard.quizUserPromptText ?? '').trim() !== ''"
                       :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                     />
                   </div>
@@ -5224,6 +5308,7 @@ async function confirmAnswer(item) {
                     產生題目
                   </button>
                   <button
+                    v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
                     type="button"
                     class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
                     :disabled="
@@ -5240,6 +5325,8 @@ async function confirmAnswer(item) {
                   v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
                   :card="activeUnitQuizCard"
                   :slot-index="activeUnitQuizTypeIdxResolved + 1"
+                  :grade-save-allowed="canEnableUnitQuizGrade(activeUnitQuizCard, activeUnitSlotIndex)"
+                  :grade-db-allowed="canEnableUnitQuizGradeDb(activeUnitQuizCard, activeUnitSlotIndex)"
                   :current-rag-id="currentRagIdForQuizCards"
                   design-embedded
                   hide-slot-index
@@ -5252,6 +5339,7 @@ async function confirmAnswer(item) {
                   show-rag-grade-db-button
                   hide-rag-quiz-for-exam-toolbar
                   @toggle-hint="toggleHint"
+                  @toggle-reference-answer="(item) => { item.referenceAnswerVisible = !item.referenceAnswerVisible }"
                   @confirm-answer="confirmAnswer"
                   @confirm-grade-db="confirmAnswerGradeDb"
                   @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"

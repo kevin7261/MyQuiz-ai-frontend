@@ -213,10 +213,12 @@ onBeforeUnmount(() => {
         />
         <div
           v-else
-          class="english-exam-md-preview-empty px-3 py-2 min-w-0"
+          class="english-exam-md-preview-empty px-3 py-2 min-w-0 my-font-md-400"
           :class="previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4'"
-          aria-hidden="true"
-        />
+          role="status"
+        >
+          尚無內容
+        </div>
       </div>
     </template>
     <template v-else>
