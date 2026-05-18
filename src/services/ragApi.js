@@ -27,8 +27,10 @@ import {
   API_GENERATE_QUIZ,
   isFrontendLocalHost,
 } from '../constants/api.js';
+import { getActivePinia } from 'pinia';
 import { formatBuildRagZipErrorDetail, parseBuildRagZipError, parseFetchError } from '../utils/apiError.js';
-import { loggedFetch } from '../utils/loggedFetch.js';
+import { loggedFetch, mergeApiQuery } from '../utils/loggedFetch.js';
+import { useAuthStore } from '../stores/authStore.js';
 
 const RETRY_500_DELAY_MS = 2000;
 
@@ -42,6 +44,21 @@ export function getPersonId(authStore) {
   const id = authStore.user?.person_id;
   if (id == null || String(id).trim() === '') return null;
   return String(id);
+}
+
+/**
+ * @param {object} [authStore] - Pinia auth store；省略時嘗試從 active pinia 讀取
+ * @returns {string | null}
+ */
+export function getCourseId(authStore) {
+  try {
+    const store = authStore ?? (getActivePinia() ? useAuthStore() : null);
+    const id = store?.currentCourse?.course_id;
+    if (id == null || String(id).trim() === '') return null;
+    return String(id).trim();
+  } catch {
+    return null;
+  }
 }
 
 /** 解析 JSON，失敗時回傳空物件（內部用） */
@@ -270,17 +287,24 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
  * @param {File} file - .pdf、.doc、.docx、.ppt、.pptx 等後端可解析格式
  * @param {string} ragTabId
  * @param {string} personId
+ * @param {string | number} [courseId] - 省略時取自 authStore.currentCourse
  * @returns {Promise<object>} 後端回傳的 file_metadata
  */
-export async function apiUploadZip(file, ragTabId, personId) {
+export async function apiUploadZip(file, ragTabId, personId, courseId) {
+  const resolvedCourseId = courseId != null && String(courseId).trim() !== '' ? String(courseId).trim() : getCourseId();
   const formData = new FormData();
   formData.append('file', file);
   formData.append('rag_tab_id', String(ragTabId));
   formData.append('person_id', String(personId));
-  const res = await loggedFetch(`${API_BASE}${API_UPLOAD_ZIP}`, {
-    method: 'POST',
-    body: formData,
-  });
+  if (resolvedCourseId) formData.append('course_id', resolvedCourseId);
+  const res = await loggedFetch(
+    `${API_BASE}${API_UPLOAD_ZIP}`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    resolvedCourseId ? { courseId: resolvedCourseId } : undefined
+  );
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);
@@ -331,7 +355,7 @@ export async function apiUpdateRagTabName(ragId, tabName) {
  *
  * Body（OpenAPI PackRequest）：rag_tab_id、person_id、unit_list、rag_chunk_size、rag_chunk_overlap、rag_chunk_sizes、rag_chunk_overlaps、unit_types、build_faiss、transcriptions；後端若支援可另含 unit_names（與群組同序之逗號字串）。
  * rag_chunk_sizes／rag_chunk_overlaps 為逗號字串或陣列，與 unit_list 群組同序；transcriptions 與 unit_list 逗號分段同序，unit_type 2／3／4 索引為 Markdown 全文 UTF-8 原樣，供寫入 Rag_Unit.transcription／transcript.md。
- * Query：person_id（與 body 一致）；選填 repack_only=true（強制各 unit 不建 FAISS），請傳第三參數 `streamOptions.repack_only`，勿自行拼進 URL。
+ * Query：person_id（與 body 一致）、course_id（必填，與全站 query 慣例一致）；選填 repack_only=true（強制各 unit 不建 FAISS），請傳第三參數 `streamOptions.repack_only`，勿自行拼進 URL。
  *
  * NDJSON 事件（每行一物件）：start（total、source_rag_tab_id、unit_list、user_type、build_faiss_request、repack_only、allow_faiss）、building（index、total、completed_before、filename）、unit（…、output：rag_mode 為 faiss｜transcript_md｜repack_copy，以及 rag_filename、transcript_plain、text_file_name、mp3_file_name、youtube_url 等）、complete（success、outputs…）。整批成敗以最後一則 complete.success 為準。
  *
@@ -345,23 +369,32 @@ export async function apiBuildRagZip(body, onStreamEvent, streamOptions = {}) {
   if (personId == null || String(personId).trim() === '') {
     throw new Error('person_id 為必填');
   }
+  const courseId =
+    body?.course_id != null && String(body.course_id).trim() !== ''
+      ? String(body.course_id).trim()
+      : getCourseId();
 
-  const urlString = `${API_BASE}${API_BUILD_RAG_ZIP}`;
+  const mergedUrl = mergeApiQuery(`${API_BASE}${API_BUILD_RAG_ZIP}`, {
+    personId: String(personId).trim(),
+    courseId,
+  });
   let u;
   try {
-    u = new URL(urlString);
+    u = new URL(mergedUrl);
   } catch {
-    u = new URL(urlString, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+    u = new URL(mergedUrl, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
   }
-  u.searchParams.set('person_id', String(personId).trim());
   if (streamOptions?.repack_only === true) {
     u.searchParams.set('repack_only', 'true');
   }
 
+  const requestBody =
+    courseId != null && body?.course_id == null ? { ...body, course_id: courseId } : body;
+
   const init = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+    body: JSON.stringify(requestBody),
   };
 
   let res;

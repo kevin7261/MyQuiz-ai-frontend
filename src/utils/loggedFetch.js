@@ -117,7 +117,7 @@ function parseApiUrl(urlString) {
  * @param {{ personId?: string | null, courseId?: number | string | null, courseName?: string | null, omitPersonIdQuery?: boolean, omitCourseQuery?: boolean }} [fetchOptions]
  * @returns {string}
  */
-function mergeApiQuery(urlString, fetchOptions) {
+export function mergeApiQuery(urlString, fetchOptions) {
   const parsed = parseApiUrl(urlString);
   if (!parsed) return urlString;
 
