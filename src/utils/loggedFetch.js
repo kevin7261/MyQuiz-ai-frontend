@@ -3,7 +3,7 @@
  *
  * 所有指向 API_BASE 的 URL 會自動附加 query（與後端 OpenAPI 一致）：
  * - person_id：優先 authStore.user.person_id，缺則 fallback user_id／id；登入前可傳 `{ personId }` 覆寫
- * - course_id、course_name：來自 authStore.currentCourse；登入／選課前可傳 `{ omitCourseQuery: true }` 略過
+ * - course_id：來自 authStore.currentCourse；登入／選課前可傳 `{ omitCourseQuery: true }` 略過
  *
  * 若回應為 HTTP 500，會間隔延遲後重試同一請求（含 POST body），直到 status 不再是 500（通常為 200）。
  * 注意：開發者工具 Network／Console 仍可能對每次失敗的請求顯示紅字，此為瀏覽器行為，無法由前端關閉。
@@ -35,18 +35,15 @@ function getPersonIdForQuery() {
 }
 
 /**
- * @returns {{ course_id: number | string, course_name: string } | null}
+ * @returns {number | string | null}
  */
-function getCourseForQuery() {
+function getCourseIdForQuery() {
   try {
     if (!getActivePinia()) return null;
     const c = useAuthStore().currentCourse;
-    if (!c) return null;
-    if (c.course_id == null) return null;
-    return {
-      course_id: c.course_id,
-      course_name: c.course_name != null ? String(c.course_name) : '',
-    };
+    if (!c || c.course_id == null) return null;
+    const id = String(c.course_id).trim();
+    return id !== '' ? id : null;
   } catch {
     return null;
   }
@@ -114,7 +111,7 @@ function parseApiUrl(urlString) {
 
 /**
  * @param {string} urlString
- * @param {{ personId?: string | null, courseId?: number | string | null, courseName?: string | null, omitPersonIdQuery?: boolean, omitCourseQuery?: boolean }} [fetchOptions]
+ * @param {{ personId?: string | null, courseId?: number | string | null, omitPersonIdQuery?: boolean, omitCourseQuery?: boolean }} [fetchOptions]
  * @returns {string}
  */
 export function mergeApiQuery(urlString, fetchOptions) {
@@ -135,19 +132,11 @@ export function mergeApiQuery(urlString, fetchOptions) {
 
   if (!fetchOptions?.omitCourseQuery) {
     let courseId = fetchOptions?.courseId;
-    let courseName = fetchOptions?.courseName;
-    if (courseId == null || courseName == null) {
-      const course = getCourseForQuery();
-      if (course) {
-        if (courseId == null) courseId = course.course_id;
-        if (courseName == null) courseName = course.course_name;
-      }
+    if (courseId == null) {
+      courseId = getCourseIdForQuery();
     }
     if (courseId != null && String(courseId).trim() !== '') {
       u.searchParams.set('course_id', String(courseId).trim());
-    }
-    if (courseName != null && String(courseName).trim() !== '') {
-      u.searchParams.set('course_name', String(courseName).trim());
     }
   }
 
@@ -160,7 +149,7 @@ export function mergeApiQuery(urlString, fetchOptions) {
 /**
  * @param {RequestInfo | URL} input
  * @param {RequestInit} [init]
- * @param {{ personId?: string | null, courseId?: number | string | null, courseName?: string | null, omitPersonIdQuery?: boolean, omitCourseQuery?: boolean }} [fetchOptions]
+ * @param {{ personId?: string | null, courseId?: number | string | null, omitPersonIdQuery?: boolean, omitCourseQuery?: boolean }} [fetchOptions]
  * @returns {Promise<Response>}
  */
 export async function loggedFetch(input, init, fetchOptions) {

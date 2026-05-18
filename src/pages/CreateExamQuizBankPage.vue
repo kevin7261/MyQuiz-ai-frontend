@@ -3263,6 +3263,7 @@ async function confirmPack() {
         unit_types: serializePackUnitTypesForApi(unitTypesNormalized),
         transcriptions,
         unit_names: unitNamesStr,
+        build_faiss: true,
       },
       (ev) => {
         if (!ev || typeof ev !== 'object') return;
