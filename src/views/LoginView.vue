@@ -51,9 +51,10 @@
             return;
           }
           const data = JSON.parse(text);
-          // 後端可能回傳 { user: {...} } 或直接回傳使用者物件
+          // 後端可能回傳 { user: {...}, courses: [...] } 或直接回傳使用者物件
           const userData = data.user != null ? data.user : data;
           authStore.setUser(userData);
+          authStore.setCourses(data.courses ?? []);
           router.push('/exam');
         } catch (e) {
           error.value = e.message || '無法連線，請檢查網路或稍後再試';

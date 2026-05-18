@@ -7,10 +7,12 @@
    * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
    * - /exam 對應 work（ExamPage），/:view 對應 student-weakness-analysis / create-exam-bank（建立測驗題庫頁）等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
+   * - 登入後若 currentCourse 為 null，自動顯示 CourseSelectModal 讓使用者選擇課程
    */
-  import { computed, onMounted, watch } from 'vue';
+  import { ref, computed, onMounted, watch } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
+  import CourseSelectModal from '../components/CourseSelectModal.vue';
   import LeftView from './LeftView.vue';
   import RightView from './RightView.vue';
   import { useDataStore } from '../stores/dataStore.js';
@@ -20,35 +22,59 @@
   /** Exam 頁使用的固定分頁 id（與 dataStore workTabs 對應） */
   const MAIN_WORK_TAB_ID = 'main';
 
-  /** 網址 params.view 對應內部 currentView 類型 */
-  const PATH_TO_VIEW = {
-    work: 'work',
-    'student-weakness-analysis': 'studentWeaknessAnalysis',
-    'student-answer-analysis': 'studentAnswerAnalysis',
-    profile: 'profile',
-    'create-exam-bank': 'createExamQuizBank',
-    design: 'designPage',
-    'manage-users': 'userManagement',
-    settings: 'systemSettings',
-    logs: 'logList',
-  };
+/** 網址 params.view 對應內部 currentView 類型 */
+const PATH_TO_VIEW = {
+  work: 'work',
+  'student-weakness-analysis': 'studentWeaknessAnalysis',
+  'student-answer-analysis': 'studentAnswerAnalysis',
+  profile: 'profile',
+  'create-exam-bank': 'createExamQuizBank',
+  design: 'designPage',
+  'manage-users': 'userManagement',
+  settings: 'systemSettings',
+  logs: 'logList',
+};
   const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, LeftView, RightView },
+    components: { LoadingOverlay, CourseSelectModal, LeftView, RightView },
 
     setup() {
       const router = useRouter();
       const route = useRoute();
       const dataStore = useDataStore();
       const authStore = useAuthStore();
+
+      /** 課程 Modal 是否開啟：currentCourse 為 null 時自動開啟 */
+      const courseModalOpen = ref(false);
+
       /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
         return PATH_TO_VIEW[route.params.view] || 'work';
       });
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
+
+      /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */
+      watch(
+        () => authStore.currentCourse,
+        (course) => {
+          if (course === null && authStore.user) {
+            courseModalOpen.value = true;
+          }
+        },
+        { immediate: true }
+      );
+
+      function onCourseSelect(course) {
+        authStore.setCurrentCourse(course);
+        courseModalOpen.value = false;
+      }
+
+      function onCourseModalClose() {
+        courseModalOpen.value = false;
+      }
 
       /** 切換顯示區塊（由導覽連結或程式呼叫）；work 導向 /exam，其餘導向 /:view */
       const setView = (type) => {
@@ -87,8 +113,11 @@
         MAIN_WORK_TAB_ID,
         userName,
         authStore,
+        courseModalOpen,
         setView,
         onLogout,
+        onCourseSelect,
+        onCourseModalClose,
       };
     },
   };
@@ -102,6 +131,14 @@
       :progress="0"
       :showProgress="false"
       subText=""
+    />
+
+    <CourseSelectModal
+      :open="courseModalOpen"
+      :courses="authStore.courses"
+      :closable="authStore.currentCourse !== null"
+      @select="onCourseSelect"
+      @close="onCourseModalClose"
     />
 
     <div class="row h-100 g-0 my-home-layout">
