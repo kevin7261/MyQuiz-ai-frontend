@@ -46,7 +46,7 @@ const PATH_TO_VIEW = {
       const dataStore = useDataStore();
       const authStore = useAuthStore();
 
-      /** 課程 Modal 是否開啟：currentCourse 為 null 時自動開啟 */
+      /** 課程 Modal 是否開啟：currentCourse 為 null 時自動開啟；亦可由左側課程按鈕手動開啟 */
       const courseModalOpen = ref(false);
 
       /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
@@ -74,6 +74,10 @@ const PATH_TO_VIEW = {
 
       function onCourseModalClose() {
         courseModalOpen.value = false;
+      }
+
+      function openCourseModal() {
+        courseModalOpen.value = true;
       }
 
       /** 切換顯示區塊（由導覽連結或程式呼叫）；work 導向 /exam，其餘導向 /:view */
@@ -118,6 +122,7 @@ const PATH_TO_VIEW = {
         onLogout,
         onCourseSelect,
         onCourseModalClose,
+        openCourseModal,
       };
     },
   };
@@ -147,6 +152,7 @@ const PATH_TO_VIEW = {
           :user-name="userName"
           :user-type="authStore.user?.user_type"
           @logout="onLogout"
+          @open-course-modal="openCourseModal"
         />
       </div>
       <div class="col-8 col-md-9 col-lg-10 h-100 overflow-hidden d-flex flex-column">

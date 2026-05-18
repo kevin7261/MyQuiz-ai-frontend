@@ -76,20 +76,15 @@ function close() {
                 v-for="course in courses"
                 :key="course.course_user_id"
                 type="button"
-                class="my-course-select-btn rounded-3 text-start border-0 px-3 py-3 d-flex align-items-center justify-content-between gap-2 w-100"
+                class="my-course-select-btn rounded-3 text-start border-0 px-3 py-3 w-100"
                 @click="select(course)"
               >
-                <div class="min-w-0 flex-grow-1">
-                  <p class="my-font-md-600 my-color-black text-break mb-0">
-                    {{ course.course_name || '（未命名課程）' }}
-                  </p>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-0 mt-1">
-                    課程 ID：{{ course.course_id }}
-                  </p>
-                </div>
-                <span class="my-course-role-badge badge rounded-pill flex-shrink-0">
+                <p class="my-font-md-600 my-color-black text-break mb-0">
+                  {{ course.course_name || '（未命名課程）' }}
+                </p>
+                <p class="my-font-sm-400 my-color-gray-1 mb-0 mt-1">
                   {{ userTypeLabel(course.user_type) }}
-                </span>
+                </p>
               </button>
             </div>
           </div>
@@ -109,12 +104,5 @@ function close() {
 .my-course-select-btn:focus-visible {
   background-color: var(--my-color-gray-3, #ebebeb);
   outline: none;
-}
-.my-course-role-badge {
-  background-color: var(--my-color-gray-2, #888);
-  color: var(--my-color-white, #fff);
-  font-size: 0.72rem;
-  font-weight: 400;
-  padding: 0.25em 0.65em;
 }
 </style>

@@ -4,7 +4,7 @@
    *
    * 職責：
    * - 顯示品牌（MyQuiz.ai）
-   * - 品牌下方課程切換下拉選單：顯示目前課程名稱；展開後可切換其他課程
+   * - 品牌下方課程按鈕：顯示目前課程名稱；點擊開啟選課 Modal
    * - 主要導覽（測驗、作答弱點分析）
    * - 左下角使用者名下拉：其餘功能與登出
    */
@@ -20,21 +20,16 @@
       /** 後端 user_type；3 為學生，側邊欄僅顯示允許的項目 */
       userType: { type: [Number, String], default: undefined },
     },
-    emits: ['logout'],
+    emits: ['logout', 'open-course-modal'],
     setup(props, { emit }) {
       const authStore = useAuthStore();
       const onLogout = () => emit('logout');
+      const onOpenCourseModal = () => emit('open-course-modal');
 
       const currentCourseName = computed(() => {
         const c = authStore.currentCourse;
         return c ? (c.course_name || `課程 ${c.course_id}`) : '選擇課程...';
       });
-
-      const hasCourses = computed(() => authStore.courses.length > 0);
-
-      function selectCourse(course) {
-        authStore.setCurrentCourse(course);
-      }
 
       const showDividerBeforeProfile = computed(() => {
         const t = props.userType;
@@ -49,12 +44,10 @@
 
       return {
         onLogout,
+        onOpenCourseModal,
         canSeeNavLink,
         showDividerBeforeProfile,
         currentCourseName,
-        hasCourses,
-        authStore,
-        selectCourse,
       };
     },
   };
@@ -62,39 +55,15 @@
 
 <template>
   <aside class="h-100 d-flex flex-column w-100 my-bgcolor-gray-3">
-    <div class="fw-semibold fs-5 my-color-black lh-sm px-3 pt-3 pb-2">MyQuiz.ai</div>
-
-    <!-- 課程切換下拉（樣式與左下使用者名下拉一致） -->
-    <div class="flex-shrink-0 px-3 pb-2">
-      <div class="my-design-08-dropdown dropdown w-100 min-w-0">
-        <button
-          type="button"
-          class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white w-100 min-w-0 px-3 py-2 text-start"
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          aria-haspopup="true"
-        >
-          <span class="flex-grow-1 overflow-hidden text-truncate text-start pe-2">{{ currentCourseName }}</span>
-          <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
-        </button>
-        <ul class="dropdown-menu dropdown-menu-start w-100">
-          <li v-if="!hasCourses">
-            <span class="dropdown-item disabled">無可用課程</span>
-          </li>
-          <template v-else>
-            <li v-for="course in authStore.courses" :key="course.course_user_id">
-              <a
-                class="dropdown-item"
-                :class="{ active: authStore.currentCourse?.course_id === course.course_id }"
-                href="#"
-                @click.prevent="selectCourse(course)"
-              >
-                {{ course.course_name || `課程 ${course.course_id}` }}
-              </a>
-            </li>
-          </template>
-        </ul>
-      </div>
+    <div class="my-left-view-header">
+      <div class="my-left-view-brand">MyQuiz.ai</div>
+      <button
+        type="button"
+        class="my-left-view-course-btn"
+        @click="onOpenCourseModal"
+      >
+        {{ currentCourseName }}
+      </button>
     </div>
 
     <nav
@@ -164,6 +133,50 @@
 </template>
 
 <style scoped>
+.my-left-view-header {
+  flex-shrink: 0;
+  width: 100%;
+  padding: 1rem 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.my-left-view-brand {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  color: var(--my-color-black);
+}
+
+.my-left-view-course-btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0.5rem 0;
+  border: none;
+  background: transparent;
+  text-align: center;
+  font-size: var(--my-font-size-md, 1rem);
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--my-color-black);
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-left-view-course-btn:hover,
+.my-left-view-course-btn:focus-visible {
+  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
+  outline: none;
+}
+
 .my-left-view-nav .nav-link {
   color: var(--my-color-black);
 }
