@@ -36,7 +36,7 @@
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ person_id: personId.value, password: password.value }),
             },
-            { personId: personId.value }
+            { personId: personId.value, omitCourseQuery: true }
           );
           const text = await res.text();
           if (!res.ok) {

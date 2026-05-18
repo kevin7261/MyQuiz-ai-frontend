@@ -46,8 +46,19 @@ export const useAuthStore = defineStore(
      */
     function setCourses(coursesData) {
       courses.value = Array.isArray(coursesData) ? coursesData : [];
-      // 課程列表更新時清空已選課程，讓使用者重新選擇
-      currentCourse.value = null;
+      validateCurrentCourse();
+    }
+
+    /**
+     * 確認 currentCourse 仍存在於 courses 列表；無效則清空（persist 還原或列表變更時）
+     */
+    function validateCurrentCourse() {
+      const c = currentCourse.value;
+      if (!c) return;
+      const valid = courses.value.some(
+        (item) => item.course_id === c.course_id && item.course_user_id === c.course_user_id
+      );
+      if (!valid) currentCourse.value = null;
     }
 
     /**
@@ -65,7 +76,7 @@ export const useAuthStore = defineStore(
       currentCourse.value = null;
     }
 
-    return { user, courses, currentCourse, setUser, setCourses, setCurrentCourse, logout };
+    return { user, courses, currentCourse, setUser, setCourses, setCurrentCourse, validateCurrentCourse, logout };
   },
   { persist: true }
 );

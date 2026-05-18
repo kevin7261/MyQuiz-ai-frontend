@@ -30,7 +30,8 @@ pinia.use(piniaPluginPersistedstate);
 // Pinia 須在 Router 之前註冊；並在掛載 router 前先建立 auth store，讓 persistedstate 同步從 localStorage 還原。
 // 否則首輪 beforeEach 可能在 store 尚未 hydrate 時讀到 user === null，誤判未登入而導向 /login（像「自動登出」）。
 app.use(pinia);
-useAuthStore();
+const authStore = useAuthStore();
+authStore.validateCurrentCourse();
 app.use(router);
 
 /**
