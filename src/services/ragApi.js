@@ -118,7 +118,7 @@ function buildTranscriptUrl(path, params) {
   if (yu) {
     u.searchParams.set('youtube_url', yu);
   }
-  return u.toString();
+  return mergeApiQuery(u.toString(), { personId: params.personId });
 }
 
 // ─── 逐字稿（Transcript）API ─────────────────────────────────────────────────
@@ -239,7 +239,7 @@ export function buildRagTabUnitMp3FileUrl(params) {
   }
   u.searchParams.set('rag_tab_id', rag_tab_id);
   u.searchParams.set('rag_unit_id', String(rag_unit_id));
-  return u.toString();
+  return mergeApiQuery(u.toString(), { omitPersonIdQuery: true });
 }
 
 /**
@@ -512,7 +512,7 @@ export async function apiGetRagTabUnits(ragTabId, personId) {
   const url = new URL(`${API_BASE}${API_RAG_TAB_UNITS}`);
   url.searchParams.set('rag_tab_id', tabId);
   url.searchParams.set('person_id', pid);
-  const res = await loggedFetch(url.toString(), { method: 'GET' });
+  const res = await loggedFetch(mergeApiQuery(url.toString(), { personId: pid }), { method: 'GET' });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
   const data = parseJson(text);
