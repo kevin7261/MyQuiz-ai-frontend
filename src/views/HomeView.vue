@@ -8,6 +8,7 @@
    * - /exam 對應 work（ExamPage），/:view 對應 student-weakness-analysis / create-exam-bank（建立測驗題庫頁）等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
    * - 登入後若 currentCourse 為 null，自動顯示 CourseSelectModal 讓使用者選擇課程
+   * - 切換至不同課程時整頁重新載入，確保各頁 API 與快取狀態皆對應新 course_id
    */
   import { ref, computed, onMounted, watch } from 'vue';
   import { useRouter, useRoute } from 'vue-router';
@@ -68,8 +69,16 @@ const PATH_TO_VIEW = {
       );
 
       function onCourseSelect(course) {
+        const prev = authStore.currentCourse;
+        const isDifferent =
+          !prev ||
+          prev.course_id !== course.course_id ||
+          prev.course_user_id !== course.course_user_id;
         authStore.setCurrentCourse(course);
         courseModalOpen.value = false;
+        if (isDifferent) {
+          window.location.reload();
+        }
       }
 
       function onCourseModalClose() {
