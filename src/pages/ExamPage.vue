@@ -7,7 +7,7 @@
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
- * 出題：須先「新增題目」建立列（POST /exam/tab/quiz/create），再選單元＋題名後「產生題目」POST llm-generate（body：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id、quiz_history_list；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
+ * 出題：須先「新增題目」建立列（POST /exam/tab/quiz/create），再選單元＋題名後「產生題目」POST llm-generate（一般）或 llm-generate-followup（追問；body 含 follow_up_exam_quiz_id、物件陣列 quiz_history_list）；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
@@ -49,9 +49,14 @@ import {
   apiUpdateExamTabName,
   apiExamTabQuizCreate,
   apiExamTabQuizLlmGenerate,
+  apiExamTabQuizLlmGenerateFollowup,
 } from '../services/examApi.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { submitGrade } from '../composables/useQuizGrading.js';
+import {
+  followupHistoryEntryFromQuizCard,
+  normalizeFollowupHistoryItem,
+} from '../services/ragApi.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
 defineProps({
@@ -479,6 +484,73 @@ function examQuizNameFromPreviewRow(qz) {
   return String(qz.quiz_name ?? qz.title ?? '').trim();
 }
 
+/** GET /exam/tabs、/exam/rag-for-exams 之 Exam_Quiz／Rag_Quiz.follow_up */
+function examQuizApiRowIsFollowUp(quiz) {
+  if (!quiz || typeof quiz !== 'object') return false;
+  return (
+    quiz.follow_up === true
+    || quiz.follow_up === 1
+    || quiz.followUp === true
+    || quiz.followUp === 1
+  );
+}
+
+function examQuizGenerateModeLabel(isFollowUp) {
+  return isFollowUp ? '追問出題' : '一般出題';
+}
+
+/** 題型顯示：{quiz_name} (一般出題/追問出題) */
+function examQuizTypeDisplayLabelFromParts(name, isFollowUp) {
+  const n = String(name ?? '').trim();
+  if (!n) return '—';
+  return `${n} (${examQuizGenerateModeLabel(!!isFollowUp)})`;
+}
+
+function examQuizTypeDisplayLabel(quiz) {
+  const name = examQuizDisplayNameFromRow(quiz) || examQuizNameFromPreviewRow(quiz);
+  return examQuizTypeDisplayLabelFromParts(name, examQuizApiRowIsFollowUp(quiz));
+}
+
+/** 依槽位題卡 rag_quiz_id 對齊試卷題庫 quizzes[] 列 */
+function examRagQuizRowForCard(slotIndex, card) {
+  if (!card || typeof card !== 'object') return null;
+  const rq = Number(card.rag_quiz_id);
+  if (!Number.isFinite(rq) || rq < 1) return null;
+  const uidSel = String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim();
+  let unitItem = uidSel ? findExamUnitDropdownItemBySelectId(uidSel) : null;
+  const uidCard = Number(card.rag_unit_id);
+  if (
+    (!unitItem || examQuizzesForUnitTabItem(unitItem).length === 0)
+    && Number.isFinite(uidCard)
+    && uidCard >= 1
+  ) {
+    unitItem =
+      examUnitSelectDropdownOptions.value.find(
+        (it) => it?.ragUnitId != null && Number(it.ragUnitId) === uidCard,
+      ) ?? null;
+  }
+  if (!unitItem) return null;
+  return (
+    examQuizzesForUnitTabItem(unitItem).find(
+      (q) => Number(ragQuizSelectValue(q)) === rq,
+    ) ?? null
+  );
+}
+
+function examQuizFollowUpForCard(slotIndex, card) {
+  if (!card || typeof card !== 'object') return false;
+  if (examQuizApiRowIsFollowUp(card)) return true;
+  const gj = card.generateQuizResponseJson;
+  if (gj && typeof gj === 'object' && examQuizApiRowIsFollowUp(gj)) return true;
+  const ragRow = examRagQuizRowForCard(slotIndex, card);
+  return ragRow ? examQuizApiRowIsFollowUp(ragRow) : false;
+}
+
+function examQuizTypeDisplayLabelForDropdownOption(opt) {
+  if (!opt || typeof opt !== 'object') return '—';
+  return examQuizTypeDisplayLabelFromParts(opt.quiz_name, opt.follow_up);
+}
+
 /**
  * 目前選定單元在試卷題庫中的 quiz_name 下拉選項。
  * @param {object | null | undefined} unitItem - examUnitTabItems 其中一筆
@@ -492,7 +564,7 @@ function examQuizDropdownItems(unitItem) {
     const name = examQuizNameFromPreviewRow(qz);
     if (!name || seen.has(name)) continue;
     seen.add(name);
-    out.push({ quiz_name: name });
+    out.push({ quiz_name: name, follow_up: examQuizApiRowIsFollowUp(qz) });
   }
   return out;
 }
@@ -741,8 +813,37 @@ function closeExamQuizHistoryModal() {
 const examQuizHistoryModalList = computed(() => {
   const idx = examQuizHistoryModalSlotIndex.value;
   if (idx == null) return [];
+  if (examSlotIsFollowupMode(idx)) {
+    return examQuizFollowupHistoryListForDisplay(idx);
+  }
   const list = getSlotFormState(idx).quiz_history_list;
   return Array.isArray(list) ? list : [];
+});
+
+const examQuizHistoryModalIsFollowup = computed(() => {
+  const idx = examQuizHistoryModalSlotIndex.value;
+  if (idx == null) return false;
+  return examSlotIsFollowupMode(idx);
+});
+
+
+const examQuizHistoryModalOpen = computed({
+  get: () => examQuizHistoryModalSlotIndex.value != null,
+  set: (open) => {
+    if (!open) closeExamQuizHistoryModal();
+  },
+});
+
+const examQuizHistoryModalUnitLabel = computed(() => {
+  const idx = examQuizHistoryModalSlotIndex.value;
+  if (idx == null) return '—';
+  return examSlotUnitLabelForHistoryModal(idx);
+});
+
+const examQuizHistoryModalQuizTypeLabel = computed(() => {
+  const idx = examQuizHistoryModalSlotIndex.value;
+  if (idx == null) return '—';
+  return examSlotQuizTypeLabelForHistoryModal(idx);
 });
 
 const examUnitTranscriptModalMdHtml = computed(() => {
@@ -1075,6 +1176,11 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     gradingPrompt: extractAnswerUserPromptFromExamRagRow(quiz).trim(),
     quiz_user_prompt_text: extractQuizUserPromptFromExamRagRow(quiz).trim(),
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
+    follow_up: examQuizApiRowIsFollowUp(quiz),
+    follow_up_exam_quiz_id:
+      quiz.follow_up_exam_quiz_id != null && quiz.follow_up_exam_quiz_id !== ''
+        ? Number(quiz.follow_up_exam_quiz_id)
+        : null,
   };
 }
 
@@ -1437,51 +1543,33 @@ function examSlotLockedStaticUnitLabel(slotIndex) {
   return '—';
 }
 
-/**
- * 題卡為 UI 物件（含 quiz 題幹字串等），勿對其呼叫 examQuizDisplayNameFromRow（僅適用 Exam_Quiz／llm-generate 列）。
- * 依 rag_unit_id／槽位選單對齊試卷題庫預覽列後取 quiz_name。
- */
-function examSlotQuizNameFromForExamRagPreview(slotIndex, card) {
-  if (!card || typeof card !== 'object') return '';
-  const rq = Number(card.rag_quiz_id);
-  if (!Number.isFinite(rq) || rq < 1) return '';
-  const uidSel = String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim();
-  let unitItem = uidSel ? findExamUnitDropdownItemBySelectId(uidSel) : null;
-  const uidCard = Number(card.rag_unit_id);
-  if (
-    (!unitItem || examQuizzesForUnitTabItem(unitItem).length === 0)
-    && Number.isFinite(uidCard)
-    && uidCard >= 1
-  ) {
-    unitItem =
-      examUnitSelectDropdownOptions.value.find(
-        (it) => it?.ragUnitId != null && Number(it.ragUnitId) === uidCard,
-      ) ?? null;
-  }
-  if (!unitItem) return '';
-  const row = examQuizzesForUnitTabItem(unitItem).find(
-    (q) => Number(ragQuizSelectValue(q)) === rq,
-  );
-  return row && typeof row === 'object' ? examQuizDisplayNameFromRow(row) : '';
-}
-
-/** 已出題並鎖定下拉時：僅顯示之題型（quiz_name） */
+/** 已出題並鎖定下拉時：題型顯示 {quiz_name} (一般出題/追問出題) */
 function examSlotLockedStaticQuizTypeLabel(slotIndex) {
   const card = currentState.value.cardList[slotIndex - 1];
   if (card && typeof card === 'object') {
     const dn = String(card.examQuizDisplayName ?? '').trim();
-    if (dn) return dn;
+    if (dn) {
+      return examQuizTypeDisplayLabelFromParts(dn, examQuizFollowUpForCard(slotIndex, card));
+    }
     const gj = card.generateQuizResponseJson;
     if (gj && typeof gj === 'object') {
       const fromGen = examQuizDisplayNameFromRow(gj);
-      if (fromGen) return fromGen;
+      if (fromGen) return examQuizTypeDisplayLabel(gj);
     }
-    const fromRag = examSlotQuizNameFromForExamRagPreview(slotIndex, card);
-    if (fromRag) return fromRag;
+    const ragRow = examRagQuizRowForCard(slotIndex, card);
+    if (ragRow) return examQuizTypeDisplayLabel(ragRow);
   }
   const slotState = getSlotFormState(slotIndex);
   const pick = String(slotState.examQuizNamePick ?? '').trim();
-  if (pick) return pick;
+  if (pick) {
+    const uid = String(slotState.examUnitSelectId ?? '').trim();
+    const unitItem = findExamUnitDropdownItemBySelectId(uid);
+    const row = findExamRagQuizRowBySelectedPick(unitItem, pick);
+    if (row) return examQuizTypeDisplayLabel(row);
+    const opt = examQuizDropdownItems(unitItem).find((o) => examQuizPickSelectValue(o) === pick);
+    if (opt) return examQuizTypeDisplayLabelForDropdownOption(opt);
+    return examQuizTypeDisplayLabelFromParts(pick, false);
+  }
   return '—';
 }
 
@@ -1504,8 +1592,16 @@ function examSlotQuizTypeLabelForHistoryModal(slotIndex) {
   if (examSlotRagChoicesLocked(slotIndex)) {
     return examSlotLockedStaticQuizTypeLabel(slotIndex);
   }
-  const pick = String(getSlotFormState(slotIndex).examQuizNamePick ?? '').trim();
-  return pick || '—';
+  const slotState = getSlotFormState(slotIndex);
+  const pick = String(slotState.examQuizNamePick ?? '').trim();
+  if (!pick) return '—';
+  const uid = String(slotState.examUnitSelectId ?? '').trim();
+  const unitItem = findExamUnitDropdownItemBySelectId(uid);
+  const row = findExamRagQuizRowBySelectedPick(unitItem, pick);
+  if (row) return examQuizTypeDisplayLabel(row);
+  const opt = examQuizDropdownItems(unitItem).find((o) => examQuizPickSelectValue(o) === pick);
+  if (opt) return examQuizTypeDisplayLabelForDropdownOption(opt);
+  return examQuizTypeDisplayLabelFromParts(pick, false);
 }
 
 /**
@@ -1591,6 +1687,99 @@ function syncExamSlotQuizHistoryList(slotIndex) {
 function syncAllExamSlotQuizHistoryLists() {
   const n = Number(currentState.value.quizSlotsCount) || 0;
   for (let i = 1; i <= n; i++) syncExamSlotQuizHistoryList(i);
+}
+
+/** 槽位是否為追問出題（與題型標籤相同：優先試卷題庫 quizzes[] 之 follow_up，其次 Exam_Quiz 列） */
+function examSlotIsFollowupMode(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  const slotState = getSlotFormState(slotIndex);
+  const uid = String(slotState.examUnitSelectId ?? '').trim();
+  const unitItem = findExamUnitDropdownItemBySelectId(uid);
+  const pick =
+    String(slotState.examQuizNamePick ?? '').trim()
+    || String(card?.examQuizDisplayName ?? '').trim();
+  const row = findExamRagQuizRowBySelectedPick(unitItem, pick);
+  if (row) return examQuizApiRowIsFollowUp(row);
+  return card ? examQuizFollowUpForCard(slotIndex, card) : false;
+}
+
+/** 追問模式 Modal：本分頁同單元／題型、此槽位之前槽位之問答（不含當前題） */
+function examQuizFollowupHistoryListForDisplay(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  const prevName = String(card?.examQuizDisplayName ?? '').trim();
+  const { ragUnitId, ragQuizId } = examLlmRagIdsForSlot(slotIndex, prevName);
+  if (ragUnitId < 1 || ragQuizId < 1) return [];
+  const seen = new Set();
+  const out = [];
+  const push = (item) => {
+    const normalized = normalizeFollowupHistoryItem(item);
+    if (!normalized) return;
+    const key = [
+      normalized.quiz_content,
+      normalized.answer_content,
+      normalized.quiz_answer_reference,
+      normalized.answer_critique,
+    ].join('\0');
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(normalized);
+  };
+  const cards = currentState.value.cardList;
+  if (!Array.isArray(cards)) return out;
+  for (let i = 0; i < slotIndex - 1; i++) {
+    const c = cards[i];
+    if (!c || typeof c !== 'object') continue;
+    const ru = c.rag_unit_id != null ? Number(c.rag_unit_id) : NaN;
+    const rq = c.rag_quiz_id != null ? Number(c.rag_quiz_id) : NaN;
+    if (!Number.isFinite(ru) || ru !== ragUnitId || !Number.isFinite(rq) || rq !== ragQuizId) {
+      continue;
+    }
+    push(followupHistoryEntryFromQuizCard(c));
+  }
+  return out;
+}
+
+/** 追問出題：同單元／題型、此槽位之前最後一筆 Exam_Quiz 主鍵（follow_up_exam_quiz_id） */
+function examFollowUpExamQuizIdForSlot(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  const prevName = String(card?.examQuizDisplayName ?? '').trim();
+  const { ragUnitId, ragQuizId } = examLlmRagIdsForSlot(slotIndex, prevName);
+  if (ragUnitId < 1 || ragQuizId < 1) return null;
+  const cards = currentState.value.cardList;
+  if (!Array.isArray(cards)) return null;
+  let lastId = null;
+  for (let i = 0; i < slotIndex - 1; i++) {
+    const c = cards[i];
+    if (!c || typeof c !== 'object') continue;
+    const ru = c.rag_unit_id != null ? Number(c.rag_unit_id) : NaN;
+    const rq = c.rag_quiz_id != null ? Number(c.rag_quiz_id) : NaN;
+    if (!Number.isFinite(ru) || ru !== ragUnitId || !Number.isFinite(rq) || rq !== ragQuizId) {
+      continue;
+    }
+    const id = Number(c.exam_quiz_id ?? c.quiz_id);
+    if (Number.isFinite(id) && id >= 1) lastId = Math.trunc(id);
+  }
+  return lastId;
+}
+
+/** 追問出題 POST llm-generate-followup 用之 quiz_history_list（同槽位之前、同單元／題型問答） */
+function examQuizFollowupHistoryListForLlm(slotIndex) {
+  return examQuizFollowupHistoryListForDisplay(slotIndex);
+}
+
+/**
+ * 須已選單元（若有選項）且能解析題型名稱才可開啟「之前的出題」。
+ * 勿僅查 examQuizDisplayName：已產題／GET 載入時題名常來自 rag 列對齊。
+ */
+function canOpenExamQuizHistoryModal(slotIndex) {
+  const slotState = getSlotFormState(slotIndex);
+  if (
+    examUnitSelectDropdownOptions.value.length > 0
+    && !String(slotState.examUnitSelectId ?? '').trim()
+  ) {
+    return false;
+  }
+  return examSlotQuizTypeLabelForHistoryModal(slotIndex) !== '—';
 }
 
 /** 已產生題幹後鎖定「單元／題型」下拉，避免與後端 Exam_Quiz 綁定不一致 */
@@ -1683,7 +1872,14 @@ const loadingOverlayVisible = computed(
 
 const loadingOverlayText = computed(() => {
   if (isGradingSubmitting.value) return '批改中...';
-  if (examGenerateQuizOverlayVisible.value) return '產生題目中...';
+  if (examGenerateQuizOverlayVisible.value) {
+    const n = Number(currentState.value.quizSlotsCount) || 0;
+    for (let i = 1; i <= n; i++) {
+      if (!getSlotFormState(i).loading) continue;
+      if (examSlotIsFollowupMode(i)) return '追問出題中...';
+    }
+    return '產生題目中...';
+  }
   if (deleteExamLoading.value) return '刪除中...';
   if (examRenameSaving.value) return '儲存中...';
   if (createExamLoading.value) return '建立中...';
@@ -1982,6 +2178,20 @@ async function generateQuiz(slotIndex) {
     return;
   }
 
+  const followupMode = examSlotIsFollowupMode(slotIndex);
+  if (followupMode) {
+    const followUpExamQuizId = examFollowUpExamQuizIdForSlot(slotIndex);
+    const followupHistory = examQuizFollowupHistoryListForLlm(slotIndex);
+    if (followUpExamQuizId == null) {
+      slotState.error = '追問出題須先有同題型之先前題目';
+      return;
+    }
+    if (!followupHistory.length) {
+      slotState.error = '追問出題須先有題目與作答內容';
+      return;
+    }
+  }
+
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
@@ -1991,16 +2201,28 @@ async function generateQuiz(slotIndex) {
       ? slotState.quiz_history_list
       : [];
 
-    const data = await apiExamTabQuizLlmGenerate(
-      {
-        exam_quiz_id: draftEq,
-        rag_tab_id: ragTabIdForLlm,
-        rag_unit_id: ragUnitIdForLlm,
-        rag_quiz_id: ragQuizIdForLlm,
-        quiz_history_list: quizHistoryList,
-      },
-      personId
-    );
+    const data = followupMode
+      ? await apiExamTabQuizLlmGenerateFollowup(
+          {
+            exam_quiz_id: draftEq,
+            rag_tab_id: ragTabIdForLlm,
+            rag_unit_id: ragUnitIdForLlm,
+            rag_quiz_id: ragQuizIdForLlm,
+            follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
+            quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
+          },
+          personId,
+        )
+      : await apiExamTabQuizLlmGenerate(
+          {
+            exam_quiz_id: draftEq,
+            rag_tab_id: ragTabIdForLlm,
+            rag_unit_id: ragUnitIdForLlm,
+            rag_quiz_id: ragQuizIdForLlm,
+            quiz_history_list: quizHistoryList,
+          },
+          personId,
+        );
 
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
@@ -2046,6 +2268,19 @@ async function generateQuiz(slotIndex) {
       const fromApi = examQuizDisplayNameFromRow(data);
       const fromDraft = String(slotState.examQuizNamePick ?? '').trim();
       newCard.examQuizDisplayName = fromApi || fromDraft || prevExamQuizDisplayName || '';
+      newCard.follow_up =
+        examQuizApiRowIsFollowUp(data)
+        || examQuizFollowUpForCard(slotIndex, newCard)
+        || followupMode;
+      const fuFromApi = Number(
+        data.follow_up_exam_quiz_id ?? data.followUpExamQuizId ?? NaN,
+      );
+      if (Number.isFinite(fuFromApi) && fuFromApi >= 1) {
+        newCard.follow_up_exam_quiz_id = Math.trunc(fuFromApi);
+      } else if (followupMode) {
+        const fuReq = examFollowUpExamQuizIdForSlot(slotIndex);
+        if (fuReq != null) newCard.follow_up_exam_quiz_id = fuReq;
+      }
       const qpFromResponse = extractQuizUserPromptFromExamRagRow(data).trim();
       newCard.quiz_user_prompt_text = qpFromResponse || promptBundle.quiz_user_prompt_text;
       const apFromResponse = extractAnswerUserPromptFromExamRagRow(data).trim();
@@ -2225,77 +2460,14 @@ onActivated(() => {
           </div>
         </div>
       </div>
-      <div
-        v-if="examQuizHistoryModalSlotIndex != null"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="exam-quiz-history-modal-title"
-        @click.self="closeExamQuizHistoryModal"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5 id="exam-quiz-history-modal-title" class="modal-title my-color-black">
-                之前的出題
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeExamQuizHistoryModal"
-              />
-            </div>
-            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
-              <div
-                v-if="examQuizHistoryModalSlotIndex != null"
-                class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3 mb-3"
-              >
-                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                  <div class="my-color-gray-1 my-font-sm-400 mb-0">單元</div>
-                  <div
-                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                    role="status"
-                  >
-                    {{ examSlotUnitLabelForHistoryModal(examQuizHistoryModalSlotIndex) }}
-                  </div>
-                </div>
-                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                  <div class="my-color-gray-1 my-font-sm-400 mb-0">題型</div>
-                  <div
-                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                    role="status"
-                  >
-                    {{ examSlotQuizTypeLabelForHistoryModal(examQuizHistoryModalSlotIndex) }}
-                  </div>
-                </div>
-              </div>
-              <ol
-                v-if="examQuizHistoryModalList.length > 0"
-                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
-              >
-                <li
-                  v-for="(stem, hi) in examQuizHistoryModalList"
-                  :key="`exam-quiz-history-${hi}-${stem.slice(0, 32)}`"
-                  class="pe-2"
-                >
-                  {{ stem }}
-                </li>
-              </ol>
-              <p
-                v-else
-                class="my-font-md-400 my-color-gray-1 mb-0"
-              >
-                尚無先前的出題。
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <QuizHistoryModal
+        v-model="examQuizHistoryModalOpen"
+        :unit-label="examQuizHistoryModalUnitLabel"
+        :quiz-type-label="examQuizHistoryModalQuizTypeLabel"
+        :is-followup="examQuizHistoryModalIsFollowup"
+        :history-list="examQuizHistoryModalList"
+        title-id="exam-quiz-history-modal-title"
+      />
     </Teleport>
     <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
@@ -2477,7 +2649,7 @@ onActivated(() => {
                                   v-model="getSlotFormState(slotIndex).examQuizNamePick"
                                   :options="examQuizDropdownItemsForSlot(slotIndex)"
                                   :option-value="examQuizPickSelectValue"
-                                  :option-label="(q) => String(q.quiz_name ?? '').trim() || '—'"
+                                  :option-label="examQuizTypeDisplayLabelForDropdownOption"
                                   placeholder="— 請選擇題型 —"
                                   :menu-id="`exam-slot-${slotIndex}-quiz-dd-filled`"
                                   :disabled="examQuizNameDropdownDisabled(slotIndex)"
@@ -2573,9 +2745,15 @@ onActivated(() => {
                         design-embedded
                         hide-slot-index
                         hide-grading-prompt
-                        :exam-quiz-history-list="getSlotFormState(slotIndex).quiz_history_list"
+                        :exam-quiz-history-list="
+                          examSlotIsFollowupMode(slotIndex)
+                            ? examQuizFollowupHistoryListForDisplay(slotIndex)
+                            : getSlotFormState(slotIndex).quiz_history_list
+                        "
                         :exam-quiz-history-unit-label="examSlotUnitLabelForHistoryModal(slotIndex)"
                         :exam-quiz-history-quiz-type-label="examSlotQuizTypeLabelForHistoryModal(slotIndex)"
+                        :exam-quiz-history-is-followup="examSlotIsFollowupMode(slotIndex)"
+                        :exam-quiz-history-open-allowed="canOpenExamQuizHistoryModal(slotIndex)"
                         :grade-submitting="examCardGradeSubmitting(currentState.cardList[slotIndex - 1])"
                         @toggle-hint="toggleHint"
                         @toggle-reference-answer="toggleReferenceAnswer"
@@ -2590,6 +2768,7 @@ onActivated(() => {
                             type="button"
                             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                             aria-label="查看之前的出題"
+                            :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
                             @click="openExamQuizHistoryModal(slotIndex)"
                           >
                             之前的出題
@@ -2682,7 +2861,7 @@ onActivated(() => {
                                     v-model="getSlotFormState(slotIndex).examQuizNamePick"
                                     :options="examQuizDropdownItemsForSlot(slotIndex)"
                                     :option-value="examQuizPickSelectValue"
-                                    :option-label="(q) => String(q.quiz_name ?? '').trim() || '—'"
+                                    :option-label="examQuizTypeDisplayLabelForDropdownOption"
                                     placeholder="— 請選擇題型 —"
                                     :menu-id="`exam-slot-${slotIndex}-quiz-dd-new`"
                                     :disabled="examQuizNameDropdownDisabled(slotIndex)"
@@ -2773,6 +2952,7 @@ onActivated(() => {
                             type="button"
                             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                             aria-label="查看之前的出題"
+                            :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
                             @click="openExamQuizHistoryModal(slotIndex)"
                           >
                             之前的出題

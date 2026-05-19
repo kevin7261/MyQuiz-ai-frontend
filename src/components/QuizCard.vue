@@ -64,6 +64,10 @@ const props = defineProps({
   examQuizHistoryUnitLabel: { type: String, default: '' },
   /** 測驗頁：之前的出題 Modal 顯示用題型名稱 */
   examQuizHistoryQuizTypeLabel: { type: String, default: '' },
+  /** 測驗頁：追問出題時 Modal 顯示問答四段式 */
+  examQuizHistoryIsFollowup: { type: Boolean, default: false },
+  /** 測驗頁：是否允許開啟「之前的出題」（未選題型時 false） */
+  examQuizHistoryOpenAllowed: { type: Boolean, default: true },
 });
 
 const emit = defineEmits([
@@ -152,12 +156,13 @@ const promptModalTitle = computed(() =>
   promptModalKind.value === 'question' ? '出題規則' : '批改規則'
 );
 
-/** 測驗頁：可查看此題之前的出題 */
+/** 測驗頁：可查看此題之前的出題（批改後仍保留；須父層傳入 history 相關 props） */
 const showQuizHistoryPreviewButton = computed(
-  () =>
-    props.hideGradingPrompt
-    && showStartGradeButton.value
-    && props.examQuizHistoryList !== undefined,
+  () => props.hideGradingPrompt && props.examQuizHistoryList !== undefined,
+);
+
+const examQuizHistoryButtonDisabled = computed(
+  () => props.examQuizHistoryOpenAllowed === false,
 );
 
 const quizHistoryModalList = computed(() => {
@@ -171,9 +176,6 @@ function openQuizHistoryModal() {
   quizHistoryModalOpen.value = true;
 }
 
-function closeQuizHistoryModal() {
-  quizHistoryModalOpen.value = false;
-}
 
 /** Modal 內文：用題卡完整字串跑 Markdown（與 EnglishExamMarkdownEditor 預覽同源），勿先行 trim 以免破壞程式碼區塊 */
 const promptModalMarkdownSource = computed(() => {
@@ -392,74 +394,14 @@ const quizAnswerFieldDisabled = computed(
           </div>
         </div>
       </div>
-      <div
-        v-if="quizHistoryModalOpen"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        :aria-labelledby="`quiz-card-history-modal-title-${card.id}`"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5
-                :id="`quiz-card-history-modal-title-${card.id}`"
-                class="modal-title my-color-black"
-              >之前的出題</h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeQuizHistoryModal"
-              />
-            </div>
-            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
-              <div class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3 mb-3">
-                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                  <div class="my-color-gray-1 my-font-sm-400 mb-0">單元</div>
-                  <div
-                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                    role="status"
-                  >
-                    {{ examQuizHistoryUnitLabel || '—' }}
-                  </div>
-                </div>
-                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                  <div class="my-color-gray-1 my-font-sm-400 mb-0">題型</div>
-                  <div
-                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                    role="status"
-                  >
-                    {{ examQuizHistoryQuizTypeLabel || '—' }}
-                  </div>
-                </div>
-              </div>
-              <ol
-                v-if="quizHistoryModalList.length > 0"
-                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
-              >
-                <li
-                  v-for="(stem, hi) in quizHistoryModalList"
-                  :key="`quiz-history-${hi}-${stem.slice(0, 32)}`"
-                  class="pe-2"
-                >
-                  {{ stem }}
-                </li>
-              </ol>
-              <p
-                v-else
-                class="my-font-md-400 my-color-gray-1 mb-0"
-              >
-                尚無先前的出題。
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <QuizHistoryModal
+        v-model="quizHistoryModalOpen"
+        :unit-label="examQuizHistoryUnitLabel"
+        :quiz-type-label="examQuizHistoryQuizTypeLabel"
+        :is-followup="examQuizHistoryIsFollowup"
+        :history-list="quizHistoryModalList"
+        :title-id="`quiz-card-history-modal-title-${card.id}`"
+      />
     </Teleport>
     <div
       :class="[
@@ -815,9 +757,9 @@ const quizAnswerFieldDisabled = computed(
             </button>
           </div>
         </div>
-        <!-- 測驗頁隱藏批改編輯區時，僅顯示「開始批改」（無重設） -->
+        <!-- 測驗頁隱藏批改編輯區：「之前的出題」批改後仍保留；「開始批改」僅未批改時 -->
         <div
-          v-else-if="showStartGradeButton"
+          v-else-if="showStartGradeButton || showQuizHistoryPreviewButton"
           :class="
             designUi
               ? 'd-flex flex-column align-items-center gap-2 mt-3'
@@ -829,11 +771,13 @@ const quizAnswerFieldDisabled = computed(
             type="button"
             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
             aria-label="查看之前的出題"
+            :disabled="examQuizHistoryButtonDisabled"
             @click="openQuizHistoryModal"
           >
             之前的出題
           </button>
           <button
+            v-if="showStartGradeButton"
             type="button"
             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
             :disabled="standaloneStartGradeButtonDisabled"

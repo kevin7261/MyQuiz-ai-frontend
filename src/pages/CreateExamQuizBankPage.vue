@@ -1891,9 +1891,6 @@ function openBankQuizHistoryModal() {
   bankQuizHistoryModalOpen.value = true;
 }
 
-function closeBankQuizHistoryModal() {
-  bankQuizHistoryModalOpen.value = false;
-}
 
 const bankQuizHistoryModalList = computed(() => {
   if (!bankQuizHistoryModalOpen.value) return [];
@@ -4525,111 +4522,14 @@ async function confirmAnswer(item) {
         </div>
       </div>
     </Teleport>
-    <Teleport to="body">
-      <div
-        v-if="bankQuizHistoryModalOpen"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="bank-quiz-history-modal-title"
-        @click.self="closeBankQuizHistoryModal"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5 id="bank-quiz-history-modal-title" class="modal-title my-color-black">
-                之前的出題
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeBankQuizHistoryModal"
-              />
-            </div>
-            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
-              <div class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3 mb-3">
-                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                  <div class="my-color-gray-1 my-font-sm-400 mb-0">單元</div>
-                  <div
-                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                    role="status"
-                  >
-                    {{ bankQuizHistoryModalUnitLabel }}
-                  </div>
-                </div>
-                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                  <div class="my-color-gray-1 my-font-sm-400 mb-0">題型</div>
-                  <div
-                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                    role="status"
-                  >
-                    {{ bankQuizHistoryModalQuizTypeLabel }}
-                  </div>
-                </div>
-              </div>
-              <ol
-                v-if="bankQuizHistoryModalIsFollowup && bankQuizHistoryModalList.length > 0"
-                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-4"
-              >
-                <li
-                  v-for="(entry, hi) in bankQuizHistoryModalList"
-                  :key="`bank-quiz-followup-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
-                  class="pe-2"
-                >
-                  <div class="d-flex flex-column gap-2">
-                    <div>
-                      <div class="my-color-gray-1 my-font-sm-400">題目</div>
-                      <div class="my-color-black lh-base text-break mt-1">{{ entry.quiz_content }}</div>
-                    </div>
-                    <div>
-                      <div class="my-color-gray-1 my-font-sm-400">參考答案</div>
-                      <div class="my-color-black lh-base text-break mt-1">
-                        {{ entry.quiz_answer_reference || '—' }}
-                      </div>
-                    </div>
-                    <div>
-                      <div class="my-color-gray-1 my-font-sm-400">回答</div>
-                      <div class="my-color-black lh-base text-break mt-1">
-                        {{ entry.answer_content || '—' }}
-                      </div>
-                    </div>
-                    <div>
-                      <div class="my-color-gray-1 my-font-sm-400">評閱</div>
-                      <div class="my-color-black lh-base text-break mt-1">
-                        {{ entry.answer_critique || '—' }}
-                      </div>
-                    </div>
-                  </div>
-                </li>
-              </ol>
-              <ol
-                v-else-if="!bankQuizHistoryModalIsFollowup && bankQuizHistoryModalList.length > 0"
-                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
-              >
-                <li
-                  v-for="(stem, hi) in bankQuizHistoryModalList"
-                  :key="`bank-quiz-history-${hi}-${stem.slice(0, 32)}`"
-                  class="pe-2"
-                >
-                  {{ stem }}
-                </li>
-              </ol>
-              <p
-                v-else
-                class="my-font-md-400 my-color-gray-1 mb-0"
-              >
-                尚無先前的出題。
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+    <QuizHistoryModal
+      v-model="bankQuizHistoryModalOpen"
+      :unit-label="bankQuizHistoryModalUnitLabel"
+      :quiz-type-label="bankQuizHistoryModalQuizTypeLabel"
+      :is-followup="bankQuizHistoryModalIsFollowup"
+      :history-list="bankQuizHistoryModalList"
+      title-id="bank-quiz-history-modal-title"
+    />
     <Teleport to="body">
       <div
         v-if="packBuildSuccessModalOpen"

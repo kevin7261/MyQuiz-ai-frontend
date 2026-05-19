@@ -182,7 +182,7 @@ export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
 /** 學生作答分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
-/** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／course_id／local 篩選；course_id 由 loggedFetch 自 currentCourse 帶入；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz），題列可內嵌 answer_content／quiz_score／answer_critique */
+/** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／course_id／local 篩選；course_id 由 loggedFetch 自 currentCourse 帶入；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz，含 follow_up），題列可內嵌 answer_content／quiz_score／answer_critique */
 export const API_EXAM_TESTS = '/exam/tabs';
 /** Exam：POST /exam/tab/create；query person_id 必填；body 可選 exam_tab_id（未傳則後端產生）、person_id、tab_name、local（預設 false；本機前端應傳 true 與 RAG tab/create 一致）；回傳 exam_id、exam_tab_id、person_id、tab_name、local、created_at */
 export const API_CREATE_EXAM = '/exam/tab/create';
@@ -205,6 +205,11 @@ export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
  * Body 順序：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id、quiz_history_list。勿傳出題／批改提示文字。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
+/**
+ * POST /exam/tab/quiz/llm-generate-followup — Exam LLM Generate Follow-up Quiz；query：`person_id`、`course_id`（必填）。
+ * Body：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id、follow_up_exam_quiz_id（皆必填）；quiz_history_list 為物件陣列（quiz_content、answer_content、quiz_answer_reference、answer_critique）。
+ */
+export const API_EXAM_TAB_QUIZ_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/llm-generate-followup';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */
 export const API_EXAM_QUIZ_GRADE = '/exam/tab/quiz/llm-grade';
 /** @deprecated 舊路徑 POST /exam/tab/quiz/grade；批改請使用 {@link API_EXAM_QUIZ_GRADE}（llm-grade） */

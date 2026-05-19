@@ -5,7 +5,7 @@
  * - 分頁更名：PUT /exam/tab/tab-name
  * - 空白題目建立：POST /exam/tab/quiz/create
  * - LLM 批改（非同步）：POST /exam/tab/quiz/llm-grade（回傳 202 + job_id，需輪詢）
- * - LLM 出題：POST /exam/tab/quiz/llm-generate
+ * - LLM 出題：POST /exam/tab/quiz/llm-generate、追問 POST /exam/tab/quiz/llm-generate-followup
  *
  * 使用 loggedFetch；錯誤時以 parseFetchError 解析並 throw Error，供呼叫端 catch 顯示。
  */
@@ -14,8 +14,10 @@ import {
   API_EXAM_CREATE_QUIZ,
   API_EXAM_QUIZ_GRADE,
   API_EXAM_TAB_QUIZ_LLM_GENERATE,
+  API_EXAM_TAB_QUIZ_LLM_GENERATE_FOLLOWUP,
   API_EXAM_UNIT_NAME,
 } from '../constants/api.js';
+import { normalizeFollowupHistoryItem } from './ragApi.js';
 import { parseFetchError } from '../utils/apiError.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
@@ -158,6 +160,74 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
     quiz_history_list: history,
   };
   const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_LLM_GENERATE}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, { personId: pid });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * 測驗 LLM 追問出題：POST /exam/tab/quiz/llm-generate-followup。
+ * Query：`person_id`、`course_id`（必填，由 {@link loggedFetch} 帶入）。
+ *
+ * @param {{
+ *   exam_quiz_id: number | string,
+ *   rag_quiz_id: number | string,
+ *   rag_tab_id: string,
+ *   rag_unit_id: number | string,
+ *   follow_up_exam_quiz_id: number | string,
+ *   quiz_history_list?: { quiz_content: string, answer_content: string, quiz_answer_reference?: string, answer_critique?: string }[],
+ * }} body
+ * @param {string | number} personId
+ * @returns {Promise<object>}
+ */
+export async function apiExamTabQuizLlmGenerateFollowup(body, personId) {
+  const pid = String(personId ?? '').trim();
+  if (!pid) throw new Error('person_id 為必填');
+  const eid = Number(body?.exam_quiz_id);
+  if (!Number.isFinite(eid) || eid < 1) throw new Error('無效的 exam_quiz_id');
+  const fu = Number(body?.follow_up_exam_quiz_id);
+  if (!Number.isFinite(fu) || fu < 1) {
+    throw new Error('追問出題須提供有效的 follow_up_exam_quiz_id');
+  }
+  const ru = body?.rag_unit_id != null && body.rag_unit_id !== '' ? Number(body.rag_unit_id) : NaN;
+  const ragUnitId = Number.isFinite(ru) && ru > 0 ? Math.trunc(ru) : 0;
+  const rq = body?.rag_quiz_id != null && body.rag_quiz_id !== '' ? Number(body.rag_quiz_id) : NaN;
+  const ragQuizId = Number.isFinite(rq) && rq > 0 ? Math.trunc(rq) : 0;
+  if (ragUnitId < 1 || ragQuizId < 1) {
+    throw new Error('llm-generate-followup 須提供有效的 rag_unit_id、rag_quiz_id（正整數）');
+  }
+  const ragTabId = String(body?.rag_tab_id ?? '').trim();
+  if (!ragTabId) throw new Error('llm-generate-followup 須提供 rag_tab_id');
+  const seen = new Set();
+  const history = Array.isArray(body?.quiz_history_list)
+    ? body.quiz_history_list.reduce((acc, item) => {
+        const normalized = normalizeFollowupHistoryItem(item);
+        if (!normalized) return acc;
+        const key = [
+          normalized.quiz_content,
+          normalized.answer_content,
+          normalized.quiz_answer_reference,
+          normalized.answer_critique,
+        ].join('\0');
+        if (seen.has(key)) return acc;
+        seen.add(key);
+        acc.push(normalized);
+        return acc;
+      }, [])
+    : [];
+  const payload = {
+    exam_quiz_id: Math.trunc(eid),
+    rag_tab_id: ragTabId,
+    rag_unit_id: ragUnitId,
+    rag_quiz_id: ragQuizId,
+    follow_up_exam_quiz_id: Math.trunc(fu),
+    quiz_history_list: history,
+  };
+  const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_LLM_GENERATE_FOLLOWUP}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
