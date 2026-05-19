@@ -2,12 +2,16 @@
 /**
  * LogListPage - 系統 Log 列表（GET /log/logs）
  *
+ * 讀取目前選取課程（currentCourse.course_id）的 Log，依 log_id 降冪；person_id 由 loggedFetch 帶入（僅供後端請求紀錄）。
  * 僅 user_type=1 可進入（路由與選單由 permissions 限制）。
  */
 import { ref, computed, onMounted } from 'vue';
 import { API_BASE, API_LIST_LOGS } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { loggedFetch } from '../utils/loggedFetch.js';
+import { useAuthStore } from '../stores/authStore.js';
+
+const authStore = useAuthStore();
 
 const rows = ref([]);
 const loading = ref(false);
@@ -22,10 +26,17 @@ function normalizeRows(data) {
 
 const COLUMN_LABELS = {
   log_id: '紀錄編號',
+  course_id: '課程 ID',
   person_id: '使用者 ID',
   created_at: '建立時間',
   updated_at: '更新時間',
 };
+
+const courseSubtitle = computed(() => {
+  const c = authStore.currentCourse;
+  if (!c?.course_id) return null;
+  return c.course_name ? `${c.course_name}（course_id: ${c.course_id}）` : `course_id: ${c.course_id}`;
+});
 
 const columns = computed(() => {
   const r = rows.value[0];
@@ -49,6 +60,12 @@ function cellDisplay(val) {
 async function fetchLogs() {
   loading.value = true;
   error.value = '';
+  if (authStore.currentCourse?.course_id == null) {
+    error.value = '請先於左側選單選擇課程，再載入系統紀錄。';
+    rows.value = [];
+    loading.value = false;
+    return;
+  }
   try {
     const res = await loggedFetch(`${API_BASE}${API_LIST_LOGS}`, { method: 'GET' });
     const text = await res.text();
@@ -83,6 +100,7 @@ onMounted(() => {
     <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">系統紀錄</p>
+        <p v-if="courseSubtitle" class="my-font-md-400 my-color-gray-4 text-break mb-0 mt-2">{{ courseSubtitle }}</p>
       </div>
     </header>
     <div v-if="error" class="flex-shrink-0">

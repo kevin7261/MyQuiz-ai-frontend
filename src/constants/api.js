@@ -221,5 +221,8 @@ export const API_PUT_SYSTEM_SETTING_LLM_API_KEY = '/system-settings/llm-api-key'
 /** GET／PUT：作答弱點「分析報告規則」Prompt（person_analysis_user_prompt_text）；GET 凡有效使用者；PUT 僅 user_type 1／2；loggedFetch 自動帶 query person_id。 */
 export const API_PERSON_ANALYSIS_USER_PROMPT = '/system-settings/person_analysis_user_prompt_text';
 
-/** GET：系統 Log 列表。 */
+/**
+ * GET /log/logs — List Logs：讀取指定 course_id 的 Log，依 log_id 降冪。
+ * query person_id 為呼叫者（必填，僅供請求紀錄）；course_id 篩選課程（loggedFetch 自 currentCourse 帶入）。
+ */
 export const API_LIST_LOGS = '/log/logs';
