@@ -2181,7 +2181,7 @@ function resolveUnitQuizRagQuizIdForLlm(slotIndex, quizCardRow) {
 }
 
 /** 「儲存並產生題目」可按：須有非空白之出題規則，且出題規則內容須與 baseline 不同（已編輯） */
-/** 出題模式：未「儲存並產生題目」前可切換；之後鎖定於題卡 quizGenerateMode */
+/** 出題模式：slot 與題卡 quizGenerateMode 同步；GET /rag/tabs、/rag/tab/units 之 follow_up 載入時寫入題卡 */
 function resolveUnitQuizGenerateMode(slotIndex, card = null) {
   if (card != null && typeof card === 'object') {
     if (card.quizGenerateMode === 'followup') return 'followup';
@@ -2195,14 +2195,12 @@ function isUnitQuizFollowupMode(slotIndex, card = null) {
   return resolveUnitQuizGenerateMode(slotIndex, card) === 'followup';
 }
 
-function canChangeUnitQuizGenerateMode(card) {
-  if (!card || typeof card !== 'object') return true;
-  return card.hasUsedSaveAndGenerateOnce !== true;
-}
-
 function setUnitQuizGenerateMode(slotIndex, mode, card = null) {
-  if (card && !canChangeUnitQuizGenerateMode(card)) return;
-  getSlotFormState(slotIndex).quizGenerateMode = mode === 'followup' ? 'followup' : 'normal';
+  const resolved = mode === 'followup' ? 'followup' : 'normal';
+  getSlotFormState(slotIndex).quizGenerateMode = resolved;
+  if (card && typeof card === 'object') {
+    card.quizGenerateMode = resolved;
+  }
 }
 
 function canEnableUnitQuizGenerate(card, slotIndex) {
@@ -5721,10 +5719,7 @@ async function confirmAnswer(item) {
                           ? 'my-button-white'
                           : 'my-button-gray-3'
                       "
-                      :disabled="
-                        !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                        || !canChangeUnitQuizGenerateMode(activeUnitQuizCard)
-                      "
+                      :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                       @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
                     >
                       一般出題
@@ -5737,10 +5732,7 @@ async function confirmAnswer(item) {
                           ? 'my-button-white'
                           : 'my-button-gray-3'
                       "
-                      :disabled="
-                        !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                        || !canChangeUnitQuizGenerateMode(activeUnitQuizCard)
-                      "
+                      :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                       @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
                     >
                       追問出題
