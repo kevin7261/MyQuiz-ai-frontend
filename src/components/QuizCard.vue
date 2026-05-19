@@ -756,11 +756,11 @@ const quizAnswerFieldDisabled = computed(
         </template>
         <div
           v-if="!hideGradingPrompt"
-          class="d-flex flex-column gap-1 w-100 min-w-0 mt-3 quiz-card-grading-prompt-editor"
+          class="d-flex flex-column gap-0 w-100 min-w-0 mt-3 quiz-card-grading-prompt-editor"
         >
           <label
             :for="`quiz-grading-prompt-${card.id}`"
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >批改規則</label>
           <EnglishExamMarkdownEditor
             :model-value="String(card.gradingPrompt ?? '')"

@@ -21,6 +21,8 @@ import {
   API_RAG_TAB_UNIT_QUIZ_CREATE,
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE,
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_DB,
+  API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP,
+  API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP_DB,
   API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME,
   API_RAG_TAB_UNIT_QUIZ_FOR_EXAM,
   API_RAG_TAB_QUIZ_DELETE,
@@ -29,6 +31,7 @@ import {
 } from '../constants/api.js';
 import { getActivePinia } from 'pinia';
 import { formatBuildRagZipErrorDetail, parseBuildRagZipError, parseFetchError } from '../utils/apiError.js';
+import { formatGradingResult } from '../utils/grading.js';
 import { loggedFetch, mergeApiQuery } from '../utils/loggedFetch.js';
 import { useAuthStore } from '../stores/authStore.js';
 
@@ -693,6 +696,205 @@ export async function apiRagUnitQuizLlmGenerateDb(body, personId) {
     body: JSON.stringify({
       rag_quiz_id: rqid,
       quiz_name: qname,
+    }),
+  }, { personId: pid });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * 正規化追問出題歷史單筆（quiz_content、answer_content、quiz_answer_reference、answer_critique）。
+ * @param {unknown} item
+ * @returns {{ quiz_content: string, answer_content: string, quiz_answer_reference: string, answer_critique: string } | null}
+ */
+export function normalizeFollowupHistoryItem(item) {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+  const quiz_content = String(
+    item.quiz_content ?? item.quizContent ?? item.quiz ?? '',
+  ).trim();
+  if (!quiz_content) return null;
+  const answer_content = String(
+    item.answer_content ?? item.answerContent ?? item.quiz_answer ?? item.answer ?? '',
+  ).trim();
+  const quiz_answer_reference = String(
+    item.quiz_answer_reference
+    ?? item.quizAnswerReference
+    ?? item.quiz_reference_answer
+    ?? item.referenceAnswer
+    ?? '',
+  ).trim();
+  const answer_critique = String(
+    item.answer_critique ?? item.answerCritique ?? '',
+  ).trim();
+  return { quiz_content, answer_content, quiz_answer_reference, answer_critique };
+}
+
+function followupHistoryDedupKey(item) {
+  return [
+    item.quiz_content,
+    item.answer_content,
+    item.quiz_answer_reference,
+    item.answer_critique,
+  ].join('\0');
+}
+
+/**
+ * 自 API／題卡解析追問出題歷史（去重；支援 JSON 字串）。
+ * @param {unknown} source
+ * @returns {{ quiz_content: string, answer_content: string, quiz_answer_reference: string, answer_critique: string }[]}
+ */
+export function parseFollowupHistoryListFromSource(source) {
+  let list = source;
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    list =
+      source.quiz_followup_history_list
+      ?? source.quizFollowupHistoryList
+      ?? source.quiz_history_list
+      ?? source.quizHistoryList;
+  }
+  if (typeof list === 'string') {
+    const trimmed = list.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        list = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    } else {
+      return [];
+    }
+  }
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    if (typeof item === 'string') continue;
+    const normalized = normalizeFollowupHistoryItem(item);
+    if (!normalized) continue;
+    const key = followupHistoryDedupKey(normalized);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalized);
+  }
+  return out;
+}
+
+/**
+ * 自題卡組追問出題歷史單筆（供 llm-generate-followup 與 Modal 顯示）。
+ * @param {unknown} card
+ * @returns {{ quiz_content: string, answer_content: string, quiz_answer_reference: string, answer_critique: string } | null}
+ */
+export function followupHistoryEntryFromQuizCard(card) {
+  if (!card || typeof card !== 'object') return null;
+  return normalizeFollowupHistoryItem({
+    quiz_content: card.quiz,
+    answer_content: card.quiz_answer,
+    quiz_answer_reference: card.referenceAnswer ?? card.quiz_answer_reference,
+    answer_critique: extractAnswerCritiqueRaw(card),
+  });
+}
+
+/** @param {unknown} card */
+export function extractAnswerCritiqueRaw(card) {
+  if (!card || typeof card !== 'object') return '';
+  for (const k of ['answer_critique', 'answerCritique']) {
+    const v = card[k];
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  const gj = card.gradingResponseJson;
+  if (gj && typeof gj === 'object') {
+    for (const k of ['answer_critique', 'answerCritique']) {
+      const v = gj[k];
+      if (v != null && String(v).trim() !== '') return String(v).trim();
+    }
+    const formatted = formatGradingResult(JSON.stringify(gj));
+    if (formatted && String(formatted).trim() !== '') return String(formatted).trim();
+  }
+  const gr = card.gradingResult;
+  if (gr != null && String(gr).trim() !== '') return String(gr).trim();
+  return '';
+}
+
+/**
+ * RAG + LLM 追問出題（依先前問答接續下一題）。
+ * POST /rag/tab/unit/quiz/llm-generate-followup — query：**person_id**、**course_id**（必填）。
+ *
+ * Body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`、`quiz_history_list`（物件陣列，每項含 quiz_content、answer_content、quiz_answer_reference、answer_critique）。
+ *
+ * @param {{ rag_quiz_id: number, quiz_user_prompt_text?: string, quiz_name?: string, quiz_history_list?: { quiz_content: string, answer_content: string, quiz_answer_reference?: string, answer_critique?: string }[] }} body
+ * @returns {Promise<object>}
+ */
+export async function apiRagUnitQuizLlmGenerateFollowup(body, personId) {
+  const pid = String(personId ?? '').trim();
+  if (!pid) throw new Error('person_id 為必填');
+  const rqid = Number(body?.rag_quiz_id);
+  if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
+  const uxt = body?.quiz_user_prompt_text != null ? String(body.quiz_user_prompt_text) : '';
+  const qname = body?.quiz_name != null ? String(body.quiz_name) : '';
+  const seen = new Set();
+  const history = Array.isArray(body?.quiz_history_list)
+    ? body.quiz_history_list.reduce((acc, item) => {
+        const normalized = normalizeFollowupHistoryItem(item);
+        if (!normalized) return acc;
+        const key = followupHistoryDedupKey(normalized);
+        if (seen.has(key)) return acc;
+        seen.add(key);
+        acc.push(normalized);
+        return acc;
+      }, [])
+    : [];
+  const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rag_quiz_id: rqid,
+      quiz_name: qname,
+      quiz_user_prompt_text: uxt,
+      quiz_history_list: history,
+    }),
+  }, { personId: pid });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * RAG + LLM 追問出題（使用 Rag_Quiz 已儲存之 quiz_user_prompt_text，請求不帶該欄）。
+ * POST /rag/tab/unit/quiz/llm-generate-followup-db — query：**person_id**、**course_id**（必填）。
+ *
+ * Body：`rag_quiz_id`、`quiz_name`、`quiz_history_list`（物件陣列）。
+ *
+ * @param {{ rag_quiz_id: number, quiz_name?: string, quiz_history_list?: { quiz_content: string, answer_content: string, quiz_answer_reference?: string, answer_critique?: string }[] }} body
+ * @returns {Promise<object>}
+ */
+export async function apiRagUnitQuizLlmGenerateFollowupDb(body, personId) {
+  const pid = String(personId ?? '').trim();
+  if (!pid) throw new Error('person_id 為必填');
+  const rqid = Number(body?.rag_quiz_id);
+  if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
+  const qname = body?.quiz_name != null ? String(body.quiz_name) : '';
+  const seen = new Set();
+  const history = Array.isArray(body?.quiz_history_list)
+    ? body.quiz_history_list.reduce((acc, item) => {
+        const normalized = normalizeFollowupHistoryItem(item);
+        if (!normalized) return acc;
+        const key = followupHistoryDedupKey(normalized);
+        if (seen.has(key)) return acc;
+        seen.add(key);
+        acc.push(normalized);
+        return acc;
+      }, [])
+    : [];
+  const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP_DB}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      rag_quiz_id: rqid,
+      quiz_name: qname,
+      quiz_history_list: history,
     }),
   }, { personId: pid });
   const text = await res.text();

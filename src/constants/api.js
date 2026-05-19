@@ -116,7 +116,7 @@ export const API_RAG_QUIZ_GRADE_RESULT = '/rag/tab/unit/quiz/grade-result';
 
 /** Create Tab（RAG）：POST /rag/tab/create；僅建立一筆 Rag；body 必填 rag_tab_id、person_id、tab_name，選填 local（預設 false；本機前端可傳 true）；回傳建立欄位（尚無檔案時不含 file_size） */
 export const API_CREATE_UNIT = '/rag/tab/create';
-/** 列出 RAG：GET /rag/tabs；回傳 { rags, count }；query 可選 local（須與 Rag.local 相符；未傳時後端依連線判定）；僅 deleted=false；每筆含表欄位（含 for_exam、file_size〔MB〕、file_metadata）、units[]（每單元含 transcription、quizzes、for_exam 等）、相容頂層 quizzes／answers */
+/** 列出 RAG：GET /rag/tabs；回傳 { rags, count }；query 可選 local（須與 Rag.local 相符；未傳時後端依連線判定）；僅 deleted=false；每筆含表欄位（含 for_exam、file_size〔MB〕、file_metadata）、units[]（每單元含 transcription、quizzes、for_exam 等；quizzes 含 follow_up）、相容頂層 quizzes／answers */
 export const API_RAG_LIST = '/rag/tabs';
 /** 上傳教材檔：POST /rag/tab/upload-zip，需先 POST /rag/tab/create；Form: file、rag_tab_id、person_id、course_id（必填）；query 亦附 course_id（loggedFetch）；file 可為 .pdf、.doc、.docx、.ppt、.pptx 等後端可解析格式；不需 llm_api_key；回傳 file_metadata（內含 file_size〔MB〕等）並寫入 DB */
 export const API_UPLOAD_ZIP = '/rag/tab/upload-zip';
@@ -138,7 +138,7 @@ export const API_RAG_TRANSCRIPT_YOUTUBE = '/rag/transcript/youtube';
 export const API_RAG_UNIT_MP3_FILE = '/rag/unit/mp3-file';
 /** RAG YouTube 單元 URL：GET /rag/unit/youtube-url；query：rag_tab_id、folder_name、person_id */
 export const API_RAG_UNIT_YOUTUBE_URL = '/rag/unit/youtube-url';
-/** 列出指定 tab 下所有未刪除 Rag_Unit（含關聯 quizzes）：GET /rag/tab/units；query: rag_tab_id、person_id（必填）；依 created_at 舊→新 */
+/** 列出指定 tab 下所有未刪除 Rag_Unit（含關聯 quizzes，quizzes 含 follow_up）：GET /rag/tab/units；query: rag_tab_id、person_id（必填）；依 created_at 舊→新 */
 export const API_RAG_TAB_UNITS = '/rag/tab/units';
 /** 音訊單元原始 MP3：GET /rag/tab/unit/mp3-file；query：rag_tab_id、rag_unit_id（不需 person_id）；僅 Rag_Unit.unit_type=3 時回傳音訊本體 */
 export const API_RAG_TAB_UNIT_MP3_FILE = '/rag/tab/unit/mp3-file';
@@ -154,6 +154,13 @@ export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE = '/rag/tab/unit/quiz/llm-genera
  * query：`person_id`（必填）。Body：**僅** `rag_quiz_id`、`quiz_name`（可 ""）；勿傳 `quiz_user_prompt_text`，後端一律使用 Rag_Quiz 該列既有欄位（行為等同 llm-generate 傳空字串）。
  */
 export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_DB = '/rag/tab/unit/quiz/llm-generate-db';
+/** POST /rag/tab/unit/quiz/llm-generate-followup — body：rag_quiz_id、quiz_name、quiz_user_prompt_text、quiz_history_list（物件陣列，每項 quiz_content＋answer_content）；query person_id、course_id 必填 */
+export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP = '/rag/tab/unit/quiz/llm-generate-followup';
+/**
+ * POST /rag/tab/unit/quiz/llm-generate-followup-db — 同 followup，但 body 不含 quiz_user_prompt_text，後端使用 Rag_Quiz 已儲存欄位。
+ * Body：rag_quiz_id、quiz_name、quiz_history_list（物件陣列）。
+ */
+export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP_DB = '/rag/tab/unit/quiz/llm-generate-followup-db';
 /** 更新 Rag_Quiz 題名：PUT /rag/tab/unit/quiz/quiz-name；body 以 rag_quiz_id 比對（僅 deleted=false）；回傳 rag_quiz_id、rag_tab_id、rag_unit_id、person_id、quiz_name、updated_at 等 */
 export const API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME = '/rag/tab/unit/quiz/quiz-name';
 /** Rag_Quiz.for_exam：POST /rag/tab/unit/quiz/for-exam — query person_id；body 僅 `rag_quiz_id`、`for_exam`（true＝測驗用、false＝取消） */

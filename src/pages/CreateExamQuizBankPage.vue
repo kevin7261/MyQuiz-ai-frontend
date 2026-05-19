@@ -39,6 +39,11 @@ import {
   apiCreateRagUnitQuiz,
   apiRagUnitQuizLlmGenerate,
   apiRagUnitQuizLlmGenerateDb,
+  apiRagUnitQuizLlmGenerateFollowup,
+  apiRagUnitQuizLlmGenerateFollowupDb,
+  parseFollowupHistoryListFromSource,
+  followupHistoryEntryFromQuizCard,
+  normalizeFollowupHistoryItem,
   apiMarkRagQuizForExam,
   apiGenerateQuiz,
   apiUpdateRagQuizName,
@@ -535,6 +540,17 @@ function ragQuizApiRowIsForExam(quiz) {
   );
 }
 
+/** GET /rag/tabs、GET /rag/tab/units 之 Rag_Quiz.follow_up===true 時為追問出題 */
+function ragQuizApiRowIsFollowUp(quiz) {
+  if (!quiz || typeof quiz !== 'object') return false;
+  return (
+    quiz.follow_up === true
+    || quiz.follow_up === 1
+    || quiz.followUp === true
+    || quiz.followUp === 1
+  );
+}
+
 /** 單元列：quizzes／quiz_list／Quizzes */
 function quizRowsFromUnitApiRow(u) {
   if (!u || typeof u !== 'object') return [];
@@ -690,6 +706,16 @@ const activeUnitQuizLoadingOverlayKind = computed(() => {
   for (let i = 1; i <= n; i++) {
     const slot = state.slotFormState[i];
     if (!slot?.unitQuizCreateLoading) continue;
+    if (slot.unitQuizLoadingOverlayKind === 'llm-generate-followup-db') return 'llm-generate-followup-db';
+  }
+  for (let i = 1; i <= n; i++) {
+    const slot = state.slotFormState[i];
+    if (!slot?.unitQuizCreateLoading) continue;
+    if (slot.unitQuizLoadingOverlayKind === 'llm-generate-followup') return 'llm-generate-followup';
+  }
+  for (let i = 1; i <= n; i++) {
+    const slot = state.slotFormState[i];
+    if (!slot?.unitQuizCreateLoading) continue;
     if (slot.unitQuizLoadingOverlayKind === 'llm-generate-db') return 'llm-generate-db';
   }
   for (let i = 1; i <= n; i++) {
@@ -736,6 +762,8 @@ const loadingOverlayVisible = computed(
 const loadingOverlayText = computed(() => {
   if (isGradingSubmitting.value) return '批改中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'add-row') return '產生題型中';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存並追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return '產生題目中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '儲存並產生題目中...';
   if (hasAnySlotGenerating.value) return '儲存並產生題目中...';
@@ -1869,7 +1897,16 @@ function closeBankQuizHistoryModal() {
 
 const bankQuizHistoryModalList = computed(() => {
   if (!bankQuizHistoryModalOpen.value) return [];
-  return unitQuizHistoryListForDisplay(activeUnitQuizCard.value);
+  const card = activeUnitQuizCard.value;
+  if (isUnitQuizFollowupMode(activeUnitSlotIndex.value, card)) {
+    return unitQuizFollowupHistoryListForDisplay(card);
+  }
+  return unitQuizHistoryListForDisplay(card);
+});
+
+const bankQuizHistoryModalIsFollowup = computed(() => {
+  if (!bankQuizHistoryModalOpen.value) return false;
+  return isUnitQuizFollowupMode(activeUnitSlotIndex.value, activeUnitQuizCard.value);
 });
 
 const bankQuizHistoryModalUnitLabel = computed(() => {
@@ -2144,13 +2181,37 @@ function resolveUnitQuizRagQuizIdForLlm(slotIndex, quizCardRow) {
 }
 
 /** 「儲存並產生題目」可按：須有非空白之出題規則，且出題規則內容須與 baseline 不同（已編輯） */
+/** 出題模式：未「儲存並產生題目」前可切換；之後鎖定於題卡 quizGenerateMode */
+function resolveUnitQuizGenerateMode(slotIndex, card = null) {
+  if (card != null && typeof card === 'object') {
+    if (card.quizGenerateMode === 'followup') return 'followup';
+    if (card.quizGenerateMode === 'normal') return 'normal';
+    if (ragQuizApiRowIsFollowUp(card)) return 'followup';
+  }
+  return getSlotFormState(slotIndex).quizGenerateMode === 'followup' ? 'followup' : 'normal';
+}
+
+function isUnitQuizFollowupMode(slotIndex, card = null) {
+  return resolveUnitQuizGenerateMode(slotIndex, card) === 'followup';
+}
+
+function canChangeUnitQuizGenerateMode(card) {
+  if (!card || typeof card !== 'object') return true;
+  return card.hasUsedSaveAndGenerateOnce !== true;
+}
+
+function setUnitQuizGenerateMode(slotIndex, mode, card = null) {
+  if (card && !canChangeUnitQuizGenerateMode(card)) return;
+  getSlotFormState(slotIndex).quizGenerateMode = mode === 'followup' ? 'followup' : 'normal';
+}
+
 function canEnableUnitQuizGenerate(card, slotIndex) {
   if (!card || typeof card !== 'object') return false;
   if (!promptTextForQuizRow(card, slotIndex)) return false;
   return isQuizUserPromptDirty(card);
 }
 
-/** 「產生題目」（llm-generate-db）：須已有 rag_quiz_id，且曾成功「儲存並產生題目」或載入時後端已有出題規則；出題規則若與 baseline 不同（未儲存）則不可按 */
+/** 「產生題目」（llm-generate-db／llm-generate-followup-db）：須已有 rag_quiz_id，且曾成功「儲存並產生題目」或載入時後端已有出題規則；出題規則若與 baseline 不同（未儲存）則不可按 */
 function canEnableUnitQuizGenerateFromDb(card, slotIndex) {
   if (!card || typeof card !== 'object') return false;
   if (card.hasUsedSaveAndGenerateOnce !== true) return false;
@@ -2683,6 +2744,55 @@ function parseQuizHistoryListFromSource(source) {
   return out;
 }
 
+/** 供追問 llm-generate-followup：含儲存歷史與當前問答（重新產生時接續） */
+function unitQuizFollowupHistoryListForLlm(quizCardRow) {
+  const seen = new Set();
+  const out = [];
+  const push = (item) => {
+    const normalized = normalizeFollowupHistoryItem(item);
+    if (!normalized) return;
+    const key = [
+      normalized.quiz_content,
+      normalized.answer_content,
+      normalized.quiz_answer_reference,
+      normalized.answer_critique,
+    ].join('\0');
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(normalized);
+  };
+  parseFollowupHistoryListFromSource(quizCardRow).forEach(push);
+  if (quizCardRow && typeof quizCardRow === 'object') {
+    push(followupHistoryEntryFromQuizCard(quizCardRow));
+  }
+  return out;
+}
+
+/** 供 Modal：追問模式過去問答（不含當前題） */
+function unitQuizFollowupHistoryListForDisplay(quizCardRow) {
+  return parseFollowupHistoryListFromSource(quizCardRow);
+}
+
+/** 將舊問答併入追問歷史（重新產生前） */
+function appendFollowupToQuizHistory(existingHistory, pair) {
+  const entry = normalizeFollowupHistoryItem(pair) ?? followupHistoryEntryFromQuizCard(pair);
+  const base = parseFollowupHistoryListFromSource(existingHistory);
+  if (!entry?.quiz_content) return base;
+  const key = [
+    entry.quiz_content,
+    entry.answer_content,
+    entry.quiz_answer_reference,
+    entry.answer_critique,
+  ].join('\0');
+  if (base.some((item) => [
+    item.quiz_content,
+    item.answer_content,
+    item.quiz_answer_reference,
+    item.answer_critique,
+  ].join('\0') === key)) return base;
+  return [...base, entry];
+}
+
 /** 供 Modal：目前題型 tab 過去出過的題幹（不含當前題幹） */
 function unitQuizHistoryListForDisplay(quizCardRow) {
   return parseQuizHistoryListFromSource(quizCardRow);
@@ -2865,6 +2975,10 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     gradingPrompt,
     quizName: quizNameResolved,
     quiz_history_list,
+    quiz_followup_history_list: parseFollowupHistoryListFromSource(quiz),
+    ...(hasUsedSaveAndGenerateOnce
+      ? { quizGenerateMode: ragQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal' }
+      : {}),
   };
   syncQuizCardPromptBaselines(card);
   if (quiz_history_list.length > 0) {
@@ -3528,6 +3642,8 @@ function getSlotFormState(slotIndex) {
       unitQuizCreateLoading: false,
       /** LoadingOverlay 文案：`add-row`＝題型列「+」；`llm-generate`＝單元內「產生題目」 */
       unitQuizLoadingOverlayKind: null,
+      /** 出題模式：`normal`＝一般出題；`followup`＝追問出題 */
+      quizGenerateMode: 'normal',
       unitQuizCreateError: '',
       loading: false,
       error: '',
@@ -3541,6 +3657,7 @@ function getSlotFormState(slotIndex) {
   if (slot.unitQuizCreateLoading === undefined) slot.unitQuizCreateLoading = false;
   if (slot.unitQuizLoadingOverlayKind === undefined) slot.unitQuizLoadingOverlayKind = null;
   if (slot.unitQuizCreateError === undefined) slot.unitQuizCreateError = '';
+  if (slot.quizGenerateMode === undefined) slot.quizGenerateMode = 'normal';
   return slot;
 }
 
@@ -3586,6 +3703,7 @@ function createLocalDraftUnitQuizCard() {
     hasUsedSaveAndGenerateOnce: false,
     hasUsedSaveAndGradeOnce: false,
     quiz_history_list: [],
+    quiz_followup_history_list: [],
   };
 }
 
@@ -3726,8 +3844,9 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
     slotState.unitQuizCreateError = '請填寫出題規則';
     return;
   }
+  const followupMode = isUnitQuizFollowupMode(slotIndex, quizCardRow ?? slotCard);
   slotState.unitQuizCreateLoading = true;
-  slotState.unitQuizLoadingOverlayKind = 'llm-generate';
+  slotState.unitQuizLoadingOverlayKind = followupMode ? 'llm-generate-followup' : 'llm-generate';
   slotState.unitQuizCreateError = '';
   try {
     if (
@@ -3785,17 +3904,26 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
     }
 
     const historyTarget = quizCardRow ?? slotCard;
-    const quizHistoryList = unitQuizHistoryListForLlm(historyTarget);
 
-    const data = await apiRagUnitQuizLlmGenerate(
-      {
-        rag_quiz_id: rqid,
-        quiz_name: quizNameOut,
-        quiz_user_prompt_text: promptText,
-        quiz_history_list: quizHistoryList,
-      },
-      personId
-    );
+    const data = followupMode
+      ? await apiRagUnitQuizLlmGenerateFollowup(
+          {
+            rag_quiz_id: rqid,
+            quiz_name: quizNameOut,
+            quiz_user_prompt_text: promptText,
+            quiz_history_list: unitQuizFollowupHistoryListForLlm(historyTarget),
+          },
+          personId
+        )
+      : await apiRagUnitQuizLlmGenerate(
+          {
+            rag_quiz_id: rqid,
+            quiz_name: quizNameOut,
+            quiz_user_prompt_text: promptText,
+            quiz_history_list: unitQuizHistoryListForLlm(historyTarget),
+          },
+          personId
+        );
     slotState.responseJson = data;
     const quizContentRaw = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const quizContent = String(quizContentRaw ?? '');
@@ -3825,6 +3953,8 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       quizCardRow.gradingResponseJson = null;
       quizCardRow.answer_id = null;
       quizCardRow.hasUsedSaveAndGenerateOnce = true;
+      quizCardRow.quizGenerateMode =
+        ragQuizApiRowIsFollowUp(data) || followupMode ? 'followup' : 'normal';
     }
 
     slotState.unitDraftRagQuizId = null;
@@ -3890,14 +4020,26 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
     return;
   }
 
+  const historyTarget = quizCardRow ?? slotCard;
+  const followupMode = isUnitQuizFollowupMode(slotIndex, historyTarget);
+
   slotState.unitQuizCreateLoading = true;
-  slotState.unitQuizLoadingOverlayKind = 'llm-generate-db';
+  slotState.unitQuizLoadingOverlayKind = followupMode ? 'llm-generate-followup-db' : 'llm-generate-db';
   slotState.unitQuizCreateError = '';
   try {
-    const data = await apiRagUnitQuizLlmGenerateDb(
-      { rag_quiz_id: rqid, quiz_name: quizNameOut },
-      personId
-    );
+    const data = followupMode
+      ? await apiRagUnitQuizLlmGenerateFollowupDb(
+          {
+            rag_quiz_id: rqid,
+            quiz_name: quizNameOut,
+            quiz_history_list: unitQuizFollowupHistoryListForLlm(historyTarget),
+          },
+          personId
+        )
+      : await apiRagUnitQuizLlmGenerateDb(
+          { rag_quiz_id: rqid, quiz_name: quizNameOut },
+          personId
+        );
     slotState.responseJson = data;
     const quizContentRaw = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
     const quizContent = String(quizContentRaw ?? '');
@@ -4089,9 +4231,11 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     hasUsedSaveAndGenerateOnce: false,
     hasUsedSaveAndGradeOnce: answerPromptFromApi !== '',
     quiz_history_list: [],
+    quiz_followup_history_list: [],
     ...unitExamDefaults,
   };
 
+  const followupMode = isUnitQuizFollowupMode(slotIndex, mergeTargetRow);
   const hasUnitTabs = (state.unitTabOrder || []).length > 0;
   if (hasUnitTabs) {
     if (!state.unitSlotQuizCards) state.unitSlotQuizCards = [];
@@ -4116,6 +4260,12 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
         parseQuizHistoryListFromSource(prev),
         prev.quiz
       );
+      card.quiz_followup_history_list = followupMode
+        ? appendFollowupToQuizHistory(
+            parseFollowupHistoryListFromSource(prev),
+            followupHistoryEntryFromQuizCard(prev),
+          )
+        : parseFollowupHistoryListFromSource(prev);
       /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
       card.quiz_answer = '';
       card.hintVisible = prev.hintVisible ?? false;
@@ -4145,6 +4295,11 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       card.rag_quiz_for_exam = prev.rag_quiz_for_exam ?? card.rag_quiz_for_exam;
       card.ragQuizForExamLoading = false;
       card.ragQuizForExamError = '';
+      card.quizGenerateMode =
+        prev.quizGenerateMode
+        ?? (ragQuizApiRowIsFollowUp(generateQuizResponseJson)
+          ? 'followup'
+          : (followupMode ? 'followup' : 'normal'));
       const merged = { ...prev, ...card };
       applyQuizHistoryToCard(merged, generateQuizResponseJson);
       syncQuizCardPromptBaselines(merged);
@@ -4420,7 +4575,42 @@ async function confirmAnswer(item) {
                 </div>
               </div>
               <ol
-                v-if="bankQuizHistoryModalList.length > 0"
+                v-if="bankQuizHistoryModalIsFollowup && bankQuizHistoryModalList.length > 0"
+                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-4"
+              >
+                <li
+                  v-for="(entry, hi) in bankQuizHistoryModalList"
+                  :key="`bank-quiz-followup-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
+                  class="pe-2"
+                >
+                  <div class="d-flex flex-column gap-2">
+                    <div>
+                      <div class="my-color-gray-1 my-font-sm-400">題目</div>
+                      <div class="my-color-black lh-base text-break mt-1">{{ entry.quiz_content }}</div>
+                    </div>
+                    <div>
+                      <div class="my-color-gray-1 my-font-sm-400">參考答案</div>
+                      <div class="my-color-black lh-base text-break mt-1">
+                        {{ entry.quiz_answer_reference || '—' }}
+                      </div>
+                    </div>
+                    <div>
+                      <div class="my-color-gray-1 my-font-sm-400">回答</div>
+                      <div class="my-color-black lh-base text-break mt-1">
+                        {{ entry.answer_content || '—' }}
+                      </div>
+                    </div>
+                    <div>
+                      <div class="my-color-gray-1 my-font-sm-400">評閱</div>
+                      <div class="my-color-black lh-base text-break mt-1">
+                        {{ entry.answer_critique || '—' }}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              </ol>
+              <ol
+                v-else-if="!bankQuizHistoryModalIsFollowup && bankQuizHistoryModalList.length > 0"
                 class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
               >
                 <li
@@ -5517,32 +5707,72 @@ async function confirmAnswer(item) {
                 v-if="activeUnitQuizCard"
                 class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
               >
-                <div class="d-flex flex-column gap-0 min-w-0">
-                  <label
-                    class="form-label my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                    :for="
-                      isRagQuizMarkedForExam(activeUnitQuizCard)
-                        ? undefined
-                        : `rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`
-                    "
+                <div class="d-flex flex-column gap-2 min-w-0">
+                  <div
+                    class="btn-group my-btn-group-pill flex-shrink-0 align-self-center"
+                    role="group"
+                    aria-label="出題模式"
                   >
-                    出題規則
-                  </label>
-                  <div class="my-rag-unit-quiz-prompt-editor min-w-0">
-                    <EnglishExamMarkdownEditor
-                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                      v-model="activeUnitQuizCard.quizUserPromptText"
-                      :preview-only="false"
-                      :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                      :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                    />
-                    <EnglishExamMarkdownEditor
-                      v-else
-                      :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
-                      preview-only
-                      :preview-design-dark="String(activeUnitQuizCard.quizUserPromptText ?? '').trim() !== ''"
-                      :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                    />
+                    <button
+                      type="button"
+                      class="btn d-flex justify-content-center align-items-center my-font-md-400 px-3 py-2"
+                      :class="
+                        !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                          ? 'my-button-white'
+                          : 'my-button-gray-3'
+                      "
+                      :disabled="
+                        !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || !canChangeUnitQuizGenerateMode(activeUnitQuizCard)
+                      "
+                      @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
+                    >
+                      一般出題
+                    </button>
+                    <button
+                      type="button"
+                      class="btn d-flex justify-content-center align-items-center my-font-md-400 px-3 py-2"
+                      :class="
+                        isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                          ? 'my-button-white'
+                          : 'my-button-gray-3'
+                      "
+                      :disabled="
+                        !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || !canChangeUnitQuizGenerateMode(activeUnitQuizCard)
+                      "
+                      @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
+                    >
+                      追問出題
+                    </button>
+                  </div>
+                  <div class="d-flex flex-column gap-0 min-w-0">
+                    <label
+                      class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                      :for="
+                        isRagQuizMarkedForExam(activeUnitQuizCard)
+                          ? undefined
+                          : `rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`
+                      "
+                    >
+                      出題規則
+                    </label>
+                    <div class="my-rag-unit-quiz-prompt-editor min-w-0">
+                      <EnglishExamMarkdownEditor
+                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
+                        v-model="activeUnitQuizCard.quizUserPromptText"
+                        :preview-only="false"
+                        :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                        :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                      />
+                      <EnglishExamMarkdownEditor
+                        v-else
+                        :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
+                        preview-only
+                        :preview-design-dark="String(activeUnitQuizCard.quizUserPromptText ?? '').trim() !== ''"
+                        :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div class="d-flex flex-column align-items-center gap-2 w-100">

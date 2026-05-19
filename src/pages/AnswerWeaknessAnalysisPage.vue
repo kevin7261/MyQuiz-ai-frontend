@@ -536,14 +536,18 @@ function weaknessSlotQuizBodyTrim(idx) {
               v-if="canEditWeaknessReportRules"
               class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4"
             >
-              <label class="form-label my-font-md-600 my-color-black mb-2" for="weakness-analysis-report-rules-md">分析報告規則</label>
-              <EnglishExamMarkdownEditor
-                v-model="personAnalysisPromptText"
-                textarea-id="weakness-analysis-report-rules-md"
-                placeholder=""
-                class="mb-3"
-                :disabled="promptSectionLoading || loading || promptSaving"
-              />
+              <div class="d-flex flex-column gap-0 min-w-0 w-100 mb-3">
+                <label
+                  class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                  for="weakness-analysis-report-rules-md"
+                >分析報告規則</label>
+                <EnglishExamMarkdownEditor
+                  v-model="personAnalysisPromptText"
+                  textarea-id="weakness-analysis-report-rules-md"
+                  placeholder=""
+                  :disabled="promptSectionLoading || loading || promptSaving"
+                />
+              </div>
               <div class="d-flex justify-content-center flex-wrap gap-3 pt-2">
                 <button
                   type="button"
