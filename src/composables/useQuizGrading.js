@@ -4,7 +4,7 @@
  * 職責：送出評分請求、輪詢 job_id 取得結果、將回傳 JSON 格式化為易讀文字。
  *
  * 支援兩種批改模式：
- * - RAG 模式（預設）：POST /rag/tab/unit/quiz/llm-grade；body **須含** answer_user_prompt_text（可為 ""；空字串仍會覆寫 Rag_Quiz；缺欄時後端可能不更新該列）。
+ * - RAG 模式（預設）：POST /rag/tab/unit/quiz/llm-grade；body 順序：rag_id、rag_tab_id、rag_quiz_id、quiz_content、answer_user_prompt_text、quiz_answer。
  * - RAG 模式（options.ragGradeUsesStoredPrompt）：POST /rag/tab/unit/quiz/llm-grade-db；body 不含 answer_user_prompt_text。
  * - Exam 模式（gradingMode: 'exam'）：POST /exam/tab/quiz/llm-grade；body 以 exam_quiz_id、quiz_content、quiz_answer 為核心。
  *
@@ -82,24 +82,13 @@ function buildRagGradeBody(item, context, options = {}) {
 
   const body = {
     rag_id: String(ragId ?? ''),
+    rag_tab_id: sourceTabId != null ? String(sourceTabId).trim() : '',
     rag_quiz_id: String(ragQuizRaw),
+    quiz_content: item.quiz != null ? String(item.quiz) : '',
+    answer_user_prompt_text: String(item.gradingPrompt ?? '').trim(),
+    quiz_answer: String(item.quiz_answer ?? '').trim(),
   };
 
-  // rag_tab_id 不為空時才帶入
-  const tabId = sourceTabId != null ? String(sourceTabId).trim() : '';
-  if (tabId !== '') body.rag_tab_id = tabId;
-
-  // quiz_content 不為空時才帶入（後端可自 Rag_Quiz 讀）
-  const quizStr = item.quiz != null ? String(item.quiz) : '';
-  if (quizStr.trim() !== '') body.quiz_content = quizStr;
-
-  // 批改規則（answer_user_prompt_text）：OpenAPI 以請求為準；務必送出（含 ""），否則後端可能不寫入／覆寫 Rag_Quiz
-  const answerPrompt = String(item.gradingPrompt ?? '').trim();
-  body.answer_user_prompt_text = answerPrompt;
-
-  body.quiz_answer = String(item.quiz_answer ?? '').trim();
-
-  // 合併額外欄位（如 unit_type）
   const extra = options.extraGradeBody;
   if (extra && typeof extra === 'object') {
     for (const key of Object.keys(extra)) {
@@ -126,16 +115,11 @@ function buildRagGradeDbBody(item, context, options = {}) {
 
   const body = {
     rag_id: String(ragId ?? ''),
+    rag_tab_id: sourceTabId != null ? String(sourceTabId).trim() : '',
     rag_quiz_id: String(ragQuizRaw),
+    quiz_content: item.quiz != null ? String(item.quiz) : '',
+    quiz_answer: String(item.quiz_answer ?? '').trim(),
   };
-
-  const tabId = sourceTabId != null ? String(sourceTabId).trim() : '';
-  if (tabId !== '') body.rag_tab_id = tabId;
-
-  const quizStr = item.quiz != null ? String(item.quiz) : '';
-  if (quizStr.trim() !== '') body.quiz_content = quizStr;
-
-  body.quiz_answer = String(item.quiz_answer ?? '').trim();
 
   const extra = options.extraGradeBody;
   if (extra && typeof extra === 'object') {

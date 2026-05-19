@@ -272,8 +272,8 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       rag_tab_id: ragTabId,
-      tab_name: tabName,
       person_id: personId,
+      tab_name: tabName,
       local: isFrontendLocalHost(),
     }),
   });
@@ -351,9 +351,35 @@ export async function apiUpdateRagTabName(ragId, tabName) {
 // ─── RAG ZIP 建立（串流 NDJSON） ──────────────────────────────────────────────
 
 /**
+ * 依後端 DB 欄位順序組裝 POST /rag/tab/build-rag-zip body（選填 course_id 置於末尾）。
+ * @param {object} body
+ * @returns {object}
+ */
+function orderBuildRagZipRequestBody(body) {
+  const b = body && typeof body === 'object' ? body : {};
+  const ordered = {
+    rag_tab_id: b.rag_tab_id,
+    person_id: b.person_id,
+    unit_list: b.unit_list,
+    unit_names: b.unit_names,
+    unit_types: b.unit_types,
+    transcriptions: b.transcriptions,
+    rag_chunk_size: b.rag_chunk_size,
+    rag_chunk_overlap: b.rag_chunk_overlap,
+    rag_chunk_sizes: b.rag_chunk_sizes,
+    rag_chunk_overlaps: b.rag_chunk_overlaps,
+    build_faiss: b.build_faiss,
+  };
+  if (b.course_id != null && String(b.course_id).trim() !== '') {
+    ordered.course_id = b.course_id;
+  }
+  return ordered;
+}
+
+/**
  * 建 RAG ZIP：POST /rag/tab/build-rag-zip（application/x-ndjson；請用 fetch 讀 response.body 逐行解析，勿對 200 本文使用 response.json()）
  *
- * Body（OpenAPI PackRequest）：rag_tab_id、person_id、unit_list、rag_chunk_size、rag_chunk_overlap、rag_chunk_sizes、rag_chunk_overlaps、unit_types、build_faiss、transcriptions；後端若支援可另含 unit_names（與群組同序之逗號字串）。
+ * Body 欄位順序（對應 DB）：rag_tab_id、person_id、unit_list、unit_names、unit_types、transcriptions、rag_chunk_*、build_faiss；可另含 course_id。
  * rag_chunk_sizes／rag_chunk_overlaps 為逗號字串或陣列，與 unit_list 群組同序；transcriptions 與 unit_list 逗號分段同序，unit_type 2／3／4 索引為 Markdown 全文 UTF-8 原樣，供寫入 Rag_Unit.transcription／transcript.md。
  * Query：person_id（與 body 一致）、course_id（必填，與全站 query 慣例一致）；選填 repack_only=true（強制各 unit 不建 FAISS），請傳第三參數 `streamOptions.repack_only`，勿自行拼進 URL。
  *
@@ -388,8 +414,9 @@ export async function apiBuildRagZip(body, onStreamEvent, streamOptions = {}) {
     u.searchParams.set('repack_only', 'true');
   }
 
-  const requestBody =
+  const mergedBody =
     courseId != null && body?.course_id == null ? { ...body, course_id: courseId } : body;
+  const requestBody = orderBuildRagZipRequestBody(mergedBody);
 
   const init = {
     method: 'POST',
@@ -604,15 +631,14 @@ export async function apiDeleteRagQuiz(ragQuizId, personId) {
  * RAG + LLM 單元出題（與 POST /rag/tab/unit/quiz/create 分開）。
  * POST /rag/tab/unit/quiz/llm-generate — query：**person_id**（必填）。
  *
- * Body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（後兩者可 **空字串**）。
+ * Body 欄位順序（對應 DB）：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`、`quiz_history_list`（後三者可空字串／空陣列）。
  * `rag_tab_id`／`rag_unit_id` **不需傳**，後端依 `rag_quiz_id` 自 DB 帶入。
- * `quiz_name` 空則後端沿用 stem／單元名。
  *
  * unit_type 2／3／4：不載入 RAG ZIP，以 LLM 純生成（system = transcription、user = quiz_user_prompt_text）。
  * 其餘：FAISS 檢索後出題。使用者須於個人設定填 LLM API Key。
  *
  * LLM Key 依 Rag.person_id 自 User；成功後更新 Rag_Quiz 錨點列並清空舊作答欄位（細節以後端為準）。
- * @param {{ rag_quiz_id: number, quiz_user_prompt_text?: string, quiz_name?: string }} body
+ * @param {{ rag_quiz_id: number, quiz_user_prompt_text?: string, quiz_name?: string, quiz_history_list?: string[] }} body
  * @returns {Promise<object>} 後端 JSON，預期含 quiz_content、quiz_hint、quiz_reference_answer、quiz_name、rag_quiz_id、transcription 等。
  */
 export async function apiRagUnitQuizLlmGenerate(body, personId) {
@@ -622,6 +648,15 @@ export async function apiRagUnitQuizLlmGenerate(body, personId) {
   if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
   const uxt = body?.quiz_user_prompt_text != null ? String(body.quiz_user_prompt_text) : '';
   const qname = body?.quiz_name != null ? String(body.quiz_name) : '';
+  const history = Array.isArray(body?.quiz_history_list)
+    ? [
+        ...new Set(
+          body.quiz_history_list
+            .map((s) => String(s ?? '').trim())
+            .filter((s) => s !== ''),
+        ),
+      ]
+    : [];
   const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -629,6 +664,7 @@ export async function apiRagUnitQuizLlmGenerate(body, personId) {
       rag_quiz_id: rqid,
       quiz_name: qname,
       quiz_user_prompt_text: uxt,
+      quiz_history_list: history,
     }),
   }, { personId: pid });
   const text = await res.text();

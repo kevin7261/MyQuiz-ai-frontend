@@ -105,7 +105,7 @@ export const API_RESPONSE_QUIZ_LEGACY = 'quiz';
 /** 評分 API 表單欄位：測驗題目內容（與後端 quiz_content、Quiz 表一致） */
 export const API_REQUEST_QUIZ_CONTENT = 'quiz_content';
 
-/** RAG 單元題評分：POST /rag/tab/unit/quiz/llm-grade（Rag Grade Quiz，非同步）；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text；unit_type 2／3／4 時以 transcription 純 LLM 批改，其餘依 rag_id 載入 RAG ZIP；回傳 202 + job_id；GET /rag/tab/unit/quiz/grade-result/{job_id} 輪詢；ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id 等 */
+/** RAG 單元題評分：POST /rag/tab/unit/quiz/llm-grade（Rag Grade Quiz，非同步）；body 順序：rag_id、rag_tab_id、rag_quiz_id、quiz_content、answer_user_prompt_text、quiz_answer；回傳 202 + job_id；GET grade-result 輪詢 */
 export const API_RAG_QUIZ_GRADE = '/rag/tab/unit/quiz/llm-grade';
 /**
  * POST /rag/tab/unit/quiz/llm-grade-db — Rag Grade Quiz（stored answer_user_prompt_text）
@@ -126,7 +126,7 @@ export const API_RAG_DELETE = '/rag/tab/delete';
 export const API_RAG_TAB_QUIZ_DELETE = '/rag/tab/quiz/delete';
 /** 更新 RAG 分頁顯示名稱：PUT /rag/tab/tab-name；body JSON：rag_id、tab_name；以 rag_id 比對，僅更新 deleted=false；回傳 rag_id、rag_tab_id、person_id、tab_name、updated_at */
 export const API_RAG_UNIT_NAME = '/rag/tab/tab-name';
-/** 建 RAG ZIP：POST /rag/tab/build-rag-zip；body 依 OpenAPI PackRequest：rag_tab_id、person_id、course_id、unit_list、rag_chunk_size、rag_chunk_overlap、rag_chunk_sizes、rag_chunk_overlaps、unit_types、build_faiss、transcriptions；後端若支援可加 unit_names（與群組同序逗號字串）；query：person_id、course_id（必填）、repack_only（選填，true 時強制不建 FAISS）；成功時 application/x-ndjson（fetch 讀 response.body，勿 response.json）；整批成敗以最後 complete.success；POST /rag/tab/build-rag-zip-stream 行為相同（OpenAPI 隱藏） */
+/** 建 RAG ZIP：POST /rag/tab/build-rag-zip；body 順序：rag_tab_id、person_id、unit_list、unit_names、unit_types、transcriptions、rag_chunk_*、build_faiss（可含 course_id）；query：person_id、course_id、repack_only；NDJSON 串流 */
 export const API_BUILD_RAG_ZIP = '/rag/tab/build-rag-zip';
 /** RAG 文字單元（unit_type 2）：GET /rag/transcript/text；query：`rag_tab_id`、`folder_name`、`person_id`。讀 ZIP 內該資料夾**一個** .md／.txt／.doc／.docx */
 export const API_RAG_TRANSCRIPT_TEXT = '/rag/transcript/text';
@@ -147,7 +147,7 @@ export const API_RAG_TAB_UNIT_MP3_FILE = '/rag/tab/unit/mp3-file';
  * POST /rag/tab/unit/quiz/create；query person_id；body: { rag_tab_id, rag_unit_id }
  */
 export const API_RAG_TAB_UNIT_QUIZ_CREATE = '/rag/tab/unit/quiz/create';
-/** POST /rag/tab/unit/quiz/llm-generate — body：`rag_quiz_id`、`quiz_name`、`quiz_user_prompt_text`（後兩者可 ""）；query：`person_id`（必填）。`rag_tab_id`／`rag_unit_id` 不需傳，後端依 rag_quiz_id 解析 */
+/** POST /rag/tab/unit/quiz/llm-generate — body 順序：rag_quiz_id、quiz_name、quiz_user_prompt_text、quiz_history_list；query person_id 必填 */
 export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE = '/rag/tab/unit/quiz/llm-generate';
 /**
  * POST /rag/tab/unit/quiz/llm-generate-db — Rag LLM Generate Quiz（stored quiz_user_prompt_text）
@@ -195,7 +195,7 @@ export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /**
  * POST /exam/tab/quiz/llm-generate — Rag LLM Generate Quiz；query：`person_id`（必填）。
- * Body：`exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id`（皆必填）；三 RAG 鍵須對應同一 Tab；列已有有效兩鍵時請求須一致否則 400，列未寫入時以此請求綁定寫回。勿傳出題／批改提示文字（後端自 Rag_Quiz 讀並寫回 Exam_Quiz）。選填 `quiz_history_list`（字串陣列）：該試卷分頁內相同單元（rag_unit_id）與題型（rag_quiz_id）已出過的題幹，供 LLM 避免重複出題。`unit_type` 1=RAG／向量；2–4=transcription 純 LLM。成功後更新該列並清空作答欄位。
+ * Body 順序：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id、quiz_history_list。勿傳出題／批改提示文字。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */
