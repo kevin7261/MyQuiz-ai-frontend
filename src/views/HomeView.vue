@@ -30,6 +30,7 @@ const PATH_TO_VIEW = {
   'student-answer-analysis': 'studentAnswerAnalysis',
   profile: 'profile',
   'create-exam-bank': 'createExamQuizBank',
+  'create-exam-bank_design': 'createExamQuizBankDesign',
   design: 'designPage',
   'manage-users': 'userManagement',
   settings: 'systemSettings',
