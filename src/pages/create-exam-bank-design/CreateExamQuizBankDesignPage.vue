@@ -368,6 +368,7 @@ function applyPersistedUnitSubTabsIfActive(tabId) {
     let qi = Number.isFinite(qiPersist) ? qiPersist : 0;
     if (!Number.isFinite(qi) || qi < 0 || qi >= cards.length) qi = 0;
     s.activeUnitQuizTypeIndex = qi;
+    syncPackUnitIndexFromActiveUnitTab();
   });
 }
 
@@ -1078,9 +1079,46 @@ watch(activeTabId, () => {
   activePackUnitIndex.value = 0;
 });
 
-watch(hasBuiltRagSummary, () => {
+watch(hasBuiltRagSummary, (built) => {
   activePackUnitIndex.value = 0;
+  if (built) syncActiveUnitTabFromPackUnitCarousel();
 });
+
+/** 建置完成後：上方設定單元 tab 驅動「設定單元題型」之 activeUnitTabId */
+function syncActiveUnitTabFromPackUnitCarousel() {
+  if (!hasBuiltRagSummary.value) return;
+  const state = currentState.value;
+  const tabs = state.unitTabOrder ?? [];
+  if (!tabs.length) {
+    state.activeUnitTabId = null;
+    return;
+  }
+  const i = Math.min(Math.max(0, activePackUnitGi.value), tabs.length - 1);
+  const id = tabs[i]?.id;
+  if (id != null && state.activeUnitTabId !== id) {
+    state.activeUnitTabId = id;
+  }
+}
+
+/** 還原 session 選取後，對齊上方設定單元 tab 索引 */
+function syncPackUnitIndexFromActiveUnitTab() {
+  if (!hasBuiltRagSummary.value) return;
+  const tabs = currentState.value.unitTabOrder ?? [];
+  if (!tabs.length) return;
+  const activeId = String(currentState.value.activeUnitTabId ?? '');
+  const idx = tabs.findIndex((t) => t.id === activeId);
+  if (idx >= 0) activePackUnitIndex.value = idx;
+}
+
+watch(activePackUnitGi, syncActiveUnitTabFromPackUnitCarousel, { flush: 'post' });
+
+watch(
+  () => (hasBuiltRagSummary.value ? currentState.value.unitTabOrder : null),
+  () => {
+    syncActiveUnitTabFromPackUnitCarousel();
+  },
+  { deep: true, flush: 'post' },
+);
 
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
@@ -1958,15 +1996,6 @@ function buildUnitTabItem(unit, index = 0) {
     ragChunkOverlap,
     folderCombination: folderCombinationFromUnitRaw(unit),
   };
-}
-
-/** 設定單元子分頁：滿版下拉 value／label（UnitSelectDropdown） */
-function unitSubTabDropdownValue(tab) {
-  if (!tab || tab.id == null) return '';
-  return String(tab.id);
-}
-function unitSubTabDropdownLabel(tab) {
-  return String(tab?.label ?? '').trim() || '—';
 }
 
 function setUnitSubTabsFromUnits(state, units) {
@@ -5039,14 +5068,14 @@ async function confirmAnswer(item) {
                     <button
                       type="button"
                       role="tab"
-                      class="nav-link text-nowrap py-2 my-font-sm-400"
+                      class="nav-link d-flex align-items-center gap-1 text-nowrap"
                       :class="{ active: item.index === activePackUnitGi }"
                       :aria-selected="item.index === activePackUnitGi"
                       :data-pack-unit-tab-index="item.index"
                       :title="item.label"
                       @click="selectPackUnit(item.index)"
                     >
-                      {{ item.label }}
+                      <span class="flex-grow-1 text-start min-w-0 text-truncate">{{ item.label }}</span>
                     </button>
                   </li>
                 </ul>
@@ -5417,14 +5446,14 @@ async function confirmAnswer(item) {
                         <button
                           type="button"
                           role="tab"
-                          class="nav-link d-flex flex-column align-items-start text-start py-2 my-font-sm-400"
+                          class="nav-link d-flex align-items-center gap-1 text-nowrap"
                           :class="{ active: item.index === activePackUnitGi }"
                           :aria-selected="item.index === activePackUnitGi"
                           :data-pack-unit-tab-index="item.index"
                           :title="item.label"
                           @click="selectPackUnit(item.index)"
                         >
-                          <span class="text-truncate w-100">{{ item.label }}</span>
+                          <span class="flex-grow-1 text-start min-w-0 text-truncate">{{ item.label }}</span>
                         </button>
                       </li>
                     </ul>
@@ -5653,24 +5682,6 @@ async function confirmAnswer(item) {
             class="d-flex flex-column gap-4 w-100 min-w-0"
             :class="{ 'my-color-gray-4': ragGenerateDisabled }"
           >
-            <div
-              v-if="(currentState.unitTabOrder || []).length > 0"
-              class="w-100 min-w-0 d-flex flex-column gap-0"
-            >
-              <label
-                class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                :for="`rag-exam-unit-subtab-${activeTabId}-toggle`"
-              >選擇單元 ({{ (currentState.unitTabOrder || []).length }})</label>
-              <UnitSelectDropdown
-                v-model="currentState.activeUnitTabId"
-                :options="currentState.unitTabOrder"
-                :option-value="unitSubTabDropdownValue"
-                :option-label="unitSubTabDropdownLabel"
-                :menu-id="`rag-exam-unit-subtab-${activeTabId}`"
-                omit-empty-choice
-                :placeholder="`選擇單元 (${(currentState.unitTabOrder || []).length})`"
-              />
-            </div>
             <div
               v-if="(currentState.unitTabOrder || []).length > 0 && canSeeRagUnitSourceFilename"
               class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0"
@@ -6197,10 +6208,6 @@ async function confirmAnswer(item) {
   gap: 0.25rem;
   max-width: 100%;
   min-width: 0;
-}
-.my-pack-unit-tabs-host .my-pack-unit-tabs .nav-link {
-  padding-left: 0.625rem;
-  padding-right: 0.625rem;
 }
 .my-pack-unit-tabs-host {
   min-width: 0;
