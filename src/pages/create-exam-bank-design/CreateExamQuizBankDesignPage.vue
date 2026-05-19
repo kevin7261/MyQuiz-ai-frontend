@@ -95,7 +95,7 @@ defineProps({
   tabId: { type: String, required: true },
 });
 
-const pageTitle = computed(() => '設計稿');
+const pageTitle = computed(() => '建立測驗題庫');
 /** 用於載入中、新增、錯誤訊息等可讀名詞 */
 const quizBankNoun = computed(() => '測驗題庫');
 
@@ -3190,9 +3190,13 @@ async function addNewTab() {
     }
     ragListError.value = '';
     await fetchRagList();
-    if (data?.rag_tab_id != null) activeTabId.value = String(data.rag_tab_id);
+    if (data?.rag_tab_id != null) {
+      const newTabId = String(data.rag_tab_id);
+      activeTabId.value = newTabId;
+      resetZipState(getTabState(newTabId), newTabId);
+    }
     clearZipFileInput();
-    if (ragList.value.length === 0) showFormWhenNoData.value = true;
+    showFormWhenNoData.value = true;
   } catch (err) {
     createRagError.value = err.message || `建立${quizBankNoun.value}失敗`;
   } finally {

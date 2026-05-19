@@ -98,7 +98,6 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
     rag_name: tabName,
     local: true,
     for_exam: false,
-    file_metadata: { second_folders: [] },
     units: [],
   };
   extraRagRows.push(row);
@@ -108,9 +107,16 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
 export async function apiUploadZip(_file, ragTabId) {
   await delay(400);
   const meta = {
+    filename: 'uploaded_demo.zip',
     rag_tab_id: ragTabId,
     second_folders: ['Chapter_01', 'Chapter_02', 'Chapter_03'],
   };
+  const tabId = String(ragTabId ?? '').trim();
+  const row = extraRagRows.find((r) => String(r.rag_tab_id) === tabId);
+  if (row) {
+    row.file_metadata = { ...meta };
+    row.filename = meta.filename;
+  }
   return meta;
 }
 

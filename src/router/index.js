@@ -35,7 +35,7 @@ const VIEW_TITLES = {
   'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
   profile: '設定 - MyQuiz.ai',
   'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
-  'create-exam-bank_design': '建立測驗題庫（稿） - MyQuiz.ai',
+  'create-exam-bank_design': '建立測驗題庫 - MyQuiz.ai',
   design: '設計稿 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
