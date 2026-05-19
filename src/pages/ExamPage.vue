@@ -7,7 +7,7 @@
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
- * 出題：須先「新增題目」建立列（POST /exam/tab/quiz/create），再選單元＋題名後「產生題目」POST llm-generate（body 僅 exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
+ * 出題：須先「新增題目」建立列（POST /exam/tab/quiz/create），再選單元＋題名後「產生題目」POST llm-generate（body：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；quiz_history_list 取自槽位「之前的出題」清單；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
@@ -727,6 +727,24 @@ function closeExamUnitTranscriptModal() {
   examUnitTranscriptModalSlotIndex.value = null;
 }
 
+/** 之前的出題 Modal：槽位 1-based */
+const examQuizHistoryModalSlotIndex = ref(null);
+
+function openExamQuizHistoryModal(slotIndex) {
+  examQuizHistoryModalSlotIndex.value = slotIndex;
+}
+
+function closeExamQuizHistoryModal() {
+  examQuizHistoryModalSlotIndex.value = null;
+}
+
+const examQuizHistoryModalList = computed(() => {
+  const idx = examQuizHistoryModalSlotIndex.value;
+  if (idx == null) return [];
+  const list = getSlotFormState(idx).quiz_history_list;
+  return Array.isArray(list) ? list : [];
+});
+
 const examUnitTranscriptModalMdHtml = computed(() => {
   const idx = examUnitTranscriptModalSlotIndex.value;
   if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
@@ -1124,6 +1142,7 @@ function syncExamItemToTabState(exam) {
       if (!state.slotFormState[i]) state.slotFormState[i] = reactive(getDefaultExamSlotForm());
       hydrateExamSlotFromRagCard(state.slotFormState[i], card);
     }
+    syncAllExamSlotQuizHistoryLists();
   } else {
     state.quizSlotsCount = 0;
     state.cardList = [];
@@ -1490,6 +1509,58 @@ function examLlmRagIdsForSlot(slotIndex, prevExamQuizDisplayName = '') {
   };
 }
 
+/**
+ * 本分頁、相同 rag_unit_id＋rag_quiz_id、且槽位序號小於 beforeSlotIndex 的已出題幹（去重）。
+ * @param {number} ragUnitId
+ * @param {number} ragQuizId
+ * @param {number} [beforeSlotIndex] 1-based；僅含此槽位之前的題目
+ * @returns {string[]}
+ */
+function examQuizHistoryListForLlm(ragUnitId, ragQuizId, beforeSlotIndex = Infinity) {
+  if (ragUnitId < 1 || ragQuizId < 1) return [];
+  const cards = currentState.value.cardList;
+  if (!Array.isArray(cards)) return [];
+  const maxSlot = Number.isFinite(beforeSlotIndex) && beforeSlotIndex >= 1
+    ? Math.trunc(beforeSlotIndex)
+    : Infinity;
+  const seen = new Set();
+  const out = [];
+  for (let i = 0; i < cards.length; i++) {
+    const slotNum = i + 1;
+    if (slotNum >= maxSlot) continue;
+    const card = cards[i];
+    if (!card || typeof card !== 'object') continue;
+    const ru = card.rag_unit_id != null ? Number(card.rag_unit_id) : NaN;
+    const rq = card.rag_quiz_id != null ? Number(card.rag_quiz_id) : NaN;
+    if (!Number.isFinite(ru) || ru !== ragUnitId || !Number.isFinite(rq) || rq !== ragQuizId) {
+      continue;
+    }
+    const stem = String(card.quiz ?? '').trim();
+    if (!stem || seen.has(stem)) continue;
+    seen.add(stem);
+    out.push(stem);
+  }
+  return out;
+}
+
+/** 供 QuizCard 預覽與同步：本分頁同單元／題型、此槽位之前的出題幹（與 llm-generate 之 quiz_history_list 同源） */
+function examQuizHistoryListForSlot(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  const prevName = String(card?.examQuizDisplayName ?? '').trim();
+  const { ragUnitId, ragQuizId } = examLlmRagIdsForSlot(slotIndex, prevName);
+  return examQuizHistoryListForLlm(ragUnitId, ragQuizId, slotIndex);
+}
+
+/** 依槽位目前選取，同步 slot.quiz_history_list（產生題目時直接傳此欄位） */
+function syncExamSlotQuizHistoryList(slotIndex) {
+  getSlotFormState(slotIndex).quiz_history_list = examQuizHistoryListForSlot(slotIndex);
+}
+
+function syncAllExamSlotQuizHistoryLists() {
+  const n = Number(currentState.value.quizSlotsCount) || 0;
+  for (let i = 1; i <= n; i++) syncExamSlotQuizHistoryList(i);
+}
+
 /** 已產生題幹後鎖定「單元／題型」下拉，避免與後端 Exam_Quiz 綁定不一致 */
 function examSlotRagChoicesLocked(slotIndex) {
   return examSlotQuizBodyTrim(slotIndex) !== '';
@@ -1637,6 +1708,8 @@ function getDefaultExamSlotForm() {
     loading: false,
     error: '',
     responseJson: null,
+    /** 本分頁、相同單元與題型、此槽位之前已出過的題幹；產生題目時原樣傳入 quiz_history_list */
+    quiz_history_list: [],
   };
 }
 
@@ -1651,6 +1724,7 @@ function getSlotFormState(slotIndex) {
   if (slot.examQuizNamePick === undefined) {
     slot.examQuizNamePick = String(slot.quizNameDraft ?? '').trim();
   }
+  if (!Array.isArray(slot.quiz_history_list)) slot.quiz_history_list = [];
   return slot;
 }
 
@@ -1663,7 +1737,31 @@ watch(examUnitSelectDropdownOptions, () => {
       hydrateExamSlotFromRagCard(getSlotFormState(i), card);
     }
   }
+  syncAllExamSlotQuizHistoryLists();
 });
+
+watch(
+  () => {
+    const state = currentState.value;
+    const n = Number(state.quizSlotsCount) || 0;
+    const parts = [];
+    for (let i = 1; i <= n; i++) {
+      const s = state.slotFormState[i];
+      const c = state.cardList[i - 1];
+      parts.push([
+        s?.examUnitSelectId ?? '',
+        s?.examQuizNamePick ?? '',
+        c?.rag_unit_id ?? '',
+        c?.rag_quiz_id ?? '',
+        c?.quiz ?? '',
+      ].join('\0'));
+    }
+    return `${activeTabId.value ?? ''}\n${parts.join('\n')}`;
+  },
+  () => {
+    syncAllExamSlotQuizHistoryLists();
+  },
+);
 
 /**
  * POST /exam/tab/quiz/create（Exam Create Quiz, no LLM）；body 僅 exam_tab_id。
@@ -1784,7 +1882,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 }
 
 /**
- * 「產生題目」：POST /exam/tab/quiz/llm-generate；body **僅** exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id；列已存有效兩鍵時須與請求一致否則 400，列未寫入則後端以請求綁定；勿傳出題／批改提示文字。
+ * 「產生題目」：POST /exam/tab/quiz/llm-generate；body 含 exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id，及本分頁相同單元／題型已出題幹之 quiz_history_list；列已存有效兩鍵時須與請求一致否則 400，列未寫入則後端以請求綁定；勿傳出題／批改提示文字。
  * exam_quiz_id 須已由「新增題目」POST /exam/tab/quiz/create 取得，或為題幹空白且後端已錨定之列。
  */
 async function generateQuiz(slotIndex) {
@@ -1857,6 +1955,9 @@ async function generateQuiz(slotIndex) {
   slotState.responseJson = null;
   try {
     const promptBundle = examQuizPromptBundleForSlot(slotIndex, prevExamQuizDisplayName);
+    const quizHistoryList = Array.isArray(slotState.quiz_history_list)
+      ? slotState.quiz_history_list
+      : [];
 
     const data = await apiExamTabQuizLlmGenerate(
       {
@@ -1864,6 +1965,7 @@ async function generateQuiz(slotIndex) {
         rag_tab_id: ragTabIdForLlm,
         rag_unit_id: ragUnitIdForLlm,
         rag_quiz_id: ragQuizIdForLlm,
+        quiz_history_list: quizHistoryList,
       },
       personId
     );
@@ -1919,6 +2021,7 @@ async function generateQuiz(slotIndex) {
       if (ap) newCard.gradingPrompt = ap;
     }
     slotState.draftExamQuizId = null;
+    syncAllExamSlotQuizHistoryLists();
   } catch (err) {
     slotState.error = err.message || '產生題目失敗';
   } finally {
@@ -2086,6 +2189,54 @@ onActivated(() => {
                 v-else
                 class="my-font-md-400 my-color-black"
               >—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        v-if="examQuizHistoryModalSlotIndex != null"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exam-quiz-history-modal-title"
+        @click.self="closeExamQuizHistoryModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5 id="exam-quiz-history-modal-title" class="modal-title my-color-black">
+                之前的出題
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeExamQuizHistoryModal"
+              />
+            </div>
+            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <ol
+                v-if="examQuizHistoryModalList.length > 0"
+                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
+              >
+                <li
+                  v-for="(stem, hi) in examQuizHistoryModalList"
+                  :key="`exam-quiz-history-${hi}-${stem.slice(0, 32)}`"
+                  class="pe-2"
+                >
+                  {{ stem }}
+                </li>
+              </ol>
+              <p
+                v-else
+                class="my-font-md-400 my-color-gray-1 mb-0"
+              >
+                尚無先前的出題。
+              </p>
             </div>
           </div>
         </div>
@@ -2367,6 +2518,7 @@ onActivated(() => {
                         design-embedded
                         hide-slot-index
                         hide-grading-prompt
+                        :exam-quiz-history-list="getSlotFormState(slotIndex).quiz_history_list"
                         :grade-submitting="examCardGradeSubmitting(currentState.cardList[slotIndex - 1])"
                         @toggle-hint="toggleHint"
                         @toggle-reference-answer="toggleReferenceAnswer"
@@ -2376,7 +2528,15 @@ onActivated(() => {
                         @update:grading_prompt="(val) => { currentState.cardList[slotIndex - 1].gradingPrompt = val }"
                       />
                       <template v-if="examSlotQuizBodyTrim(slotIndex) === ''">
-                        <div class="d-flex justify-content-center mt-3">
+                        <div class="d-flex flex-column align-items-center gap-2 mt-3">
+                          <button
+                            type="button"
+                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                            aria-label="查看之前的出題"
+                            @click="openExamQuizHistoryModal(slotIndex)"
+                          >
+                            之前的出題
+                          </button>
                           <button
                             type="button"
                             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
@@ -2551,7 +2711,15 @@ onActivated(() => {
                             </button>
                           </div>
                         </div>
-                        <div class="d-flex justify-content-center mt-3">
+                        <div class="d-flex flex-column align-items-center gap-2 mt-3">
+                          <button
+                            type="button"
+                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                            aria-label="查看之前的出題"
+                            @click="openExamQuizHistoryModal(slotIndex)"
+                          >
+                            之前的出題
+                          </button>
                           <button
                             type="button"
                             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"

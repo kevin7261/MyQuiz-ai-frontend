@@ -195,7 +195,7 @@ export const API_EXAM_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
 /**
  * POST /exam/tab/quiz/llm-generate — Rag LLM Generate Quiz；query：`person_id`（必填）。
- * Body：**僅** `exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id`（皆必填）；三 RAG 鍵須對應同一 Tab；列已有有效兩鍵時請求須一致否則 400，列未寫入時以此請求綁定寫回。勿傳出題／批改提示文字（後端自 Rag_Quiz 讀並寫回 Exam_Quiz）。`unit_type` 1=RAG／向量；2–4=transcription 純 LLM。成功後更新該列並清空作答欄位。
+ * Body：`exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id`（皆必填）；三 RAG 鍵須對應同一 Tab；列已有有效兩鍵時請求須一致否則 400，列未寫入時以此請求綁定寫回。勿傳出題／批改提示文字（後端自 Rag_Quiz 讀並寫回 Exam_Quiz）。選填 `quiz_history_list`（字串陣列）：該試卷分頁內相同單元（rag_unit_id）與題型（rag_quiz_id）已出過的題幹，供 LLM 避免重複出題。`unit_type` 1=RAG／向量；2–4=transcription 純 LLM。成功後更新該列並清空作答欄位。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */

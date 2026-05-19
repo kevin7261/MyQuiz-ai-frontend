@@ -56,6 +56,10 @@ const props = defineProps({
    * 建立題庫頁覆寫「開始批改」(llm-grade-db) 是否可按（對齊 canEnableUnitQuizGenerateFromDb）；省略時用元件內判斷。
    */
   gradeDbAllowed: { type: Boolean, default: undefined },
+  /**
+   * 測驗頁：此題之前的出題幹（字串陣列）；有傳入時於「開始批改」上方顯示小按鈕。
+   */
+  examQuizHistoryList: { type: Array, default: undefined },
 });
 
 const emit = defineEmits([
@@ -138,10 +142,34 @@ const answerUserPromptSnapshotTrimmed = computed(() =>
 );
 
 const promptModalKind = ref('');
+const quizHistoryModalOpen = ref(false);
 
 const promptModalTitle = computed(() =>
   promptModalKind.value === 'question' ? '出題規則' : '批改規則'
 );
+
+/** 測驗頁：可查看此題之前的出題 */
+const showQuizHistoryPreviewButton = computed(
+  () =>
+    props.hideGradingPrompt
+    && showStartGradeButton.value
+    && props.examQuizHistoryList !== undefined,
+);
+
+const quizHistoryModalList = computed(() => {
+  if (!Array.isArray(props.examQuizHistoryList)) return [];
+  return props.examQuizHistoryList
+    .map((s) => String(s ?? '').trim())
+    .filter((s) => s !== '');
+});
+
+function openQuizHistoryModal() {
+  quizHistoryModalOpen.value = true;
+}
+
+function closeQuizHistoryModal() {
+  quizHistoryModalOpen.value = false;
+}
 
 /** Modal 內文：用題卡完整字串跑 Markdown（與 EnglishExamMarkdownEditor 預覽同源），勿先行 trim 以免破壞程式碼區塊 */
 const promptModalMarkdownSource = computed(() => {
@@ -356,6 +384,54 @@ const quizAnswerFieldDisabled = computed(
                 v-else
                 class="my-font-md-400 my-color-black"
               >—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div
+        v-if="quizHistoryModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="`quiz-card-history-modal-title-${card.id}`"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                :id="`quiz-card-history-modal-title-${card.id}`"
+                class="modal-title my-color-black"
+              >之前的出題</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeQuizHistoryModal"
+              />
+            </div>
+            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <ol
+                v-if="quizHistoryModalList.length > 0"
+                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
+              >
+                <li
+                  v-for="(stem, hi) in quizHistoryModalList"
+                  :key="`quiz-history-${hi}-${stem.slice(0, 32)}`"
+                  class="pe-2"
+                >
+                  {{ stem }}
+                </li>
+              </ol>
+              <p
+                v-else
+                class="my-font-md-400 my-color-gray-1 mb-0"
+              >
+                尚無先前的出題。
+              </p>
             </div>
           </div>
         </div>
@@ -720,10 +796,19 @@ const quizAnswerFieldDisabled = computed(
           v-else-if="showStartGradeButton"
           :class="
             designUi
-              ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-3'
-              : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-3'
+              ? 'd-flex flex-column align-items-center gap-2 mt-3'
+              : 'd-flex flex-column align-items-end gap-2 mt-3'
           "
         >
+          <button
+            v-if="showQuizHistoryPreviewButton"
+            type="button"
+            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+            aria-label="查看之前的出題"
+            @click="openQuizHistoryModal"
+          >
+            之前的出題
+          </button>
           <button
             type="button"
             class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"

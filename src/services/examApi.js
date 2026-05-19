@@ -115,13 +115,14 @@ export async function apiExamTabQuizLlmGrade(gradeBody, submissionPath) {
  * 測驗 LLM 出題：POST /exam/tab/quiz/llm-generate（OpenAPI：Rag LLM Generate Quiz）
  * Query：`person_id`（必填，由 {@link loggedFetch} 第三參數帶入）。
  *
- * Body：**僅** `exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id`（皆必填）。三 RAG 鍵須對應同一 Tab；`rag_tab_id` 供後端載入 ZIP／單元（不依賴 System_Setting）。題列已有有效兩鍵時請求須與列一致否則 400；列尚未寫入則以此請求綁定並寫回。`quiz_user_prompt_text`／`answer_user_prompt_text` 勿傳（後端自 Rag_Quiz 讀，成功後寫入 Exam_Quiz）。`unit_type` 1=RAG／向量；2–4=transcription 純 LLM。成功後更新該列並清空作答欄位。
+ * Body：`exam_quiz_id`、`rag_tab_id`、`rag_unit_id`、`rag_quiz_id`（皆必填）。三 RAG 鍵須對應同一 Tab；`rag_tab_id` 供後端載入 ZIP／單元（不依賴 System_Setting）。題列已有有效兩鍵時請求須與列一致否則 400；列尚未寫入則以此請求綁定並寫回。`quiz_user_prompt_text`／`answer_user_prompt_text` 勿傳（後端自 Rag_Quiz 讀，成功後寫入 Exam_Quiz）。選填 `quiz_history_list`：該試卷分頁內相同 rag_unit_id＋rag_quiz_id 已出過的題幹字串陣列。`unit_type` 1=RAG／向量；2–4=transcription 純 LLM。成功後更新該列並清空作答欄位。
  *
  * @param {{
  *   exam_quiz_id: number | string,
  *   rag_tab_id: string,
  *   rag_unit_id: number | string,
  *   rag_quiz_id: number | string,
+ *   quiz_history_list?: string[],
  * }} body
  * @returns {Promise<object>} 預期含 quiz_content、quiz_hint、quiz_answer_reference／quiz_reference_answer、exam_quiz_id、quiz_name、
  *   quiz_user_prompt_text／answer_user_prompt_text（回傳，後端自 Rag_Quiz 寫入之模板快照）、unit_name、rag_unit_id、rag_quiz_id 等
@@ -146,6 +147,16 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
     rag_unit_id: ragUnitId,
     rag_quiz_id: ragQuizId,
   };
+  if (Array.isArray(body?.quiz_history_list)) {
+    const history = [
+      ...new Set(
+        body.quiz_history_list
+          .map((s) => String(s ?? '').trim())
+          .filter((s) => s !== ''),
+      ),
+    ];
+    if (history.length > 0) payload.quiz_history_list = history;
+  }
   const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_LLM_GENERATE}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
