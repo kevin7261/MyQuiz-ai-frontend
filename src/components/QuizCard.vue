@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
+import QuizHistoryModal from './QuizHistoryModal.vue';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 /**

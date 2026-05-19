@@ -42,6 +42,7 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 import { youtubeEmbedUrlFromInput } from '../utils/youtubeEmbed.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
+import QuizHistoryModal from '../components/QuizHistoryModal.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';

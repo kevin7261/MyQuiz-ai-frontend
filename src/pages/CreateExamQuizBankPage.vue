@@ -83,6 +83,7 @@ import { useRagList } from '../composables/useRagList.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
+import QuizHistoryModal from '../components/QuizHistoryModal.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import Design08OptionDropdown from '../components/Design08OptionDropdown.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
