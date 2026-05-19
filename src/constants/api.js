@@ -164,7 +164,7 @@ export const API_RAG_APPLIED = '/rag/applied';
 export const API_RAG_FOR_EXAM = '/rag/tab/for-exam';
 /**
  * List RAG units & quizzes marked for exam：GET /exam/rag-for-exams
- * Query `person_id` 必填（全站慣例）；建議併帶 `local`（與 GET /exam/tabs、GET /rag/tabs 一致，本機 true／false）。
+ * Query `person_id`、`course_id` 必填（loggedFetch 自 authStore 帶入）；建議併帶 `local`（與 GET /exam/tabs、GET /rag/tabs 一致，本機 true／false）。
  * 僅含後端認定之「測驗用」單元／題目（例如 for_exam 篩選）；若教材尚未標為測驗用，回傳 `units: []` 屬正常，與「完整單元列表」API 不同。
  * Rag_Quiz 出題／批改規則欄位若為預覽截短，前端勿當完整字串逕送 LLM。
  */
@@ -175,7 +175,7 @@ export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
 /** 學生作答分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
 
-/** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／local 篩選；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz），題列可內嵌 answer_content／quiz_score／answer_critique */
+/** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／course_id／local 篩選；course_id 由 loggedFetch 自 currentCourse 帶入；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz），題列可內嵌 answer_content／quiz_score／answer_critique */
 export const API_EXAM_TESTS = '/exam/tabs';
 /** Exam：POST /exam/tab/create；query person_id 必填；body 可選 exam_tab_id（未傳則後端產生）、person_id、tab_name、local（預設 false；本機前端應傳 true 與 RAG tab/create 一致）；回傳 exam_id、exam_tab_id、person_id、tab_name、local、created_at */
 export const API_CREATE_EXAM = '/exam/tab/create';

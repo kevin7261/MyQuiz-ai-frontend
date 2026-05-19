@@ -6,7 +6,7 @@
  *
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
- * - GET /exam/tabs?local=&person_id=：person_id 為必填 query；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
+ * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
  * 出題：須先「新增題目」建立列（POST /exam/tab/quiz/create），再選單元＋題名後「產生題目」POST llm-generate（body：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id、quiz_history_list；提示自 Rag_Quiz 讀勿傳）。評分：POST /exam/tab/quiz/llm-grade（body：exam_quiz_id、quiz_content、quiz_answer）、GET …/grade-result/{job_id}；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
@@ -965,11 +965,11 @@ watch(
 const generateQuizBlocked = computed(() => forExamLoading.value);
 
 /**
- * 載入 GET /exam/tabs：watch(person_id) immediate；並載入 GET /exam/rag-for-exams。
+ * 載入 GET /exam/tabs、GET /exam/rag-for-exams：watch person_id 與 currentCourse.course_id（immediate）。
  * KeepAlive onActivated：再抓兩者；首次 onActivated 僅補抓試卷題庫，避免與 immediate 雙重 GET /exam/tabs。
  */
 watch(
-  () => getCurrentPersonId(),
+  () => [getCurrentPersonId(), authStore.currentCourse?.course_id],
   () => {
     fetchExamTests();
     fetchExamRagSource();
@@ -1177,7 +1177,7 @@ function getCurrentPersonId() {
   return null;
 }
 
-/** 載入測驗列表：GET /exam/tabs；query 需帶 person_id（必填）與 local（與 /rag/tabs?local= 一致） */
+/** 載入測驗列表：GET /exam/tabs；query person_id、course_id（loggedFetch 自 authStore 帶入）、local */
 async function fetchExamTests() {
   examListLoading.value = true;
   examListError.value = '';
@@ -1186,6 +1186,10 @@ async function fetchExamTests() {
     if (!personId) {
       examList.value = [];
       examListError.value = '請先登入以載入測驗列表';
+      return;
+    }
+    if (authStore.currentCourse?.course_id == null) {
+      examList.value = [];
       return;
     }
     const params = new URLSearchParams();
@@ -1234,7 +1238,7 @@ async function fetchExamTests() {
   }
 }
 
-/** 試卷題庫：GET /exam/rag-for-exams；query 僅帶 person_id（不呼叫 GET /rag/tab/for-exam） */
+/** 試卷題庫：GET /exam/rag-for-exams；query person_id、course_id（loggedFetch 自 authStore 帶入）、local */
 async function fetchExamRagSource() {
   forExamLoading.value = true;
   forExamError.value = '';
@@ -1244,7 +1248,12 @@ async function fetchExamRagSource() {
       forExamRag.value = null;
       return;
     }
-    const params = new URLSearchParams({ person_id: personId });
+    if (authStore.currentCourse?.course_id == null) {
+      forExamRag.value = null;
+      return;
+    }
+    const params = new URLSearchParams();
+    params.set('local', String(isFrontendLocalHost()));
     const res = await loggedFetch(`${API_BASE}${API_RAG_FOR_EXAMS}?${params.toString()}`, { method: 'GET' });
     const text = await res.text();
     if (!res.ok) {
@@ -2531,7 +2540,7 @@ onActivated(() => {
                         <div class="d-flex flex-column align-items-center gap-2 mt-3">
                           <button
                             type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                             aria-label="查看之前的出題"
                             @click="openExamQuizHistoryModal(slotIndex)"
                           >
@@ -2714,7 +2723,7 @@ onActivated(() => {
                         <div class="d-flex flex-column align-items-center gap-2 mt-3">
                           <button
                             type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                             aria-label="查看之前的出題"
                             @click="openExamQuizHistoryModal(slotIndex)"
                           >

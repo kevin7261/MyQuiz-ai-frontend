@@ -803,7 +803,7 @@ const quizAnswerFieldDisabled = computed(
           <button
             v-if="showQuizHistoryPreviewButton"
             type="button"
-            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
             aria-label="查看之前的出題"
             @click="openQuizHistoryModal"
           >

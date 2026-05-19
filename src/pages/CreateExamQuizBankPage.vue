@@ -194,6 +194,93 @@ function writeCreateBankTabUiPersisted(personId, payload) {
   }
 }
 
+/** 題型「之前的出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
+const CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX = 'myquiz:createBankQuizHistory:v1:';
+
+function createBankQuizHistoryStorageKey(personId) {
+  const p = String(personId ?? '').trim();
+  return `${CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX}${p || 'anon'}`;
+}
+
+function readRagQuizHistoryMap(personId) {
+  try {
+    const raw = localStorage.getItem(createBankQuizHistoryStorageKey(personId));
+    if (!raw) return {};
+    const o = JSON.parse(raw);
+    const map = o?.byRagQuizId ?? o?.by_rag_quiz_id;
+    if (map && typeof map === 'object' && !Array.isArray(map)) return map;
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+function writeRagQuizHistoryMap(personId, byRagQuizId) {
+  try {
+    localStorage.setItem(
+      createBankQuizHistoryStorageKey(personId),
+      JSON.stringify({ v: 1, byRagQuizId })
+    );
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function mergeQuizHistoryLists(...sources) {
+  const seen = new Set();
+  const out = [];
+  for (const src of sources) {
+    for (const s of parseQuizHistoryListFromSource(src)) {
+      if (seen.has(s)) continue;
+      seen.add(s);
+      out.push(s);
+    }
+  }
+  return out;
+}
+
+function storedQuizHistoryForRagQuiz(personId, ragQuizId) {
+  const rqid = ragQuizId != null ? Math.trunc(Number(ragQuizId)) : NaN;
+  if (!String(personId ?? '').trim() || !Number.isFinite(rqid) || rqid < 1) return [];
+  const map = readRagQuizHistoryMap(personId);
+  return parseQuizHistoryListFromSource(map[String(rqid)]);
+}
+
+function resolveQuizHistoryForRagQuiz(personId, ...sources) {
+  const rqid = sources.reduce(
+    (id, src) => (id != null ? id : positiveRagQuizIdFromQuizRow(src)),
+    null
+  );
+  const parts = sources.map((s) => parseQuizHistoryListFromSource(s));
+  if (rqid != null) parts.push(storedQuizHistoryForRagQuiz(personId, rqid));
+  return mergeQuizHistoryLists(...parts);
+}
+
+function persistQuizHistoryForRagQuiz(personId, ragQuizId, list) {
+  const pid = String(personId ?? '').trim();
+  const rqid = ragQuizId != null ? Math.trunc(Number(ragQuizId)) : NaN;
+  if (!pid || !Number.isFinite(rqid) || rqid < 1) return;
+  const normalized = parseQuizHistoryListFromSource(list);
+  const map = readRagQuizHistoryMap(pid);
+  map[String(rqid)] = normalized;
+  writeRagQuizHistoryMap(pid, map);
+}
+
+/** 合併題卡／產題 API 之歷史並寫入 localStorage */
+function applyQuizHistoryToCard(card, generateQuizResponseJson = null) {
+  if (!card || typeof card !== 'object') return;
+  const personId = getPersonId(authStore);
+  card.quiz_history_list = resolveQuizHistoryForRagQuiz(
+    personId,
+    card,
+    generateQuizResponseJson
+  );
+  const rqid = positiveRagQuizIdFromQuizRow(card);
+  if (card.quiz_history_list.length > 0) {
+    persistQuizHistoryForRagQuiz(personId, rqid, card.quiz_history_list);
+  }
+}
+
 function ragTabIdExistsInBankLists(ragTabId, list, newIds) {
   const id = String(ragTabId ?? '').trim();
   if (!id) return false;
@@ -1769,6 +1856,22 @@ function closeRagUnitTranscriptModal() {
   ragUnitTranscriptModalMarkdownOverride.value = null;
 }
 
+/** 之前的出題 Modal（目前題型 sub-tab） */
+const bankQuizHistoryModalOpen = ref(false);
+
+function openBankQuizHistoryModal() {
+  bankQuizHistoryModalOpen.value = true;
+}
+
+function closeBankQuizHistoryModal() {
+  bankQuizHistoryModalOpen.value = false;
+}
+
+const bankQuizHistoryModalList = computed(() => {
+  if (!bankQuizHistoryModalOpen.value) return [];
+  return unitQuizHistoryListForDisplay(activeUnitQuizCard.value);
+});
+
 function closePackBuildSuccessModal() {
   packBuildSuccessModalOpen.value = false;
 }
@@ -2536,6 +2639,71 @@ function parsePositiveQuizId(raw) {
   return Math.floor(n);
 }
 
+/** 自 API／題卡解析已出題幹列表（去重、去空白；支援 JSON 字串） */
+function parseQuizHistoryListFromSource(source) {
+  let list = source;
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    list = source.quiz_history_list ?? source.quizHistoryList;
+  }
+  if (typeof list === 'string') {
+    const trimmed = list.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        list = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    } else {
+      return [];
+    }
+  }
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    const s = String(item ?? '').trim();
+    if (!s || seen.has(s)) continue;
+    seen.add(s);
+    out.push(s);
+  }
+  return out;
+}
+
+/** 供 Modal：目前題型 tab 過去出過的題幹（不含當前題幹） */
+function unitQuizHistoryListForDisplay(quizCardRow) {
+  return parseQuizHistoryListFromSource(quizCardRow);
+}
+
+/** 供 llm-generate：含儲存歷史與當前題幹（重新產生時避免重複） */
+function unitQuizHistoryListForLlm(quizCardRow) {
+  const seen = new Set();
+  const out = [];
+  const push = (stem) => {
+    const s = String(stem ?? '').trim();
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    out.push(s);
+  };
+  parseQuizHistoryListFromSource(quizCardRow).forEach(push);
+  if (quizCardRow && typeof quizCardRow === 'object') {
+    push(quizCardRow.quiz);
+  }
+  return out;
+}
+
+/** 將舊題幹併入歷史（重新產生前） */
+function appendStemToQuizHistory(existingHistory, stem) {
+  const s = String(stem ?? '').trim();
+  const base = Array.isArray(existingHistory)
+    ? parseQuizHistoryListFromSource(existingHistory)
+    : parseQuizHistoryListFromSource(existingHistory);
+  if (!s) return base;
+  if (base.includes(s)) return base;
+  return [...base, s];
+}
+
 /** 自題目列／題卡取下正整數 rag_quiz_id（llm-generate 錨點；相容後端別名） */
 function positiveRagQuizIdFromQuizRow(quizOrCard) {
   if (!quizOrCard || typeof quizOrCard !== 'object') return null;
@@ -2653,6 +2821,8 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   const hasUsedSaveAndGenerateOnce =
     String(quizUserPromptTextResolved ?? '').trim() !== '';
   const hasUsedSaveAndGradeOnce = gradingPrompt !== '';
+  const personId = getPersonId(authStore);
+  const quiz_history_list = resolveQuizHistoryForRagQuiz(personId, quiz);
   const card = {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? '',
@@ -2682,8 +2852,12 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     answer_id,
     gradingPrompt,
     quizName: quizNameResolved,
+    quiz_history_list,
   };
   syncQuizCardPromptBaselines(card);
+  if (quiz_history_list.length > 0) {
+    persistQuizHistoryForRagQuiz(personId, card.rag_quiz_id, quiz_history_list);
+  }
   return card;
 }
 
@@ -3399,6 +3573,7 @@ function createLocalDraftUnitQuizCard() {
     quizAnswerBaseline: '',
     hasUsedSaveAndGenerateOnce: false,
     hasUsedSaveAndGradeOnce: false,
+    quiz_history_list: [],
   };
 }
 
@@ -3597,11 +3772,15 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       return;
     }
 
+    const historyTarget = quizCardRow ?? slotCard;
+    const quizHistoryList = unitQuizHistoryListForLlm(historyTarget);
+
     const data = await apiRagUnitQuizLlmGenerate(
       {
         rag_quiz_id: rqid,
         quiz_name: quizNameOut,
         quiz_user_prompt_text: promptText,
+        quiz_history_list: quizHistoryList,
       },
       personId
     );
@@ -3897,6 +4076,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     quizName: computeQuizName(null),
     hasUsedSaveAndGenerateOnce: false,
     hasUsedSaveAndGradeOnce: answerPromptFromApi !== '',
+    quiz_history_list: [],
     ...unitExamDefaults,
   };
 
@@ -3920,6 +4100,10 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     if (idx >= 0) {
       const prev = sub[idx];
       card.id = prev.id;
+      card.quiz_history_list = appendStemToQuizHistory(
+        parseQuizHistoryListFromSource(prev),
+        prev.quiz
+      );
       /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
       card.quiz_answer = '';
       card.hintVisible = prev.hintVisible ?? false;
@@ -3950,9 +4134,11 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       card.ragQuizForExamLoading = false;
       card.ragQuizForExamError = '';
       const merged = { ...prev, ...card };
+      applyQuizHistoryToCard(merged, generateQuizResponseJson);
       syncQuizCardPromptBaselines(merged);
       sub[idx] = merged;
     } else {
+      applyQuizHistoryToCard(card, generateQuizResponseJson);
       syncQuizCardPromptBaselines(card);
       sub.push(card);
     }
@@ -4169,6 +4355,56 @@ async function confirmAnswer(item) {
                 v-else
                 class="my-font-md-400 my-color-black"
               >—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="bankQuizHistoryModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bank-quiz-history-modal-title"
+        @click.self="closeBankQuizHistoryModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5 id="bank-quiz-history-modal-title" class="modal-title my-color-black">
+                之前的出題
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeBankQuizHistoryModal"
+              />
+            </div>
+            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <ol
+                v-if="bankQuizHistoryModalList.length > 0"
+                class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
+              >
+                <li
+                  v-for="(stem, hi) in bankQuizHistoryModalList"
+                  :key="`bank-quiz-history-${hi}-${stem.slice(0, 32)}`"
+                  class="pe-2"
+                >
+                  {{ stem }}
+                </li>
+              </ol>
+              <p
+                v-else
+                class="my-font-md-400 my-color-gray-1 mb-0"
+              >
+                尚無先前的出題。
+              </p>
             </div>
           </div>
         </div>
@@ -5277,50 +5513,60 @@ async function confirmAnswer(item) {
                     />
                   </div>
                 </div>
-                <div
-                  class="d-flex justify-content-center align-items-center flex-wrap gap-3"
-                >
-                  <button
-                    v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                    type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-2"
-                    title="還原為上次載入或產生後的內容"
-                    aria-label="重設出題規則"
-                    :disabled="
-                      getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                      || !isQuizUserPromptDirty(activeUnitQuizCard)
-                    "
-                    @click="resetUnitQuizUserPrompt(activeUnitQuizCard)"
-                  >
-                    重設
-                  </button>
+                <div class="d-flex flex-column align-items-center gap-2 w-100">
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                    title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」或「重設」"
-                    :disabled="
-                      getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                      !canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)
-                    "
-                    :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                    aria-label="產生題目"
-                    @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                    aria-label="查看之前的出題"
+                    @click="openBankQuizHistoryModal"
                   >
-                    產生題目
+                    之前的出題
                   </button>
-                  <button
-                    v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                    :disabled="
-                      getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                      !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)
-                    "
-                    :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                    @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
+                  <div
+                    class="d-flex justify-content-center align-items-center flex-wrap gap-3"
                   >
-                    儲存並產生題目
-                  </button>
+                    <button
+                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-2"
+                      title="還原為上次載入或產生後的內容"
+                      aria-label="重設出題規則"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || !isQuizUserPromptDirty(activeUnitQuizCard)
+                      "
+                      @click="resetUnitQuizUserPrompt(activeUnitQuizCard)"
+                    >
+                      重設
+                    </button>
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+                      title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」或「重設」"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
+                        !canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)
+                      "
+                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                      aria-label="產生題目"
+                      @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
+                    >
+                      產生題目
+                    </button>
+                    <button
+                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
+                      type="button"
+                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
+                        !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)
+                      "
+                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                      @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
+                    >
+                      儲存並產生題目
+                    </button>
+                  </div>
                 </div>
                 <QuizCard
                   v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
