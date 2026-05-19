@@ -920,15 +920,6 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
-/** 設定單元區塊標題：數量寫在「設定單元」後（不另顯示「單元 (n/m)」小標） */
-const packUnitSectionHeadingTitle = computed(() => {
-  const total = hasBuiltRagSummary.value
-    ? quizBankSettingReadonlyUnitRows.value.length
-    : (ragListDisplayGroups.value?.length ?? 0);
-  if (total <= 0) return '設定單元 (0)';
-  return `設定單元 (${total})`;
-});
-
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
 function packUnitTypeAt(gi) {
@@ -1850,31 +1841,6 @@ const ragUnitTranscriptModalBodyHtml = computed(() => {
   return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
 });
 
-/** 「單元內容」文字單元：內嵌 Markdown（與唯讀設定單元之 markdown segment 同 render） */
-const activeUnitTranscriptionMdHtml = computed(() => {
-  const tab = activeUnitTabItem.value;
-  const raw = tab?.transcription;
-  return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
-});
-
-/** unit_type=3：RagTabUnitMp3Player 參數（fetch /rag/tab/unit/mp3-file 為 blob 後播放，不附 person_id） */
-const activeUnitMp3PlayerProps = computed(() => {
-  const tab = activeUnitTabItem.value;
-  if (!tab || tab.unitType !== UNIT_TYPE_MP3) return null;
-  const rag_tab_id = String(tab.ragTabId ?? '').trim();
-  const ru = tab.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
-  if (!rag_tab_id || !Number.isFinite(ru) || ru < 1) return null;
-  return { ragTabId: rag_tab_id, ragUnitId: ru };
-});
-
-/** unit_type=4：內嵌播放器用 embed URL */
-const activeUnitYoutubeEmbedUrl = computed(() => {
-  const tab = activeUnitTabItem.value;
-  if (!tab || tab.unitType !== UNIT_TYPE_YOUTUBE) return '';
-  const raw = tab.youtubeUrl != null ? String(tab.youtubeUrl).trim() : '';
-  return youtubeEmbedUrlFromInput(raw);
-});
-
 const ragUnitTranscriptModalOpen = ref(false);
 
 /** @param {unknown} [markdownOverride] 僅限 string：設定單元唯讀列傳入全文；來自 `@click` 時忽略事件物件 */
@@ -2057,13 +2023,6 @@ const activeUnitQuizTypeIdxResolved = computed(() => {
   return i;
 });
 
-/** 設定單元題型區塊標題：設定單元題型 (目前題型序號/題型總數) */
-const unitQuizTypeSectionHeadingTitle = computed(() => {
-  const total = activeUnitQuizCards.value.length;
-  if (total <= 0) return '設定單元題型 (0)';
-  return `設定單元題型 (${activeUnitQuizTypeIdxResolved.value + 1}/${total})`;
-});
-
 const activeUnitQuizCard = computed(() => {
   const cards = activeUnitQuizCards.value;
   const i = activeUnitQuizTypeIdxResolved.value;
@@ -2091,7 +2050,76 @@ watch(
   }
 );
 
-/** user_type 1／2／234 才顯示「單元內容」區塊（依 unit_type）；其餘僅見上方單元分頁標籤。與個人設定之 AI／LLM 服務 API 金鑰無關（僅角色權限）。 */
+const canGoPrevUnitQuizType = computed(() => activeUnitQuizTypeIdxResolved.value > 0);
+
+const canGoNextUnitQuizType = computed(
+  () => activeUnitQuizTypeIdxResolved.value < activeUnitQuizCards.value.length - 1,
+);
+
+const unitQuizTypeTabsNavEl = ref(null);
+
+function scrollActiveUnitQuizTypeTabIntoView() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const scroller = unitQuizTypeTabsNavEl.value;
+        if (!scroller) return;
+        const qi = activeUnitQuizTypeIdxResolved.value;
+        const tabEl = scroller.querySelector(`[data-unit-quiz-type-tab-index="${qi}"]`);
+        const item =
+          tabEl?.closest('li')
+          ?? scroller.querySelector('.nav-link.active')?.closest('li');
+        if (!item) return;
+
+        const pad = 8;
+        const scrollerRect = scroller.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+
+        if (itemRect.left < scrollerRect.left + pad) {
+          scroller.scrollTo({
+            left: scroller.scrollLeft + itemRect.left - scrollerRect.left - pad,
+            behavior: 'smooth',
+          });
+        } else if (itemRect.right > scrollerRect.right - pad) {
+          scroller.scrollTo({
+            left: scroller.scrollLeft + itemRect.right - scrollerRect.right + pad,
+            behavior: 'smooth',
+          });
+        }
+      });
+    });
+  });
+}
+
+watch(activeUnitQuizTypeIdxResolved, scrollActiveUnitQuizTypeTabIntoView, { flush: 'post' });
+watch(
+  () => activeUnitQuizCards.value.length,
+  scrollActiveUnitQuizTypeTabIntoView,
+  { flush: 'post' },
+);
+
+function goPrevUnitQuizType() {
+  if (!canGoPrevUnitQuizType.value) return;
+  currentState.value.activeUnitQuizTypeIndex = activeUnitQuizTypeIdxResolved.value - 1;
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+function goNextUnitQuizType() {
+  if (!canGoNextUnitQuizType.value) return;
+  currentState.value.activeUnitQuizTypeIndex = activeUnitQuizTypeIdxResolved.value + 1;
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+function selectUnitQuizType(qi) {
+  const cards = activeUnitQuizCards.value;
+  if (!Array.isArray(cards) || cards.length === 0) return;
+  const i = Number(qi);
+  if (!Number.isFinite(i) || i < 0 || i >= cards.length) return;
+  currentState.value.activeUnitQuizTypeIndex = i;
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+/** user_type 1／2／234 才顯示「設定單元」灰塊內單元預覽（依 unit_type）；其餘僅見欄位摘要。與個人設定之 AI／LLM 服務 API 金鑰無關（僅角色權限）。 */
 const canSeeRagUnitSourceFilename = computed(() => {
   const t = Number(authStore.user?.user_type);
   return t === 1 || t === 2 || t === 234;
@@ -2460,7 +2488,7 @@ function quizBankReadonlySourceDisplay(tab) {
 }
 
 /**
- * 唯讀「設定單元」細節：MP3／YouTube 與「單元內容」同層級（播放器／嵌入）；逐字稿另以「逐字稿」開 Modal。
+ * 唯讀「設定單元」細節：MP3／YouTube 播放器／嵌入；逐字稿另以「逐字稿」開 Modal。
  * @returns {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', ragTabId: string, ragUnitId: number } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]}
  */
 function buildQuizBankReadonlyDetailSegments(tab) {
@@ -2619,11 +2647,6 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
       ];
     } else if (ut === UNIT_TYPE_RAG) {
       outlineChunkFields = quizBankReadonlyOutlineChunkFields(ragChunkSizeRow, ragChunkOverlapRow);
-    } else {
-      detailSegments.push({
-        kind: 'text',
-        text: `詳細來源請至下方「設定單元題型」區選擇「${folderLine || `單元 ${i + 1}`}」後，於「單元內容」檢視。`,
-      });
     }
     const synUnitName = synTab ? String(synTab.unitName ?? '').trim() : '';
     const unitFromRow = unitsRow[i] ? String(unitsRow[i].unit_name ?? '').trim() : '';
@@ -4703,7 +4726,7 @@ async function confirmAnswer(item) {
       <!-- 有資料或已點新增後顯示表單 -->
       <template v-if="showCreateBankMainForm">
       <!-- 建立流程 stepper：1–3（已完成灰底細框／當前黑底／未到淺灰；連線達下一階即加深） -->
-      <section v-if="showStepperSection" class="my-create-rag-stepper-bar my-page-block-spacing p-3">
+      <section v-if="showStepperSection" class="my-page-block-spacing">
         <div class="my-create-rag-stepper text-start">
           <div class="d-flex justify-content-between align-items-start gap-2 gap-sm-3 w-100">
           <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
@@ -4749,17 +4772,11 @@ async function confirmAnswer(item) {
           </div>
         </div>
       </section>
-      <!-- 尚無 file_metadata 時顯示上傳區（無區塊外框；標題同設定單元題型） -->
+      <!-- 尚無 file_metadata 時顯示上傳區；DesignPage 同款 rounded-4 my-bgcolor-gray-3 p-4 mb-5 + 區塊標題 -->
       <section v-if="showUploadFileSection" class="text-start my-page-block-spacing">
-        <div
-          class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
-          role="heading"
-          aria-level="2"
-        >
-          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">上傳檔案</span>
-          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-        </div>
+        <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+          <div class="my-font-lg-600 my-color-black text-break mb-4" role="heading" aria-level="2">上傳檔案</div>
+
             <input
               ref="zipFileInputRef"
               type="file"
@@ -4812,6 +4829,7 @@ async function confirmAnswer(item) {
                 確定上傳
               </button>
             </div>
+        </div>
       </section>
       <!-- 建立 RAG：要有 file_metadata 才顯示；未建置時僅可編輯「設定單元」卡，建置完成後另顯唯讀摘要卡（rounded-4 深灰） -->
       <template v-if="fileMetadataToShow != null">
@@ -4819,40 +4837,32 @@ async function confirmAnswer(item) {
           class="w-100"
           :class="{ 'pe-none my-color-gray-4': !hasRagMetadata && packGroupsEditBlocked }"
         >
-          <section class="text-start my-page-block-spacing">
-            <div
-              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
-              role="heading"
-              aria-level="2"
-            >
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">上傳檔案</span>
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            </div>
-            <div class="my-font-md-400 my-color-black lh-base text-break text-center w-100 min-w-0">
-              {{ uploadZipReadonlyInputValue }}
-            </div>
-          </section>
           <!-- 建置完成後僅保留下方唯讀「設定單元」卡，不重複檔名／已套用提示 -->
           <section
             v-if="!hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
           >
+            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
-              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+              class="my-font-lg-600 my-color-black text-break mb-4"
               role="heading"
               aria-level="2"
             >
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              設定單元
             </div>
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+            <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+              <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                上傳檔案名稱（檔案大小）
+              </div>
+              <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                {{ uploadZipReadonlyInputValue }}
+              </div>
+            </div>
           <!-- 課程：可拖曳至設定單元 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
             <div
-              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
               role="group"
               aria-label="資料夾"
             >
@@ -4874,8 +4884,9 @@ async function confirmAnswer(item) {
 
           <!-- 單元：外層列出各出題單元區塊；區塊內「資料夾組合」可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
           <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
             <div
-              class="d-flex flex-column gap-3 w-100 min-w-0"
+              class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
               role="group"
               aria-label="單元"
             >
@@ -4886,7 +4897,7 @@ async function confirmAnswer(item) {
                       資料夾組合
                     </div>
                     <div
-                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
+                      class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
                       style="min-height: 2.5rem;"
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
@@ -5153,17 +5164,24 @@ async function confirmAnswer(item) {
             v-if="hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
           >
+            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
-              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+              class="my-font-lg-600 my-color-black text-break mb-4"
               role="heading"
               aria-level="2"
             >
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              設定單元
             </div>
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+            <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+              <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                上傳檔案名稱（檔案大小）
+              </div>
+              <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                {{ uploadZipReadonlyInputValue }}
+              </div>
+            </div>
               <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
                 <template v-if="!quizBankSettingReadonlyUnitRows.length">
                   <div
                     class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
@@ -5173,7 +5191,7 @@ async function confirmAnswer(item) {
                 </template>
                 <div
                   v-else
-                  class="d-flex flex-column gap-3 w-100 min-w-0"
+                  class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
                 >
                   <div
                     v-for="row in quizBankSettingReadonlyUnitRows"
@@ -5262,7 +5280,7 @@ async function confirmAnswer(item) {
                       </div>
                     </div>
                     <div
-                      v-if="row.detailSegments.length"
+                      v-if="row.detailSegments.length && canSeeRagUnitSourceFilename"
                       class="w-100 min-w-0"
                     >
                       <template
@@ -5371,7 +5389,7 @@ async function confirmAnswer(item) {
             aria-level="2"
           >
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ unitQuizTypeSectionHeadingTitle }}</span>
+            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">設定單元題型</span>
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
           </div>
           <div
@@ -5395,97 +5413,6 @@ async function confirmAnswer(item) {
                 omit-empty-choice
                 :placeholder="`選擇單元 (${(currentState.unitTabOrder || []).length})`"
               />
-            </div>
-            <div
-              v-if="(currentState.unitTabOrder || []).length > 0 && canSeeRagUnitSourceFilename"
-              class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0"
-            >
-              <div class="my-font-md-600 my-color-black mb-3">單元內容</div>
-              <div class="row g-3">
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_TEXT"
-                  class="col-12 d-flex flex-column gap-1 min-w-0"
-                >
-                  <div
-                    class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                    role="region"
-                    aria-label="單元逐字稿"
-                  >
-                    <div
-                      v-if="activeUnitTranscriptionMdHtml"
-                      class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                      v-html="activeUnitTranscriptionMdHtml"
-                    />
-                    <span
-                      v-else
-                      class="my-font-md-400 my-color-black"
-                    >—</span>
-                  </div>
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_MP3 && activeUnitMp3PlayerProps"
-                  class="col-12 min-w-0"
-                >
-                  <RagTabUnitMp3Player
-                    :rag-tab-id="activeUnitMp3PlayerProps.ragTabId"
-                    :rag-unit-id="activeUnitMp3PlayerProps.ragUnitId"
-                  />
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_MP3"
-                  class="col-12 d-flex justify-content-center w-100 min-w-0 pt-1"
-                >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                    @click="openRagUnitTranscriptModal"
-                  >
-                    逐字稿
-                  </button>
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_YOUTUBE"
-                  class="col-12 d-flex flex-column gap-2 min-w-0"
-                >
-                  <div
-                    v-if="activeUnitYoutubeEmbedUrl"
-                    class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                  >
-                    <iframe
-                      class="border-0"
-                      title="YouTube 影片"
-                      :src="activeUnitYoutubeEmbedUrl"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                      allowfullscreen
-                    />
-                  </div>
-                  <span
-                    v-if="!activeUnitYoutubeEmbedUrl && activeUnitTabItem?.youtubeUrl"
-                    class="my-font-md-400 my-color-black text-break"
-                  >{{ activeUnitTabItem.youtubeUrl }}</span>
-                  <span
-                    v-else-if="!activeUnitYoutubeEmbedUrl"
-                    class="my-font-md-400 my-color-black text-break"
-                  >—</span>
-                  <div class="d-flex justify-content-center w-100 pt-1">
-                    <button
-                      type="button"
-                      class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                      @click="openRagUnitTranscriptModal"
-                    >
-                      逐字稿
-                    </button>
-                  </div>
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_RAG"
-                  class="col-12 d-flex flex-column gap-1 min-w-0"
-                >
-                  <span class="my-font-sm-400 my-color-gray-1">來源檔案</span>
-                  <span class="my-font-md-400 my-color-black text-break">{{ activeUnitTabItem?.filename || '—' }}</span>
-                </div>
-              </div>
             </div>
             <template v-if="hasUnitSubTabs">
               <div
@@ -5511,28 +5438,47 @@ async function confirmAnswer(item) {
               </div>
               <div
                 v-else
-                class="w-100 my-rag-tabs-bar my-bgcolor-gray-4"
+                class="w-100 min-w-0"
               >
-                <div class="d-flex justify-content-center align-items-center w-100">
-                  <ul class="nav nav-tabs w-100" role="tablist">
+                <div class="w-100 min-w-0 d-flex justify-content-center">
+                  <div class="my-pack-unit-tabs-nav">
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      :disabled="!canGoPrevUnitQuizType"
+                      aria-label="向前切換題型"
+                      @click="goPrevUnitQuizType"
+                    >
+                      <i class="fa-solid fa-chevron-left" aria-hidden="true" />
+                    </button>
+                    <div
+                      ref="unitQuizTypeTabsNavEl"
+                      class="my-pack-unit-tabs-host my-rag-tabs-bar my-bgcolor-gray-4"
+                    >
+                      <ul
+                        class="nav nav-tabs flex-nowrap my-pack-unit-tabs mb-0"
+                        role="tablist"
+                        aria-label="題型列表"
+                      >
                     <li
                       v-for="(qRow, qi) in activeUnitQuizCards"
                       :key="String(qRow.rag_quiz_id ?? qRow.id ?? qi)"
-                      class="nav-item"
-                    >
-                      <div
-                        role="tab"
-                        class="nav-link d-flex align-items-center gap-1"
-                        :class="{ active: activeUnitQuizTypeIdxResolved === qi }"
-                        :aria-selected="activeUnitQuizTypeIdxResolved === qi"
-                        :tabindex="activeUnitQuizTypeIdxResolved === qi ? 0 : -1"
-                      >
-                        <span
-                          class="flex-grow-1 text-start pe-2 min-w-0 text-truncate"
-                          style="cursor: pointer"
-                          :title="quizTypeTabLabel(qRow)"
-                          @click="currentState.activeUnitQuizTypeIndex = qi"
-                        >{{ quizTypeTabLabel(qRow) }}</span>
+                      class="nav-item flex-shrink-0"
+                        >
+                          <div
+                            role="tab"
+                            class="nav-link d-flex align-items-center gap-1 text-nowrap"
+                            :class="{ active: activeUnitQuizTypeIdxResolved === qi }"
+                            :aria-selected="activeUnitQuizTypeIdxResolved === qi"
+                            :tabindex="activeUnitQuizTypeIdxResolved === qi ? 0 : -1"
+                            :data-unit-quiz-type-tab-index="qi"
+                            :title="quizTypeTabLabel(qRow)"
+                          >
+                            <span
+                              class="flex-grow-1 text-start pe-2 min-w-0 text-truncate"
+                              style="cursor: pointer"
+                              @click="selectUnitQuizType(qi)"
+                            >{{ quizTypeTabLabel(qRow) }}</span>
                         <button
                           v-if="activeUnitQuizTypeIdxResolved === qi && positiveRagQuizIdFromQuizRow(qRow) != null"
                           type="button"
@@ -5591,24 +5537,33 @@ async function confirmAnswer(item) {
                         </span>
                       </div>
                     </li>
-                    <li class="nav-item d-flex align-items-center ms-2">
-                      <button
-                        type="button"
-                        title="新增題庫"
-                        aria-label="新增題庫"
-                        :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                        class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle mb-2"
-                        :disabled="
-                          getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                          || renameUnitQuizSaving
-                          || deleteUnitQuizLoading
-                        "
-                        @click="createBlankUnitQuiz(activeUnitSlotIndex)"
-                      >
-                        <i class="fa-solid fa-plus" aria-hidden="true" />
-                      </button>
-                    </li>
-                  </ul>
+                      </ul>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      :disabled="!canGoNextUnitQuizType"
+                      aria-label="向後切換題型"
+                      @click="goNextUnitQuizType"
+                    >
+                      <i class="fa-solid fa-chevron-right" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      title="新增題型"
+                      aria-label="新增題型"
+                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || renameUnitQuizSaving
+                        || deleteUnitQuizLoading
+                      "
+                      @click="createBlankUnitQuiz(activeUnitSlotIndex)"
+                    >
+                      <i class="fa-solid fa-plus" aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
               </div>
               <div

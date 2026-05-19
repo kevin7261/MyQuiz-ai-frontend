@@ -849,14 +849,6 @@ code {
 }
 
 /* 建立測驗題庫：流程 stepper（1–2–3），色票僅用 variables :root --my-color-* */
-/* 可捲動主內文內置頂（併 .my-page-block-spacing；背景與 canvas gray-4 一致） */
-.my-create-rag-stepper-bar {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background-color: var(--my-color-gray-4);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--my-color-gray-2) 65%, transparent);
-}
 .my-create-rag-stepper-num {
   width: 2.25rem;
   height: 2.25rem;
@@ -1202,28 +1194,6 @@ label[for]:not(.btn) + div {
   background-color: var(--my-color-white);
   border-color: var(--my-input-md-border);
 }
-/* 設定單元：資料夾／資料夾組合可拖放區（勿併 .form-control，避免 Bootstrap 白底覆寫） */
-.my-pack-folder-field-input {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  padding: 0.5rem 1rem;
-  font-family: inherit;
-  font-size: var(--my-font-size-md);
-  font-weight: var(--my-font-weight-regular);
-  line-height: 1.5;
-  color: var(--my-color-black);
-  background-color: var(--my-pack-folder-field-bg) !important;
-  border: 1px solid var(--my-color-gray-2) !important;
-  border-radius: 0.375rem;
-}
-.my-pack-folder-field-input:focus {
-  outline: 0;
-  box-shadow: none;
-  background-color: var(--my-pack-folder-field-bg) !important;
-  border-color: var(--my-color-gray-2) !important;
-}
 /* 與 Design 06「輸入（停用）」：readonly 或 div 仿輸入併 .my-form-control-static；字色與 disabled 同為 --my-color-black（勿用 disabled 做純展示） */
 .form-control.my-input-md:read-only,
 .form-control.my-input-md.my-form-control-static {
@@ -1407,5 +1377,38 @@ div.form-control {
 }
 .my-markdown-rendered a {
   word-break: break-word;
+}
+
+/* 設定單元／設定單元題型：橫向分頁列 + 向前／向後（置中、不換行；隱藏捲軸） */
+.my-pack-unit-tabs-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-tabs-host {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.my-pack-unit-tabs-host::-webkit-scrollbar {
+  display: none;
+}
+.my-pack-unit-tabs-host .my-pack-unit-tabs {
+  justify-content: flex-start !important;
+  flex-wrap: nowrap;
+  width: max-content;
+  min-width: 100%;
+  margin-bottom: 0;
+}
+.my-pack-unit-tabs {
+  overflow: visible;
+}
+.my-pack-unit-tabs .nav-link {
+  max-width: 12rem;
 }
 

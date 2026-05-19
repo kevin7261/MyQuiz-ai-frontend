@@ -82,6 +82,7 @@ import {
 import { useRagListDesign } from './composables/useRagListDesign.js';
 import { useRagTabState } from './composables/useRagTabState.js';
 import { usePackTasks } from './composables/usePackTasks.js';
+import { DESIGN_MOCK_UNITS } from './mockData.js';
 import QuizCard from '../../components/QuizCard.vue';
 import QuizHistoryModal from '../../components/QuizHistoryModal.vue';
 import RagTabUnitMp3Player from '../../components/RagTabUnitMp3Player.vue';
@@ -1998,9 +1999,20 @@ function buildUnitTabItem(unit, index = 0) {
   };
 }
 
-function setUnitSubTabsFromUnits(state, units) {
+function setUnitSubTabsFromUnits(state, units, fallbackRagTabId = '') {
   const safeUnits = Array.isArray(units) ? units : [];
-  const tabs = safeUnits.map((u, i) => buildUnitTabItem(u, i));
+  const fbTab = String(fallbackRagTabId ?? '').trim();
+  const tabs = safeUnits.map((u, i) => {
+    const item = buildUnitTabItem(u, i);
+    if (!String(item.ragTabId ?? '').trim() && fbTab && !isNewTabId(fbTab)) {
+      item.ragTabId = fbTab;
+    }
+    if (item.ragUnitDbId == null) {
+      const ru = ragUnitIdFromRawUnit(u);
+      if (Number.isFinite(ru) && ru > 0) item.ragUnitDbId = ru;
+    }
+    return item;
+  });
   state.unitTabOrder = tabs;
   if (!tabs.length) {
     state.activeUnitTabId = null;
@@ -2030,31 +2042,6 @@ const ragUnitTranscriptModalBodyHtml = computed(() => {
   const tab = activeUnitTabItem.value;
   const raw = tab?.transcription;
   return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
-});
-
-/** 「單元內容」文字單元：內嵌 Markdown（與唯讀設定單元之 markdown segment 同 render） */
-const activeUnitTranscriptionMdHtml = computed(() => {
-  const tab = activeUnitTabItem.value;
-  const raw = tab?.transcription;
-  return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
-});
-
-/** unit_type=3：RagTabUnitMp3Player 參數（fetch /rag/tab/unit/mp3-file 為 blob 後播放，不附 person_id） */
-const activeUnitMp3PlayerProps = computed(() => {
-  const tab = activeUnitTabItem.value;
-  if (!tab || tab.unitType !== UNIT_TYPE_MP3) return null;
-  const rag_tab_id = String(tab.ragTabId ?? '').trim();
-  const ru = tab.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
-  if (!rag_tab_id || !Number.isFinite(ru) || ru < 1) return null;
-  return { ragTabId: rag_tab_id, ragUnitId: ru };
-});
-
-/** unit_type=4：內嵌播放器用 embed URL */
-const activeUnitYoutubeEmbedUrl = computed(() => {
-  const tab = activeUnitTabItem.value;
-  if (!tab || tab.unitType !== UNIT_TYPE_YOUTUBE) return '';
-  const raw = tab.youtubeUrl != null ? String(tab.youtubeUrl).trim() : '';
-  return youtubeEmbedUrlFromInput(raw);
 });
 
 const ragUnitTranscriptModalOpen = ref(false);
@@ -2273,7 +2260,76 @@ watch(
   }
 );
 
-/** user_type 1／2／234 才顯示「單元內容」區塊（依 unit_type）；其餘僅見上方單元分頁標籤。與個人設定之 AI／LLM 服務 API 金鑰無關（僅角色權限）。 */
+const canGoPrevUnitQuizType = computed(() => activeUnitQuizTypeIdxResolved.value > 0);
+
+const canGoNextUnitQuizType = computed(
+  () => activeUnitQuizTypeIdxResolved.value < activeUnitQuizCards.value.length - 1,
+);
+
+const unitQuizTypeTabsNavEl = ref(null);
+
+function scrollActiveUnitQuizTypeTabIntoView() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const scroller = unitQuizTypeTabsNavEl.value;
+        if (!scroller) return;
+        const qi = activeUnitQuizTypeIdxResolved.value;
+        const tabEl = scroller.querySelector(`[data-unit-quiz-type-tab-index="${qi}"]`);
+        const item =
+          tabEl?.closest('li')
+          ?? scroller.querySelector('.nav-link.active')?.closest('li');
+        if (!item) return;
+
+        const pad = 8;
+        const scrollerRect = scroller.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+
+        if (itemRect.left < scrollerRect.left + pad) {
+          scroller.scrollTo({
+            left: scroller.scrollLeft + itemRect.left - scrollerRect.left - pad,
+            behavior: 'smooth',
+          });
+        } else if (itemRect.right > scrollerRect.right - pad) {
+          scroller.scrollTo({
+            left: scroller.scrollLeft + itemRect.right - scrollerRect.right + pad,
+            behavior: 'smooth',
+          });
+        }
+      });
+    });
+  });
+}
+
+watch(activeUnitQuizTypeIdxResolved, scrollActiveUnitQuizTypeTabIntoView, { flush: 'post' });
+watch(
+  () => activeUnitQuizCards.value.length,
+  scrollActiveUnitQuizTypeTabIntoView,
+  { flush: 'post' },
+);
+
+function goPrevUnitQuizType() {
+  if (!canGoPrevUnitQuizType.value) return;
+  currentState.value.activeUnitQuizTypeIndex = activeUnitQuizTypeIdxResolved.value - 1;
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+function goNextUnitQuizType() {
+  if (!canGoNextUnitQuizType.value) return;
+  currentState.value.activeUnitQuizTypeIndex = activeUnitQuizTypeIdxResolved.value + 1;
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+function selectUnitQuizType(qi) {
+  const cards = activeUnitQuizCards.value;
+  if (!Array.isArray(cards) || cards.length === 0) return;
+  const i = Number(qi);
+  if (!Number.isFinite(i) || i < 0 || i >= cards.length) return;
+  currentState.value.activeUnitQuizTypeIndex = i;
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+/** user_type 1／2／234 才顯示「設定單元」灰塊內單元預覽（依 unit_type）；其餘僅見欄位摘要。與個人設定之 AI／LLM 服務 API 金鑰無關（僅角色權限）。 */
 const canSeeRagUnitSourceFilename = computed(() => {
   const t = Number(authStore.user?.user_type);
   return t === 1 || t === 2 || t === 234;
@@ -2642,7 +2698,7 @@ function quizBankReadonlySourceDisplay(tab) {
 }
 
 /**
- * 唯讀「設定單元」細節：MP3／YouTube 與「單元內容」同層級（播放器／嵌入）；逐字稿另以「逐字稿」開 Modal。
+ * 唯讀「設定單元」細節：MP3／YouTube 播放器／嵌入；逐字稿另以「逐字稿」開 Modal。
  * @returns {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', ragTabId: string, ragUnitId: number } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]}
  */
 function buildQuizBankReadonlyDetailSegments(tab) {
@@ -2801,11 +2857,6 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
       ];
     } else if (ut === UNIT_TYPE_RAG) {
       outlineChunkFields = quizBankReadonlyOutlineChunkFields(ragChunkSizeRow, ragChunkOverlapRow);
-    } else {
-      detailSegments.push({
-        kind: 'text',
-        text: `詳細來源請至下方「設定單元題型」區選擇「${folderLine || `單元 ${i + 1}`}」後，於「單元內容」檢視。`,
-      });
     }
     const synUnitName = synTab ? String(synTab.unitName ?? '').trim() : '';
     const unitFromRow = unitsRow[i] ? String(unitsRow[i].unit_name ?? '').trim() : '';
@@ -2832,7 +2883,8 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
 /** 從 Rag 項目同步到 tab state（packTasks、ragMetadata、chunk、quizzes 等） */
 function syncRagItemToState(rag, state) {
   if (!rag || typeof rag !== 'object') return;
-  setUnitSubTabsFromUnits(state, unitsFromRagTabsRow(rag));
+  const ragTabId = String(rag.rag_tab_id ?? rag.id ?? '').trim();
+  setUnitSubTabsFromUnits(state, unitsFromRagTabsRow(rag), ragTabId);
   const unitListStr = getRagUnitListString(rag);
   if (unitListStr) {
     state.packTasks = unitListStr;
@@ -3293,7 +3345,7 @@ async function refreshUnitSubTabsFromApi(tabId) {
     const rag = ragList.value.find((r) => String(r?.rag_tab_id ?? r?.id ?? r) === String(tabId));
     units = unitsFromRagTabsRow(rag);
   }
-  setUnitSubTabsFromUnits(state, units);
+  setUnitSubTabsFromUnits(state, units, tabId);
   const ragRow = ragList.value.find((r) => String(r?.rag_tab_id ?? r?.id ?? r) === String(tabId));
   if (
     ragRow
@@ -3903,41 +3955,52 @@ function createLocalDraftUnitQuizCard() {
 
 // ─── 題目生成（LLM）與評分（Grading） ────────────────────────────────────────
 
+/** 稿頁示範：解析 rag_tab_id（無真實 API 前置；缺欄位時用目前分頁或 mock） */
+function resolveDesignRagTabIdForUnitQuiz(tab, state, rag) {
+  const candidates = [
+    tab?.ragTabId,
+    rag?.rag_tab_id,
+    rag?.id,
+    activeTabId.value,
+    state?.zipTabId,
+    ragList.value[0]?.rag_tab_id,
+    ragList.value[0]?.id,
+    'design_demo_001',
+  ];
+  for (const c of candidates) {
+    const s = String(c ?? '').trim();
+    if (s && !isNewTabId(s)) return s;
+  }
+  return 'design_demo_001';
+}
+
+/** 稿頁示範：解析 rag_unit_id（對齊 mock 單元或槽位序號） */
+function resolveDesignRagUnitIdForUnitQuiz(tab, slotIndex) {
+  const fromTab = tab?.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
+  if (Number.isFinite(fromTab) && fromTab > 0) return fromTab;
+  const gi = Math.max(0, Number(slotIndex) - 1);
+  const mock = DESIGN_MOCK_UNITS[gi];
+  if (mock?.rag_unit_id != null) {
+    const n = Number(mock.rag_unit_id);
+    if (Number.isFinite(n) && n > 0) return n;
+  }
+  return 101 + gi;
+}
+
 /**
- * 題型列「+」新增題庫：POST /rag/tab/unit/quiz/create 建立空白 Rag_Quiz（不呼叫 LLM），回傳 rag_quiz_id 後推入題列並展開出題區。
- * 可選 await GET 子分頁以補齊 rag_unit_id。
+ * 題型列「+」新增題庫：稿頁走 ragApiDesign 替身，回傳 rag_quiz_id 後推入題列並展開出題區。
  */
 async function createBlankUnitQuiz(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
-  let tab = activeUnitTabItem.value;
+  const tab = activeUnitTabItem.value;
   const state = currentState.value;
   const rag = currentRagItem.value;
   const personId = getPersonId(authStore);
-  const ragTabId =
-    String(tab?.ragTabId ?? rag?.rag_tab_id ?? activeTabId.value ?? state.zipTabId ?? '').trim();
-  let ragUnitId = tab?.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
-  if (!Number.isFinite(ragUnitId) || ragUnitId < 1) {
-    if (tab?.ragTabId && String(tab.ragTabId).trim()) {
-      try {
-        await refreshUnitSubTabsFromApi(tab.ragTabId);
-        tab = activeUnitTabItem.value;
-        ragUnitId = tab?.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
-      } catch {
-        // 仍由下一段錯誤訊息處理
-      }
-    }
-  }
+  const ragTabId = resolveDesignRagTabIdForUnitQuiz(tab, state, rag);
+  const ragUnitId = resolveDesignRagUnitIdForUnitQuiz(tab, slotIndex);
   slotState.unitQuizCreateError = '';
   if (!personId) {
     slotState.unitQuizCreateError = '請先登入';
-    return;
-  }
-  if (!ragTabId) {
-    slotState.unitQuizCreateError = '無法取得 rag_tab_id';
-    return;
-  }
-  if (!Number.isFinite(ragUnitId) || ragUnitId < 1) {
-    slotState.unitQuizCreateError = '無法取得 rag_unit_id，請確認單元已建立並重新整理頁面';
     return;
   }
   slotState.unitQuizCreateLoading = true;
@@ -4049,21 +4112,13 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       && typeof quizCardRow === 'object'
       && quizRowQuizEmpty(quizCardRow)
     ) {
-      const ragTabIdCreate = String(
-        quizCardRow.rag_tab_id
-        ?? tab?.ragTabId
-        ?? rag?.rag_tab_id
-        ?? activeTabId.value
-        ?? state.zipTabId
-        ?? ''
-      ).trim();
+      const ragTabIdCreate = resolveDesignRagTabIdForUnitQuiz(tab, state, rag);
       const ruRaw = quizCardRow.rag_unit_id ?? tab?.ragUnitDbId;
-      const ragUnitIdCreate = ruRaw != null && ruRaw !== '' ? Number(ruRaw) : 0;
-      if (!ragTabIdCreate || !Number.isFinite(ragUnitIdCreate) || ragUnitIdCreate < 1) {
-        slotState.unitQuizCreateError =
-          '無法建立空白題目：缺少 rag_tab_id／rag_unit_id，請確認單元與題庫狀態後重試';
-        return;
-      }
+      const ragUnitIdFromRow = ruRaw != null && ruRaw !== '' ? Number(ruRaw) : 0;
+      const ragUnitIdCreate =
+        Number.isFinite(ragUnitIdFromRow) && ragUnitIdFromRow > 0
+          ? ragUnitIdFromRow
+          : resolveDesignRagUnitIdForUnitQuiz(tab, slotIndex);
       const createData = await apiCreateRagUnitQuiz(
         { rag_tab_id: ragTabIdCreate, rag_unit_id: ragUnitIdCreate },
         personId
@@ -4092,9 +4147,28 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
     }
 
     if (rqid == null || rqid < 1) {
-      slotState.unitQuizCreateError =
-        '無法取得 rag_quiz_id。請在空白列填寫出題規則後按「儲存並產生題目」，或重新整理頁面。';
-      return;
+      const ragTabIdCreate = resolveDesignRagTabIdForUnitQuiz(tab, state, rag);
+      const ragUnitIdCreate = resolveDesignRagUnitIdForUnitQuiz(tab, slotIndex);
+      const createData = await apiCreateRagUnitQuiz(
+        { rag_tab_id: ragTabIdCreate, rag_unit_id: ragUnitIdCreate },
+        personId
+      );
+      const newRq = parsePositiveQuizId(
+        createData?.rag_quiz_id ?? createData?.quiz_id ?? createData?.id
+      );
+      if (newRq == null) {
+        slotState.unitQuizCreateError = '示範建立題型失敗，請再試一次';
+        return;
+      }
+      await persistDefaultUnitQuizNameAfterCreate(newRq, personId);
+      rqid = newRq;
+      slotState.unitDraftRagQuizId = newRq;
+      slotState.lastSuccessfulCreatedRagQuizId = newRq;
+      if (quizCardRow != null && typeof quizCardRow === 'object') {
+        quizCardRow.rag_quiz_id = newRq;
+        quizCardRow.rag_tab_id = ragTabIdCreate;
+        quizCardRow.rag_unit_id = ragUnitIdCreate;
+      }
     }
 
     const historyTarget = quizCardRow ?? slotCard;
@@ -4188,7 +4262,7 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
     slotState.unitQuizCreateError = '請先登入';
     return;
   }
-  const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, quizCardRow);
+  let rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, quizCardRow);
   const draftN =
     parsePositiveQuizId(slotState.unitDraftRagQuizId)
     ?? parsePositiveQuizId(slotState.lastSuccessfulCreatedRagQuizId);
@@ -4208,12 +4282,6 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
   const quizNameOut =
     quizNameRaw !== '' ? quizNameRaw : DEFAULT_UNIT_QUIZ_DISPLAY_NAME;
 
-  if (rqid == null || rqid < 1) {
-    slotState.unitQuizCreateError =
-      '無法取得 rag_quiz_id。請先用題型列「+」新增題庫，或按「儲存並產生題目」建立題列。';
-    return;
-  }
-
   const historyTarget = quizCardRow ?? slotCard;
   const followupMode = isUnitQuizFollowupMode(slotIndex, historyTarget);
 
@@ -4221,6 +4289,31 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
   slotState.unitQuizLoadingOverlayKind = followupMode ? 'llm-generate-followup-db' : 'llm-generate-db';
   slotState.unitQuizCreateError = '';
   try {
+    if (rqid == null || rqid < 1) {
+      const ragTabIdCreate = resolveDesignRagTabIdForUnitQuiz(tab, state, rag);
+      const ragUnitIdCreate = resolveDesignRagUnitIdForUnitQuiz(tab, slotIndex);
+      const createData = await apiCreateRagUnitQuiz(
+        { rag_tab_id: ragTabIdCreate, rag_unit_id: ragUnitIdCreate },
+        personId
+      );
+      const newRq = parsePositiveQuizId(
+        createData?.rag_quiz_id ?? createData?.quiz_id ?? createData?.id
+      );
+      if (newRq == null) {
+        slotState.unitQuizCreateError = '示範建立題型失敗，請再試一次';
+        return;
+      }
+      await persistDefaultUnitQuizNameAfterCreate(newRq, personId);
+      rqid = newRq;
+      slotState.unitDraftRagQuizId = newRq;
+      slotState.lastSuccessfulCreatedRagQuizId = newRq;
+      if (quizCardRow != null && typeof quizCardRow === 'object') {
+        quizCardRow.rag_quiz_id = newRq;
+        quizCardRow.rag_tab_id = ragTabIdCreate;
+        quizCardRow.rag_unit_id = ragUnitIdCreate;
+      }
+    }
+
     const data = followupMode
       ? await apiRagUnitQuizLlmGenerateFollowupDb(
           {
@@ -5181,7 +5274,7 @@ async function confirmAnswer(item) {
               >
               <div
                 :key="'rg-' + activePackUnitGi"
-                class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column"
+                class="my-rag-unit-panel-block d-flex flex-column gap-2"
               >
                   <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
                     <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
@@ -5334,19 +5427,12 @@ async function confirmAnswer(item) {
                           {{ packUnitLoadTranscriptButtonLabel(activePackUnitGi) }}
                         </button>
                       </div>
-                      <div
-                        class="my-pack-unit-md-editor min-w-0"
-                        role="region"
-                        aria-label="逐字稿 Markdown"
+                      <p
+                        v-if="packUnitTranscriptLoadedAt(activePackUnitGi)"
+                        class="my-font-sm-400 my-color-gray-1 mb-0 text-center w-100 min-w-0"
                       >
-                        <EnglishExamMarkdownEditor
-                          :model-value="packUnitTranscriptTextAt(activePackUnitGi)"
-                          :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(activePackUnitGi) || packUnitTranscriptBusy(activePackUnitGi)"
-                          :preview-only="false"
-                          :textarea-id="'pack-unit-transcript-md-' + activePackUnitGi"
-                          @update:model-value="(v) => setPackUnitMarkdownAt(activePackUnitGi, v)"
-                        />
-                      </div>
+                        已載入；建置後可於「設定單元」檢視
+                      </p>
                     </div>
                     <p
                       v-if="currentState.packUnitTranscriptError?.[activePackUnitGi]"
@@ -5494,7 +5580,7 @@ async function confirmAnswer(item) {
                   <div
                     v-if="activeReadonlyPackUnitRow"
                     :key="'ro-rg-' + activeReadonlyPackUnitRow.key"
-                    class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column"
+                    class="my-rag-unit-panel-block d-flex flex-column gap-2"
                   >
                     <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
                       <div
@@ -5578,7 +5664,7 @@ async function confirmAnswer(item) {
                       </div>
                     </div>
                     <div
-                      v-if="activeReadonlyPackUnitRow.detailSegments.length"
+                      v-if="activeReadonlyPackUnitRow.detailSegments.length && canSeeRagUnitSourceFilename"
                       class="w-100 min-w-0"
                     >
                       <template
@@ -5676,116 +5762,26 @@ async function confirmAnswer(item) {
           </section>
         </div>
       </template>
-      <!-- 設定單元題型：標題在區塊外；每題（題卡或產生題目槽）各一 rounded-4 深灰塊 -->
-      <div
+      <!-- 設定單元題型：標題與 tab 間距同「設定單元」 -->
+      <section
         v-if="hasBuiltRagSummary"
         class="text-start my-page-block-spacing"
       >
-          <div
-            class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
-            role="heading"
-            aria-level="2"
-          >
-            <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ unitQuizTypeSectionHeadingTitle }}</span>
-            <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-          </div>
-          <div
-            class="d-flex flex-column gap-4 w-100 min-w-0"
-            :class="{ 'my-color-gray-4': ragGenerateDisabled }"
-          >
-            <div
-              v-if="(currentState.unitTabOrder || []).length > 0 && canSeeRagUnitSourceFilename"
-              class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0"
-            >
-              <div class="my-font-md-600 my-color-black mb-3">單元內容</div>
-              <div class="row g-3">
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_TEXT"
-                  class="col-12 d-flex flex-column gap-1 min-w-0"
-                >
-                  <div
-                    class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                    role="region"
-                    aria-label="單元逐字稿"
-                  >
-                    <div
-                      v-if="activeUnitTranscriptionMdHtml"
-                      class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                      v-html="activeUnitTranscriptionMdHtml"
-                    />
-                    <span
-                      v-else
-                      class="my-font-md-400 my-color-black"
-                    >—</span>
-                  </div>
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_MP3 && activeUnitMp3PlayerProps"
-                  class="col-12 min-w-0"
-                >
-                  <RagTabUnitMp3Player
-                    :rag-tab-id="activeUnitMp3PlayerProps.ragTabId"
-                    :rag-unit-id="activeUnitMp3PlayerProps.ragUnitId"
-                  />
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_MP3"
-                  class="col-12 d-flex justify-content-center w-100 min-w-0 pt-1"
-                >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                    @click="openRagUnitTranscriptModal"
-                  >
-                    逐字稿
-                  </button>
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_YOUTUBE"
-                  class="col-12 d-flex flex-column gap-2 min-w-0"
-                >
-                  <div
-                    v-if="activeUnitYoutubeEmbedUrl"
-                    class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                  >
-                    <iframe
-                      class="border-0"
-                      title="YouTube 影片"
-                      :src="activeUnitYoutubeEmbedUrl"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                      allowfullscreen
-                    />
-                  </div>
-                  <span
-                    v-if="!activeUnitYoutubeEmbedUrl && activeUnitTabItem?.youtubeUrl"
-                    class="my-font-md-400 my-color-black text-break"
-                  >{{ activeUnitTabItem.youtubeUrl }}</span>
-                  <span
-                    v-else-if="!activeUnitYoutubeEmbedUrl"
-                    class="my-font-md-400 my-color-black text-break"
-                  >—</span>
-                  <div class="d-flex justify-content-center w-100 pt-1">
-                    <button
-                      type="button"
-                      class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                      @click="openRagUnitTranscriptModal"
-                    >
-                      逐字稿
-                    </button>
-                  </div>
-                </div>
-                <div
-                  v-if="canSeeRagUnitSourceFilename && activeUnitTabItem?.unitType === UNIT_TYPE_RAG"
-                  class="col-12 d-flex flex-column gap-1 min-w-0"
-                >
-                  <span class="my-font-sm-400 my-color-gray-1">來源檔案</span>
-                  <span class="my-font-md-400 my-color-black text-break">{{ activeUnitTabItem?.filename || '—' }}</span>
-                </div>
-              </div>
-            </div>
-            <template v-if="hasUnitSubTabs">
+        <div
+          class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+          role="heading"
+          aria-level="2"
+        >
+          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ unitQuizTypeSectionHeadingTitle }}</span>
+          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+        </div>
+        <div
+          class="my-pack-unit-settings-body w-100 min-w-0"
+          :class="{ 'my-color-gray-4': ragGenerateDisabled }"
+        >
+          <template v-if="hasUnitSubTabs">
+            <div class="my-pack-unit-field">
               <div
                 v-if="!activeUnitQuizCards.length"
                 class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0"
@@ -5809,28 +5805,47 @@ async function confirmAnswer(item) {
               </div>
               <div
                 v-else
-                class="w-100 my-rag-tabs-bar my-bgcolor-gray-4"
+                class="w-100 min-w-0"
               >
-                <div class="d-flex justify-content-center align-items-center w-100">
-                  <ul class="nav nav-tabs w-100" role="tablist">
+                <div class="w-100 min-w-0 d-flex justify-content-center">
+                  <div class="my-pack-unit-tabs-nav">
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      :disabled="!canGoPrevUnitQuizType"
+                      aria-label="向前切換題型"
+                      @click="goPrevUnitQuizType"
+                    >
+                      <i class="fa-solid fa-chevron-left" aria-hidden="true" />
+                    </button>
+                    <div
+                      ref="unitQuizTypeTabsNavEl"
+                      class="my-pack-unit-tabs-host my-rag-tabs-bar my-bgcolor-gray-4"
+                    >
+                      <ul
+                        class="nav nav-tabs flex-nowrap my-pack-unit-tabs mb-0"
+                        role="tablist"
+                        aria-label="題型列表"
+                      >
                     <li
                       v-for="(qRow, qi) in activeUnitQuizCards"
                       :key="String(qRow.rag_quiz_id ?? qRow.id ?? qi)"
-                      class="nav-item"
-                    >
-                      <div
-                        role="tab"
-                        class="nav-link d-flex align-items-center gap-1"
-                        :class="{ active: activeUnitQuizTypeIdxResolved === qi }"
-                        :aria-selected="activeUnitQuizTypeIdxResolved === qi"
-                        :tabindex="activeUnitQuizTypeIdxResolved === qi ? 0 : -1"
-                      >
-                        <span
-                          class="flex-grow-1 text-start pe-2 min-w-0 text-truncate"
-                          style="cursor: pointer"
-                          :title="quizTypeTabLabel(qRow)"
-                          @click="currentState.activeUnitQuizTypeIndex = qi"
-                        >{{ quizTypeTabLabel(qRow) }}</span>
+                      class="nav-item flex-shrink-0"
+                        >
+                          <div
+                            role="tab"
+                            class="nav-link d-flex align-items-center gap-1 text-nowrap"
+                            :class="{ active: activeUnitQuizTypeIdxResolved === qi }"
+                            :aria-selected="activeUnitQuizTypeIdxResolved === qi"
+                            :tabindex="activeUnitQuizTypeIdxResolved === qi ? 0 : -1"
+                            :data-unit-quiz-type-tab-index="qi"
+                            :title="quizTypeTabLabel(qRow)"
+                          >
+                            <span
+                              class="flex-grow-1 text-start pe-2 min-w-0 text-truncate"
+                              style="cursor: pointer"
+                              @click="selectUnitQuizType(qi)"
+                            >{{ quizTypeTabLabel(qRow) }}</span>
                         <button
                           v-if="activeUnitQuizTypeIdxResolved === qi && positiveRagQuizIdFromQuizRow(qRow) != null"
                           type="button"
@@ -5889,26 +5904,36 @@ async function confirmAnswer(item) {
                         </span>
                       </div>
                     </li>
-                    <li class="nav-item d-flex align-items-center ms-2">
-                      <button
-                        type="button"
-                        title="新增題庫"
-                        aria-label="新增題庫"
-                        :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                        class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle mb-2"
-                        :disabled="
-                          getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                          || renameUnitQuizSaving
-                          || deleteUnitQuizLoading
-                        "
-                        @click="createBlankUnitQuiz(activeUnitSlotIndex)"
-                      >
-                        <i class="fa-solid fa-plus" aria-hidden="true" />
-                      </button>
-                    </li>
-                  </ul>
+                      </ul>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      :disabled="!canGoNextUnitQuizType"
+                      aria-label="向後切換題型"
+                      @click="goNextUnitQuizType"
+                    >
+                      <i class="fa-solid fa-chevron-right" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      title="新增題型"
+                      aria-label="新增題型"
+                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || renameUnitQuizSaving
+                        || deleteUnitQuizLoading
+                      "
+                      @click="createBlankUnitQuiz(activeUnitSlotIndex)"
+                    >
+                      <i class="fa-solid fa-plus" aria-hidden="true" />
+                    </button>
+                  </div>
                 </div>
               </div>
+            </div>
               <div
                 v-if="getSlotFormState(activeUnitSlotIndex).unitQuizCreateError"
                 class="d-flex justify-content-center pt-2 mb-0 w-100 px-1"
@@ -6151,8 +6176,8 @@ async function confirmAnswer(item) {
                 新增題目
               </button>
             </div>
-          </div>
-      </div>
+        </div>
+      </section>
       </template>
           </div>
         </div>
@@ -6162,6 +6187,45 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
+/* 以下樣式僅供 create-exam-bank_design，勿移至 common.css（避免影響 /create-exam-bank） */
+.my-create-rag-stepper-bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background-color: var(--my-color-gray-4);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--my-color-gray-2) 65%, transparent);
+}
+.my-pack-folder-field-input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.5rem 1rem;
+  font-family: inherit;
+  font-size: var(--my-font-size-md);
+  font-weight: var(--my-font-weight-regular);
+  line-height: 1.5;
+  color: var(--my-color-black);
+  background-color: var(--my-pack-folder-field-bg) !important;
+  border: 1px solid var(--my-color-gray-2) !important;
+  border-radius: 0.375rem;
+}
+.my-pack-folder-field-input:focus {
+  outline: 0;
+  box-shadow: none;
+  background-color: var(--my-pack-folder-field-bg) !important;
+  border-color: var(--my-color-gray-2) !important;
+}
+/* 設定單元外層面板（rounded-4、gray-3、p-4） */
+.my-rag-unit-panel-block {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 1rem;
+  background-color: var(--my-color-gray-3);
+  border-radius: var(--bs-border-radius-xl, 1rem);
+}
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;
   border-color: var(--my-color-blue) !important;
@@ -6173,12 +6237,6 @@ async function confirmAnswer(item) {
 }
 .my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 400px;
-}
-.my-pack-unit-md-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: min(50vh, 22rem);
-}
-.my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 200px;
 }
 /* 設定單元：區塊內欄位／工具列統一縱向間距 */
 .my-pack-unit-settings-body {
@@ -6213,36 +6271,4 @@ async function confirmAnswer(item) {
   min-width: 0;
 }
 
-/* 設定單元：單元分頁列 + 向前／向後（置中、內容寬；隱藏捲軸） */
-.my-pack-unit-tabs-nav {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  max-width: 100%;
-  min-width: 0;
-}
-.my-pack-unit-tabs-host {
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.my-pack-unit-tabs-host::-webkit-scrollbar {
-  display: none;
-}
-.my-pack-unit-tabs-host .my-pack-unit-tabs {
-  justify-content: flex-start !important;
-  flex-wrap: nowrap;
-  width: max-content;
-  min-width: 100%;
-  margin-bottom: 0;
-}
-.my-pack-unit-tabs {
-  overflow: visible;
-}
-.my-pack-unit-tabs .nav-link {
-  max-width: 12rem;
-}
 </style>
