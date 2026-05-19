@@ -59,7 +59,7 @@ export const DESIGN_MOCK_RAG_LIST = [
     filename: 'demo_a_rag.zip',
     for_exam: false,
     file_metadata: {
-      second_folders: [...DESIGN_DEMO_FOLDER_NAMES],
+      second_folders: [],
     },
     rag_metadata: '{"built":true}',
     unit_list: DESIGN_DEMO_UNIT_LIST,

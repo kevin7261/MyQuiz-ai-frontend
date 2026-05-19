@@ -948,12 +948,52 @@ const canGoNextPackUnit = computed(
   () => activePackUnitGi.value < packUnitCarouselCountEffective.value - 1,
 );
 
+const packUnitTabsNavEl = ref(null);
+
+function scrollActivePackUnitTabIntoView() {
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        const scroller = packUnitTabsNavEl.value;
+        if (!scroller) return;
+        const gi = activePackUnitGi.value;
+        const tabBtn = scroller.querySelector(`[data-pack-unit-tab-index="${gi}"]`);
+        const item =
+          tabBtn?.closest('li')
+          ?? scroller.querySelector('.nav-link.active')?.closest('li');
+        if (!item) return;
+
+        const pad = 8;
+        const scrollerRect = scroller.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+
+        if (itemRect.left < scrollerRect.left + pad) {
+          scroller.scrollTo({
+            left: scroller.scrollLeft + itemRect.left - scrollerRect.left - pad,
+            behavior: 'smooth',
+          });
+        } else if (itemRect.right > scrollerRect.right - pad) {
+          scroller.scrollTo({
+            left: scroller.scrollLeft + itemRect.right - scrollerRect.right + pad,
+            behavior: 'smooth',
+          });
+        }
+      });
+    });
+  });
+}
+
+watch(activePackUnitGi, scrollActivePackUnitTabIntoView, { flush: 'post' });
+watch(packUnitCarouselCountEffective, scrollActivePackUnitTabIntoView, { flush: 'post' });
+
 function goPrevPackUnit() {
   if (canGoPrevPackUnit.value) activePackUnitIndex.value = activePackUnitGi.value - 1;
+  scrollActivePackUnitTabIntoView();
 }
 
 function goNextPackUnit() {
   if (canGoNextPackUnit.value) activePackUnitIndex.value = activePackUnitGi.value + 1;
+  scrollActivePackUnitTabIntoView();
 }
 
 function selectPackUnit(index) {
@@ -962,6 +1002,7 @@ function selectPackUnit(index) {
   const i = Number(index);
   if (!Number.isFinite(i) || i < 0 || i >= n) return;
   activePackUnitIndex.value = i;
+  scrollActivePackUnitTabIntoView();
 }
 
 /** 左側單元列表：顯示名稱（單元名稱 → 第一個資料夾 → 多資料夾以 + 連接 → 單元 N） */
@@ -984,22 +1025,26 @@ const packUnitListItems = computed(() => {
     return {
       index,
       label,
-      isEmpty: !Array.isArray(group) || group.length === 0,
     };
   });
 });
 
-watch(packUnitCarouselCountEffective, (n, prevN) => {
+watch(packUnitCarouselCountEffective, (n) => {
   if (n <= 0) {
     activePackUnitIndex.value = 0;
     return;
   }
   if (activePackUnitIndex.value >= n) {
     activePackUnitIndex.value = n - 1;
-  } else if (prevN != null && n > prevN) {
-    activePackUnitIndex.value = n - 1;
   }
 });
+
+function onAddPackUnitClick() {
+  addRagListGroup();
+  const n = packUnitCarouselCountEffective.value;
+  if (n > 0) activePackUnitIndex.value = n - 1;
+  scrollActivePackUnitTabIntoView();
+}
 
 /** 唯讀設定單元 Carousel 目前列 */
 const activeReadonlyPackUnitRow = computed(
@@ -1013,7 +1058,6 @@ const readonlyPackUnitListItems = computed(() =>
     return {
       index,
       label: name && name !== '—' ? name : row.title,
-      isEmpty: false,
     };
   }),
 );
@@ -1023,7 +1067,18 @@ const packUnitListItemsForNav = computed(() =>
   hasBuiltRagSummary.value ? readonlyPackUnitListItems.value : packUnitListItems.value,
 );
 
+/** 設定單元欄位標題：單元 (目前序號/總數) */
+const packUnitFieldLabel = computed(() => {
+  const total = packUnitCarouselCountEffective.value;
+  if (total <= 0) return '單元 (0)';
+  return `單元 (${activePackUnitGi.value + 1}/${total})`;
+});
+
 watch(activeTabId, () => {
+  activePackUnitIndex.value = 0;
+});
+
+watch(hasBuiltRagSummary, () => {
   activePackUnitIndex.value = 0;
 });
 
@@ -4910,7 +4965,6 @@ async function confirmAnswer(item) {
             v-if="!hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
           >
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
               class="my-font-lg-600 my-color-black text-break mb-2"
               role="heading"
@@ -4950,42 +5004,119 @@ async function confirmAnswer(item) {
               </div>
             </div>
           </div>
-          <!-- 單元：橫向清單（位於資料夾下方） -->
+          <!-- 單元：分頁列切換（位於資料夾下方） -->
           <div class="my-pack-unit-field">
-            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
+            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">{{ packUnitFieldLabel }}</div>
             <div
-              v-if="packUnitCarouselCountEffective > 0"
-              class="w-100 min-w-0"
+              class="w-100 min-w-0 d-flex justify-content-center"
             >
-              <nav
-                class="my-pack-unit-list-nav w-100 min-w-0 rounded-2 my-bgcolor-gray-4 my-border-muted p-2"
-                aria-label="單元列表"
+              <div class="my-pack-unit-tabs-nav">
+              <button
+                v-if="packUnitCarouselCountEffective > 0"
+                type="button"
+                class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                :disabled="!canGoPrevPackUnit"
+                aria-label="向前切換單元"
+                @click="goPrevPackUnit"
               >
-                <ul class="list-unstyled mb-0 d-flex flex-row flex-nowrap gap-1 my-pack-unit-list-nav__track">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true" />
+              </button>
+              <div
+                v-if="packUnitCarouselCountEffective > 0"
+                ref="packUnitTabsNavEl"
+                class="my-pack-unit-tabs-host my-rag-tabs-bar my-bgcolor-gray-4"
+              >
+                <ul
+                  class="nav nav-tabs flex-nowrap my-pack-unit-tabs mb-0"
+                  role="tablist"
+                  aria-label="單元列表"
+                >
                   <li
                     v-for="item in packUnitListItemsForNav"
-                    :key="'pack-unit-li-bottom-' + item.index"
-                    class="flex-shrink-0"
+                    :key="'pack-unit-tab-' + item.index"
+                    class="nav-item flex-shrink-0"
                   >
                     <button
                       type="button"
-                      class="btn text-nowrap border-0 rounded-2 px-3 py-2 my-font-sm-400"
-                      :class="item.index === activePackUnitGi
-                        ? 'my-bgcolor-surface my-color-black'
-                        : 'my-button-transparent-borderless my-color-gray-1'"
-                      :aria-current="item.index === activePackUnitGi ? 'true' : undefined"
+                      role="tab"
+                      class="nav-link text-nowrap py-2 my-font-sm-400"
+                      :class="{ active: item.index === activePackUnitGi }"
+                      :aria-selected="item.index === activePackUnitGi"
+                      :data-pack-unit-tab-index="item.index"
                       :title="item.label"
                       @click="selectPackUnit(item.index)"
                     >
-                      <span class="d-inline-block text-truncate my-pack-unit-list-nav__label">{{ item.label }}</span>
-                      <span
-                        v-if="item.isEmpty"
-                        class="d-block my-font-sm-400 my-color-gray-4 text-truncate"
-                      >尚未設定資料夾</span>
+                      {{ item.label }}
                     </button>
                   </li>
                 </ul>
-              </nav>
+              </div>
+              <button
+                v-if="packUnitCarouselCountEffective > 0"
+                type="button"
+                class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                :disabled="!canGoNextPackUnit"
+                aria-label="向後切換單元"
+                @click="goNextPackUnit"
+              >
+                <i class="fa-solid fa-chevron-right" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 my-pack-drop-target"
+                @dragover.prevent="onDragOver($event)"
+                @dragenter.prevent="onDragEnter($event)"
+                @dragleave="onDragLeave($event)"
+                @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
+                aria-label="新增單元"
+                @click="onAddPackUnitClick"
+              >
+                <i class="fa-solid fa-plus" aria-hidden="true" />
+              </button>
+              <div class="dropdown flex-shrink-0">
+                <button
+                  type="button"
+                  class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 dropdown-toggle my-dropdown-caret"
+                  data-bs-toggle="dropdown"
+                  aria-expanded="false"
+                  aria-label="單元功能選單"
+                >
+                  <i class="fa-solid fa-bars" aria-hidden="true" />
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                  <li>
+                    <button
+                      type="button"
+                      class="dropdown-item my-font-sm-400"
+                      :disabled="!(currentState.packTasksList || []).length"
+                      title="清空所有設定單元（含空位）"
+                      @click="clearAllRagListGroups"
+                    >
+                      刪除全部
+                    </button>
+                  </li>
+                  <li v-if="secondFoldersFull.length">
+                    <button
+                      type="button"
+                      class="dropdown-item my-font-sm-400"
+                      @click="addAllSecondFoldersAsGroups"
+                    >
+                      每個資料夾獨立單元
+                    </button>
+                  </li>
+                  <li v-if="secondFoldersFull.length">
+                    <button
+                      type="button"
+                      class="dropdown-item my-font-sm-400"
+                      title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                      @click="setAllSecondFoldersAsSingleGroup"
+                    >
+                      每個資料夾合併單元
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              </div>
             </div>
           </div>
 
@@ -5202,72 +5333,6 @@ async function confirmAnswer(item) {
                 </div>
               </div>
             </div>
-            <div
-              v-if="packUnitCarouselCountEffective > 0"
-              class="my-pack-unit-toolbar-row"
-            >
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
-                :disabled="!canGoPrevPackUnit"
-                aria-label="向前切換單元"
-                @click="goPrevPackUnit"
-              >
-                向前
-              </button>
-              <span class="my-font-sm-400 my-color-gray-1 flex-shrink-0" aria-live="polite">
-                單元 {{ activePackUnitGi + 1 }} / {{ packUnitCarouselCountEffective }}
-              </span>
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
-                :disabled="!canGoNextPackUnit"
-                aria-label="向後切換單元"
-                @click="goNextPackUnit"
-              >
-                向後
-              </button>
-            </div>
-            <div class="my-pack-unit-toolbar-row">
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 my-pack-drop-target"
-                @dragover.prevent="onDragOver($event)"
-                @dragenter.prevent="onDragEnter($event)"
-                @dragleave="onDragLeave($event)"
-                @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
-                @click="addRagListGroup"
-              >
-                + 新增單元
-              </button>
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                :disabled="!(currentState.packTasksList || []).length"
-                aria-label="刪除全部"
-                title="清空所有設定單元（含空位）"
-                @click="clearAllRagListGroups"
-              >
-                刪除全部
-              </button>
-              <button
-                v-if="secondFoldersFull.length"
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                @click="addAllSecondFoldersAsGroups"
-              >
-                每個資料夾獨立單元
-              </button>
-              <button
-                v-if="secondFoldersFull.length"
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
-                @click="setAllSecondFoldersAsSingleGroup"
-              >
-                每個資料夾合併單元
-              </button>
-            </div>
           </div>
 
           <div class="d-flex justify-content-center">
@@ -5290,14 +5355,12 @@ async function confirmAnswer(item) {
             {{ currentState.packError }}
           </div>
             </div>
-          </div>
           </section>
           <!-- 唯讀摘要：建置完成後顯示（含剛 build 完但列表尚未同步 rag_metadata 的情況） -->
           <section
             v-if="hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
           >
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
               class="my-font-lg-600 my-color-black text-break mb-2"
               role="heading"
@@ -5314,22 +5377,8 @@ async function confirmAnswer(item) {
                 {{ uploadZipReadonlyInputValue }}
               </div>
             </div>
-              <div v-if="secondFoldersFull.length" class="my-pack-unit-field">
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
-                <div
-                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
-                  role="group"
-                  aria-label="資料夾"
-                >
-                  <span
-                    v-for="(name, i) in secondFoldersFull"
-                    :key="'ro-sf-' + i"
-                    class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
-                  >{{ name }}</span>
-                </div>
-              </div>
               <div class="my-pack-unit-field">
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">{{ packUnitFieldLabel }}</div>
                 <template v-if="!packUnitCarouselCountEffective">
                   <div
                     class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
@@ -5339,33 +5388,57 @@ async function confirmAnswer(item) {
                 </template>
                 <div
                   v-else
-                  class="w-100 min-w-0"
+                  class="w-100 min-w-0 d-flex justify-content-center"
                 >
-                  <nav
-                    class="my-pack-unit-list-nav w-100 min-w-0 rounded-2 my-bgcolor-gray-4 my-border-muted p-2"
-                    aria-label="單元列表"
+                  <div class="my-pack-unit-tabs-nav">
+                  <button
+                    type="button"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                    :disabled="!canGoPrevPackUnit"
+                    aria-label="向前切換單元"
+                    @click="goPrevPackUnit"
                   >
-                    <ul class="list-unstyled mb-0 d-flex flex-row flex-nowrap gap-1 my-pack-unit-list-nav__track">
+                    <i class="fa-solid fa-chevron-left" aria-hidden="true" />
+                  </button>
+                  <div
+                    ref="packUnitTabsNavEl"
+                    class="my-pack-unit-tabs-host my-rag-tabs-bar my-bgcolor-gray-4"
+                  >
+                    <ul
+                      class="nav nav-tabs flex-nowrap my-pack-unit-tabs mb-0"
+                      role="tablist"
+                      aria-label="單元列表"
+                    >
                       <li
                         v-for="item in packUnitListItemsForNav"
-                        :key="'ro-pack-unit-li-' + item.index"
-                        class="flex-shrink-0"
+                        :key="'ro-pack-unit-tab-' + item.index"
+                        class="nav-item flex-shrink-0"
                       >
                         <button
                           type="button"
-                          class="btn text-nowrap border-0 rounded-2 px-3 py-2 my-font-sm-400"
-                          :class="item.index === activePackUnitGi
-                            ? 'my-bgcolor-surface my-color-black'
-                            : 'my-button-transparent-borderless my-color-gray-1'"
-                          :aria-current="item.index === activePackUnitGi ? 'true' : undefined"
+                          role="tab"
+                          class="nav-link d-flex flex-column align-items-start text-start py-2 my-font-sm-400"
+                          :class="{ active: item.index === activePackUnitGi }"
+                          :aria-selected="item.index === activePackUnitGi"
+                          :data-pack-unit-tab-index="item.index"
                           :title="item.label"
                           @click="selectPackUnit(item.index)"
                         >
-                          <span class="d-inline-block text-truncate my-pack-unit-list-nav__label">{{ item.label }}</span>
+                          <span class="text-truncate w-100">{{ item.label }}</span>
                         </button>
                       </li>
                     </ul>
-                  </nav>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                    :disabled="!canGoNextPackUnit"
+                    aria-label="向後切換單元"
+                    @click="goNextPackUnit"
+                  >
+                    <i class="fa-solid fa-chevron-right" aria-hidden="true" />
+                  </button>
+                  </div>
                 </div>
               </div>
               <div
@@ -5557,35 +5630,8 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <div
-                  v-if="packUnitCarouselCountEffective > 0"
-                  class="my-pack-unit-toolbar-row"
-                >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
-                    :disabled="!canGoPrevPackUnit"
-                    aria-label="向前切換單元"
-                    @click="goPrevPackUnit"
-                  >
-                    向前
-                  </button>
-                  <span class="my-font-sm-400 my-color-gray-1 flex-shrink-0" aria-live="polite">
-                    單元 {{ activePackUnitGi + 1 }} / {{ packUnitCarouselCountEffective }}
-                  </span>
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
-                    :disabled="!canGoNextPackUnit"
-                    aria-label="向後切換單元"
-                    @click="goNextPackUnit"
-                  >
-                    向後
-                  </button>
-                </div>
               </div>
             </div>
-          </div>
           </section>
         </div>
       </template>
@@ -6144,19 +6190,40 @@ async function confirmAnswer(item) {
   min-width: 0;
 }
 
-/* 設定單元：底部水平單元列表（橫向捲動 + 點選切換）；捲軸色見 common.css .my-pack-unit-list-nav */
-.my-pack-unit-list-nav {
+/* 設定單元：單元分頁列 + 向前／向後（置中、內容寬；隱藏捲軸） */
+.my-pack-unit-tabs-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-tabs-host .my-pack-unit-tabs .nav-link {
+  padding-left: 0.625rem;
+  padding-right: 0.625rem;
+}
+.my-pack-unit-tabs-host {
+  min-width: 0;
+  max-width: 100%;
   overflow-x: auto;
   overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 2px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.my-pack-unit-list-nav__track {
+.my-pack-unit-tabs-host::-webkit-scrollbar {
+  display: none;
+}
+.my-pack-unit-tabs-host .my-pack-unit-tabs {
+  justify-content: flex-start !important;
+  flex-wrap: nowrap;
   width: max-content;
   min-width: 100%;
+  margin-bottom: 0;
 }
-.my-pack-unit-list-nav__label {
-  max-width: 10rem;
-  vertical-align: bottom;
+.my-pack-unit-tabs {
+  overflow: visible;
+}
+.my-pack-unit-tabs .nav-link {
+  max-width: 12rem;
 }
 </style>
