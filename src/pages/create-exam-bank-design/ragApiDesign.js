@@ -3,10 +3,12 @@
  */
 import { formatGradingResult } from '../../utils/grading.js';
 import {
+  DESIGN_DEMO_FOLDER_NAMES,
   DESIGN_MOCK_RAG_LIST,
   DESIGN_MOCK_UNITS,
   DESIGN_MOCK_QUIZ_GENERATE,
   DESIGN_MOCK_TRANSCRIPT_MD,
+  buildDesignDemoUnits,
 } from './mockData.js';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -109,7 +111,7 @@ export async function apiUploadZip(_file, ragTabId) {
   const meta = {
     filename: 'uploaded_demo.zip',
     rag_tab_id: ragTabId,
-    second_folders: ['Chapter_01', 'Chapter_02', 'Chapter_03'],
+    second_folders: [...DESIGN_DEMO_FOLDER_NAMES],
   };
   const tabId = String(ragTabId ?? '').trim();
   const row = extraRagRows.find((r) => String(r.rag_tab_id) === tabId);
@@ -173,9 +175,20 @@ export async function apiBuildRagZip(body, onStreamEvent) {
   };
 }
 
-export async function apiGetRagTabUnits() {
+export async function apiGetRagTabUnits(ragTabId) {
   await delay(250);
-  return DESIGN_MOCK_UNITS.map((u) => ({ ...u, quizzes: (u.quizzes ?? []).map((q) => ({ ...q })) }));
+  const id = String(ragTabId ?? '').trim();
+  const row = buildDesignRagList().find((r) => String(r.rag_tab_id ?? '') === id);
+  const units =
+    Array.isArray(row?.units) && row.units.length > 0
+      ? row.units
+      : row?.unit_list
+        ? buildDesignDemoUnits()
+        : DESIGN_MOCK_UNITS;
+  return units.map((u) => ({
+    ...u,
+    quizzes: (u.quizzes ?? []).map((q) => ({ ...q })),
+  }));
 }
 
 export async function apiCreateRagUnitQuiz() {

@@ -417,9 +417,9 @@ function isPackTasksListReady(list) {
 
 const hasRagMetadata = computed(() => checkRagHasMetadata(currentRagItem.value));
 const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.value) || checkRagHasList(currentRagItem.value));
-/** 建置完成判斷：後端已有 rag_metadata/unit_list，或前端本輪 build 已拿到回傳 */
+/** 建置完成判斷：後端已有 rag_metadata，或本頁本輪 build 已拿到回傳（僅 unit_list 仍為可編輯，如示範題庫 B） */
 const hasBuiltRagSummary = computed(
-  () => hasRagListOrMetadata.value || currentState.value.packResponseJson != null
+  () => hasRagMetadata.value || currentState.value.packResponseJson != null
 );
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
@@ -919,6 +919,113 @@ const {
   addAllSecondFoldersAsGroups,
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
+
+/** 設定單元 Carousel：一次只顯示一個出題單元，以向前／向後切換 */
+const activePackUnitIndex = ref(0);
+
+const packUnitCarouselCount = computed(() => ragListDisplayGroups.value.length);
+
+/** 可編輯／唯讀設定單元共用 Carousel 筆數 */
+const packUnitCarouselCountEffective = computed(() =>
+  hasBuiltRagSummary.value
+    ? quizBankSettingReadonlyUnitRows.value.length
+    : packUnitCarouselCount.value,
+);
+
+const activePackUnitGi = computed(() => {
+  const n = packUnitCarouselCountEffective.value;
+  if (n <= 0) return 0;
+  return Math.min(Math.max(0, activePackUnitIndex.value), n - 1);
+});
+
+const activePackUnitGroup = computed(
+  () => ragListDisplayGroups.value[activePackUnitGi.value] ?? [],
+);
+
+const canGoPrevPackUnit = computed(() => activePackUnitGi.value > 0);
+
+const canGoNextPackUnit = computed(
+  () => activePackUnitGi.value < packUnitCarouselCountEffective.value - 1,
+);
+
+function goPrevPackUnit() {
+  if (canGoPrevPackUnit.value) activePackUnitIndex.value = activePackUnitGi.value - 1;
+}
+
+function goNextPackUnit() {
+  if (canGoNextPackUnit.value) activePackUnitIndex.value = activePackUnitGi.value + 1;
+}
+
+function selectPackUnit(index) {
+  const n = packUnitCarouselCountEffective.value;
+  if (n <= 0) return;
+  const i = Number(index);
+  if (!Number.isFinite(i) || i < 0 || i >= n) return;
+  activePackUnitIndex.value = i;
+}
+
+/** 左側單元列表：顯示名稱（單元名稱 → 第一個資料夾 → 多資料夾以 + 連接 → 單元 N） */
+const packUnitListItems = computed(() => {
+  const groups = ragListDisplayGroups.value;
+  const state = currentState.value;
+  return groups.map((group, index) => {
+    const customName = String(state.packUnitNames?.[index] ?? '').trim();
+    let label = customName;
+    if (!label) {
+      const folder = firstFolderNameInGroup(group);
+      if (folder) {
+        label = folder;
+      } else if (Array.isArray(group) && group.length > 1) {
+        label = group.map((t) => String(t ?? '').trim()).filter(Boolean).join('+');
+      } else {
+        label = `單元 ${index + 1}`;
+      }
+    }
+    return {
+      index,
+      label,
+      isEmpty: !Array.isArray(group) || group.length === 0,
+    };
+  });
+});
+
+watch(packUnitCarouselCountEffective, (n, prevN) => {
+  if (n <= 0) {
+    activePackUnitIndex.value = 0;
+    return;
+  }
+  if (activePackUnitIndex.value >= n) {
+    activePackUnitIndex.value = n - 1;
+  } else if (prevN != null && n > prevN) {
+    activePackUnitIndex.value = n - 1;
+  }
+});
+
+/** 唯讀設定單元 Carousel 目前列 */
+const activeReadonlyPackUnitRow = computed(
+  () => quizBankSettingReadonlyUnitRows.value[activePackUnitGi.value] ?? null,
+);
+
+/** 左側單元列表（唯讀建置完成後） */
+const readonlyPackUnitListItems = computed(() =>
+  quizBankSettingReadonlyUnitRows.value.map((row, index) => {
+    const name = String(row.unitNameDisplay ?? '').trim();
+    return {
+      index,
+      label: name && name !== '—' ? name : row.title,
+      isEmpty: false,
+    };
+  }),
+);
+
+/** 左側單元列表：編輯中／唯讀共用 */
+const packUnitListItemsForNav = computed(() =>
+  hasBuiltRagSummary.value ? readonlyPackUnitListItems.value : packUnitListItems.value,
+);
+
+watch(activeTabId, () => {
+  activePackUnitIndex.value = 0;
+});
 
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
@@ -4805,13 +4912,14 @@ async function confirmAnswer(item) {
           >
             <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
-              class="my-font-lg-600 my-color-black text-break mb-4"
+              class="my-font-lg-600 my-color-black text-break mb-2"
               role="heading"
               aria-level="2"
             >
               設定單元
             </div>
-            <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+            <div class="my-pack-unit-settings-body">
+            <div class="my-pack-unit-field">
               <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
                 上傳檔案名稱（檔案大小）
               </div>
@@ -4820,7 +4928,7 @@ async function confirmAnswer(item) {
               </div>
             </div>
           <!-- 課程：可拖曳至設定單元 -->
-          <div v-if="secondFoldersFull.length" class="mb-3">
+          <div v-if="secondFoldersFull.length" class="my-pack-unit-field">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
             <div
               class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
@@ -4842,17 +4950,60 @@ async function confirmAnswer(item) {
               </div>
             </div>
           </div>
-
-          <!-- 單元：外層列出各出題單元區塊；區塊內「資料夾組合」可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
-          <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+          <!-- 單元：橫向清單（位於資料夾下方） -->
+          <div class="my-pack-unit-field">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
             <div
-              class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
-              role="group"
-              aria-label="單元"
+              v-if="packUnitCarouselCountEffective > 0"
+              class="w-100 min-w-0"
             >
-              <template v-for="(group, gi) in ragListDisplayGroups" :key="'rg-' + gi">
-                <div class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column">
+              <nav
+                class="my-pack-unit-list-nav w-100 min-w-0 rounded-2 my-bgcolor-gray-4 my-border-muted p-2"
+                aria-label="單元列表"
+              >
+                <ul class="list-unstyled mb-0 d-flex flex-row flex-nowrap gap-1 my-pack-unit-list-nav__track">
+                  <li
+                    v-for="item in packUnitListItemsForNav"
+                    :key="'pack-unit-li-bottom-' + item.index"
+                    class="flex-shrink-0"
+                  >
+                    <button
+                      type="button"
+                      class="btn text-nowrap border-0 rounded-2 px-3 py-2 my-font-sm-400"
+                      :class="item.index === activePackUnitGi
+                        ? 'my-bgcolor-surface my-color-black'
+                        : 'my-button-transparent-borderless my-color-gray-1'"
+                      :aria-current="item.index === activePackUnitGi ? 'true' : undefined"
+                      :title="item.label"
+                      @click="selectPackUnit(item.index)"
+                    >
+                      <span class="d-inline-block text-truncate my-pack-unit-list-nav__label">{{ item.label }}</span>
+                      <span
+                        v-if="item.isEmpty"
+                        class="d-block my-font-sm-400 my-color-gray-4 text-truncate"
+                      >尚未設定資料夾</span>
+                    </button>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+
+          <!-- 單元：Carousel 一次只顯示一個出題單元；區塊內「資料夾組合」可放置課程標籤 -->
+          <div class="my-pack-unit-settings-carousel">
+            <div
+              v-if="packUnitCarouselCountEffective > 0"
+              class="d-flex flex-column gap-2 w-100 min-w-0"
+            >
+              <div
+                class="w-100 min-w-0 d-flex flex-column gap-2"
+                role="group"
+                aria-label="單元設定"
+              >
+              <div
+                :key="'rg-' + activePackUnitGi"
+                class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column"
+              >
                   <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
                     <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
                       資料夾組合
@@ -4863,27 +5014,27 @@ async function confirmAnswer(item) {
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
                       @dragleave="onDragLeave($event)"
-                      @drop.prevent="onDropRagList($event, gi)"
+                      @drop.prevent="onDropRagList($event, activePackUnitGi)"
                     >
                       <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1 min-w-0">
                         <div
-                          v-for="(tag, ti) in group"
-                          :key="'t-' + gi + '-' + ti"
+                          v-for="(tag, ti) in activePackUnitGroup"
+                          :key="'t-' + activePackUnitGi + '-' + ti"
                           class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
                           style="cursor: grab;"
                           draggable="true"
                           role="button"
-                          @dragstart="onDragStartTag($event, tag, true, gi, ti)"
+                          @dragstart="onDragStartTag($event, tag, true, activePackUnitGi, ti)"
                           @dragend="onDragEndTag"
                         >
                           {{ tag }}
                           <span
                             class="my-color-gray-4 ms-1"
                             style="cursor: pointer;"
-                            @click.stop="removeFromRagList(gi, ti)"
+                            @click.stop="removeFromRagList(activePackUnitGi, ti)"
                           >×</span>
                         </div>
-                        <span v-if="!group.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
+                        <span v-if="!activePackUnitGroup.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
                       </div>
                     </div>
                   </div>
@@ -4893,18 +5044,18 @@ async function confirmAnswer(item) {
                     <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
                       <label
                         class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                        :for="'rag-pack-unit-name-' + gi"
+                        :for="'rag-pack-unit-name-' + activePackUnitGi"
                       >單元名稱</label>
                       <input
-                        :id="'rag-pack-unit-name-' + gi"
+                        :id="'rag-pack-unit-name-' + activePackUnitGi"
                         type="text"
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked || group.length === 0"
-                        :value="currentState.packUnitNames?.[gi] ?? ''"
-                        :aria-label="`設定單元 ${gi + 1} 單元名稱`"
+                        :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
+                        :value="currentState.packUnitNames?.[activePackUnitGi] ?? ''"
+                        :aria-label="`設定單元 ${activePackUnitGi + 1} 單元名稱`"
                         autocomplete="off"
                         placeholder="選填"
-                        @input="onPackUnitNameInput(gi, $event)"
+                        @input="onPackUnitNameInput(activePackUnitGi, $event)"
                       >
                     </div>
                     <div
@@ -4915,78 +5066,78 @@ async function confirmAnswer(item) {
                         類型
                       </div>
                       <Design08OptionDropdown
-                        :model-value="packUnitTypeAt(gi)"
+                        :model-value="packUnitTypeAt(activePackUnitGi)"
                         :options="PACK_UNIT_TYPE_OPTIONS"
-                        :menu-id="'pack-unit-type-' + gi"
-                        :disabled="packGroupsEditBlocked || group.length === 0"
+                        :menu-id="'pack-unit-type-' + activePackUnitGi"
+                        :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
                         block
-                        :aria-label="`設定單元 ${gi + 1} 類型`"
-                        @update:model-value="onPackUnitTypePick(gi, $event)"
+                        :aria-label="`設定單元 ${activePackUnitGi + 1} 類型`"
+                        @update:model-value="onPackUnitTypePick(activePackUnitGi, $event)"
                       />
                     </div>
                   </div>
                   <div
-                    v-if="packUnitTypeAt(gi) === UNIT_TYPE_RAG"
+                    v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_RAG"
                     class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
                   >
                     <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
                       <label
                         class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                        :for="'rag-pack-chunk-size-' + gi"
+                        :for="'rag-pack-chunk-size-' + activePackUnitGi"
                       >分段長度（字元）</label>
                       <input
-                        :id="'rag-pack-chunk-size-' + gi"
+                        :id="'rag-pack-chunk-size-' + activePackUnitGi"
                         type="number"
                         min="1"
                         step="1"
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked || group.length === 0"
-                        :value="ensureNumber(currentState.packChunkSizes?.[gi], DEFAULT_PACK_CHUNK_SIZE)"
-                        :aria-label="`設定單元 ${gi + 1} 分段長度（字元）`"
+                        :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
+                        :value="ensureNumber(currentState.packChunkSizes?.[activePackUnitGi], DEFAULT_PACK_CHUNK_SIZE)"
+                        :aria-label="`設定單元 ${activePackUnitGi + 1} 分段長度（字元）`"
                         autocomplete="off"
-                        @input="onPackChunkSizeInput(gi, $event)"
+                        @input="onPackChunkSizeInput(activePackUnitGi, $event)"
                       >
                     </div>
                     <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
                       <label
                         class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                        :for="'rag-pack-chunk-overlap-' + gi"
+                        :for="'rag-pack-chunk-overlap-' + activePackUnitGi"
                       >分段重疊（字元）</label>
                       <input
-                        :id="'rag-pack-chunk-overlap-' + gi"
+                        :id="'rag-pack-chunk-overlap-' + activePackUnitGi"
                         type="number"
                         min="0"
                         step="1"
                         class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked || group.length === 0"
-                        :value="ensureNumber(currentState.packChunkOverlaps?.[gi], DEFAULT_PACK_CHUNK_OVERLAP)"
-                        :aria-label="`設定單元 ${gi + 1} 分段重疊（字元）`"
+                        :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
+                        :value="ensureNumber(currentState.packChunkOverlaps?.[activePackUnitGi], DEFAULT_PACK_CHUNK_OVERLAP)"
+                        :aria-label="`設定單元 ${activePackUnitGi + 1} 分段重疊（字元）`"
                         autocomplete="off"
-                        @input="onPackChunkOverlapInput(gi, $event)"
+                        @input="onPackChunkOverlapInput(activePackUnitGi, $event)"
                       >
                     </div>
                   </div>
                   <div
-                    v-if="packUnitTypeAt(gi) === UNIT_TYPE_TEXT || packUnitTypeAt(gi) === UNIT_TYPE_MP3 || packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE"
+                    v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_TEXT || packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_MP3 || packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_YOUTUBE"
                     class="w-100 min-w-0"
                   >
                     <div class="d-flex flex-column gap-2 w-100 min-w-0">
                       <audio
-                        v-if="packUnitTypeAt(gi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[gi] ?? '').trim() !== ''"
-                        :key="currentState.packUnitMp3PreviewUrls[gi]"
+                        v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[activePackUnitGi] ?? '').trim() !== ''"
+                        :key="currentState.packUnitMp3PreviewUrls[activePackUnitGi]"
                         controls
                         class="w-100"
                         preload="none"
-                        :src="currentState.packUnitMp3PreviewUrls[gi]"
+                        :src="currentState.packUnitMp3PreviewUrls[activePackUnitGi]"
                       />
                       <div
-                        v-if="packUnitTypeAt(gi) === UNIT_TYPE_YOUTUBE && packUnitYoutubeEmbedUrl(gi)"
+                        v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_YOUTUBE && packUnitYoutubeEmbedUrl(activePackUnitGi)"
                         class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
                       >
                         <iframe
                           class="border-0"
                           title="YouTube 影片"
-                          :src="packUnitYoutubeEmbedUrl(gi)"
+                          :src="packUnitYoutubeEmbedUrl(activePackUnitGi)"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                           referrerpolicy="strict-origin-when-cross-origin"
                           allowfullscreen
@@ -4996,12 +5147,12 @@ async function confirmAnswer(item) {
                         <button
                           type="button"
                           class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
-                          :disabled="packUnitTranscriptBusy(gi) || packGroupsEditBlocked || group.length === 0"
-                          :aria-busy="packUnitTranscriptBusy(gi)"
-                          :aria-label="packUnitLoadTranscriptButtonLabel(gi)"
-                          @click="loadPackUnitPreviewForType(gi, group)"
+                          :disabled="packUnitTranscriptBusy(activePackUnitGi) || packGroupsEditBlocked || activePackUnitGroup.length === 0"
+                          :aria-busy="packUnitTranscriptBusy(activePackUnitGi)"
+                          :aria-label="packUnitLoadTranscriptButtonLabel(activePackUnitGi)"
+                          @click="loadPackUnitPreviewForType(activePackUnitGi, activePackUnitGroup)"
                         >
-                          {{ packUnitLoadTranscriptButtonLabel(gi) }}
+                          {{ packUnitLoadTranscriptButtonLabel(activePackUnitGi) }}
                         </button>
                       </div>
                       <div
@@ -5010,19 +5161,19 @@ async function confirmAnswer(item) {
                         aria-label="逐字稿 Markdown"
                       >
                         <EnglishExamMarkdownEditor
-                          :model-value="packUnitTranscriptTextAt(gi)"
-                          :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(gi) || packUnitTranscriptBusy(gi)"
+                          :model-value="packUnitTranscriptTextAt(activePackUnitGi)"
+                          :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(activePackUnitGi) || packUnitTranscriptBusy(activePackUnitGi)"
                           :preview-only="false"
-                          :textarea-id="'pack-unit-transcript-md-' + gi"
-                          @update:model-value="(v) => setPackUnitMarkdownAt(gi, v)"
+                          :textarea-id="'pack-unit-transcript-md-' + activePackUnitGi"
+                          @update:model-value="(v) => setPackUnitMarkdownAt(activePackUnitGi, v)"
                         />
                       </div>
                     </div>
                     <p
-                      v-if="currentState.packUnitTranscriptError?.[gi]"
+                      v-if="currentState.packUnitTranscriptError?.[activePackUnitGi]"
                       class="my-font-sm-400 my-color-red mt-2 mb-0"
                     >
-                      {{ currentState.packUnitTranscriptError[gi] }}
+                      {{ currentState.packUnitTranscriptError[activePackUnitGi] }}
                     </p>
                   </div>
                   <div
@@ -5034,7 +5185,7 @@ async function confirmAnswer(item) {
                       class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
                       aria-label="重設此資料夾組合"
                       :disabled="packGroupsEditBlocked"
-                      @click.stop="resetPackUnitGroup(gi)"
+                      @click.stop="resetPackUnitGroup(activePackUnitGi)"
                     >
                       重設
                     </button>
@@ -5043,63 +5194,83 @@ async function confirmAnswer(item) {
                       class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
                       aria-label="刪除此資料夾組合"
                       :disabled="packGroupsEditBlocked"
-                      @click.stop="removeRagListGroup(gi)"
+                      @click.stop="removeRagListGroup(activePackUnitGi)"
                     >
                       刪除
                     </button>
                   </div>
                 </div>
-              </template>
+              </div>
             </div>
-            <div class="d-flex flex-wrap align-items-center gap-2 w-100 min-w-0 mt-2">
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 my-pack-drop-target"
-                  style="flex: 0 0 auto;"
-                  @dragover.prevent="onDragOver($event)"
-                  @dragenter.prevent="onDragEnter($event)"
-                  @dragleave="onDragLeave($event)"
-                  @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
-                  @click="addRagListGroup"
-                >
-                  + 新增設定單元
-                </button>
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                  style="flex: 0 0 auto;"
-                  :disabled="!(currentState.packTasksList || []).length"
-                  aria-label="刪除所有設定單元"
-                  title="清空所有設定單元（含空位）"
-                  @click="clearAllRagListGroups"
-                >
-                  刪除所有單元
-                </button>
-              </div>
-              <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-2 px-3 py-1"
-                  :disabled="!secondFoldersFull.length"
-                  @click="addAllSecondFoldersAsGroups"
-                >
-                  每個資料夾獨立單元
-                </button>
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-2 px-3 py-1"
-                  :disabled="!secondFoldersFull.length"
-                  title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
-                  @click="setAllSecondFoldersAsSingleGroup"
-                >
-                  每個資料夾合併單元
-                </button>
-              </div>
+            <div
+              v-if="packUnitCarouselCountEffective > 0"
+              class="my-pack-unit-toolbar-row"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
+                :disabled="!canGoPrevPackUnit"
+                aria-label="向前切換單元"
+                @click="goPrevPackUnit"
+              >
+                向前
+              </button>
+              <span class="my-font-sm-400 my-color-gray-1 flex-shrink-0" aria-live="polite">
+                單元 {{ activePackUnitGi + 1 }} / {{ packUnitCarouselCountEffective }}
+              </span>
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
+                :disabled="!canGoNextPackUnit"
+                aria-label="向後切換單元"
+                @click="goNextPackUnit"
+              >
+                向後
+              </button>
+            </div>
+            <div class="my-pack-unit-toolbar-row">
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 my-pack-drop-target"
+                @dragover.prevent="onDragOver($event)"
+                @dragenter.prevent="onDragEnter($event)"
+                @dragleave="onDragLeave($event)"
+                @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
+                @click="addRagListGroup"
+              >
+                + 新增單元
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                :disabled="!(currentState.packTasksList || []).length"
+                aria-label="刪除全部"
+                title="清空所有設定單元（含空位）"
+                @click="clearAllRagListGroups"
+              >
+                刪除全部
+              </button>
+              <button
+                v-if="secondFoldersFull.length"
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                @click="addAllSecondFoldersAsGroups"
+              >
+                每個資料夾獨立單元
+              </button>
+              <button
+                v-if="secondFoldersFull.length"
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                @click="setAllSecondFoldersAsSingleGroup"
+              >
+                每個資料夾合併單元
+              </button>
             </div>
           </div>
 
-          <div class="d-flex justify-content-center mt-3">
+          <div class="d-flex justify-content-center">
             <button
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
@@ -5113,11 +5284,12 @@ async function confirmAnswer(item) {
           </div>
           <div
             v-if="currentState.packError"
-            class="my-alert-danger-soft my-font-sm-400 py-2 mb-2 text-break"
+            class="my-alert-danger-soft my-font-sm-400 py-2 text-break"
             style="white-space: pre-wrap"
           >
             {{ currentState.packError }}
           </div>
+            </div>
           </div>
           </section>
           <!-- 唯讀摘要：建置完成後顯示（含剛 build 完但列表尚未同步 rag_metadata 的情況） -->
@@ -5127,13 +5299,14 @@ async function confirmAnswer(item) {
           >
             <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
-              class="my-font-lg-600 my-color-black text-break mb-4"
+              class="my-font-lg-600 my-color-black text-break mb-2"
               role="heading"
               aria-level="2"
             >
               設定單元
             </div>
-            <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+            <div class="my-pack-unit-settings-body">
+            <div class="my-pack-unit-field">
               <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
                 上傳檔案名稱（檔案大小）
               </div>
@@ -5141,9 +5314,23 @@ async function confirmAnswer(item) {
                 {{ uploadZipReadonlyInputValue }}
               </div>
             </div>
-              <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
+              <div v-if="secondFoldersFull.length" class="my-pack-unit-field">
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
+                <div
+                  class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
+                  role="group"
+                  aria-label="資料夾"
+                >
+                  <span
+                    v-for="(name, i) in secondFoldersFull"
+                    :key="'ro-sf-' + i"
+                    class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
+                  >{{ name }}</span>
+                </div>
+              </div>
+              <div class="my-pack-unit-field">
                 <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
-                <template v-if="!quizBankSettingReadonlyUnitRows.length">
+                <template v-if="!packUnitCarouselCountEffective">
                   <div
                     class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
                   >
@@ -5152,11 +5339,47 @@ async function confirmAnswer(item) {
                 </template>
                 <div
                   v-else
-                  class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
+                  class="w-100 min-w-0"
+                >
+                  <nav
+                    class="my-pack-unit-list-nav w-100 min-w-0 rounded-2 my-bgcolor-gray-4 my-border-muted p-2"
+                    aria-label="單元列表"
+                  >
+                    <ul class="list-unstyled mb-0 d-flex flex-row flex-nowrap gap-1 my-pack-unit-list-nav__track">
+                      <li
+                        v-for="item in packUnitListItemsForNav"
+                        :key="'ro-pack-unit-li-' + item.index"
+                        class="flex-shrink-0"
+                      >
+                        <button
+                          type="button"
+                          class="btn text-nowrap border-0 rounded-2 px-3 py-2 my-font-sm-400"
+                          :class="item.index === activePackUnitGi
+                            ? 'my-bgcolor-surface my-color-black'
+                            : 'my-button-transparent-borderless my-color-gray-1'"
+                          :aria-current="item.index === activePackUnitGi ? 'true' : undefined"
+                          :title="item.label"
+                          @click="selectPackUnit(item.index)"
+                        >
+                          <span class="d-inline-block text-truncate my-pack-unit-list-nav__label">{{ item.label }}</span>
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                </div>
+              </div>
+              <div
+                v-if="packUnitCarouselCountEffective > 0"
+                class="my-pack-unit-settings-carousel"
+              >
+                <div
+                  class="w-100 min-w-0 d-flex flex-column gap-2"
+                  role="group"
+                  aria-label="單元設定（唯讀）"
                 >
                   <div
-                    v-for="row in quizBankSettingReadonlyUnitRows"
-                    :key="row.key"
+                    v-if="activeReadonlyPackUnitRow"
+                    :key="'ro-rg-' + activeReadonlyPackUnitRow.key"
                     class="rounded-2 p-3 w-100 min-w-0 lh-base text-break my-bgcolor-gray-4 my-border-muted d-flex flex-column"
                   >
                     <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
@@ -5172,21 +5395,21 @@ async function confirmAnswer(item) {
                           role="group"
                           aria-label="資料夾組合"
                         >
-                          <template v-if="row.folderComboTags?.length">
+                          <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
                             <span
-                              v-for="(tag, ti) in row.folderComboTags"
-                              :key="`${row.key}-fc-${ti}`"
+                              v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
+                              :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
                               class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
                             >{{ tag }}</span>
                           </template>
                           <span
                             v-else
                             class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
-                          >{{ row.title }}</span>
+                          >{{ activeReadonlyPackUnitRow.title }}</span>
                         </div>
                       </div>
                       <div
-                        v-if="Number(row.unitType) !== UNIT_TYPE_RAG"
+                        v-if="Number(activeReadonlyPackUnitRow.unitType) !== UNIT_TYPE_RAG"
                         class="d-flex flex-column gap-0 min-w-0"
                         style="flex: 1 1 0;"
                       >
@@ -5194,7 +5417,7 @@ async function confirmAnswer(item) {
                           來源檔
                         </div>
                         <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ row.sourceDisplay }}
+                          {{ activeReadonlyPackUnitRow.sourceDisplay }}
                         </div>
                       </div>
                     </div>
@@ -5207,7 +5430,7 @@ async function confirmAnswer(item) {
                           單元名稱
                         </div>
                         <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ row.unitNameDisplay }}
+                          {{ activeReadonlyPackUnitRow.unitNameDisplay }}
                         </div>
                       </div>
                       <div
@@ -5218,17 +5441,17 @@ async function confirmAnswer(item) {
                           類型
                         </div>
                         <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ row.typeLabel }}
+                          {{ activeReadonlyPackUnitRow.typeLabel }}
                         </div>
                       </div>
                     </div>
                     <div
-                      v-if="row.outlineChunkFields.length"
+                      v-if="activeReadonlyPackUnitRow.outlineChunkFields.length"
                       class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
                     >
                       <div
-                        v-for="(och, oi) in row.outlineChunkFields"
-                        :key="row.key + '-ochunk-' + oi"
+                        v-for="(och, oi) in activeReadonlyPackUnitRow.outlineChunkFields"
+                        :key="activeReadonlyPackUnitRow.key + '-ochunk-' + oi"
                         class="d-flex flex-column gap-0 min-w-0"
                         style="flex: 1 1 0;"
                       >
@@ -5241,24 +5464,24 @@ async function confirmAnswer(item) {
                       </div>
                     </div>
                     <div
-                      v-if="row.detailSegments.length"
+                      v-if="activeReadonlyPackUnitRow.detailSegments.length"
                       class="w-100 min-w-0"
                     >
                       <template
-                        v-for="(seg, li) in row.detailSegments"
-                        :key="row.key + '-seg-' + li"
+                        v-for="(seg, li) in activeReadonlyPackUnitRow.detailSegments"
+                        :key="activeReadonlyPackUnitRow.key + '-seg-' + li"
                       >
                         <div
                           v-if="seg.kind === 'text'"
                           class="my-font-sm-400 lh-base my-color-black"
-                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                         >
                           {{ seg.text }}
                         </div>
                         <div
                           v-else-if="seg.kind === 'field'"
                           class="d-flex flex-column gap-0 w-100 min-w-0"
-                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                         >
                           <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
                             {{ seg.label }}
@@ -5270,7 +5493,7 @@ async function confirmAnswer(item) {
                         <div
                           v-else-if="seg.kind === 'markdown'"
                           class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                           role="region"
                           aria-label="單元逐字稿"
                         >
@@ -5282,7 +5505,7 @@ async function confirmAnswer(item) {
                         <div
                           v-else-if="seg.kind === 'audio'"
                           class="col-12 min-w-0"
-                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                           style="padding: 0;"
                         >
                           <RagTabUnitMp3Player
@@ -5293,7 +5516,7 @@ async function confirmAnswer(item) {
                         <div
                           v-else-if="seg.kind === 'youtube'"
                           class="d-flex flex-column gap-2 min-w-0"
-                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                         >
                           <div
                             v-if="seg.embedSrc"
@@ -5320,7 +5543,7 @@ async function confirmAnswer(item) {
                         <div
                           v-else-if="seg.kind === 'transcript_button'"
                           class="d-flex justify-content-center w-100 min-w-0 pt-1"
-                          :class="li < row.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                         >
                           <button
                             type="button"
@@ -5334,7 +5557,34 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
+                <div
+                  v-if="packUnitCarouselCountEffective > 0"
+                  class="my-pack-unit-toolbar-row"
+                >
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
+                    :disabled="!canGoPrevPackUnit"
+                    aria-label="向前切換單元"
+                    @click="goPrevPackUnit"
+                  >
+                    向前
+                  </button>
+                  <span class="my-font-sm-400 my-color-gray-1 flex-shrink-0" aria-live="polite">
+                    單元 {{ activePackUnitGi + 1 }} / {{ packUnitCarouselCountEffective }}
+                  </span>
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-3 py-1"
+                    :disabled="!canGoNextPackUnit"
+                    aria-label="向後切換單元"
+                    @click="goNextPackUnit"
+                  >
+                    向後
+                  </button>
+                </div>
               </div>
+            </div>
           </div>
           </section>
         </div>
@@ -5860,5 +6110,53 @@ async function confirmAnswer(item) {
 }
 .my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 200px;
+}
+/* 設定單元：區塊內欄位／工具列統一縱向間距 */
+.my-pack-unit-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+/* 標題→控件間距沿用 common.css --my-field-label-input-gap，勿與 flex gap 疊加 */
+.my-pack-unit-settings-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-toolbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+
+/* 設定單元：底部水平單元列表（橫向捲動 + 點選切換）；捲軸色見 common.css .my-pack-unit-list-nav */
+.my-pack-unit-list-nav {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.my-pack-unit-list-nav__track {
+  width: max-content;
+  min-width: 100%;
+}
+.my-pack-unit-list-nav__label {
+  max-width: 10rem;
+  vertical-align: bottom;
 }
 </style>
