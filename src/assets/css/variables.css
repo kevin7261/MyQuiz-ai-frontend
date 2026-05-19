@@ -36,6 +36,8 @@
   --my-color-gray-3: #f0f0f0;
   --my-color-gray-4: #fafafa;
   --my-color-white: #ffffff;
+  /* 設定單元：資料夾／資料夾組合拖放區（深於白底 tag、淺於 gray-1 字色） */
+  --my-pack-folder-field-bg: color-mix(in srgb, var(--my-color-gray-1) 22%, var(--my-color-gray-2));
 
   /* 語意色順序：紅／綠／藍 */
   --my-color-red: #e84136;

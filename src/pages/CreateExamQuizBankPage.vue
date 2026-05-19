@@ -920,6 +920,15 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
+/** 設定單元區塊標題：數量寫在「設定單元」後（不另顯示「單元 (n/m)」小標） */
+const packUnitSectionHeadingTitle = computed(() => {
+  const total = hasBuiltRagSummary.value
+    ? quizBankSettingReadonlyUnitRows.value.length
+    : (ragListDisplayGroups.value?.length ?? 0);
+  if (total <= 0) return '設定單元 (0)';
+  return `設定單元 (${total})`;
+});
+
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
 function packUnitTypeAt(gi) {
@@ -2046,6 +2055,13 @@ const activeUnitQuizTypeIdxResolved = computed(() => {
   if (!Array.isArray(cards) || cards.length === 0) return 0;
   if (!Number.isFinite(i) || i < 0 || i >= cards.length) return 0;
   return i;
+});
+
+/** 設定單元題型區塊標題：設定單元題型 (目前題型序號/題型總數) */
+const unitQuizTypeSectionHeadingTitle = computed(() => {
+  const total = activeUnitQuizCards.value.length;
+  if (total <= 0) return '設定單元題型 (0)';
+  return `設定單元題型 (${activeUnitQuizTypeIdxResolved.value + 1}/${total})`;
 });
 
 const activeUnitQuizCard = computed(() => {
@@ -4687,7 +4703,7 @@ async function confirmAnswer(item) {
       <!-- 有資料或已點新增後顯示表單 -->
       <template v-if="showCreateBankMainForm">
       <!-- 建立流程 stepper：1–3（已完成灰底細框／當前黑底／未到淺灰；連線達下一階即加深） -->
-      <section v-if="showStepperSection" class="my-page-block-spacing">
+      <section v-if="showStepperSection" class="my-create-rag-stepper-bar my-page-block-spacing p-3">
         <div class="my-create-rag-stepper text-start">
           <div class="d-flex justify-content-between align-items-start gap-2 gap-sm-3 w-100">
           <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
@@ -4733,11 +4749,17 @@ async function confirmAnswer(item) {
           </div>
         </div>
       </section>
-      <!-- 尚無 file_metadata 時顯示上傳區；DesignPage 同款 rounded-4 my-bgcolor-gray-3 p-4 mb-5 + 區塊標題 -->
+      <!-- 尚無 file_metadata 時顯示上傳區（無區塊外框；標題同設定單元題型） -->
       <section v-if="showUploadFileSection" class="text-start my-page-block-spacing">
-        <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
-          <div class="my-font-lg-600 my-color-black text-break mb-4" role="heading" aria-level="2">上傳檔案</div>
-
+        <div
+          class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+          role="heading"
+          aria-level="2"
+        >
+          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">上傳檔案</span>
+          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+        </div>
             <input
               ref="zipFileInputRef"
               type="file"
@@ -4790,7 +4812,6 @@ async function confirmAnswer(item) {
                 確定上傳
               </button>
             </div>
-        </div>
       </section>
       <!-- 建立 RAG：要有 file_metadata 才顯示；未建置時僅可編輯「設定單元」卡，建置完成後另顯唯讀摘要卡（rounded-4 深灰） -->
       <template v-if="fileMetadataToShow != null">
@@ -4798,32 +4819,40 @@ async function confirmAnswer(item) {
           class="w-100"
           :class="{ 'pe-none my-color-gray-4': !hasRagMetadata && packGroupsEditBlocked }"
         >
+          <section class="text-start my-page-block-spacing">
+            <div
+              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+              role="heading"
+              aria-level="2"
+            >
+              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">上傳檔案</span>
+              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+            </div>
+            <div class="my-font-md-400 my-color-black lh-base text-break text-center w-100 min-w-0">
+              {{ uploadZipReadonlyInputValue }}
+            </div>
+          </section>
           <!-- 建置完成後僅保留下方唯讀「設定單元」卡，不重複檔名／已套用提示 -->
           <section
             v-if="!hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
           >
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
-              class="my-font-lg-600 my-color-black text-break mb-4"
+              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
               role="heading"
               aria-level="2"
             >
-              設定單元
+              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
+              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
             </div>
-            <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-              <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                上傳檔案名稱（檔案大小）
-              </div>
-              <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                {{ uploadZipReadonlyInputValue }}
-              </div>
-            </div>
+            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
           <!-- 課程：可拖曳至設定單元 -->
           <div v-if="secondFoldersFull.length" class="mb-3">
             <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
             <div
-              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
+              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
               role="group"
               aria-label="資料夾"
             >
@@ -4845,9 +4874,8 @@ async function confirmAnswer(item) {
 
           <!-- 單元：外層列出各出題單元區塊；區塊內「資料夾組合」可放置課程標籤（與其他 input 同 form-control + px-3 py-2） -->
           <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
             <div
-              class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
+              class="d-flex flex-column gap-3 w-100 min-w-0"
               role="group"
               aria-label="單元"
             >
@@ -4858,7 +4886,7 @@ async function confirmAnswer(item) {
                       資料夾組合
                     </div>
                     <div
-                      class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
+                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
                       style="min-height: 2.5rem;"
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
@@ -5125,24 +5153,17 @@ async function confirmAnswer(item) {
             v-if="hasBuiltRagSummary"
             class="text-start my-page-block-spacing"
           >
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div
-              class="my-font-lg-600 my-color-black text-break mb-4"
+              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
               role="heading"
               aria-level="2"
             >
-              設定單元
+              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
+              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
             </div>
-            <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-              <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                上傳檔案名稱（檔案大小）
-              </div>
-              <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                {{ uploadZipReadonlyInputValue }}
-              </div>
-            </div>
+            <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
               <div class="mb-3 d-flex flex-column gap-0 w-100 min-w-0">
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">單元</div>
                 <template v-if="!quizBankSettingReadonlyUnitRows.length">
                   <div
                     class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
@@ -5152,7 +5173,7 @@ async function confirmAnswer(item) {
                 </template>
                 <div
                   v-else
-                  class="d-flex flex-column gap-3 w-100 min-w-0 mt-2"
+                  class="d-flex flex-column gap-3 w-100 min-w-0"
                 >
                   <div
                     v-for="row in quizBankSettingReadonlyUnitRows"
@@ -5350,7 +5371,7 @@ async function confirmAnswer(item) {
             aria-level="2"
           >
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">設定單元題型</span>
+            <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ unitQuizTypeSectionHeadingTitle }}</span>
             <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
           </div>
           <div
