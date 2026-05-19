@@ -1485,6 +1485,29 @@ function examSlotLockedStaticQuizTypeLabel(slotIndex) {
   return '—';
 }
 
+/** 之前的出題 Modal：目前槽位單元名稱（下拉或已鎖定題列） */
+function examSlotUnitLabelForHistoryModal(slotIndex) {
+  if (examSlotRagChoicesLocked(slotIndex)) {
+    return examSlotLockedStaticUnitLabel(slotIndex);
+  }
+  const uid = String(getSlotFormState(slotIndex).examUnitSelectId ?? '').trim();
+  if (uid) {
+    const item = findExamUnitDropdownItemBySelectId(uid);
+    const lab = item && String(item.label ?? '').trim();
+    if (lab) return lab;
+  }
+  return '—';
+}
+
+/** 之前的出題 Modal：目前槽位題型名稱 */
+function examSlotQuizTypeLabelForHistoryModal(slotIndex) {
+  if (examSlotRagChoicesLocked(slotIndex)) {
+    return examSlotLockedStaticQuizTypeLabel(slotIndex);
+  }
+  const pick = String(getSlotFormState(slotIndex).examQuizNamePick ?? '').trim();
+  return pick || '—';
+}
+
 /**
  * 由槽位表單解析 POST llm-generate 所需 rag_tab_id、rag_unit_id、rag_quiz_id（皆須有效才合法出題）
  * @returns {{ ragTabId: string, ragUnitId: number, ragQuizId: number, resolvedQuizName: string, unitItemForLlm: object | null, ragRowForLlm: object | null }}
@@ -2228,6 +2251,29 @@ onActivated(() => {
               />
             </div>
             <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <div
+                v-if="examQuizHistoryModalSlotIndex != null"
+                class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3 mb-3"
+              >
+                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                  <div class="my-color-gray-1 my-font-sm-400 mb-0">單元</div>
+                  <div
+                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                    role="status"
+                  >
+                    {{ examSlotUnitLabelForHistoryModal(examQuizHistoryModalSlotIndex) }}
+                  </div>
+                </div>
+                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                  <div class="my-color-gray-1 my-font-sm-400 mb-0">題型</div>
+                  <div
+                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                    role="status"
+                  >
+                    {{ examSlotQuizTypeLabelForHistoryModal(examQuizHistoryModalSlotIndex) }}
+                  </div>
+                </div>
+              </div>
               <ol
                 v-if="examQuizHistoryModalList.length > 0"
                 class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
@@ -2528,6 +2574,8 @@ onActivated(() => {
                         hide-slot-index
                         hide-grading-prompt
                         :exam-quiz-history-list="getSlotFormState(slotIndex).quiz_history_list"
+                        :exam-quiz-history-unit-label="examSlotUnitLabelForHistoryModal(slotIndex)"
+                        :exam-quiz-history-quiz-type-label="examSlotQuizTypeLabelForHistoryModal(slotIndex)"
                         :grade-submitting="examCardGradeSubmitting(currentState.cardList[slotIndex - 1])"
                         @toggle-hint="toggleHint"
                         @toggle-reference-answer="toggleReferenceAnswer"

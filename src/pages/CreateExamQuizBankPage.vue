@@ -1872,6 +1872,18 @@ const bankQuizHistoryModalList = computed(() => {
   return unitQuizHistoryListForDisplay(activeUnitQuizCard.value);
 });
 
+const bankQuizHistoryModalUnitLabel = computed(() => {
+  const tabs = currentState.value.unitTabOrder ?? [];
+  const t = tabs[activeUnitSlotIndex.value - 1];
+  const lab = t ? String(t.unitName ?? t.label ?? '').trim() : '';
+  return lab || '—';
+});
+
+const bankQuizHistoryModalQuizTypeLabel = computed(() => {
+  const card = activeUnitQuizCard.value;
+  return card ? quizTypeTabLabel(card) : '—';
+});
+
 function closePackBuildSuccessModal() {
   packBuildSuccessModalOpen.value = false;
 }
@@ -4387,6 +4399,26 @@ async function confirmAnswer(item) {
               />
             </div>
             <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <div class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3 mb-3">
+                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                  <div class="my-color-gray-1 my-font-sm-400 mb-0">單元</div>
+                  <div
+                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                    role="status"
+                  >
+                    {{ bankQuizHistoryModalUnitLabel }}
+                  </div>
+                </div>
+                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                  <div class="my-color-gray-1 my-font-sm-400 mb-0">題型</div>
+                  <div
+                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                    role="status"
+                  >
+                    {{ bankQuizHistoryModalQuizTypeLabel }}
+                  </div>
+                </div>
+              </div>
               <ol
                 v-if="bankQuizHistoryModalList.length > 0"
                 class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"

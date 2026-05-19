@@ -60,6 +60,10 @@ const props = defineProps({
    * 測驗頁：此題之前的出題幹（字串陣列）；有傳入時於「開始批改」上方顯示小按鈕。
    */
   examQuizHistoryList: { type: Array, default: undefined },
+  /** 測驗頁：之前的出題 Modal 顯示用單元名稱 */
+  examQuizHistoryUnitLabel: { type: String, default: '' },
+  /** 測驗頁：之前的出題 Modal 顯示用題型名稱 */
+  examQuizHistoryQuizTypeLabel: { type: String, default: '' },
 });
 
 const emit = defineEmits([
@@ -414,6 +418,26 @@ const quizAnswerFieldDisabled = computed(
               />
             </div>
             <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+              <div class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3 mb-3">
+                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                  <div class="my-color-gray-1 my-font-sm-400 mb-0">單元</div>
+                  <div
+                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                    role="status"
+                  >
+                    {{ examQuizHistoryUnitLabel || '—' }}
+                  </div>
+                </div>
+                <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
+                  <div class="my-color-gray-1 my-font-sm-400 mb-0">題型</div>
+                  <div
+                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
+                    role="status"
+                  >
+                    {{ examQuizHistoryQuizTypeLabel || '—' }}
+                  </div>
+                </div>
+              </div>
               <ol
                 v-if="quizHistoryModalList.length > 0"
                 class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
