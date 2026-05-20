@@ -41,6 +41,8 @@ const props = defineProps({
   hideSlotIndex: { type: Boolean, default: false },
   /** 測驗頁：隱藏「批改規則」Markdown 區（仍可依既有 gradingPrompt 送出） */
   hideGradingPrompt: { type: Boolean, default: false },
+  /** 測驗介面稿：不顯示「出題規則／批改規則」pill（與 hideGradingPrompt 併用） */
+  hideExamRulePills: { type: Boolean, default: false },
   /** 測驗頁：隱藏「批改結果」區塊 */
   hideGradingResult: { type: Boolean, default: false },
   /** 建立測驗題庫（單元題）：顯示「開始批改」（POST llm-grade-db，使用後端已存批改規則）；僅與顯示「批改規則」編輯區時併用 */
@@ -244,7 +246,11 @@ const referenceAnswerMarkdownHtml = computed(() =>
 /** designUi：題幹正下方工具列左側是否有「出題規則／顯示提示／顯示參考答案」任一（與測驗頁同一列、gap-1 緊貼題目區） */
 const stemToolbarLeftPills = computed(
   () =>
-    (props.hideGradingPrompt && quizUserPromptSnapshotTrimmed.value !== '')
+    (
+      props.hideGradingPrompt
+      && !props.hideExamRulePills
+      && quizUserPromptSnapshotTrimmed.value !== ''
+    )
     || (
       !props.hintReferenceInModal
       && (
@@ -327,6 +333,20 @@ const showDesignGradingStartRow = computed(
 const showDesignGradingResultBlock = computed(
   () => showDesignLayoutGradingToolbar.value && showGradingResultSection.value,
 );
+
+/**
+ * create-exam-bank_design 批改子區「開始批改／批改結果」版式（gradingPromptInModal）；
+ * exam_design 併用 hideGradingPrompt + hideExamRulePills 時仍保留此版式、不顯示批改規則黑底區。
+ */
+const showDesignGradingModalLayout = computed(() => {
+  if (!props.gradingPromptInModal) return false;
+  if (!props.hideGradingPrompt) return true;
+  return (
+    props.createExamBankDesignLayout
+    && props.designSubBlock === 'grading'
+    && props.hideExamRulePills
+  );
+});
 
 /** create-exam-bank_design 子區塊：欄位標題寫在輸入框內（非框外 label） */
 const useDesignFieldLabelInset = computed(
@@ -700,7 +720,7 @@ const quizAnswerFieldDisabled = computed(
               class="d-inline-flex flex-nowrap align-items-center gap-2 min-w-0"
             >
               <button
-                v-if="hideGradingPrompt && quizUserPromptSnapshotTrimmed !== ''"
+                v-if="hideGradingPrompt && !hideExamRulePills && quizUserPromptSnapshotTrimmed !== ''"
                 type="button"
                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                 @click="openPromptModal('question')"
@@ -813,7 +833,7 @@ const quizAnswerFieldDisabled = computed(
           </template>
         </template>
         <button
-          v-else-if="!designUi && hideGradingPrompt && hasQuizBody && quizUserPromptSnapshotTrimmed !== ''"
+          v-else-if="!designUi && hideGradingPrompt && !hideExamRulePills && hasQuizBody && quizUserPromptSnapshotTrimmed !== ''"
           type="button"
           class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
           @click="openPromptModal('question')"
@@ -1038,12 +1058,15 @@ const quizAnswerFieldDisabled = computed(
         ]"
       >
         <div
-          v-if="!hideGradingPrompt && gradingPromptInModal"
+          v-if="showDesignGradingModalLayout"
           class="d-flex flex-column w-100 min-w-0"
           :class="isDesignSubBlockFragment ? '' : 'mt-3'"
         >
           <template v-if="useDesignFieldLabelInset">
-            <div class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0">
+            <div
+              v-if="!hideExamRulePills && !hideGradingPrompt"
+              class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0"
+            >
               <section
                 class="my-design-quiz-question-prompt-block w-100 min-w-0"
                 aria-label="批改規則"
@@ -1348,7 +1371,7 @@ const quizAnswerFieldDisabled = computed(
           </div>
         </div>
         <button
-          v-if="hideGradingPrompt"
+          v-if="hideGradingPrompt && !hideExamRulePills"
           type="button"
           class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
           @click="openPromptModal('grading')"

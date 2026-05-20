@@ -16,7 +16,7 @@
  * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，於編輯區上方按鈕載入檔案／語音／影片文字，完成載入前編輯區停用且不能開始建立單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
-import { ref, computed, watch, onMounted, onActivated, reactive, nextTick } from 'vue';
+import { ref, computed, watch, onActivated, reactive, nextTick } from 'vue';
 import { useAuthStore } from '../../stores/authStore.js';
 import {
   API_RESPONSE_QUIZ_CONTENT,
@@ -133,6 +133,13 @@ const authStore = useAuthStore();
 const { ragList, ragListLoading, ragListError, fetchRagList } = useRagListDesign();
 const createRagLoading = ref(false);
 const createRagError = ref('');
+/** 新增題庫：上傳 ZIP Modal（成功後進入與示範 B 相同之設定單元畫面） */
+const newBankUploadModalOpen = ref(false);
+const newBankUploadFile = ref(/** @type {File | null} */ (null));
+const newBankUploadFileName = ref('');
+const newBankUploadError = ref('');
+const newBankUploadZipDragOver = ref(false);
+const newBankUploadFileInputRef = ref(null);
 const renameRagTabModalOpen = ref(false);
 /** 重新命名 API 用 Rag 主鍵（PUT /rag/tab/tab-name） */
 const renameRagTabDraftRagId = ref(null);
@@ -786,7 +793,7 @@ const loadingOverlayText = computed(() => {
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '產生題目中...';
   if (hasAnySlotGenerating.value) return '產生題目中...';
   const st = currentState.value;
-  if (st?.zipLoading) return '上傳中...';
+  if (st?.zipLoading || createRagLoading.value) return '上傳中...';
   if (st?.packLoading) return '建立單元中...';
   if (hasPackUnitSourceFileLoading.value) return '檔案讀取中…';
   if (
@@ -855,19 +862,6 @@ const fileMetadataToShow = computed(() => {
 
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
-
-const showUploadFileSection = computed(
-  () => !!activeTabId.value && !hasUploadedFileMetadata.value
-);
-
-/** 「確定上傳」：須有本機選取的 File，且未超過 50 MB、非上傳中（不可僅依 zipFileName，避免列表同步檔名後誤啟用） */
-const examZipConfirmUploadDisabled = computed(() => {
-  const st = currentState.value;
-  if (st.zipLoading) return true;
-  const f = st.uploadedZipFile;
-  if (!f) return true;
-  return uploadFileExceedsMaxSize(f);
-});
 
 /**
  * Stepper 1–3 與畫面上可編輯區對齊：
@@ -3621,19 +3615,6 @@ watch(
 );
 
 /** 上傳 ZIP 的 <input type="file"> ref，用於進入頁面／新增 tab 時清空，讓欄位一開始是空的 */
-const zipFileInputRef = ref(null);
-
-function clearZipFileInput() {
-  if (zipFileInputRef.value) {
-    zipFileInputRef.value.value = '';
-  }
-}
-
-/** 切換到「新增」tab 時清空共用的 file input，避免顯示其他 tab 已選的 ZIP 檔名 */
-watch(activeTabId, (id) => {
-  if (id && isNewTabId(id)) clearZipFileInput();
-});
-
 async function refreshUnitSubTabsFromApi(tabId) {
   const state = getTabState(tabId);
   const personId = getPersonId(authStore);
@@ -3670,11 +3651,6 @@ const createBankActivatedOnce = ref(false);
 // ─── 生命週期：頁面啟動與初始載入 ────────────────────────────────────────────
 onActivated(() => {
   createBankActivatedOnce.value = true;
-});
-
-/** 檔案欄位初值 */
-onMounted(() => {
-  clearZipFileInput();
 });
 
 // ─── RAG Tab CRUD（新增 / 刪除 / 更名） ───────────────────────────────────────
@@ -3728,14 +3704,107 @@ function onDeleteRagTab(tabId) {
 /** tab/create 回傳的 created_at 與 tab 標籤用 name（key = rag_id） */
 const ragCreatedAtMap = ref({});
 
-/** 點「新增」：建立 RAG，成功後重整列表並切到新 tab */
-async function addNewTab() {
+/** 點「新增」：開啟上傳 ZIP Modal */
+function openNewBankUploadModal() {
+  if (createRagLoading.value) return;
+  createRagError.value = '';
+  resetNewBankUploadDraft();
+  newBankUploadModalOpen.value = true;
+}
+
+function closeNewBankUploadModal() {
+  if (createRagLoading.value) return;
+  newBankUploadModalOpen.value = false;
+  resetNewBankUploadDraft();
+}
+
+function resetNewBankUploadDraft() {
+  newBankUploadFile.value = null;
+  newBankUploadFileName.value = '';
+  newBankUploadError.value = '';
+  newBankUploadZipDragOver.value = false;
+  if (newBankUploadFileInputRef.value) {
+    newBankUploadFileInputRef.value.value = '';
+  }
+}
+
+function setNewBankUploadFileFromFile(file) {
+  if (!file) {
+    newBankUploadFile.value = null;
+    newBankUploadFileName.value = '';
+    newBankUploadError.value = '';
+    return;
+  }
+  if (!fileHasAllowedUploadExtension(file)) {
+    newBankUploadFile.value = null;
+    newBankUploadFileName.value = '';
+    newBankUploadError.value = '請選擇 .zip 檔案';
+    return;
+  }
+  if (uploadFileExceedsMaxSize(file)) {
+    newBankUploadFile.value = null;
+    newBankUploadFileName.value = '';
+    newBankUploadError.value = '檔案大小不可超過 50 MB，請選擇較小的檔案';
+    return;
+  }
+  newBankUploadFile.value = file;
+  newBankUploadFileName.value = file.name;
+  newBankUploadError.value = '';
+}
+
+function onNewBankUploadZipChange(e) {
+  if (createRagLoading.value) return;
+  setNewBankUploadFileFromFile(e.target.files?.[0] ?? null);
+}
+
+function onNewBankUploadZipDragOver(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer.types.includes('Files')) newBankUploadZipDragOver.value = true;
+}
+
+function onNewBankUploadZipDragLeave(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  newBankUploadZipDragOver.value = false;
+}
+
+function onNewBankUploadZipDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  newBankUploadZipDragOver.value = false;
+  if (createRagLoading.value) return;
+  setNewBankUploadFileFromFile(e.dataTransfer.files?.[0] ?? null);
+  if (newBankUploadFileInputRef.value) newBankUploadFileInputRef.value.value = '';
+}
+
+function openNewBankUploadFileDialog() {
+  if (createRagLoading.value) return;
+  if (newBankUploadFileInputRef.value) newBankUploadFileInputRef.value.click();
+}
+
+const newBankUploadConfirmDisabled = computed(
+  () => createRagLoading.value || !newBankUploadFile.value,
+);
+
+/** 新增題庫 Modal：建立分頁、上傳 ZIP，成功後同步為示範 B 之設定單元狀態 */
+async function confirmNewBankUpload() {
+  if (createRagLoading.value) return;
+  if (!newBankUploadFile.value) {
+    newBankUploadError.value = '請先選擇要上傳的檔案';
+    return;
+  }
+  if (uploadFileExceedsMaxSize(newBankUploadFile.value)) {
+    newBankUploadError.value = '檔案大小不可超過 50 MB，請選擇較小的檔案';
+    return;
+  }
   const personId = getPersonId(authStore);
   if (!personId) {
-    createRagError.value = '請先登入';
+    newBankUploadError.value = '請先登入';
     return;
   }
   createRagError.value = '';
+  newBankUploadError.value = '';
   createRagLoading.value = true;
   const ragTabId = generateTabId(personId);
   const tabName = `未命名${quizBankNoun.value}`;
@@ -3744,17 +3813,35 @@ async function addNewTab() {
     if (data?.rag_id != null && data?.created_at != null) {
       ragCreatedAtMap.value = { ...ragCreatedAtMap.value, [String(data.rag_id)]: data.created_at };
     }
+    const newTabId = data?.rag_tab_id != null ? String(data.rag_tab_id) : '';
+    if (!newTabId) throw new Error(`建立${quizBankNoun.value}失敗`);
+    const uploadData = await apiUploadZip(newBankUploadFile.value, newTabId, personId);
     ragListError.value = '';
     await fetchRagList();
-    if (data?.rag_tab_id != null) {
-      const newTabId = String(data.rag_tab_id);
-      activeTabId.value = newTabId;
-      resetZipState(getTabState(newTabId), newTabId);
+    activeTabId.value = newTabId;
+    const state = getTabState(newTabId);
+    state._synced = false;
+    const rag = ragList.value.find(
+      (r) => String(r.rag_tab_id ?? r.id ?? r) === newTabId,
+    );
+    if (rag) {
+      syncRagItemToState(rag, state);
     }
-    clearZipFileInput();
+    const meta = uploadData?.file_metadata ?? uploadData;
+    if (meta && typeof meta === 'object') {
+      state.zipResponseJson = meta;
+      state.zipTabId = newTabId;
+      if (meta.filename != null) state.zipFileName = String(meta.filename);
+      state.zipSecondFolders = Array.isArray(meta.second_folders) ? meta.second_folders : [];
+    }
+    state.uploadedZipFile = null;
     showFormWhenNoData.value = true;
+    newBankUploadModalOpen.value = false;
+    resetNewBankUploadDraft();
   } catch (err) {
-    createRagError.value = err.message || `建立${quizBankNoun.value}失敗`;
+    newBankUploadError.value = is504OrNetworkError(err)
+      ? '服務正在啟動（約需一分鐘），請稍後再試'
+      : err.message || '上傳失敗';
   } finally {
     createRagLoading.value = false;
   }
@@ -3920,125 +4007,7 @@ async function onDeleteUnitQuizTab(qi) {
   }
 }
 
-function resetZipState(state, tabId) {
-  state.uploadedZipFile = null;
-  state.zipFileName = '';
-  state.zipSecondFolders = [];
-  state.zipResponseJson = null;
-  state.zipTabId = isNewTabId(tabId) ? '' : tabId;
-}
-
-function setZipFileFromFile(state, tabId, file) {
-  if (!file) {
-    resetZipState(state, tabId);
-    state.zipError = '';
-    return;
-  }
-  const allowed = fileHasAllowedUploadExtension(file);
-  if (!allowed) {
-    resetZipState(state, tabId);
-    state.zipError = '請選擇 .zip 檔案';
-    return;
-  }
-  if (uploadFileExceedsMaxSize(file)) {
-    resetZipState(state, tabId);
-    state.zipError = '檔案大小不可超過 50 MB，請選擇較小的檔案';
-    return;
-  }
-  resetZipState(state, tabId);
-  state.uploadedZipFile = file;
-  state.zipFileName = file.name;
-  state.zipError = '';
-}
-
-function onZipChange(e) {
-  const state = currentState.value;
-  if (state.zipLoading) return;
-  const file = e.target.files?.[0];
-  const tabId = activeTabId.value;
-  setZipFileFromFile(state, tabId, file);
-}
-
-/** 拖曳置放教材檔：僅接受 UPLOAD_ALLOWED_EXTENSIONS */
-const isZipDragOver = ref(false);
-function onZipDragOver(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  if (e.dataTransfer.types.includes('Files')) isZipDragOver.value = true;
-}
-function onZipDragLeave(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  isZipDragOver.value = false;
-}
-function onZipDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  isZipDragOver.value = false;
-  const file = e.dataTransfer.files?.[0];
-  if (!file) return;
-  const state = currentState.value;
-  if (state.zipLoading) return;
-  const tabId = activeTabId.value;
-  setZipFileFromFile(state, tabId, file);
-  clearZipFileInput();
-}
-function openZipFileDialog() {
-  if (currentState.value.zipLoading) return;
-  if (zipFileInputRef.value) zipFileInputRef.value.click();
-}
-
 // ─── 上傳 ZIP 與 Pack（Build RAG ZIP） ────────────────────────────────────────
-
-/** 上傳 ZIP */
-async function confirmUploadZip() {
-  if (currentState.value.zipLoading) return;
-  const state = currentState.value;
-  if (!state.uploadedZipFile) {
-    state.zipError = '請先選擇要上傳的檔案';
-    return;
-  }
-  if (uploadFileExceedsMaxSize(state.uploadedZipFile)) {
-    state.zipError = '檔案大小不可超過 50 MB，請選擇較小的檔案';
-    return;
-  }
-  const tabId = activeTabId.value;
-  if (isNewTabId(tabId) || !tabId) {
-    state.zipError = `請先按「＋」建立${quizBankNoun.value}分頁，再上傳檔案`;
-    return;
-  }
-  const personId = getPersonId(authStore);
-  if (!personId) {
-    state.zipError = '請先登入';
-    return;
-  }
-  state.zipLoading = true;
-  state.zipError = '';
-  state.zipSecondFolders = [];
-  state.zipResponseJson = null;
-  try {
-    const data = await apiUploadZip(state.uploadedZipFile, tabId, personId);
-    const meta = data?.file_metadata ?? data;
-    state.zipResponseJson = meta ?? data;
-    state.zipTabId = String(tabId);
-    if (meta && typeof meta === 'object') {
-      if (meta.filename != null) state.zipFileName = meta.filename;
-      state.zipSecondFolders = Array.isArray(meta.second_folders) ? meta.second_folders : [];
-    } else if (data?.filename != null) {
-      state.zipFileName = data.filename;
-      state.zipSecondFolders = Array.isArray(data?.second_folders) ? data.second_folders : [];
-    }
-    await fetchRagList();
-  } catch (err) {
-    state.zipError = is504OrNetworkError(err)
-      ? '服務正在啟動（約需一分鐘），請稍後再試'
-      : err.message || '上傳失敗';
-    state.zipSecondFolders = [];
-    state.zipResponseJson = null;
-  } finally {
-    state.zipLoading = false;
-  }
-}
 
 /** POST /rag/tab/build-rag-zip（按鈕「開始建立單元」） */
 async function confirmPack() {
@@ -5090,6 +5059,104 @@ async function confirmAnswer(item) {
     />
     <Teleport to="body">
       <div
+        v-if="newBankUploadModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-bank-upload-modal-title"
+        @click.self="closeNewBankUploadModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="new-bank-upload-modal-title"
+                class="modal-title my-color-black"
+              >上傳檔案</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                :disabled="createRagLoading"
+                @click="closeNewBankUploadModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <input
+                ref="newBankUploadFileInputRef"
+                type="file"
+                :accept="zipFileInputAccept"
+                class="d-none"
+                @change="onNewBankUploadZipChange"
+              >
+              <div
+                class="my-zip-drop-zone text-center position-relative"
+                :class="{ 'my-zip-drop-zone-over': newBankUploadZipDragOver }"
+                @dragover="onNewBankUploadZipDragOver"
+                @dragenter="onNewBankUploadZipDragOver"
+                @dragleave="onNewBankUploadZipDragLeave"
+                @drop="onNewBankUploadZipDrop"
+                @click="openNewBankUploadFileDialog"
+              >
+                <template v-if="newBankUploadFileName">
+                  <span class="my-font-sm-400 my-color-black">{{ newBankUploadFileName }}</span>
+                  <div class="my-font-sm-400 my-color-gray-4 mt-1">點擊可重新選擇檔案</div>
+                </template>
+                <span v-else class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
+                <div class="my-font-sm-400 my-color-gray-4 mt-2">
+                  單檔不可超過 50 MB
+                </div>
+                <div
+                  class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto"
+                  style="max-width: 28rem;"
+                >
+                  <div class="mb-1">
+                    請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：
+                  </div>
+                  <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
+                    <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
+                    <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
+                    <li class="mb-0">mp3：該資料夾內只能有一個.mp3檔</li>
+                    <li class="mb-0">youtube：.md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                  </ul>
+                </div>
+              </div>
+              <div
+                v-if="newBankUploadError"
+                class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0"
+              >
+                {{ newBankUploadError }}
+              </div>
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex justify-content-end gap-2 w-100">
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                :disabled="createRagLoading"
+                @click="closeNewBankUploadModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2"
+                :disabled="newBankUploadConfirmDisabled"
+                :aria-busy="createRagLoading"
+                @click.stop="confirmNewBankUpload"
+              >
+                確定上傳
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
         v-if="packUnitDetailModalOpen && activeReadonlyPackUnitRow"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
@@ -5495,7 +5562,7 @@ async function confirmAnswer(item) {
                 :aria-busy="createRagLoading"
                 class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle mb-2"
                 :disabled="createRagLoading"
-                @click="addNewTab"
+                @click="openNewBankUploadModal"
               >
                 <i class="fa-solid fa-plus" aria-hidden="true" />
               </button>
@@ -5530,7 +5597,7 @@ async function confirmAnswer(item) {
           :aria-label="`新增${quizBankNoun}`"
           :disabled="createRagLoading"
           :aria-busy="createRagLoading"
-          @click="addNewTab"
+          @click="openNewBankUploadModal"
         >
           <i class="fa-solid fa-plus" aria-hidden="true" />
           新增{{ quizBankNoun }}
@@ -5547,70 +5614,6 @@ async function confirmAnswer(item) {
           >
       <!-- 有資料或已點新增後顯示表單 -->
       <template v-if="showCreateBankMainForm">
-      <!-- 尚無 file_metadata 時顯示上傳區（無區塊外框；標題同設定單元題型） -->
-      <section v-if="showUploadFileSection" class="text-start my-page-block-spacing">
-        <div
-          class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
-          role="heading"
-          aria-level="2"
-        >
-          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">上傳檔案</span>
-          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-        </div>
-            <input
-              ref="zipFileInputRef"
-              type="file"
-              :accept="zipFileInputAccept"
-              class="d-none"
-              @change="onZipChange"
-            >
-            <div
-              class="my-zip-drop-zone text-center position-relative"
-              :class="{ 'my-zip-drop-zone-over': isZipDragOver }"
-              @dragover="onZipDragOver"
-              @dragenter="onZipDragOver"
-              @dragleave="onZipDragLeave"
-              @drop="onZipDrop"
-              @click="openZipFileDialog()"
-            >
-              <template v-if="currentState.zipFileName">
-                <span class="my-font-sm-400 my-color-black">{{ currentState.zipFileName }}</span>
-                <div class="my-font-sm-400 my-color-gray-4 mt-1">點擊可重新選擇檔案</div>
-              </template>
-              <span v-else class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
-              <div class="my-font-sm-400 my-color-gray-4 mt-2">
-                單檔不可超過 50 MB
-              </div>
-              <div
-                class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto"
-                style="max-width: 28rem;"
-              >
-                <div class="mb-1">
-                  請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：
-                </div>
-                <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                  <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
-                  <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                  <li class="mb-0">mp3：該資料夾內只能有一個.mp3檔</li>
-                  <li class="mb-0">youtube：.md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
-                </ul>
-              </div>
-            </div>
-            <div v-if="currentState.zipError" class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0">
-              {{ currentState.zipError }}
-            </div>
-            <div class="d-flex justify-content-center mt-3">
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2"
-                :disabled="examZipConfirmUploadDisabled"
-                @click.stop="confirmUploadZip"
-              >
-                確定上傳
-              </button>
-            </div>
-      </section>
       <!-- 建立 RAG：要有 file_metadata 且尚未建置；建置前 left 顯示可編輯設定單元（上傳檔名改由 right view） -->
       <template v-if="fileMetadataToShow != null && !hasBuiltRagSummary">
         <div
@@ -5637,25 +5640,33 @@ async function confirmAnswer(item) {
             </div>
             <div class="my-pack-unit-settings-body">
           <!-- 課程：可拖曳至設定單元 -->
-          <div v-if="secondFoldersFull.length" class="my-pack-unit-field">
-            <div class="my-font-sm-400 my-color-gray-1 flex-shrink-0 mb-0">請將資料夾拖曳到各單元的資料夾組合中</div>
+          <div class="my-pack-unit-field">
             <div
-              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center mt-1"
+              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative p-2"
+              style="min-height: 2.5rem;"
               role="group"
               aria-label="資料夾"
             >
-              <div
-                v-for="(name, i) in secondFoldersFull"
-                :key="'sf-' + i"
-                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
-                style="cursor: grab;"
-                draggable="true"
-                role="button"
-                tabindex="0"
-                @dragstart="onDragStartTag($event, name, false, -1, -1)"
-                @dragend="onDragEndTag"
-              >
-                {{ name }}
+              <div class="d-flex flex-column gap-1 flex-grow-1 w-100 min-w-0">
+                <span class="my-font-sm-400 my-color-black">請將資料夾拖曳到各單元的資料夾組合中</span>
+                <div
+                  v-if="secondFoldersFull.length"
+                  class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0"
+                >
+                  <div
+                    v-for="(name, i) in secondFoldersFull"
+                    :key="'sf-' + i"
+                    class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                    style="cursor: grab;"
+                    draggable="true"
+                    role="button"
+                    tabindex="0"
+                    @dragstart="onDragStartTag($event, name, false, -1, -1)"
+                    @dragend="onDragEndTag"
+                  >
+                    {{ name }}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -5813,7 +5824,7 @@ async function confirmAnswer(item) {
                       資料夾組合
                     </div>
                     <div
-                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target mt-1"
+                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target mt-1 p-2"
                       style="min-height: 2.5rem;"
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
@@ -6615,7 +6626,6 @@ async function confirmAnswer(item) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 0.5rem 1rem;
   font-family: inherit;
   font-size: var(--my-font-size-md);
   font-weight: var(--my-font-weight-regular);

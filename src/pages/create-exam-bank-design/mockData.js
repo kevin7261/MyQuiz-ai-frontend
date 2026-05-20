@@ -323,9 +323,20 @@ const DESIGN_DEMO_PACK_TASKS_LIST = [
 ];
 const DESIGN_DEMO_UNIT_LIST = serializePackTasksList(DESIGN_DEMO_PACK_TASKS_LIST);
 
-/** 示範 B：每個資料夾一個設定單元（供可編輯區橫向 tag 列表） */
+/** 示範 B：已上傳 ZIP、unit_list 可編輯設定單元，尚未 build（無 rag_metadata） */
 const DESIGN_DEMO_UNIT_LIST_B = DESIGN_DEMO_FOLDER_NAMES.join(',');
 
+/** 上傳 ZIP 後 unit_list：各二層資料夾各成一列設定單元（與示範 B 一致） */
+export function designUnitListFromSecondFolders(folders) {
+  if (!Array.isArray(folders)) return '';
+  return folders.map((n) => String(n ?? '').trim()).filter(Boolean).join(',');
+}
+
+/**
+ * 稿頁示範題庫：
+ * - A：已 build（rag_metadata + 完整 units）
+ * - B：已上傳、可編輯設定單元（file_metadata + unit_list，無 rag_metadata）
+ */
 export const DESIGN_MOCK_RAG_LIST = [
   {
     rag_id: 9001,

@@ -13,6 +13,7 @@
   import ProfilePage from '../pages/ProfilePage.vue';
   import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
   import CreateExamQuizBankDesignPage from '../pages/create-exam-bank-design/CreateExamQuizBankDesignPage.vue';
+  import ExamDesignPage from '../pages/exam-design/ExamDesignPage.vue';
   import DesignPage from '../pages/DesignPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
@@ -21,6 +22,7 @@
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
     work: markRaw(ExamPage),
+    examDesign: markRaw(ExamDesignPage),
     studentWeaknessAnalysis: markRaw(AnswerWeaknessAnalysisPage),
     studentAnswerAnalysis: markRaw(StudentAnswerAnalysisPage),
     profile: markRaw(ProfilePage),
@@ -34,13 +36,14 @@
 
   const VIEWS_WITH_WORK_TAB_ID = new Set([
     'work',
+    'examDesign',
     'createExamQuizBank',
     'createExamQuizBankDesign',
   ]);
 
   export default {
     name: 'RightView',
-    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, CreateExamQuizBankDesignPage, DesignPage, UserManagementPage, SystemSettingsPage, LogListPage },
+    components: { ExamPage, ExamDesignPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, CreateExamQuizBankDesignPage, DesignPage, UserManagementPage, SystemSettingsPage, LogListPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },

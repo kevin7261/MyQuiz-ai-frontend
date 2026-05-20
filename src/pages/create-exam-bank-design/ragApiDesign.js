@@ -2,6 +2,7 @@
  * 建立測驗題庫（稿）— API 替身（不發送 HTTP；僅供 UI 互動示範）
  */
 import { formatGradingResult } from '../../utils/grading.js';
+import { getRagUnitListString } from './rag.js';
 import {
   DESIGN_DEMO_FOLDER_NAMES,
   DESIGN_MOCK_RAG_LIST,
@@ -9,6 +10,7 @@ import {
   DESIGN_MOCK_QUIZ_GENERATE,
   DESIGN_MOCK_TRANSCRIPT_MD,
   buildDesignDemoUnits,
+  designUnitListFromSecondFolders,
 } from './mockData.js';
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -106,18 +108,24 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
   return row;
 }
 
-export async function apiUploadZip(_file, ragTabId) {
+export async function apiUploadZip(file, ragTabId) {
   await delay(400);
+  const second_folders = [...DESIGN_DEMO_FOLDER_NAMES];
+  const filename =
+    file?.name && String(file.name).trim() !== ''
+      ? String(file.name).trim()
+      : 'uploaded_demo.zip';
   const meta = {
-    filename: 'uploaded_demo.zip',
+    filename,
     rag_tab_id: ragTabId,
-    second_folders: [...DESIGN_DEMO_FOLDER_NAMES],
+    second_folders,
   };
   const tabId = String(ragTabId ?? '').trim();
   const row = extraRagRows.find((r) => String(r.rag_tab_id) === tabId);
   if (row) {
     row.file_metadata = { ...meta };
     row.filename = meta.filename;
+    row.unit_list = designUnitListFromSecondFolders(second_folders);
   }
   return meta;
 }
@@ -182,9 +190,9 @@ export async function apiGetRagTabUnits(ragTabId) {
   const units =
     Array.isArray(row?.units) && row.units.length > 0
       ? row.units
-      : row?.unit_list
+      : getRagUnitListString(row)
         ? buildDesignDemoUnits()
-        : DESIGN_MOCK_UNITS;
+        : [];
   return units.map((u) => ({
     ...u,
     quizzes: (u.quizzes ?? []).map((q) => ({ ...q })),

@@ -70,7 +70,7 @@ export function userMayAccessRoute(user, to) {
  */
 export function canSeeNavLink(userType, viewKey) {
   if (viewKey === 'logs') return Number(userType) === DEVELOPER_USER_TYPE;
-  if (viewKey === 'create-exam-bank_design' || viewKey === 'design') {
+  if (viewKey === 'create-exam-bank_design' || viewKey === 'exam_design' || viewKey === 'design') {
     return Number(userType) !== RESTRICTED_USER_TYPE;
   }
   if (Number(userType) !== RESTRICTED_USER_TYPE) return true;
