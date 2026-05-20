@@ -867,12 +867,37 @@ const createRagStepperPhase = computed(() => {
   return 3;
 });
 
+/** 單元索引對應之題型數（unitSlotQuizCards；無則 fallback units[].quizzes） */
+function quizTypeCountForPackUnitIndex(index) {
+  const i = Number(index);
+  if (!Number.isFinite(i) || i < 0) return 0;
+  const state = currentState.value;
+  const stacks = state.unitSlotQuizCards;
+  if (Array.isArray(stacks) && i < stacks.length) {
+    const row = stacks[i];
+    if (Array.isArray(row)) return row.length;
+  }
+  const rag = currentRagItem.value;
+  const units = rag ? unitsFromRagTabsRow(rag) : [];
+  if (i < units.length) {
+    const uqs = units[i]?.quizzes;
+    if (Array.isArray(uqs)) return uqs.length;
+  }
+  return 0;
+}
+
+/** 右側／導覽用：單元名稱 (題型數) */
+function packUnitNavDisplayLabel(unitLabel, index) {
+  const base = String(unitLabel ?? '').trim() || `單元 ${Number(index) + 1}`;
+  return `${base} (${quizTypeCountForPackUnitIndex(index)})`;
+}
+
 /** 右側欄：設定單元子分頁（建置完成後） */
 const designRightUnitSubTabItems = computed(() => {
   if (!hasBuiltRagSummary.value) return [];
   return packUnitListItemsForNav.value.map((item) => ({
     key: `pack-unit-${item.index}`,
-    label: item.label,
+    label: packUnitNavDisplayLabel(item.label, item.index),
     index: item.index,
     kind: 'pack-unit',
     active: item.index === activePackUnitGi.value,
