@@ -82,7 +82,12 @@ import {
 import { useRagListDesign } from './composables/useRagListDesign.js';
 import { useRagTabState } from './composables/useRagTabState.js';
 import { usePackTasks } from './composables/usePackTasks.js';
-import { DESIGN_MOCK_UNITS, DESIGN_DEMO_MP3_SAMPLE_URL } from './mockData.js';
+import {
+  DESIGN_MOCK_UNITS,
+  DESIGN_DEMO_MP3_SAMPLE_URL,
+  DESIGN_DEMO_QUIZ_USER_PROMPT_SAMPLE,
+  DESIGN_DEMO_GRADING_PROMPT_SAMPLE,
+} from './mockData.js';
 import QuizCard from '../../components/QuizCard.vue';
 import QuizHistoryModal from '../../components/QuizHistoryModal.vue';
 import Design08OptionDropdown from '../../components/Design08OptionDropdown.vue';
@@ -200,7 +205,7 @@ function writeCreateBankTabUiPersisted(personId, payload) {
   }
 }
 
-/** 題型「之前的出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
+/** 題型「先前出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
 const CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX = 'myquiz:createBankQuizHistory:design:v1:';
 
 function createBankQuizHistoryStorageKey(personId) {
@@ -2233,6 +2238,35 @@ const bankPromptEditModalSavingDisabled = computed(() => {
   );
 });
 
+const bankPromptEditModalResetDisabled = computed(() => {
+  if (bankPromptEditModalSavingDisabled.value) return true;
+  const card = activeUnitQuizCard.value;
+  if (!card) return true;
+  if (bankPromptEditModalKind.value === 'quiz') {
+    return (
+      String(bankPromptEditModalDraft.value ?? '')
+      === String(card.quizUserPromptBaseline ?? '')
+    );
+  }
+  if (bankPromptEditModalKind.value === 'grading') {
+    return (
+      String(bankPromptEditModalDraft.value ?? '')
+      === String(card.gradingPromptBaseline ?? '')
+    );
+  }
+  return true;
+});
+
+function resetBankPromptEditModalDraft() {
+  const card = activeUnitQuizCard.value;
+  if (!card) return;
+  if (bankPromptEditModalKind.value === 'quiz') {
+    bankPromptEditModalDraft.value = String(card.quizUserPromptBaseline ?? '');
+  } else if (bankPromptEditModalKind.value === 'grading') {
+    bankPromptEditModalDraft.value = String(card.gradingPromptBaseline ?? '');
+  }
+}
+
 function openBankQuizUserPromptEditModal() {
   const card = activeUnitQuizCard.value;
   if (!card || isRagQuizMarkedForExam(card)) return;
@@ -2267,7 +2301,7 @@ function applyBankPromptEditModal() {
   closeBankPromptEditModal();
 }
 
-/** 之前的出題 Modal（目前題型 sub-tab） */
+/** 先前出題 Modal（目前題型 sub-tab） */
 const bankQuizHistoryModalOpen = ref(false);
 
 function openBankQuizHistoryModal() {
@@ -2578,16 +2612,6 @@ function isQuizUserPromptDirty(card) {
   return (
     String(card.quizUserPromptText ?? '') !== String(card.quizUserPromptBaseline ?? '')
   );
-}
-
-function resetUnitQuizUserPrompt(card) {
-  if (!card || typeof card !== 'object') return;
-  card.quizUserPromptText = String(card.quizUserPromptBaseline ?? '');
-}
-
-function resetUnitQuizGradingPrompt(card) {
-  if (!card || typeof card !== 'object') return;
-  card.gradingPrompt = String(card.gradingPromptBaseline ?? '');
 }
 
 /**
@@ -4142,7 +4166,7 @@ function createLocalDraftUnitQuizCard() {
   const ruRaw = tab?.ragUnitDbId != null ? Number(tab.ragUnitDbId) : NaN;
   const ragUnitId = Number.isFinite(ruRaw) && ruRaw >= 0 ? ruRaw : 0;
   const ragName = String(tab?.unitName ?? tab?.label ?? '').trim();
-  return {
+  const card = {
     id: nextCardId(),
     quiz: '',
     hint: '',
@@ -4164,9 +4188,9 @@ function createLocalDraftUnitQuizCard() {
     ragQuizForExamLoading: false,
     ragQuizForExamError: '',
     answer_id: null,
-    gradingPrompt: '',
+    gradingPrompt: DESIGN_DEMO_GRADING_PROMPT_SAMPLE,
     quizName: DEFAULT_UNIT_QUIZ_DISPLAY_NAME,
-    quizUserPromptText: '',
+    quizUserPromptText: DESIGN_DEMO_QUIZ_USER_PROMPT_SAMPLE,
     quizUserPromptBaseline: '',
     gradingPromptBaseline: '',
     quizAnswerBaseline: '',
@@ -4175,6 +4199,8 @@ function createLocalDraftUnitQuizCard() {
     quiz_history_list: [],
     quiz_followup_history_list: [],
   };
+  syncQuizCardPromptBaselines(card);
+  return card;
 }
 
 // ─── 題目生成（LLM）與評分（Grading） ────────────────────────────────────────
@@ -5102,22 +5128,36 @@ async function confirmAnswer(item) {
                 :disabled="bankPromptEditModalSavingDisabled"
               />
             </div>
-            <div class="modal-footer border-top-0 p-0 d-flex justify-content-end flex-wrap gap-2">
+            <div
+              class="modal-footer border-top-0 p-0 d-flex justify-content-between align-items-center flex-wrap gap-2 w-100"
+            >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
-                @click="closeBankPromptEditModal"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
+                title="還原為上次載入或產生後的內容"
+                aria-label="重設"
+                :disabled="bankPromptEditModalResetDisabled"
+                @click="resetBankPromptEditModalDraft"
               >
-                取消
+                重設
               </button>
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-3 py-2"
-                :disabled="bankPromptEditModalSavingDisabled"
-                @click="applyBankPromptEditModal"
-              >
-                確定
-              </button>
+              <div class="d-flex flex-wrap justify-content-end gap-2">
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                  @click="closeBankPromptEditModal"
+                >
+                  取消
+                </button>
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-3 py-2"
+                  :disabled="bankPromptEditModalSavingDisabled"
+                  @click="applyBankPromptEditModal"
+                >
+                  確定
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -6099,14 +6139,16 @@ async function confirmAnswer(item) {
                     </button>
                   </div>
                   <div class="d-flex flex-column min-w-0">
-                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
-                      出題規則
-                    </div>
-                    <div class="position-relative min-w-0 w-100">
+                    <div
+                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
+                      class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
+                    >
+                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                        出題規則
+                      </div>
                       <button
-                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
                         type="button"
-                        class="btn rounded-circle position-absolute top-0 end-0 z-1 d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-on-design-dark-preview my-btn-circle lh-1 shadow-none border-0 m-1"
+                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 ms-auto"
                         title="編輯出題規則"
                         aria-label="編輯出題規則"
                         :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
@@ -6114,6 +6156,14 @@ async function confirmAnswer(item) {
                       >
                         <i class="fa-solid fa-pen" aria-hidden="true" />
                       </button>
+                    </div>
+                    <div
+                      v-else
+                      class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                    >
+                      出題規則
+                    </div>
+                    <div class="min-w-0 w-100">
                       <EnglishExamMarkdownEditor
                         :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
                         preview-only
@@ -6127,20 +6177,6 @@ async function confirmAnswer(item) {
                   <div
                     class="d-flex justify-content-center align-items-center flex-wrap gap-3"
                   >
-                    <button
-                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                      type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
-                      title="還原為上次載入或產生後的內容"
-                      aria-label="重設出題規則"
-                      :disabled="
-                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                        || !isQuizUserPromptDirty(activeUnitQuizCard)
-                      "
-                      @click="resetUnitQuizUserPrompt(activeUnitQuizCard)"
-                    >
-                      重設
-                    </button>
                     <button
                       type="button"
                       class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
@@ -6180,7 +6216,6 @@ async function confirmAnswer(item) {
                   @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                   @open-grading-prompt-edit="openBankGradingPromptEditModal"
                   @open-quiz-history="openBankQuizHistoryModal"
-                  @reset-grading-prompt="resetUnitQuizGradingPrompt(activeUnitQuizCard)"
                 />
                 <div class="d-flex flex-column align-items-center gap-2 w-100 min-w-0 pt-1">
                   <button

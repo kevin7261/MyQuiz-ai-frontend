@@ -21,19 +21,55 @@ const DESIGN_DEMO_UNIT_TYPES = [1, 2, 1, 3, 4, 1, 2, 1, 1, 2];
 export const DESIGN_MOCK_TRANSCRIPT_MD =
   '## 示範逐字稿\n\nThis is **design-only** sample text loaded without calling the API.';
 
+/** 稿頁黑底預覽：出題規則示範 Markdown */
+export const DESIGN_DEMO_QUIZ_USER_PROMPT_SAMPLE = `## 出題目標
+- 依本單元教材出 **1 題**，題幹須有教材依據
+- 題型：閱讀理解或簡答（擇一）
+
+## 格式
+1. **題幹**清楚、單一問題
+2. **提示**：1–2 句，引導思考、不直接給答案
+3. **參考答案**：要點條列即可
+
+## 難度
+- 中等；學生約 3–5 分鐘可完成`;
+
+/** 稿頁黑底預覽：批改規則示範 Markdown */
+export const DESIGN_DEMO_GRADING_PROMPT_SAMPLE = `## 評分原則
+- 滿分 **5 分**；以概念正確性為主
+
+## 給分參考
+| 表現 | 分數 |
+|------|------|
+| 涵蓋主要要點、條理清楚 | 4–5 |
+| 方向正確但缺漏 | 2–3 |
+| 離題或空白 | 0–1 |
+
+## 回饋
+- 先肯定答對部分，再指出可補強處
+- 使用繁體中文；**勿**貼上參考答案全文`;
+
 /** 稿頁單元內容 Modal：MP3 示範用（不呼叫 API） */
 export const DESIGN_DEMO_MP3_SAMPLE_URL =
   'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3';
 
 let nextDesignDemoQuizId = 1000;
 
-/** 組一筆 Rag_Quiz 示範列（欄位與 GET /rag/tab/units 對齊） */
+/** 組一筆 Rag_Quiz 示範列（欄位與 GET /rag/tab/units 對齊）；未傳出題／批改規則時套用稿頁 sample */
 function demoQuiz(overrides = {}) {
   nextDesignDemoQuizId += 1;
+  const quizPrompt = Object.prototype.hasOwnProperty.call(overrides, 'quiz_user_prompt_text')
+    ? overrides.quiz_user_prompt_text
+    : DESIGN_DEMO_QUIZ_USER_PROMPT_SAMPLE;
+  const gradePrompt = Object.prototype.hasOwnProperty.call(overrides, 'answer_user_prompt_text')
+    ? overrides.answer_user_prompt_text
+    : DESIGN_DEMO_GRADING_PROMPT_SAMPLE;
   return {
     rag_quiz_id: nextDesignDemoQuizId,
     for_exam: false,
     follow_up: false,
+    quiz_user_prompt_text: quizPrompt,
+    answer_user_prompt_text: gradePrompt,
     ...overrides,
   };
 }

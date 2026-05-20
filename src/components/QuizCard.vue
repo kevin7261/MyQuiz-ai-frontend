@@ -58,22 +58,22 @@ const props = defineProps({
    */
   gradeDbAllowed: { type: Boolean, default: undefined },
   /**
-   * 測驗頁：此題之前的出題幹（字串陣列）；有傳入時於「開始批改」上方顯示小按鈕。
+   * 測驗頁：此題先前出題幹（字串陣列）；有傳入時於「開始批改」上方顯示小按鈕。
    */
   examQuizHistoryList: { type: Array, default: undefined },
-  /** 測驗頁：之前的出題 Modal 顯示用單元名稱 */
+  /** 測驗頁：先前出題 Modal 顯示用單元名稱 */
   examQuizHistoryUnitLabel: { type: String, default: '' },
-  /** 測驗頁：之前的出題 Modal 顯示用題型名稱 */
+  /** 測驗頁：先前出題 Modal 顯示用題型名稱 */
   examQuizHistoryQuizTypeLabel: { type: String, default: '' },
   /** 測驗頁：追問出題時 Modal 顯示問答四段式 */
   examQuizHistoryIsFollowup: { type: Boolean, default: false },
-  /** 測驗頁：是否允許開啟「之前的出題」（未選題型時 false） */
+  /** 測驗頁：是否允許開啟「先前出題」（未選題型時 false） */
   examQuizHistoryOpenAllowed: { type: Boolean, default: true },
   /** 稿頁：批改規則改按鈕開 Modal 編輯（由父層提供 Modal；本卡僅 emit open-grading-prompt-edit） */
   gradingPromptInModal: { type: Boolean, default: false },
   /** 稿頁：提示／參考答案按鈕置於「答案」標題列右側，以 Modal 顯示；不顯示作答字數 */
   hintReferenceInModal: { type: Boolean, default: false },
-  /** 稿頁：「之前的出題」置於「題目」標題列右側 */
+  /** 稿頁：「先前出題」置於「題目」標題列右側 */
   showBankQuizHistoryButton: { type: Boolean, default: false },
 });
 
@@ -165,7 +165,7 @@ const promptModalTitle = computed(() =>
   promptModalKind.value === 'question' ? '出題規則' : '批改規則'
 );
 
-/** 測驗頁：可查看此題之前的出題（批改後仍保留；須父層傳入 history 相關 props） */
+/** 測驗頁：可查看此題先前出題（批改後仍保留；須父層傳入 history 相關 props） */
 const showQuizHistoryPreviewButton = computed(
   () => props.hideGradingPrompt && props.examQuizHistoryList !== undefined,
 );
@@ -534,10 +534,10 @@ const quizAnswerFieldDisabled = computed(
             v-if="showBankQuizHistoryButton"
             type="button"
             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
-            aria-label="查看之前的出題"
+            aria-label="查看先前出題"
             @click="emit('open-quiz-history')"
           >
-            之前的出題
+            先前出題
           </button>
         </div>
         <div
@@ -834,15 +834,17 @@ const quizAnswerFieldDisabled = computed(
           class="d-flex flex-column w-100 min-w-0 mt-3"
         >
           <div
-            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1' : 'form-label my-font-sm-600 mb-1 my-color-gray-1'"
+            v-if="!cardMarkedForExam"
+            class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
           >
-            批改規則
-          </div>
-          <div class="position-relative min-w-0 w-100">
+            <div
+              :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+            >
+              批改規則
+            </div>
             <button
-              v-if="!cardMarkedForExam"
               type="button"
-              class="btn rounded-circle position-absolute top-0 end-0 z-1 d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-on-design-dark-preview my-btn-circle lh-1 shadow-none border-0 m-1"
+              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 ms-auto"
               title="編輯批改規則"
               aria-label="編輯批改規則"
               :disabled="gradeSubmitting"
@@ -850,6 +852,14 @@ const quizAnswerFieldDisabled = computed(
             >
               <i class="fa-solid fa-pen" aria-hidden="true" />
             </button>
+          </div>
+          <div
+            v-else
+            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+          >
+            批改規則
+          </div>
+          <div class="min-w-0 w-100">
             <EnglishExamMarkdownEditor
               :model-value="String(card.gradingPrompt ?? '')"
               :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
@@ -865,17 +875,6 @@ const quizAnswerFieldDisabled = computed(
                 : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
             "
           >
-            <button
-              v-if="!cardMarkedForExam"
-              type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
-              title="還原為上次載入或送出後的內容"
-              aria-label="重設批改規則"
-              :disabled="gradingPromptResetDisabled"
-              @click="emit('reset-grading-prompt')"
-            >
-              重設
-            </button>
             <button
               v-if="showStartGradeButton"
               type="button"
@@ -951,7 +950,7 @@ const quizAnswerFieldDisabled = computed(
             </button>
           </div>
         </div>
-        <!-- 測驗頁隱藏批改編輯區：「之前的出題」批改後仍保留；「開始批改」僅未批改時 -->
+        <!-- 測驗頁隱藏批改編輯區：「先前出題」批改後仍保留；「開始批改」僅未批改時 -->
         <div
           v-else-if="showStartGradeButton || showQuizHistoryPreviewButton"
           :class="
@@ -964,11 +963,11 @@ const quizAnswerFieldDisabled = computed(
             v-if="showQuizHistoryPreviewButton"
             type="button"
             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-            aria-label="查看之前的出題"
+            aria-label="查看先前出題"
             :disabled="examQuizHistoryButtonDisabled"
             @click="openQuizHistoryModal"
           >
-            之前的出題
+            先前出題
           </button>
           <button
             v-if="showStartGradeButton"

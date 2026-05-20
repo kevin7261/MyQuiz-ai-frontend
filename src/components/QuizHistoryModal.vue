@@ -1,6 +1,6 @@
 <script setup>
 /**
- * QuizHistoryModal — 「之前的出題」共用 Modal
+ * QuizHistoryModal — 「先前出題」共用 Modal
  *
  * 供 ExamPage、CreateExamQuizBankPage（及 QuizCard 預覽）使用。
  * Bootstrap 5 風格；Teleport 至 body；點背景可關閉。
@@ -68,7 +68,7 @@ const stemList = computed(() => {
         <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
           <div class="modal-header border-bottom-0 p-0">
             <h5 :id="titleId" class="modal-title my-color-black">
-              之前的出題
+              先前出題
             </h5>
             <button
               type="button"

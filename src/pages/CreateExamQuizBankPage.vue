@@ -200,7 +200,7 @@ function writeCreateBankTabUiPersisted(personId, payload) {
   }
 }
 
-/** 題型「之前的出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
+/** 題型「先前出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
 const CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX = 'myquiz:createBankQuizHistory:v1:';
 
 function createBankQuizHistoryStorageKey(personId) {
@@ -1860,7 +1860,7 @@ function closeRagUnitTranscriptModal() {
   ragUnitTranscriptModalMarkdownOverride.value = null;
 }
 
-/** 之前的出題 Modal（目前題型 sub-tab） */
+/** 先前出題 Modal（目前題型 sub-tab） */
 const bankQuizHistoryModalOpen = ref(false);
 
 function openBankQuizHistoryModal() {
@@ -5648,10 +5648,10 @@ async function confirmAnswer(item) {
                   <button
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                    aria-label="查看之前的出題"
+                    aria-label="查看先前出題"
                     @click="openBankQuizHistoryModal"
                   >
-                    之前的出題
+                    先前出題
                   </button>
                   <div
                     class="d-flex justify-content-center align-items-center flex-wrap gap-3"

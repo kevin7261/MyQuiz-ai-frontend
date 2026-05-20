@@ -13,7 +13,7 @@
  *   `renderMarkdownToSafeHtml` 一致），不掛 EasyMDE，適用於讀入完成 / build 完成的唯讀場合。
  *
  * previewDesignDark：僅在 previewOnly=true 時生效，切換為黑底白字預覽
- * （與 DesignPage `.my-bgcolor-black` 區塊示範一致）。
+ * （與 DesignPage `.my-bgcolor-black` 區塊示範一致）；未展開最高 96pt（不足則隨內容），超出時黑框外「查看全部」。
  *
  * disabled：僅影響 EasyMDE CodeMirror 的 readOnly 選項，不影響預覽模式。
  *
@@ -40,6 +40,16 @@ const emit = defineEmits(['update:modelValue']);
 
 const previewHtml = computed(() => renderMarkdownToSafeHtml(props.modelValue));
 const previewEmpty = computed(() => !(props.modelValue != null && String(props.modelValue).trim()));
+
+const previewPanelRef = ref(null);
+/** 黑底預覽內容是否超過 96pt（需顯示展開鈕） */
+const previewHadOverflow = ref(false);
+const previewExpanded = ref(false);
+
+/** 稿頁黑底預覽：未展開時最高 96pt，內容較少時高度隨內容 */
+const previewDesignDarkFixed = computed(
+  () => props.previewDesignDark && props.previewOnly && !previewExpanded.value,
+);
 
 const textareaRef = ref(null);
 const editorWrapRef = ref(null);
@@ -184,7 +194,86 @@ watch(
   }
 );
 
+/** @type {null | ResizeObserver} */
+let previewOverflowResizeObserver = null;
+
+function detachPreviewOverflowObserver() {
+  if (previewOverflowResizeObserver) {
+    previewOverflowResizeObserver.disconnect();
+    previewOverflowResizeObserver = null;
+  }
+}
+
+function measureDesignDarkPreviewOverflow() {
+  if (!props.previewDesignDark || !props.previewOnly || previewEmpty.value) {
+    previewHadOverflow.value = false;
+    previewExpanded.value = false;
+    return;
+  }
+  nextTick(() => {
+    requestAnimationFrame(() => {
+      const panel = previewPanelRef.value;
+      if (!panel) return;
+      const keepExpanded = previewExpanded.value;
+      previewExpanded.value = false;
+      panel.style.maxHeight = '96pt';
+      panel.style.overflow = 'hidden';
+      const overflows = panel.scrollHeight > panel.clientHeight + 1;
+      panel.style.maxHeight = '';
+      panel.style.overflow = '';
+      previewHadOverflow.value = overflows;
+      previewExpanded.value = keepExpanded && overflows;
+      if (!overflows) previewExpanded.value = false;
+    });
+  });
+}
+
+function attachPreviewOverflowObserver() {
+  detachPreviewOverflowObserver();
+  if (!props.previewDesignDark || !props.previewOnly) return;
+  const panel = previewPanelRef.value;
+  if (!panel || typeof ResizeObserver === 'undefined') return;
+  previewOverflowResizeObserver = new ResizeObserver(() => {
+    measureDesignDarkPreviewOverflow();
+  });
+  previewOverflowResizeObserver.observe(panel);
+}
+
+watch(
+  () => [props.modelValue, props.previewDesignDark, props.previewOnly, previewEmpty.value],
+  () => {
+    previewExpanded.value = false;
+    measureDesignDarkPreviewOverflow();
+  },
+);
+
+watch(previewExpanded, () => {
+  if (!previewExpanded.value) measureDesignDarkPreviewOverflow();
+});
+
+onMounted(() => {
+  measureDesignDarkPreviewOverflow();
+  attachPreviewOverflowObserver();
+});
+
+watch(
+  () => props.previewOnly && props.previewDesignDark,
+  (on) => {
+    if (on) {
+      nextTick(() => {
+        measureDesignDarkPreviewOverflow();
+        attachPreviewOverflowObserver();
+      });
+    } else {
+      detachPreviewOverflowObserver();
+      previewHadOverflow.value = false;
+      previewExpanded.value = false;
+    }
+  },
+);
+
 onBeforeUnmount(() => {
+  detachPreviewOverflowObserver();
   destroyEasyMde();
 });
 </script>
@@ -194,30 +283,56 @@ onBeforeUnmount(() => {
     <!-- 唯讀讀入／已建置：只顯示預覽 -->
     <template v-if="previewOnly">
       <div
-        :id="textareaId"
-        class="english-exam-md-preview-panel min-w-0 rounded-2 overflow-x-auto overflow-y-visible"
-        :class="
-          previewDesignDark
-            ? 'english-exam-md-preview-panel--design-dark my-bgcolor-black border border-white'
-            : 'english-exam-md-preview-panel--surface my-bgcolor-surface border'
-        "
-        role="region"
-        aria-label="Markdown 預覽（僅讀）"
-        tabindex="0"
+        class="english-exam-md-preview-stack min-w-0 d-flex flex-column gap-1"
       >
+        <div class="english-exam-md-preview-panel-wrap min-w-0 position-relative">
+          <div
+            ref="previewPanelRef"
+            :id="textareaId"
+            class="english-exam-md-preview-panel min-w-0 rounded-2 overflow-x-auto"
+            :class="
+              previewDesignDark
+                ? [
+                    'english-exam-md-preview-panel--design-dark my-bgcolor-black border border-white',
+                    {
+                      'english-exam-md-preview-panel--design-dark-fixed': previewDesignDarkFixed,
+                      'english-exam-md-preview-panel--design-dark-expanded': previewExpanded,
+                    },
+                  ]
+                : 'english-exam-md-preview-panel--surface my-bgcolor-surface border overflow-y-visible'
+            "
+            role="region"
+            aria-label="Markdown 預覽（僅讀）"
+            tabindex="0"
+          >
+            <div
+              v-if="!previewEmpty"
+              class="english-exam-md-preview-body px-3 py-2 text-break"
+              :class="previewDesignDark ? 'my-color-white my-font-md-400' : ''"
+              v-html="previewHtml"
+            />
+            <div
+              v-else
+              class="english-exam-md-preview-empty px-3 py-2 min-w-0 my-font-md-400"
+              :class="previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4'"
+              role="status"
+            >
+              尚無內容
+            </div>
+          </div>
+        </div>
         <div
-          v-if="!previewEmpty"
-          class="english-exam-md-preview-body px-3 py-2 text-break"
-          :class="previewDesignDark ? 'my-color-white my-font-md-400' : ''"
-          v-html="previewHtml"
-        />
-        <div
-          v-else
-          class="english-exam-md-preview-empty px-3 py-2 min-w-0 my-font-md-400"
-          :class="previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4'"
-          role="status"
+          v-if="previewDesignDark && previewHadOverflow"
+          class="english-exam-md-preview-more-bar d-inline-flex align-items-center flex-wrap gap-2"
         >
-          尚無內容
+          <button
+            type="button"
+            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 py-1"
+            :aria-expanded="previewExpanded"
+            @click="previewExpanded = !previewExpanded"
+          >
+            {{ previewExpanded ? '收起' : '查看全部' }}
+          </button>
         </div>
       </div>
     </template>
@@ -271,11 +386,26 @@ onBeforeUnmount(() => {
   -webkit-overflow-scrolling: touch;
 }
 
+/* 稿頁出題／批改規則黑底預覽：未展開最高 96pt（不足隨內容）；展開後高度隨內容 */
 .english-exam-md-preview-panel--design-dark {
   border-color: var(--my-color-white) !important;
   overflow-x: auto;
-  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
+}
+.english-exam-md-preview-panel--design-dark-fixed {
+  max-height: 96pt;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+.english-exam-md-preview-panel--design-dark-expanded {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: visible;
+}
+.english-exam-md-preview-more-bar {
+  padding-left: 0.25rem;
+  max-width: 100%;
 }
 
 /* Design 頁黑底示範列：唯讀 Markdown 內嵌元素字色／區塊對比 */

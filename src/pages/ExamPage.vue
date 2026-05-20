@@ -800,7 +800,7 @@ function closeExamUnitTranscriptModal() {
   examUnitTranscriptModalSlotIndex.value = null;
 }
 
-/** 之前的出題 Modal：槽位 1-based */
+/** 先前出題 Modal：槽位 1-based */
 const examQuizHistoryModalSlotIndex = ref(null);
 
 function openExamQuizHistoryModal(slotIndex) {
@@ -1574,7 +1574,7 @@ function examSlotLockedStaticQuizTypeLabel(slotIndex) {
   return '—';
 }
 
-/** 之前的出題 Modal：目前槽位單元名稱（下拉或已鎖定題列） */
+/** 先前出題 Modal：目前槽位單元名稱（下拉或已鎖定題列） */
 function examSlotUnitLabelForHistoryModal(slotIndex) {
   if (examSlotRagChoicesLocked(slotIndex)) {
     return examSlotLockedStaticUnitLabel(slotIndex);
@@ -1588,7 +1588,7 @@ function examSlotUnitLabelForHistoryModal(slotIndex) {
   return '—';
 }
 
-/** 之前的出題 Modal：目前槽位題型名稱 */
+/** 先前出題 Modal：目前槽位題型名稱 */
 function examSlotQuizTypeLabelForHistoryModal(slotIndex) {
   if (examSlotRagChoicesLocked(slotIndex)) {
     return examSlotLockedStaticQuizTypeLabel(slotIndex);
@@ -1672,7 +1672,7 @@ function examQuizHistoryListForLlm(ragUnitId, ragQuizId, beforeSlotIndex = Infin
   return out;
 }
 
-/** 供 QuizCard 預覽與同步：本分頁同單元／題型、此槽位之前的出題幹（與 llm-generate 之 quiz_history_list 同源） */
+/** 供 QuizCard 預覽與同步：本分頁同單元／題型、此槽位先前出題幹（與 llm-generate 之 quiz_history_list 同源） */
 function examQuizHistoryListForSlot(slotIndex) {
   const card = currentState.value.cardList[slotIndex - 1];
   const prevName = String(card?.examQuizDisplayName ?? '').trim();
@@ -1769,7 +1769,7 @@ function examQuizFollowupHistoryListForLlm(slotIndex) {
 }
 
 /**
- * 須已選單元（若有選項）且能解析題型名稱才可開啟「之前的出題」。
+ * 須已選單元（若有選項）且能解析題型名稱才可開啟「先前出題」。
  * 勿僅查 examQuizDisplayName：已產題／GET 載入時題名常來自 rag 列對齊。
  */
 function canOpenExamQuizHistoryModal(slotIndex) {
@@ -2768,11 +2768,11 @@ onActivated(() => {
                           <button
                             type="button"
                             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                            aria-label="查看之前的出題"
+                            aria-label="查看先前出題"
                             :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
                             @click="openExamQuizHistoryModal(slotIndex)"
                           >
-                            之前的出題
+                            先前出題
                           </button>
                           <button
                             type="button"
@@ -2952,11 +2952,11 @@ onActivated(() => {
                           <button
                             type="button"
                             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                            aria-label="查看之前的出題"
+                            aria-label="查看先前出題"
                             :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
                             @click="openExamQuizHistoryModal(slotIndex)"
                           >
-                            之前的出題
+                            先前出題
                           </button>
                           <button
                             type="button"
