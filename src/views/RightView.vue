@@ -26,7 +26,7 @@
     profile: markRaw(ProfilePage),
     createExamQuizBank: markRaw(CreateExamQuizBankPage),
     createExamQuizBankDesign: markRaw(CreateExamQuizBankDesignPage),
-    designPage: markRaw(CreateExamQuizBankDesignPage),
+    designPage: markRaw(DesignPage),
     userManagement: markRaw(UserManagementPage),
     systemSettings: markRaw(SystemSettingsPage),
     logList: markRaw(LogListPage),
@@ -36,7 +36,6 @@
     'work',
     'createExamQuizBank',
     'createExamQuizBankDesign',
-    'designPage',
   ]);
 
   export default {

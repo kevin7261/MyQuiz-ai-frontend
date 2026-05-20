@@ -2,6 +2,7 @@
  * 建立測驗題庫（稿）頁面用示範資料，不呼叫後端 API。
  */
 import { formatGradingResult } from '../../utils/grading.js';
+import { serializePackTasksList } from './rag.js';
 
 /** ZIP 內資料夾／設定單元橫向列表示範（10 筆） */
 export const DESIGN_DEMO_FOLDER_NAMES = [
@@ -15,6 +16,21 @@ export const DESIGN_DEMO_FOLDER_NAMES = [
   'Chapter_08',
   'Chapter_09',
   'Chapter_10',
+];
+
+/**
+ * 示範題庫 A／Chapter_01 單元：資料夾組合內含大量標籤（稿頁滿版換行示範）。
+ * 與 unit_list 第一群組、units[0].folder_combination 對齊。
+ */
+export const DESIGN_CHAPTER_01_FOLDER_COMBO = [
+  ...DESIGN_DEMO_FOLDER_NAMES,
+  'Chapter_01_Reading',
+  'Chapter_01_Lab',
+  'Chapter_01_Quiz_A',
+  'Chapter_01_Quiz_B',
+  'Chapter_01_Appendix',
+  'Chapter_01_Glossary',
+  'Chapter_01_Slides',
 ];
 
 const DESIGN_DEMO_UNIT_TYPES = [1, 2, 1, 3, 4, 1, 2, 1, 1, 2];
@@ -276,7 +292,10 @@ export function buildDesignDemoUnits() {
       rag_unit_id: 101 + i,
       unit_name: folder,
       unit_type: DESIGN_DEMO_UNIT_TYPES[i] ?? 1,
-      folder_combination: folder,
+      folder_combination:
+        i === 0
+          ? DESIGN_CHAPTER_01_FOLDER_COMBO.join('/t')
+          : folder,
       quizzes: [...(DESIGN_DEMO_QUIZZES_BY_UNIT[i] ?? [])],
     };
     if (i === 1) {
@@ -294,8 +313,18 @@ export function buildDesignDemoUnits() {
   });
 }
 
+/**
+ * 示範題庫 A：第一個設定單元為 Chapter_01 大量資料夾組合，其餘章節各一組。
+ * 與 units[0].folder_combination、稿頁「資料夾組合」滿版換行示範對齊。
+ */
+const DESIGN_DEMO_PACK_TASKS_LIST = [
+  [...DESIGN_CHAPTER_01_FOLDER_COMBO],
+  ...DESIGN_DEMO_FOLDER_NAMES.slice(1).map((name) => [name]),
+];
+const DESIGN_DEMO_UNIT_LIST = serializePackTasksList(DESIGN_DEMO_PACK_TASKS_LIST);
+
 /** 示範 B：每個資料夾一個設定單元（供可編輯區橫向 tag 列表） */
-const DESIGN_DEMO_UNIT_LIST = DESIGN_DEMO_FOLDER_NAMES.join(',');
+const DESIGN_DEMO_UNIT_LIST_B = DESIGN_DEMO_FOLDER_NAMES.join(',');
 
 export const DESIGN_MOCK_RAG_LIST = [
   {
@@ -306,7 +335,7 @@ export const DESIGN_MOCK_RAG_LIST = [
     filename: 'demo_a_rag.zip',
     for_exam: false,
     file_metadata: {
-      second_folders: [],
+      second_folders: [...DESIGN_CHAPTER_01_FOLDER_COMBO],
     },
     rag_metadata: '{"built":true}',
     unit_list: DESIGN_DEMO_UNIT_LIST,
@@ -322,7 +351,7 @@ export const DESIGN_MOCK_RAG_LIST = [
     file_metadata: {
       second_folders: [...DESIGN_DEMO_FOLDER_NAMES],
     },
-    unit_list: DESIGN_DEMO_UNIT_LIST,
+    unit_list: DESIGN_DEMO_UNIT_LIST_B,
     units: [],
   },
 ];

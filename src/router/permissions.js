@@ -1,7 +1,7 @@
 /**
  * 依 user_type 限制可進入的路由（與側邊欄顯示）
  *
- * 1=開發者、2=管理者：除「系統 Log」外之全部頁面
+ * 1=開發者、2=管理者：除「系統 Log」外之全部頁面（含 /create-exam-bank_design、/design）
  * 3=學生：測驗（/exam）、作答弱點分析（/student-weakness-analysis）、建立測驗題庫（/create-exam-bank）、設定（/profile）
  * 「系統 Log」（/logs）：僅 user_type=1
  */
@@ -70,6 +70,9 @@ export function userMayAccessRoute(user, to) {
  */
 export function canSeeNavLink(userType, viewKey) {
   if (viewKey === 'logs') return Number(userType) === DEVELOPER_USER_TYPE;
+  if (viewKey === 'create-exam-bank_design' || viewKey === 'design') {
+    return Number(userType) !== RESTRICTED_USER_TYPE;
+  }
   if (Number(userType) !== RESTRICTED_USER_TYPE) return true;
   return STUDENT_ALLOWED_VIEWS.has(viewKey);
 }

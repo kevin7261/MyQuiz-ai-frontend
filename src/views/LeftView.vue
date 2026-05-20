@@ -6,7 +6,7 @@
    * - 顯示品牌（MyQuiz.ai）
    * - 品牌下方課程按鈕：顯示目前課程名稱；點擊開啟選課 Modal
    * - 主要導覽（測驗、作答弱點分析）
-   * - 左下角使用者名下拉：其餘功能與登出
+   * - 左下角使用者名下拉：其餘功能與登出（含建立測驗題庫介面稿、UI 元件參考）
    */
   import { computed } from 'vue';
   import { useAuthStore } from '../stores/authStore.js';
@@ -99,6 +99,14 @@
         <ul class="dropdown-menu dropdown-menu-start w-100">
           <li>
             <router-link class="dropdown-item" to="/create-exam-bank" active-class="active">建立測驗題庫</router-link>
+          </li>
+          <li v-if="canSeeNavLink(userType, 'create-exam-bank_design')">
+            <router-link class="dropdown-item" to="/create-exam-bank_design" active-class="active"
+              >建立測驗題庫（介面稿）</router-link
+            >
+          </li>
+          <li v-if="canSeeNavLink(userType, 'design')">
+            <router-link class="dropdown-item" to="/design" active-class="active">UI 元件參考</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
             <router-link class="dropdown-item" to="/student-answer-analysis" active-class="active"
