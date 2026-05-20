@@ -2270,7 +2270,8 @@ function resetBankPromptEditModalDraft() {
 
 function openBankQuizUserPromptEditModal() {
   const card = activeUnitQuizCard.value;
-  if (!card || isRagQuizMarkedForExam(card)) return;
+  if (!card) return;
+  if (getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading) return;
   bankPromptEditModalKind.value = 'quiz';
   bankPromptEditModalDraft.value = String(card.quizUserPromptText ?? '');
   bankPromptEditModalOpen.value = true;
@@ -5164,7 +5165,7 @@ async function confirmAnswer(item) {
               />
             </div>
             <div
-              class="modal-footer border-top-0 p-0 d-flex justify-content-between align-items-center flex-wrap gap-2 w-100"
+              class="modal-footer border-top-0 p-0 d-flex justify-content-end align-items-center flex-wrap gap-2 w-100"
             >
               <button
                 type="button"
@@ -5176,23 +5177,14 @@ async function confirmAnswer(item) {
               >
                 重設
               </button>
-              <div class="d-flex flex-wrap justify-content-end gap-2">
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
-                  @click="closeBankPromptEditModal"
-                >
-                  取消
-                </button>
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-3 py-2"
-                  :disabled="bankPromptEditModalSavingDisabled"
-                  @click="applyBankPromptEditModal"
-                >
-                  確定
-                </button>
-              </div>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-3 py-2"
+                :disabled="bankPromptEditModalSavingDisabled"
+                @click="applyBankPromptEditModal"
+              >
+                確定
+              </button>
             </div>
           </div>
         </div>
@@ -6175,22 +6167,49 @@ async function confirmAnswer(item) {
                 <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白 -->
                 <div class="my-design-quiz-sub-block-outer pe-5">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2 d-flex flex-column gap-3"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2 d-flex flex-column"
                   >
-                    <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
-                      <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
-                        出題規則
-                      </div>
-                      <div class="my-design-quiz-field-inset-body min-w-0 w-100">
+                    <section
+                      class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                      aria-label="出題規則"
+                    >
+                      <header class="my-design-quiz-question-prompt-block__head">
+                        <div
+                          class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                        >
+                          <h3
+                            class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0"
+                          >
+                            出題規則
+                          </h3>
+                          <button
+                            type="button"
+                            class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
+                            title="編輯出題規則"
+                            aria-label="編輯出題規則"
+                            :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                            @click="openBankQuizUserPromptEditModal"
+                          >
+                            <i class="fa-solid fa-pen" aria-hidden="true" />
+                          </button>
+                        </div>
+                        <div class="px-3 py-0">
+                          <hr class="my-design-quiz-question-prompt-block__rule m-0">
+                        </div>
+                      </header>
+                      <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
                         <EnglishExamMarkdownEditor
                           :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
                           preview-only
                           preview-design-dark
+                          preview-design-dark-embedded
                           :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         />
                       </div>
-                    </div>
-                    <div class="d-flex justify-content-start align-items-center flex-wrap gap-2">
+                    </section>
+                    <div
+                      class="d-flex justify-content-start align-items-center flex-wrap gap-2 mt-2"
+                    >
                       <button
                         type="button"
                         class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
@@ -6207,19 +6226,6 @@ async function confirmAnswer(item) {
                       </button>
                       <button
                         type="button"
-                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-gray-3 my-design-quiz-action-edit-btn lh-1"
-                        title="編輯出題規則"
-                        aria-label="編輯出題規則"
-                        :disabled="
-                          !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                          || isRagQuizMarkedForExam(activeUnitQuizCard)
-                        "
-                        @click="openBankQuizUserPromptEditModal"
-                      >
-                        <i class="fa-solid fa-pen my-color-black" aria-hidden="true" />
-                      </button>
-                      <button
-                        type="button"
                         class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
                         aria-label="查看先前出題"
                         @click="openBankQuizHistoryModal"
@@ -6227,16 +6233,20 @@ async function confirmAnswer(item) {
                         先前出題
                       </button>
                     </div>
-                    <QuizCard
+                    <div
                       v-if="activeUnitQuizHasGeneratedBody"
-                      v-bind="designUnitQuizCardBind"
-                      create-exam-bank-design-layout
-                      design-sub-block="question"
-                      @confirm-answer="confirmGradeMerged"
-                      @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
-                      @open-grading-prompt-edit="openBankGradingPromptEditModal"
-                      @open-quiz-history="openBankQuizHistoryModal"
-                    />
+                      class="w-100 min-w-0 mt-2"
+                    >
+                      <QuizCard
+                        v-bind="designUnitQuizCardBind"
+                        create-exam-bank-design-layout
+                        design-sub-block="question"
+                        @confirm-answer="confirmGradeMerged"
+                        @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
+                        @open-grading-prompt-edit="openBankGradingPromptEditModal"
+                        @open-quiz-history="openBankQuizHistoryModal"
+                      />
+                    </div>
                   </div>
                 </div>
                 <!-- 子區塊：答案；外層 ps-5＝灰底上、白底左側留白 -->
@@ -6544,8 +6554,8 @@ async function confirmAnswer(item) {
   max-width: 100%;
   min-width: 0;
 }
-/* 稿頁三子區塊：欄位標題在框內上方（出題規則／題目／答案／批改規則／批改結果） */
-/* 灰框欄位：內容 p-3（標題＋黑底預覽／輸入） */
+/* 稿頁三子區塊：灰框白底（題目／答案／批改）；出題規則為黑底區 */
+/* 灰框欄位：圓角灰邊白底 */
 .my-design-quiz-field-inset,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
   box-sizing: border-box;
@@ -6559,6 +6569,116 @@ async function confirmAnswer(item) {
 .my-design-quiz-field-inset-label,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
   line-height: 1.35;
+}
+/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 p-3 */
+.my-design-quiz-field-inset__rule,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
+  border: 0;
+  border-top: 1px solid var(--my-color-gray-2);
+  opacity: 1;
+}
+/*
+ * 出題規則黑底區：標題列 px-3 py-2 → 橫線 px-3 py-0 → 內文 p-3（另含查看更多列）
+ */
+.my-design-quiz-question-prompt-block,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-white);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-black);
+  overflow: hidden;
+}
+.my-design-quiz-question-prompt-block__title,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {
+  color: var(--my-color-gray-2);
+  line-height: 1.35;
+  font-weight: 400;
+}
+/* 黑底區右上編輯：白 icon、小圓鈕（對齊 sm 標題列） */
+.my-design-quiz-question-prompt-block__edit-btn,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn) {
+  box-sizing: border-box;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  background-color: transparent;
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled)),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled)) {
+  color: var(--my-color-white);
+  border-color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+}
+.my-design-quiz-question-prompt-block__edit-btn .fa-solid,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn .fa-solid) {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+}
+.my-design-quiz-question-prompt-block__rule,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__rule) {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
+  opacity: 1;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark) {
+  margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body code) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p code),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li code) {
+  background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote) {
+  border-left-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td) {
+  border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
 }
 .my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
   margin-bottom: 0;

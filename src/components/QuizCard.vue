@@ -608,26 +608,36 @@ const quizAnswerFieldDisabled = computed(
         :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
         <template v-if="useDesignFieldLabelInset">
-          <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
-            <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
-              題目
-            </div>
-            <div class="my-design-quiz-field-inset-body min-w-0">
+          <section
+            class="my-design-quiz-field-inset w-100 min-w-0"
+            aria-label="題目"
+          >
+            <header class="my-design-quiz-field-inset__head">
               <div
-                class="lh-base quiz-card-quiz-stem form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 mb-0"
+                class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
               >
-                <div
-                  v-if="quizMarkdownHtml"
-                  class="my-markdown-rendered my-font-md-400 text-break"
-                  v-html="quizMarkdownHtml"
-                />
-                <span
-                  v-else
-                  class="my-font-md-400 text-break"
-                >{{ card.quiz }}</span>
+                <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                  題目
+                </h3>
               </div>
+              <div class="px-3 py-0">
+                <hr class="my-design-quiz-field-inset__rule m-0">
+              </div>
+            </header>
+            <div
+              class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base quiz-card-quiz-stem"
+            >
+              <div
+                v-if="quizMarkdownHtml"
+                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                v-html="quizMarkdownHtml"
+              />
+              <span
+                v-else
+                class="my-font-md-400 my-color-black text-break"
+              >{{ card.quiz }}</span>
             </div>
-          </div>
+          </section>
         </template>
         <template v-else>
           <div

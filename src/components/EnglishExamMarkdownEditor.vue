@@ -13,7 +13,7 @@
  *   `renderMarkdownToSafeHtml` 一致），不掛 EasyMDE，適用於讀入完成 / build 完成的唯讀場合。
  *
  * previewDesignDark：僅在 previewOnly=true 時生效，切換為黑底白字預覽
- * （與 DesignPage `.my-bgcolor-black` 區塊示範一致）；未展開最高 96pt（不足則隨內容），超出時黑框外「查看全部」。
+ * （與 DesignPage `.my-bgcolor-black` 區塊示範一致）；未展開最高 96pt（可捲動），超出時內容下方另起一排「…… 查看更多」。
  *
  * disabled：僅影響 EasyMDE CodeMirror 的 readOnly 選項，不影響預覽模式。
  *
@@ -32,6 +32,10 @@ const props = defineProps({
   previewOnly: { type: Boolean, default: false },
   /** 唯讀預覽用：Design 頁同款黑底白字（須併 previewOnly） */
   previewDesignDark: { type: Boolean, default: false },
+  /**
+   * 併 previewDesignDark：預覽內文 p-3、「查看更多」px-3 pt-3 pb-3（稿頁出題規則黑底區）。
+   */
+  previewDesignDarkEmbedded: { type: Boolean, default: false },
   /** 對應外層 <label for="…">，維持無障礙關聯 */
   textareaId: { type: String, default: 'english-bank-paste-text' },
 });
@@ -283,9 +287,10 @@ onBeforeUnmount(() => {
     <!-- 唯讀讀入／已建置：只顯示預覽 -->
     <template v-if="previewOnly">
       <div
-        class="english-exam-md-preview-stack min-w-0 d-flex flex-column gap-1"
+        class="english-exam-md-preview-stack min-w-0 d-flex flex-column"
+        :class="previewDesignDarkEmbedded ? 'gap-0' : 'gap-1'"
       >
-        <div class="english-exam-md-preview-panel-wrap min-w-0 position-relative">
+        <div class="english-exam-md-preview-panel-wrap min-w-0">
           <div
             ref="previewPanelRef"
             :id="textareaId"
@@ -307,14 +312,20 @@ onBeforeUnmount(() => {
           >
             <div
               v-if="!previewEmpty"
-              class="english-exam-md-preview-body px-3 py-2 text-break"
-              :class="previewDesignDark ? 'my-color-white my-font-md-400' : ''"
+              class="english-exam-md-preview-body text-break"
+              :class="[
+                previewDesignDark ? 'my-color-white my-font-md-400' : '',
+                previewDesignDarkEmbedded ? 'p-3' : 'px-3 py-2',
+              ]"
               v-html="previewHtml"
             />
             <div
               v-else
-              class="english-exam-md-preview-empty px-3 py-2 min-w-0 my-font-md-400"
-              :class="previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4'"
+              class="english-exam-md-preview-empty min-w-0 my-font-md-400"
+              :class="[
+                previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4',
+                previewDesignDarkEmbedded ? 'p-3' : 'px-3 py-2',
+              ]"
               role="status"
             >
               尚無內容
@@ -322,16 +333,35 @@ onBeforeUnmount(() => {
           </div>
         </div>
         <div
-          v-if="previewDesignDark && previewHadOverflow"
-          class="english-exam-md-preview-more-bar d-inline-flex align-items-center flex-wrap gap-2"
+          v-if="previewDesignDark && previewHadOverflow && !previewExpanded"
+          class="english-exam-md-preview-more-row"
+          :class="{ 'english-exam-md-preview-more-row--embedded': previewDesignDarkEmbedded }"
         >
           <button
             type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 py-1"
-            :aria-expanded="previewExpanded"
-            @click="previewExpanded = !previewExpanded"
+            class="english-exam-md-preview-more-btn my-font-sm-400 d-inline-flex align-items-center gap-1"
+            aria-expanded="false"
+            aria-label="查看更多內容"
+            @click="previewExpanded = true"
           >
-            {{ previewExpanded ? '收起' : '查看全部' }}
+            查看更多
+            <i class="fa-solid fa-chevron-down" aria-hidden="true" />
+          </button>
+        </div>
+        <div
+          v-if="previewDesignDark && previewHadOverflow && previewExpanded"
+          class="english-exam-md-preview-more-row"
+          :class="{ 'english-exam-md-preview-more-row--embedded': previewDesignDarkEmbedded }"
+        >
+          <button
+            type="button"
+            class="english-exam-md-preview-more-btn my-font-sm-400 d-inline-flex align-items-center gap-1"
+            aria-expanded="true"
+            aria-label="收起內容"
+            @click="previewExpanded = false"
+          >
+            收起
+            <i class="fa-solid fa-chevron-up" aria-hidden="true" />
           </button>
         </div>
       </div>
@@ -396,6 +426,7 @@ onBeforeUnmount(() => {
   max-height: 96pt;
   overflow-y: auto;
   scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 .english-exam-md-preview-panel--design-dark-expanded {
   height: auto;
@@ -403,9 +434,36 @@ onBeforeUnmount(() => {
   max-height: none;
   overflow-y: visible;
 }
-.english-exam-md-preview-more-bar {
-  padding-left: 0.25rem;
+/* 黑底預覽：內容區下方另起一排「…… 查看更多」／「收起」（不疊在內容上） */
+.english-exam-md-preview-more-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
+  padding: 0.15rem 1rem 0;
+}
+/* 稿頁出題規則黑底區：px-3 pt-3 pb-3 */
+.english-exam-md-preview-more-row--embedded {
+  padding: 1rem 1rem 1rem;
+}
+.english-exam-md-preview-more-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--my-color-white);
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  text-align: start;
+}
+.english-exam-md-preview-more-btn:hover,
+.english-exam-md-preview-more-btn:focus-visible {
+  color: var(--my-color-white);
+  text-decoration: underline;
+  outline: none;
 }
 
 /* Design 頁黑底示範列：唯讀 Markdown 內嵌元素字色／區塊對比 */
