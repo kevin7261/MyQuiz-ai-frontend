@@ -69,6 +69,12 @@ const props = defineProps({
   examQuizHistoryIsFollowup: { type: Boolean, default: false },
   /** 測驗頁：是否允許開啟「之前的出題」（未選題型時 false） */
   examQuizHistoryOpenAllowed: { type: Boolean, default: true },
+  /** 稿頁：批改規則改按鈕開 Modal 編輯（由父層提供 Modal；本卡僅 emit open-grading-prompt-edit） */
+  gradingPromptInModal: { type: Boolean, default: false },
+  /** 稿頁：提示／參考答案按鈕置於「答案」標題列右側，以 Modal 顯示；不顯示作答字數 */
+  hintReferenceInModal: { type: Boolean, default: false },
+  /** 稿頁：「之前的出題」置於「題目」標題列右側 */
+  showBankQuizHistoryButton: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -81,6 +87,8 @@ const emit = defineEmits([
   'reset-grading-prompt',
   'rate-quiz',
   'mark-rag-quiz-for-exam',
+  'open-grading-prompt-edit',
+  'open-quiz-history',
 ]);
 
 /**
@@ -210,8 +218,13 @@ const referenceAnswerMarkdownHtml = computed(() =>
 const stemToolbarLeftPills = computed(
   () =>
     (props.hideGradingPrompt && quizUserPromptSnapshotTrimmed.value !== '')
-    || hasHintText.value
-    || (!props.questionHintOnly && hasReferenceAnswerText.value),
+    || (
+      !props.hintReferenceInModal
+      && (
+        hasHintText.value
+        || (!props.questionHintOnly && hasReferenceAnswerText.value)
+      )
+    ),
 );
 
 const showDesignStemToolbarRow = computed(
@@ -232,6 +245,32 @@ function openPromptModal(kind) {
 
 function closePromptModal() {
   promptModalKind.value = '';
+}
+
+const hintRefModalKind = ref(/** @type {''|'hint'|'reference'} */ (''));
+
+const hintRefModalTitle = computed(() =>
+  hintRefModalKind.value === 'hint' ? '提示' : '參考答案',
+);
+
+const hintRefModalHtml = computed(() => {
+  if (hintRefModalKind.value === 'hint') {
+    return renderMarkdownToSafeHtml(props.card?.hint);
+  }
+  if (hintRefModalKind.value === 'reference') {
+    return referenceAnswerMarkdownHtml.value;
+  }
+  return '';
+});
+
+function openHintRefModal(kind) {
+  if (kind === 'hint' && !hasHintText.value) return;
+  if (kind === 'reference' && !hasReferenceAnswerText.value) return;
+  hintRefModalKind.value = kind;
+}
+
+function closeHintRefModal() {
+  hintRefModalKind.value = '';
 }
 
 /**
@@ -403,6 +442,50 @@ const quizAnswerFieldDisabled = computed(
         :history-list="quizHistoryModalList"
         :title-id="`quiz-card-history-modal-title-${card.id}`"
       />
+      <div
+        v-if="hintRefModalKind"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="`quiz-card-hint-ref-modal-title-${card.id}`"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                :id="`quiz-card-hint-ref-modal-title-${card.id}`"
+                class="modal-title my-color-black"
+              >{{ hintRefModalTitle }}</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeHintRefModal"
+              />
+            </div>
+            <div class="modal-body p-0 lh-base" style="max-height: 70vh; overflow: auto;">
+              <div
+                v-if="hintRefModalHtml"
+                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                v-html="hintRefModalHtml"
+              />
+              <span
+                v-else-if="hintRefModalKind === 'hint'"
+                class="my-font-md-400 my-color-black text-break"
+                style="white-space: pre-wrap;"
+              >{{ card.hint }}</span>
+              <span
+                v-else
+                class="my-font-md-400 my-color-black"
+              >—</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </Teleport>
     <div
       :class="[
@@ -428,15 +511,24 @@ const quizAnswerFieldDisabled = computed(
       </div>
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
         <div
-          class="d-flex justify-content-between align-items-center gap-2 w-100 min-w-0"
-          :class="designUi ? '' : 'mb-1'"
+          class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
+          :class="designUi && showBankQuizHistoryButton ? 'align-items-end' : 'align-items-center'"
         >
           <div
             :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >題目</div>
+          <button
+            v-if="showBankQuizHistoryButton"
+            type="button"
+            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
+            aria-label="查看之前的出題"
+            @click="emit('open-quiz-history')"
+          >
+            之前的出題
+          </button>
         </div>
         <div
           class="lh-base mb-0 quiz-card-quiz-stem"
@@ -471,7 +563,7 @@ const quizAnswerFieldDisabled = computed(
                 出題規則
               </button>
               <button
-                v-if="hasHintText"
+                v-if="hasHintText && !hintReferenceInModal"
                 type="button"
                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                 @click="emit('toggle-hint', card)"
@@ -479,7 +571,7 @@ const quizAnswerFieldDisabled = computed(
                 {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
               </button>
               <button
-                v-if="!questionHintOnly && hasReferenceAnswerText"
+                v-if="!questionHintOnly && hasReferenceAnswerText && !hintReferenceInModal"
                 type="button"
                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
                 @click="emit('toggle-reference-answer', card)"
@@ -531,47 +623,49 @@ const quizAnswerFieldDisabled = computed(
           >
             {{ card.rateError }}
           </div>
-          <div
-            v-if="hasHintText"
-            v-show="card.hintVisible"
-            class="w-100 min-w-0 mt-2"
-          >
+          <template v-if="!hintReferenceInModal">
             <div
-              class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1"
-            >提示</div>
-            <div
-              class="my-font-sm-400 form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4"
-            >
-              {{ card.hint }}
-            </div>
-          </div>
-          <div
-            v-if="!questionHintOnly && hasReferenceAnswerText"
-            v-show="card.referenceAnswerVisible"
-            class="w-100 min-w-0 mt-2"
-          >
-            <div
-              class="d-flex justify-content-between align-items-center gap-2 w-100 min-w-0 mb-1"
+              v-if="hasHintText"
+              v-show="card.hintVisible"
+              class="w-100 min-w-0 mt-2"
             >
               <div
-                class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-              >參考答案</div>
+                class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1"
+              >提示</div>
+              <div
+                class="my-font-sm-400 form-control my-input-md my-input-md--on-dark my-bgcolor-light-gray rounded-2 w-100 min-w-0 px-3 py-2 my-color-gray-4"
+              >
+                {{ card.hint }}
+              </div>
             </div>
             <div
-              class="lh-base mb-0 quiz-card-reference-answer"
-              :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+              v-if="!questionHintOnly && hasReferenceAnswerText"
+              v-show="card.referenceAnswerVisible"
+              class="w-100 min-w-0 mt-2"
             >
               <div
-                v-if="referenceAnswerMarkdownHtml"
-                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                v-html="referenceAnswerMarkdownHtml"
-              />
-              <span
-                v-else
-                class="my-font-md-400 my-color-black text-break"
-              >{{ card.referenceAnswer }}</span>
+                class="d-flex justify-content-between align-items-center gap-2 w-100 min-w-0 mb-1"
+              >
+                <div
+                  class="my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                >參考答案</div>
+              </div>
+              <div
+                class="lh-base mb-0 quiz-card-reference-answer"
+                :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+              >
+                <div
+                  v-if="referenceAnswerMarkdownHtml"
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="referenceAnswerMarkdownHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black text-break"
+                >{{ card.referenceAnswer }}</span>
+              </div>
             </div>
-          </div>
+          </template>
         </template>
         <button
           v-else-if="!designUi && hideGradingPrompt && hasQuizBody && quizUserPromptSnapshotTrimmed !== ''"
@@ -583,7 +677,7 @@ const quizAnswerFieldDisabled = computed(
         </button>
       </div>
       <div
-        v-if="!(designUi && hasQuizBody) && (hasHintText || (!questionHintOnly && hasReferenceAnswerText))"
+        v-if="!(designUi && hasQuizBody) && !hintReferenceInModal && (hasHintText || (!questionHintOnly && hasReferenceAnswerText))"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
@@ -655,20 +749,46 @@ const quizAnswerFieldDisabled = computed(
       <!-- 答案、批改規則按鈕與批改結果同欄 gap-1，避免與上方題幹區 gap-4 拉開過遠 -->
       <div
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-1' : ''"
+        :class="designUi ? 'd-flex flex-column' : ''"
       >
       <div
         v-if="!questionHintOnly && hasQuizBody"
         class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
+        :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
-        <div class="d-flex justify-content-between align-items-baseline gap-2" :class="designUi ? '' : 'mb-1'">
+        <div
+          class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
+          :class="hintReferenceInModal ? 'align-items-end' : 'align-items-center'"
+        >
           <label
             :for="`quiz-answer-${card.id}`"
             :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >答案</label>
+          <div
+            v-if="hintReferenceInModal"
+            class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"
+          >
+            <button
+              v-if="hasHintText"
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+              aria-label="顯示提示"
+              @click="openHintRefModal('hint')"
+            >
+              顯示提示
+            </button>
+            <button
+              v-if="hasReferenceAnswerText"
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+              aria-label="顯示參考答案"
+              @click="openHintRefModal('reference')"
+            >
+              顯示參考答案
+            </button>
+          </div>
           <span
-            v-if="!readOnlyAnswer"
+            v-else-if="!readOnlyAnswer"
             :class="designUi ? 'my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0' : 'form-text my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0'"
           >{{ card.quiz_answer.length }} / 2000</span>
         </div>
@@ -698,7 +818,80 @@ const quizAnswerFieldDisabled = computed(
           >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
         </template>
         <div
-          v-if="!hideGradingPrompt"
+          v-if="!hideGradingPrompt && gradingPromptInModal"
+          class="d-flex flex-column w-100 min-w-0 mt-3"
+        >
+          <div
+            class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
+          >
+            <div
+              :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+            >
+              批改規則
+            </div>
+            <button
+              v-if="!cardMarkedForExam"
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
+              :disabled="gradeSubmitting"
+              aria-label="編輯批改規則"
+              @click="emit('open-grading-prompt-edit')"
+            >
+              編輯批改規則
+            </button>
+          </div>
+          <EnglishExamMarkdownEditor
+            :model-value="String(card.gradingPrompt ?? '')"
+            :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
+            preview-only
+            preview-design-dark
+          />
+          <div
+            v-if="showStartGradeButton || !cardMarkedForExam"
+            :class="
+              designUi
+                ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
+                : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
+            "
+          >
+            <button
+              v-if="!cardMarkedForExam"
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-2"
+              title="還原為上次載入或送出後的內容"
+              aria-label="重設批改規則"
+              :disabled="gradingPromptResetDisabled"
+              @click="emit('reset-grading-prompt')"
+            >
+              重設
+            </button>
+            <button
+              v-if="showRagGradeDbButton && showStartGradeButton"
+              type="button"
+              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+              title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
+              :disabled="ragGradeDbButtonDisabled"
+              :aria-busy="gradeSubmitting"
+              aria-label="開始批改"
+              @click="emit('confirm-grade-db', card)"
+            >
+              開始批改
+            </button>
+            <button
+              v-if="showStartGradeButton && !cardMarkedForExam"
+              type="button"
+              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+              :disabled="saveAndGradeButtonDisabled"
+              :aria-busy="gradeSubmitting"
+              aria-label="儲存並開始批改"
+              @click="emit('confirm-answer', card)"
+            >
+              儲存並開始批改
+            </button>
+          </div>
+        </div>
+        <div
+          v-else-if="!hideGradingPrompt"
           class="d-flex flex-column gap-0 w-100 min-w-0 mt-3 quiz-card-grading-prompt-editor"
         >
           <label

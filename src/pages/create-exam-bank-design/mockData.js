@@ -18,6 +18,13 @@ export const DESIGN_DEMO_FOLDER_NAMES = [
 
 const DESIGN_DEMO_UNIT_TYPES = [1, 2, 1, 3, 4, 1, 2, 1, 1, 2];
 
+export const DESIGN_MOCK_TRANSCRIPT_MD =
+  '## 示範逐字稿\n\nThis is **design-only** sample text loaded without calling the API.';
+
+/** 稿頁單元內容 Modal：MP3 示範用（不呼叫 API） */
+export const DESIGN_DEMO_MP3_SAMPLE_URL =
+  'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3';
+
 let nextDesignDemoQuizId = 1000;
 
 /** 組一筆 Rag_Quiz 示範列（欄位與 GET /rag/tab/units 對齊） */
@@ -206,6 +213,14 @@ export function buildDesignDemoUnits() {
     if (i === 1) {
       unit.transcription = '## 示範逐字稿\n\nChapter 02 文字單元示範內容。';
     }
+    if (i === 3) {
+      unit.transcription = DESIGN_MOCK_TRANSCRIPT_MD;
+      unit.mp3_file_name = 'demo_lecture.mp3';
+    }
+    if (i === 4) {
+      unit.transcription = '## 影片單元逐字稿\n\n示範 YouTube 單元逐字稿摘要。';
+      unit.youtube_url = 'https://www.youtube.com/watch?v=dQw4w9WgXcQ';
+    }
     return unit;
   });
 }
@@ -251,6 +266,3 @@ export const DESIGN_MOCK_QUIZ_GENERATE = {
   quiz_reference_answer: '示範參考答案。',
   quiz_name: '示範題型',
 };
-
-export const DESIGN_MOCK_TRANSCRIPT_MD =
-  '## 示範逐字稿\n\nThis is **design-only** sample text loaded without calling the API.';

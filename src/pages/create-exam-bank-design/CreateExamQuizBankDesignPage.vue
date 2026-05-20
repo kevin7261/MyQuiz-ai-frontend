@@ -82,7 +82,7 @@ import {
 import { useRagListDesign } from './composables/useRagListDesign.js';
 import { useRagTabState } from './composables/useRagTabState.js';
 import { usePackTasks } from './composables/usePackTasks.js';
-import { DESIGN_MOCK_UNITS } from './mockData.js';
+import { DESIGN_MOCK_UNITS, DESIGN_DEMO_MP3_SAMPLE_URL } from './mockData.js';
 import QuizCard from '../../components/QuizCard.vue';
 import QuizHistoryModal from '../../components/QuizHistoryModal.vue';
 import Design08OptionDropdown from '../../components/Design08OptionDropdown.vue';
@@ -1089,6 +1089,74 @@ const activeReadonlyPackUnitRow = computed(
   () => quizBankSettingReadonlyUnitRows.value[activePackUnitGi.value] ?? null,
 );
 
+/** 唯讀單元：由 detailSegments 彙整可開 Modal 的動作（逐字稿／語音／影片） */
+function contentActionsFromReadonlySegments(segments) {
+  /** @type {{ kind: 'transcript'|'audio'|'youtube', label: string, markdown?: string, ragTabId?: string, ragUnitId?: number, embedSrc?: string, pageUrl?: string }[]} */
+  const actions = [];
+  if (!Array.isArray(segments)) return actions;
+  for (const seg of segments) {
+    if (seg.kind === 'transcript_button' || seg.kind === 'markdown') {
+      actions.push({
+        kind: 'transcript',
+        label: '逐字稿',
+        markdown: String(seg.markdown ?? ''),
+      });
+    } else if (seg.kind === 'audio') {
+      actions.push({
+        kind: 'audio',
+        label: '語音',
+        ragTabId: seg.ragTabId,
+        ragUnitId: seg.ragUnitId,
+      });
+    } else if (seg.kind === 'youtube') {
+      actions.push({
+        kind: 'youtube',
+        label: '影片',
+        embedSrc: seg.embedSrc,
+        pageUrl: seg.pageUrl,
+      });
+    }
+  }
+  return actions;
+}
+
+const activeReadonlyPackUnitContentActions = computed(() => {
+  const row = activeReadonlyPackUnitRow.value;
+  if (!row) return [];
+  const fromSeg = contentActionsFromReadonlySegments(row.detailSegments ?? []);
+  if (fromSeg.length) return fromSeg;
+
+  const gi = activePackUnitGi.value;
+  const rawTab = currentState.value.unitTabOrder?.[gi];
+  if (!rawTab) return [];
+  const tab = tabWithResolvedTranscription(rawTab, gi, currentState.value, currentRagItem.value);
+  const ut = Number(tab.unitType ?? row.unitType ?? UNIT_TYPE_RAG);
+  const tr = String(tab.transcription ?? '').trim();
+  /** @type {ReturnType<typeof contentActionsFromReadonlySegments>} */
+  const actions = [];
+
+  if (ut === UNIT_TYPE_YOUTUBE) {
+    const pageUrl = String(tab.youtubeUrl ?? '').trim();
+    actions.push({
+      kind: 'youtube',
+      label: '影片',
+      embedSrc: youtubeEmbedUrlFromInput(pageUrl),
+      pageUrl,
+    });
+  } else if (ut === UNIT_TYPE_MP3) {
+    actions.push({
+      kind: 'audio',
+      label: '語音',
+      ragTabId: String(tab.ragTabId ?? ''),
+      ragUnitId: tab.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0,
+    });
+  }
+  if (tr) {
+    actions.push({ kind: 'transcript', label: '逐字稿', markdown: tr });
+  }
+  return actions;
+});
+
 /** 左側單元列表：編輯中／唯讀共用 */
 const packUnitListItemsForNav = computed(() =>
   hasBuiltRagSummary.value ? readonlyPackUnitListItems.value : packUnitListItems.value,
@@ -2067,11 +2135,22 @@ const activeUnitTabItem = computed(() => {
   return tabs.find((t) => t.id === activeId) ?? null;
 });
 
-/** 逐字稿 Modal：唯讀「設定單元」列傳入全文時覆寫；否則用目前選定單元之 transcription */
-const ragUnitTranscriptModalMarkdownOverride = ref(/** @type {string | null} */ (null));
+/** 單元內容 Modal（逐字稿／語音／影片）：與建立測驗題庫頁唯讀單元預覽對齊，改以按鈕開啟 */
+const ragUnitContentModalKind = ref(/** @type {'transcript'|'audio'|'youtube'} */ ('transcript'));
+const ragUnitContentModalMarkdownOverride = ref(/** @type {string | null} */ (null));
+const ragUnitContentModalYoutube = ref({ embedSrc: '', pageUrl: '' });
 
-const ragUnitTranscriptModalBodyHtml = computed(() => {
-  const override = ragUnitTranscriptModalMarkdownOverride.value;
+const ragUnitContentModalOpen = ref(false);
+
+const ragUnitContentModalTitle = computed(() => {
+  const k = ragUnitContentModalKind.value;
+  if (k === 'audio') return '語音';
+  if (k === 'youtube') return '影片';
+  return '逐字稿';
+});
+
+const ragUnitContentModalBodyHtml = computed(() => {
+  const override = ragUnitContentModalMarkdownOverride.value;
   if (override != null) {
     return renderMarkdownToSafeHtml(String(override));
   }
@@ -2080,23 +2159,87 @@ const ragUnitTranscriptModalBodyHtml = computed(() => {
   return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
 });
 
-const ragUnitTranscriptModalOpen = ref(false);
-
-/** @param {unknown} [markdownOverride] 僅限 string：設定單元唯讀列傳入全文；來自 `@click` 時忽略事件物件 */
-function openRagUnitTranscriptModal(markdownOverride) {
-  const isStr = typeof markdownOverride === 'string';
-  const s = isStr ? String(markdownOverride).trim() : '';
-  if (isStr && s !== '') {
-    ragUnitTranscriptModalMarkdownOverride.value = s;
+/**
+ * @param {{ kind: 'transcript'|'audio'|'youtube', markdown?: string, ragTabId?: string, ragUnitId?: number, embedSrc?: string, pageUrl?: string }} action
+ */
+function openRagUnitContentModal(action) {
+  if (!action || typeof action !== 'object' || !action.kind) return;
+  ragUnitContentModalKind.value = action.kind;
+  if (action.kind === 'transcript') {
+    const s = String(action.markdown ?? '').trim();
+    ragUnitContentModalMarkdownOverride.value = s !== '' ? s : null;
   } else {
-    ragUnitTranscriptModalMarkdownOverride.value = null;
+    ragUnitContentModalMarkdownOverride.value = null;
   }
-  ragUnitTranscriptModalOpen.value = true;
+  if (action.kind === 'youtube') {
+    ragUnitContentModalYoutube.value = {
+      embedSrc: String(action.embedSrc ?? ''),
+      pageUrl: String(action.pageUrl ?? ''),
+    };
+  }
+  ragUnitContentModalOpen.value = true;
 }
 
-function closeRagUnitTranscriptModal() {
-  ragUnitTranscriptModalOpen.value = false;
-  ragUnitTranscriptModalMarkdownOverride.value = null;
+function closeRagUnitContentModal() {
+  ragUnitContentModalOpen.value = false;
+  ragUnitContentModalKind.value = 'transcript';
+  ragUnitContentModalMarkdownOverride.value = null;
+  ragUnitContentModalYoutube.value = { embedSrc: '', pageUrl: '' };
+}
+
+/** 出題／批改規則：列表區黑底白字預覽，按鈕開 Modal 編輯 */
+const bankPromptEditModalOpen = ref(false);
+const bankPromptEditModalKind = ref(/** @type {'quiz'|'grading'|''} */ (''));
+const bankPromptEditModalDraft = ref('');
+
+const bankPromptEditModalTitle = computed(() =>
+  bankPromptEditModalKind.value === 'grading' ? '批改規則' : '出題規則',
+);
+
+const bankPromptEditModalSavingDisabled = computed(() => {
+  if (bankPromptEditModalKind.value === 'quiz') {
+    return !!getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading;
+  }
+  const card = activeUnitQuizCard.value;
+  return (
+    gradingSubmittingCardId.value != null
+    && card
+    && String(gradingSubmittingCardId.value) === String(card.id)
+  );
+});
+
+function openBankQuizUserPromptEditModal() {
+  const card = activeUnitQuizCard.value;
+  if (!card || isRagQuizMarkedForExam(card)) return;
+  bankPromptEditModalKind.value = 'quiz';
+  bankPromptEditModalDraft.value = String(card.quizUserPromptText ?? '');
+  bankPromptEditModalOpen.value = true;
+}
+
+function openBankGradingPromptEditModal() {
+  const card = activeUnitQuizCard.value;
+  if (!card || isRagQuizMarkedForExam(card)) return;
+  bankPromptEditModalKind.value = 'grading';
+  bankPromptEditModalDraft.value = String(card.gradingPrompt ?? '');
+  bankPromptEditModalOpen.value = true;
+}
+
+function closeBankPromptEditModal() {
+  bankPromptEditModalOpen.value = false;
+  bankPromptEditModalKind.value = '';
+  bankPromptEditModalDraft.value = '';
+}
+
+function applyBankPromptEditModal() {
+  const card = activeUnitQuizCard.value;
+  if (card) {
+    if (bankPromptEditModalKind.value === 'quiz') {
+      card.quizUserPromptText = bankPromptEditModalDraft.value;
+    } else if (bankPromptEditModalKind.value === 'grading') {
+      card.gradingPrompt = bankPromptEditModalDraft.value;
+    }
+  }
+  closeBankPromptEditModal();
 }
 
 /** 之前的出題 Modal（目前題型 sub-tab） */
@@ -2358,11 +2501,8 @@ function selectUnitQuizType(qi) {
   scrollActiveUnitQuizTypeTabIntoView();
 }
 
-/** user_type 1／2／234 才顯示「設定單元」灰塊內單元預覽（依 unit_type）；其餘僅見欄位摘要。與個人設定之 AI／LLM 服務 API 金鑰無關（僅角色權限）。 */
-const canSeeRagUnitSourceFilename = computed(() => {
-  const t = Number(authStore.user?.user_type);
-  return t === 1 || t === 2 || t === 234;
-});
+/** 稿頁一律顯示單元內容按鈕（逐字稿／語音／影片）；正式頁 user_type 1／2／234 才顯示預覽 */
+const canSeeRagUnitSourceFilename = computed(() => true);
 
 /** quiz_content（card.quiz）為空與否：出題規則欄皆為編輯器；空白列顯示「產生題目」等仍用此判斷（不依賴 showGenerateForm／草稿對齊；多筆各自綁 quizUserPromptText） */
 function quizRowQuizEmpty(card) {
@@ -2734,7 +2874,6 @@ function buildQuizBankReadonlyDetailSegments(tab) {
   const ut = Number(tab?.unitType ?? UNIT_TYPE_RAG);
   const trRaw = String(tab?.transcription ?? '').trim();
   const trLen = trRaw.length;
-  const personId = getPersonId(authStore);
   /** @type {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', ragTabId: string, ragUnitId: number } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]} */
   const segments = [];
 
@@ -2750,8 +2889,10 @@ function buildQuizBankReadonlyDetailSegments(tab) {
   if (ut === UNIT_TYPE_MP3) {
     const rag_tab_id = String(tab.ragTabId ?? '').trim();
     const ru = tab.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
-    if (personId && rag_tab_id && Number.isFinite(ru) && ru > 0) {
+    if (rag_tab_id && Number.isFinite(ru) && ru > 0) {
       segments.push({ kind: 'audio', ragTabId: rag_tab_id, ragUnitId: ru });
+    } else {
+      segments.push({ kind: 'audio', ragTabId: rag_tab_id || 'design', ragUnitId: ru > 0 ? ru : 1 });
     }
     if (trLen) segments.push({ kind: 'transcript_button', markdown: trRaw });
     return segments;
@@ -2764,10 +2905,6 @@ function buildQuizBankReadonlyDetailSegments(tab) {
     return segments;
   }
   return segments;
-}
-
-function quizBankReadonlyMarkdownHtml(md) {
-  return renderMarkdownToSafeHtml(md != null ? String(md) : '');
 }
 
 /** 唯讀「設定單元」逐字稿：API 省略全文時依本頁索引補 pack 稿／最近一次 build outputs／列表 rag.outputs */
@@ -4695,10 +4832,6 @@ async function generateQuiz(slotIndex) {
   }
 }
 
-function toggleHint(item) {
-  item.hintVisible = !item.hintVisible;
-}
-
 /** 評分（後端已儲存 answer_user_prompt_text）：POST /rag/tab/unit/quiz/llm-grade-db；body 不含 answer_user_prompt_text。按鈕啟停用同「產生題目」；送出時作答仍須非空（否則靜默 return）。 */
 async function confirmAnswerGradeDb(item) {
   if (!item.quiz_answer.trim()) return;
@@ -4807,12 +4940,12 @@ async function confirmAnswer(item) {
     />
     <Teleport to="body">
       <div
-        v-if="ragUnitTranscriptModalOpen"
+        v-if="ragUnitContentModalOpen"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="rag-unit-transcript-modal-title"
+        aria-labelledby="rag-unit-content-modal-title"
       >
         <div
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
@@ -4820,24 +4953,113 @@ async function confirmAnswer(item) {
         >
           <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
-              <h5 id="rag-unit-transcript-modal-title" class="modal-title my-color-black">逐字稿</h5>
+              <h5 id="rag-unit-content-modal-title" class="modal-title my-color-black">{{ ragUnitContentModalTitle }}</h5>
               <button
                 type="button"
                 class="btn-close"
                 aria-label="關閉"
-                @click="closeRagUnitTranscriptModal"
+                @click="closeRagUnitContentModal"
               />
             </div>
             <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
-              <div
-                v-if="ragUnitTranscriptModalBodyHtml"
-                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                v-html="ragUnitTranscriptModalBodyHtml"
+              <template v-if="ragUnitContentModalKind === 'transcript'">
+                <div
+                  v-if="ragUnitContentModalBodyHtml"
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="ragUnitContentModalBodyHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black"
+                >—</span>
+              </template>
+              <template v-else-if="ragUnitContentModalKind === 'audio'">
+                <audio
+                  class="w-100"
+                  controls
+                  :src="DESIGN_DEMO_MP3_SAMPLE_URL"
+                />
+                <p class="my-font-sm-400 my-color-gray-4 mb-0 mt-2">
+                  （稿）示範音訊；正式環境由題庫單元 API 載入。
+                </p>
+              </template>
+              <template v-else-if="ragUnitContentModalKind === 'youtube'">
+                <div
+                  v-if="ragUnitContentModalYoutube.embedSrc"
+                  class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                >
+                  <iframe
+                    class="border-0"
+                    title="YouTube 影片"
+                    :src="ragUnitContentModalYoutube.embedSrc"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen
+                  />
+                </div>
+                <span
+                  v-else-if="ragUnitContentModalYoutube.pageUrl"
+                  class="my-font-md-400 my-color-black text-break"
+                >{{ ragUnitContentModalYoutube.pageUrl }}</span>
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black"
+                >—</span>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="bankPromptEditModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bank-prompt-edit-modal-title"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="bank-prompt-edit-modal-title"
+                class="modal-title my-color-black"
+              >{{ bankPromptEditModalTitle }}</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeBankPromptEditModal"
               />
-              <span
-                v-else
-                class="my-font-md-400 my-color-black"
-              >—</span>
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <EnglishExamMarkdownEditor
+                v-model="bankPromptEditModalDraft"
+                :textarea-id="`bank-prompt-edit-${bankPromptEditModalKind}-${activeUnitSlotIndex}`"
+                :disabled="bankPromptEditModalSavingDisabled"
+              />
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex justify-content-end flex-wrap gap-2">
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                @click="closeBankPromptEditModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-3 py-2"
+                :disabled="bankPromptEditModalSavingDisabled"
+                @click="applyBankPromptEditModal"
+              >
+                確定
+              </button>
             </div>
           </div>
         </div>
@@ -5102,7 +5324,7 @@ async function confirmAnswer(item) {
             <div class="my-pack-unit-settings-body">
           <!-- 課程：可拖曳至設定單元 -->
           <div v-if="secondFoldersFull.length" class="my-pack-unit-field">
-            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">資料夾</div>
+            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">資料夾</div>
             <div
               class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
               role="group"
@@ -5254,7 +5476,7 @@ async function confirmAnswer(item) {
                 class="my-rag-unit-panel-block d-flex flex-column gap-2"
               >
                   <div class="mb-2 d-flex flex-column gap-0 w-100 min-w-0">
-                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
                       資料夾組合
                     </div>
                     <div
@@ -5292,7 +5514,7 @@ async function confirmAnswer(item) {
                   >
                     <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
                       <label
-                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1"
                         :for="'rag-pack-unit-name-' + activePackUnitGi"
                       >單元名稱</label>
                       <input
@@ -5311,7 +5533,7 @@ async function confirmAnswer(item) {
                       class="d-flex flex-column gap-0 min-w-0"
                       style="flex: 1 1 0;"
                     >
-                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
                         類型
                       </div>
                       <Design08OptionDropdown
@@ -5331,7 +5553,7 @@ async function confirmAnswer(item) {
                   >
                     <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
                       <label
-                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1"
                         :for="'rag-pack-chunk-size-' + activePackUnitGi"
                       >分段長度（字元）</label>
                       <input
@@ -5349,7 +5571,7 @@ async function confirmAnswer(item) {
                     </div>
                     <div class="d-flex flex-column gap-0 min-w-0" style="flex: 1 1 0;">
                       <label
-                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1"
                         :for="'rag-pack-chunk-overlap-' + activePackUnitGi"
                       >分段重疊（字元）</label>
                       <input
@@ -5503,7 +5725,7 @@ async function confirmAnswer(item) {
                 class="d-flex flex-column gap-0 min-w-0"
                 style="flex: 1 1 0;"
               >
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
                   資料夾組合
                 </div>
                 <div
@@ -5529,7 +5751,7 @@ async function confirmAnswer(item) {
                 class="d-flex flex-column gap-0 min-w-0"
                 style="flex: 1 1 0;"
               >
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
                   來源檔
                 </div>
                 <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
@@ -5547,7 +5769,7 @@ async function confirmAnswer(item) {
                 class="d-flex flex-column gap-0 min-w-0"
                 style="flex: 1 1 0;"
               >
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
                   {{ och.label }}
                 </div>
                 <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
@@ -5555,97 +5777,43 @@ async function confirmAnswer(item) {
                 </div>
               </div>
             </div>
-            <div
-              v-if="activeReadonlyPackUnitRow.detailSegments.length && canSeeRagUnitSourceFilename"
-              class="w-100 min-w-0"
+            <template
+              v-for="(seg, li) in activeReadonlyPackUnitRow.detailSegments"
+              :key="activeReadonlyPackUnitRow.key + '-seg-' + li"
             >
-              <template
-                v-for="(seg, li) in activeReadonlyPackUnitRow.detailSegments"
-                :key="activeReadonlyPackUnitRow.key + '-seg-' + li"
+              <div
+                v-if="seg.kind === 'text' && canSeeRagUnitSourceFilename"
+                class="my-font-sm-400 lh-base my-color-black w-100 min-w-0"
+                :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
               >
-                <div
-                  v-if="seg.kind === 'text'"
-                  class="my-font-sm-400 lh-base my-color-black"
-                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                >
-                  {{ seg.text }}
+                {{ seg.text }}
+              </div>
+              <div
+                v-else-if="seg.kind === 'field' && canSeeRagUnitSourceFilename"
+                class="d-flex flex-column gap-0 w-100 min-w-0"
+                :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+              >
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
+                  {{ seg.label }}
                 </div>
-                <div
-                  v-else-if="seg.kind === 'field'"
-                  class="d-flex flex-column gap-0 w-100 min-w-0"
-                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                >
-                  <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                    {{ seg.label }}
-                  </div>
-                  <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                    {{ seg.value }}
-                  </div>
+                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                  {{ seg.value }}
                 </div>
-                <div
-                  v-else-if="seg.kind === 'markdown'"
-                  class="my-rag-unit-type-text-scroll min-w-0"
-                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                  role="region"
-                  aria-label="單元逐字稿"
-                >
-                  <div
-                    class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                    v-html="quizBankReadonlyMarkdownHtml(seg.markdown)"
-                  />
-                </div>
-                <div
-                  v-else-if="seg.kind === 'audio'"
-                  class="col-12 min-w-0"
-                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                  style="padding: 0;"
-                >
-                  <RagTabUnitMp3Player
-                    :rag-tab-id="seg.ragTabId"
-                    :rag-unit-id="seg.ragUnitId"
-                  />
-                </div>
-                <div
-                  v-else-if="seg.kind === 'youtube'"
-                  class="d-flex flex-column gap-2 min-w-0"
-                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                >
-                  <div
-                    v-if="seg.embedSrc"
-                    class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                  >
-                    <iframe
-                      class="border-0"
-                      title="YouTube 影片"
-                      :src="seg.embedSrc"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                      allowfullscreen
-                    />
-                  </div>
-                  <span
-                    v-else-if="seg.pageUrl"
-                    class="my-font-md-400 my-color-black text-break"
-                  >{{ seg.pageUrl }}</span>
-                  <span
-                    v-else
-                    class="my-font-md-400 my-color-black text-break"
-                  >—</span>
-                </div>
-                <div
-                  v-else-if="seg.kind === 'transcript_button'"
-                  class="d-flex justify-content-center w-100 min-w-0 pt-1"
-                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                    @click="openRagUnitTranscriptModal(seg.markdown)"
-                  >
-                    逐字稿
-                  </button>
-                </div>
-              </template>
+              </div>
+            </template>
+            <div
+              v-if="activeReadonlyPackUnitContentActions.length"
+              class="d-flex flex-wrap gap-2 justify-content-start w-100 min-w-0 pt-2"
+            >
+              <button
+                v-for="(act, ai) in activeReadonlyPackUnitContentActions"
+                :key="activeReadonlyPackUnitRow.key + '-act-' + ai"
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-black flex-shrink-0 px-3 py-1"
+                @click="openRagUnitContentModal(act)"
+              >
+                {{ act.label }}
+              </button>
             </div>
             </div>
           </template>
@@ -5872,44 +6040,33 @@ async function confirmAnswer(item) {
                       追問出題
                     </button>
                   </div>
-                  <div class="d-flex flex-column gap-0 min-w-0">
-                    <label
-                      class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                      :for="
-                        isRagQuizMarkedForExam(activeUnitQuizCard)
-                          ? undefined
-                          : `rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`
-                      "
+                  <div class="d-flex flex-column min-w-0">
+                    <div
+                      class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
                     >
-                      出題規則
-                    </label>
-                    <div class="my-rag-unit-quiz-prompt-editor min-w-0">
-                      <EnglishExamMarkdownEditor
+                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                        出題規則
+                      </div>
+                      <button
                         v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                        v-model="activeUnitQuizCard.quizUserPromptText"
-                        :preview-only="false"
-                        :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                        type="button"
+                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
+                        aria-label="編輯出題規則"
                         :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                      />
-                      <EnglishExamMarkdownEditor
-                        v-else
-                        :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
-                        preview-only
-                        :preview-design-dark="String(activeUnitQuizCard.quizUserPromptText ?? '').trim() !== ''"
-                        :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                      />
+                        @click="openBankQuizUserPromptEditModal"
+                      >
+                        編輯出題規則
+                      </button>
                     </div>
+                    <EnglishExamMarkdownEditor
+                      :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
+                      preview-only
+                      preview-design-dark
+                      :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                    />
                   </div>
                 </div>
                 <div class="d-flex flex-column align-items-center gap-2 w-100">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                    aria-label="查看之前的出題"
-                    @click="openBankQuizHistoryModal"
-                  >
-                    之前的出題
-                  </button>
                   <div
                     class="d-flex justify-content-center align-items-center flex-wrap gap-3"
                   >
@@ -5970,15 +6127,17 @@ async function confirmAnswer(item) {
                     String(gradingSubmittingCardId) === String(activeUnitQuizCard.id)
                   "
                   design-ui
+                  grading-prompt-in-modal
+                  hint-reference-in-modal
+                  show-bank-quiz-history-button
                   show-rag-quiz-for-exam-action
                   show-rag-grade-db-button
                   hide-rag-quiz-for-exam-toolbar
-                  @toggle-hint="toggleHint"
-                  @toggle-reference-answer="(item) => { item.referenceAnswerVisible = !item.referenceAnswerVisible }"
                   @confirm-answer="confirmAnswer"
                   @confirm-grade-db="confirmAnswerGradeDb"
                   @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
-                  @update:grading_prompt="(val) => { activeUnitQuizCard.gradingPrompt = val }"
+                  @open-grading-prompt-edit="openBankGradingPromptEditModal"
+                  @open-quiz-history="openBankQuizHistoryModal"
                   @reset-grading-prompt="resetUnitQuizGradingPrompt(activeUnitQuizCard)"
                 />
                 <div class="d-flex flex-column align-items-center gap-2 w-100 min-w-0 pt-1">
