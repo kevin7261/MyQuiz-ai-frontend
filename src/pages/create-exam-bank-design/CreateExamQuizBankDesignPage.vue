@@ -6172,16 +6172,16 @@ async function confirmAnswer(item) {
                     追問出題
                   </button>
                 </div>
-                <!-- 子區塊：題目；外層 pe-5＝灰底留白 -->
+                <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白 -->
                 <div class="my-design-quiz-sub-block-outer pe-5">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4 d-flex flex-column gap-3"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2 d-flex flex-column gap-3"
                   >
-                    <div class="d-flex flex-column min-w-0">
-                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
+                    <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
+                      <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
                         出題規則
                       </div>
-                      <div class="min-w-0 w-100">
+                      <div class="my-design-quiz-field-inset-body min-w-0 w-100">
                         <EnglishExamMarkdownEditor
                           :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
                           preview-only
@@ -6239,12 +6239,12 @@ async function confirmAnswer(item) {
                     />
                   </div>
                 </div>
-                <!-- 子區塊：答案；外層 ps-5＝灰底留白 -->
+                <!-- 子區塊：答案；外層 ps-5＝灰底上、白底左側留白 -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer ps-5"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2">
                     <QuizCard
                       v-bind="designUnitQuizCardBind"
                       create-exam-bank-design-layout
@@ -6256,12 +6256,12 @@ async function confirmAnswer(item) {
                     />
                   </div>
                 </div>
-                <!-- 子區塊：批改；外層 pe-5＝灰底留白 -->
+                <!-- 子區塊：批改；外層 pe-5＝灰底上、白底右側留白 -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer pe-5"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2">
                     <QuizCard
                       v-bind="designUnitQuizCardBind"
                       create-exam-bank-design-layout
@@ -6536,13 +6536,32 @@ async function confirmAnswer(item) {
   width: 100%;
   min-width: 0;
 }
-/* 題型區三子區塊：outer＝灰底上 pe/ps；sub-block＝白底圓角面板（寬度撐滿父層） */
+/* 題型區三子區塊：outer＝灰底上 pe-5／ps-5（題目、批改右留白；答案左留白）；sub-block＝白底圓角面板 */
 .my-design-quiz-sub-block-outer,
 .my-design-quiz-sub-block {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+/* 稿頁三子區塊：欄位標題在框內上方（出題規則／題目／答案／批改規則／批改結果） */
+/* 灰框欄位：內容 p-3（標題＋黑底預覽／輸入） */
+.my-design-quiz-field-inset,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-gray-2);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-white);
+}
+.my-design-quiz-field-inset-label,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
+  line-height: 1.35;
+}
+.my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
+  margin-bottom: 0;
 }
 /* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕（僅稿頁；含 QuizCard 批改子區塊內按鈕） */
 .btn.my-design-quiz-action-edit-btn,

@@ -318,6 +318,11 @@ const showDesignLayoutGradingToolbar = computed(
   () => isDesignSubBlockFragment.value && props.designSubBlock === 'grading',
 );
 
+/** create-exam-bank_design 子區塊：欄位標題寫在輸入框內（非框外 label） */
+const useDesignFieldLabelInset = computed(
+  () => props.createExamBankDesignLayout && isDesignSubBlockFragment.value,
+);
+
 const showDesignSubBlockQuestion = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'question',
 );
@@ -602,37 +607,61 @@ const quizAnswerFieldDisabled = computed(
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
-        <div
-          class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
-          :class="designUi && showBankQuizHistoryInStemHeader ? 'align-items-end' : 'align-items-center'"
-        >
+        <template v-if="useDesignFieldLabelInset">
+          <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
+            <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
+              題目
+            </div>
+            <div class="my-design-quiz-field-inset-body min-w-0">
+              <div
+                class="lh-base quiz-card-quiz-stem form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 mb-0"
+              >
+                <div
+                  v-if="quizMarkdownHtml"
+                  class="my-markdown-rendered my-font-md-400 text-break"
+                  v-html="quizMarkdownHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 text-break"
+                >{{ card.quiz }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+        <template v-else>
           <div
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >題目</div>
-          <button
-            v-if="showBankQuizHistoryInStemHeader"
-            type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
-            aria-label="查看先前出題"
-            @click="emit('open-quiz-history')"
+            class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
+            :class="designUi && showBankQuizHistoryInStemHeader ? 'align-items-end' : 'align-items-center'"
           >
-            先前出題
-          </button>
-        </div>
-        <div
-          class="lh-base mb-0 quiz-card-quiz-stem"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-        >
+            <div
+              :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+            >題目</div>
+            <button
+              v-if="showBankQuizHistoryInStemHeader"
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
+              aria-label="查看先前出題"
+              @click="emit('open-quiz-history')"
+            >
+              先前出題
+            </button>
+          </div>
           <div
-            v-if="quizMarkdownHtml"
-            class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-            v-html="quizMarkdownHtml"
-          />
-          <span
-            v-else
-            class="my-font-md-400 my-color-black text-break"
-          >{{ card.quiz }}</span>
-        </div>
+            class="lh-base mb-0 quiz-card-quiz-stem"
+            :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+          >
+            <div
+              v-if="quizMarkdownHtml"
+              class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+              v-html="quizMarkdownHtml"
+            />
+            <span
+              v-else
+              class="my-font-md-400 my-color-black text-break"
+            >{{ card.quiz }}</span>
+          </div>
+        </template>
         <template v-if="designUi && hasQuizBody">
           <div
             v-if="showDesignStemToolbarRow"
@@ -840,62 +869,124 @@ const quizAnswerFieldDisabled = computed(
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
-        <div
-          class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
-          :class="hintReferenceInModal ? 'align-items-end' : 'align-items-center'"
-        >
-          <label
-            :for="`quiz-answer-${card.id}`"
-            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-          >答案</label>
-          <div
-            v-if="hintReferenceInModal"
-            class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"
-          >
-            <button
-              v-if="hasHintText"
-              type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-              title="提示"
-              aria-label="提示"
-              @click="openHintRefModal('hint')"
+        <template v-if="useDesignFieldLabelInset">
+          <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
+            <div
+              class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0"
             >
-              提示
-            </button>
-            <button
-              v-if="hasReferenceAnswerText"
-              type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-              title="參考答案"
-              aria-label="參考答案"
-              @click="openHintRefModal('reference')"
-            >
-              參考答案
-            </button>
+              <label
+                :for="`quiz-answer-${card.id}`"
+                class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1 mb-0"
+              >答案</label>
+              <div
+                v-if="hintReferenceInModal"
+                class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"
+              >
+                <button
+                  v-if="hasHintText"
+                  type="button"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                  title="提示"
+                  aria-label="提示"
+                  @click="openHintRefModal('hint')"
+                >
+                  提示
+                </button>
+                <button
+                  v-if="hasReferenceAnswerText"
+                  type="button"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                  title="參考答案"
+                  aria-label="參考答案"
+                  @click="openHintRefModal('reference')"
+                >
+                  參考答案
+                </button>
+              </div>
+              <span
+                v-else-if="!readOnlyAnswer"
+                class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0"
+              >{{ card.quiz_answer.length }} / 2000</span>
+            </div>
+            <div class="my-design-quiz-field-inset-body min-w-0">
+              <template v-if="readOnlyAnswer">
+                <div
+                  :id="`quiz-answer-${card.id}`"
+                  class="my-font-sm-400 my-font-md-400 my-color-black mb-0"
+                >{{ card.quiz_answer }}</div>
+              </template>
+              <textarea
+                v-else
+                :id="`quiz-answer-${card.id}`"
+                :value="card.quiz_answer"
+                class="form-control my-input-md my-input-md--on-dark border-0 rounded-0 w-100 min-w-0 px-0 py-0 shadow-none"
+                :disabled="quizAnswerFieldDisabled"
+                @input="emit('update:quiz_answer', $event.target.value)"
+                rows="4"
+                placeholder=""
+                maxlength="2000"
+              />
+            </div>
           </div>
-          <span
-            v-else-if="!readOnlyAnswer"
-            :class="designUi ? 'my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0' : 'form-text my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0'"
-          >{{ card.quiz_answer.length }} / 2000</span>
-        </div>
-        <template v-if="readOnlyAnswer">
-          <div
-            :id="`quiz-answer-${card.id}`"
-            class="my-font-sm-400 mb-0"
-            :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-          >{{ card.quiz_answer }}</div>
         </template>
         <template v-else>
-          <textarea
-            :id="`quiz-answer-${card.id}`"
-            :value="card.quiz_answer"
-            class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
-            :disabled="quizAnswerFieldDisabled"
-            @input="emit('update:quiz_answer', $event.target.value)"
-            rows="4"
-            placeholder="請輸入您的答案..."
-            maxlength="2000"
-          />
+          <div
+            class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
+            :class="hintReferenceInModal ? 'align-items-end' : 'align-items-center'"
+          >
+            <label
+              :for="`quiz-answer-${card.id}`"
+              :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+            >答案</label>
+            <div
+              v-if="hintReferenceInModal"
+              class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"
+            >
+              <button
+                v-if="hasHintText"
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                title="提示"
+                aria-label="提示"
+                @click="openHintRefModal('hint')"
+              >
+                提示
+              </button>
+              <button
+                v-if="hasReferenceAnswerText"
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                title="參考答案"
+                aria-label="參考答案"
+                @click="openHintRefModal('reference')"
+              >
+                參考答案
+              </button>
+            </div>
+            <span
+              v-else-if="!readOnlyAnswer"
+              :class="designUi ? 'my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0' : 'form-text my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0'"
+            >{{ card.quiz_answer.length }} / 2000</span>
+          </div>
+          <template v-if="readOnlyAnswer">
+            <div
+              :id="`quiz-answer-${card.id}`"
+              class="my-font-sm-400 mb-0"
+              :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+            >{{ card.quiz_answer }}</div>
+          </template>
+          <template v-else>
+            <textarea
+              :id="`quiz-answer-${card.id}`"
+              :value="card.quiz_answer"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
+              :disabled="quizAnswerFieldDisabled"
+              @input="emit('update:quiz_answer', $event.target.value)"
+              rows="4"
+              placeholder="請輸入您的答案..."
+              maxlength="2000"
+            />
+          </template>
         </template>
         <template v-if="!readOnlyAnswer">
           <div
@@ -917,40 +1008,57 @@ const quizAnswerFieldDisabled = computed(
           class="d-flex flex-column w-100 min-w-0"
           :class="isDesignSubBlockFragment ? '' : 'mt-3'"
         >
-          <div
-            v-if="!showDesignLayoutGradingToolbar && !cardMarkedForExam"
-            class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
-          >
+          <template v-if="useDesignFieldLabelInset">
+            <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
+              <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
+                批改規則
+              </div>
+              <div class="my-design-quiz-field-inset-body min-w-0 w-100">
+                <EnglishExamMarkdownEditor
+                  :model-value="String(card.gradingPrompt ?? '')"
+                  :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
+                  preview-only
+                  preview-design-dark
+                />
+              </div>
+            </div>
+          </template>
+          <template v-else>
             <div
-              :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+              v-if="!showDesignLayoutGradingToolbar && !cardMarkedForExam"
+              class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
+            >
+              <div
+                :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+              >
+                批改規則
+              </div>
+              <button
+                type="button"
+                class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 ms-auto"
+                title="編輯批改規則"
+                aria-label="編輯批改規則"
+                :disabled="gradeSubmitting"
+                @click="emit('open-grading-prompt-edit')"
+              >
+                <i class="fa-solid fa-pen" aria-hidden="true" />
+              </button>
+            </div>
+            <div
+              v-else
+              :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1' : 'form-label my-font-sm-600 mb-1 my-color-gray-1'"
             >
               批改規則
             </div>
-            <button
-              type="button"
-              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 ms-auto"
-              title="編輯批改規則"
-              aria-label="編輯批改規則"
-              :disabled="gradeSubmitting"
-              @click="emit('open-grading-prompt-edit')"
-            >
-              <i class="fa-solid fa-pen" aria-hidden="true" />
-            </button>
-          </div>
-          <div
-            v-else
-            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1' : 'form-label my-font-sm-600 mb-1 my-color-gray-1'"
-          >
-            批改規則
-          </div>
-          <div class="min-w-0 w-100">
-            <EnglishExamMarkdownEditor
-              :model-value="String(card.gradingPrompt ?? '')"
-              :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
-              preview-only
-              preview-design-dark
-            />
-          </div>
+            <div class="min-w-0 w-100">
+              <EnglishExamMarkdownEditor
+                :model-value="String(card.gradingPrompt ?? '')"
+                :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
+                preview-only
+                preview-design-dark
+              />
+            </div>
+          </template>
           <div
             v-if="showDesignLayoutGradingToolbar || showStartGradeButton || !cardMarkedForExam"
             :class="
@@ -1086,14 +1194,29 @@ const quizAnswerFieldDisabled = computed(
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
-        <div
-          :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-        >批改結果</div>
-        <div
-          class="my-font-sm-400"
-          style="white-space: pre-wrap;"
-          :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-        >{{ gradingResultDisplay }}</div>
+        <template v-if="useDesignFieldLabelInset">
+          <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
+            <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
+              批改結果
+            </div>
+            <div class="my-design-quiz-field-inset-body min-w-0">
+              <div
+                class="my-font-sm-400 form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 mb-0"
+                style="white-space: pre-wrap;"
+              >{{ gradingResultDisplay }}</div>
+            </div>
+          </div>
+        </template>
+        <template v-else>
+          <div
+            :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+          >批改結果</div>
+          <div
+            class="my-font-sm-400"
+            style="white-space: pre-wrap;"
+            :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+          >{{ gradingResultDisplay }}</div>
+        </template>
         <div
           v-if="showRagQuizForExamToolbar"
           class="w-100 min-w-0 d-flex flex-column align-items-center gap-2 mt-3"
