@@ -6169,14 +6169,14 @@ async function confirmAnswer(item) {
                   <div
                     class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 d-flex flex-column"
                   >
-                    <div class="my-design-quiz-question-prompt-wrap px-2 pt-2 pb-0 w-100 min-w-0">
+                    <div class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0">
                       <section
                         class="my-design-quiz-question-prompt-block w-100 min-w-0"
                         aria-label="出題規則"
                       >
                       <header class="my-design-quiz-question-prompt-block__head">
                         <div
-                          class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                          class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-3"
                         >
                           <h3
                             class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0"
@@ -6210,7 +6210,7 @@ async function confirmAnswer(item) {
                       </section>
                     </div>
                     <div
-                      class="d-flex justify-content-start align-items-center flex-wrap gap-2 p-2"
+                      class="d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
                     >
                       <button
                         type="button"
@@ -6229,7 +6229,7 @@ async function confirmAnswer(item) {
                     </div>
                     <div
                       v-if="activeUnitQuizHasGeneratedBody"
-                      class="w-100 min-w-0 pt-2"
+                      class="w-100 min-w-0"
                     >
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
