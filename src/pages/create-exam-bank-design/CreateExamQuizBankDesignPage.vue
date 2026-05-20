@@ -9,7 +9,7 @@
  * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
  * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id、course_id）
  * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；course_id、unit_list、unit_types、transcriptions〔與逗號分段同序〕、rag_chunk_sizes／rag_chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
- * - 設定單元：GET `/rag/transcript/text`、`/rag/transcript/audio`、`/rag/transcript/youtube`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url` 期間全螢幕 LoadingOverlay（來源預覽／文字逐字稿讀取為「檔案讀取中…」，語音／影片逐字稿為「分析逐字稿中…」）；主按鈕文案固定為「載入檔案文字／載入語音文字／載入影片文字」。
+ * - 設定單元：GET `/rag/transcript/text`、`/rag/transcript/audio`、`/rag/transcript/youtube`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url` 期間全螢幕 LoadingOverlay（來源預覽／文字逐字稿讀取為「檔案讀取中…」，語音／影片逐字稿為「分析逐字稿中…」）；選定類型且資料夾組合就緒後自動載入來源內容。
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：GET /rag/tabs 每筆 Rag.for_exam，或其 units／quizzes 任一有 Rag_Quiz.for_exam，或本機題卡 rag_quiz_for_exam，皆於分頁列顯示綠點並禁止刪除該題庫分頁（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）與已儲存批改規則之 POST /rag/tab/unit/quiz/llm-grade-db；GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
@@ -1285,13 +1285,23 @@ function isTranscriptPackUnitType(ut) {
   return ut === UNIT_TYPE_TEXT || ut === UNIT_TYPE_MP3 || ut === UNIT_TYPE_YOUTUBE;
 }
 
-/** 設定單元 unit_type 2／3／4：逐字稿區主按鈕文案（對應 GET transcript text／audio／youtube） */
-function packUnitLoadTranscriptButtonLabel(gi) {
+/** 設定單元 unit_type 2／3／4：來源內容讀取中（逐字稿 API 或 mp3／YouTube 預覽） */
+function packUnitSourceContentLoading(gi) {
+  return packUnitTranscriptBusy(gi) || !!(currentState.value.packUnitSourceFileLoading?.[gi]);
+}
+
+/** 選定類型且資料夾就緒時自動載入來源內容（mp3／YouTube 先顯示播放器，逐字稿背景取得供建置） */
+function maybeAutoLoadPackUnitPreview(gi, group) {
   const ut = packUnitTypeAt(gi);
-  if (ut === UNIT_TYPE_TEXT) return '載入檔案文字';
-  if (ut === UNIT_TYPE_MP3) return '載入語音文字';
-  if (ut === UNIT_TYPE_YOUTUBE) return '載入影片文字';
-  return '載入逐字稿';
+  if (!isTranscriptPackUnitType(ut)) return;
+  if (!firstFolderNameInGroup(group)) return;
+  if (packUnitTranscriptBusy(gi)) return;
+  if (ut === UNIT_TYPE_MP3 || ut === UNIT_TYPE_YOUTUBE) {
+    void loadPackUnitMediaPreviewForType(gi, group);
+  }
+  if (!packUnitTranscriptReadyAt(gi)) {
+    void loadPackUnitPreviewForType(gi, group);
+  }
 }
 
 /** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊（含 0 未選擇，供顯示／相容） */
@@ -1312,8 +1322,8 @@ function onPackUnitTypePick(gi, rawVal) {
   next[gi] = v;
   state.packUnitTypes = next;
   clearPackUnitPreviewAt(gi);
-  if (v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE) {
-    void loadPackUnitMediaPreviewForType(gi, state.packTasksList?.[gi]);
+  if (isTranscriptPackUnitType(v)) {
+    void maybeAutoLoadPackUnitPreview(gi, state.packTasksList?.[gi]);
   }
 }
 
@@ -1409,47 +1419,6 @@ function ensurePackUnitSidecarArrays() {
   stretch('packUnitNames', '');
 }
 
-/**
- * 重設第 N 個設定單元：清空該列「資料夾組合」，其餘類型→rag、分段長度／重疊為預設、單元名稱清空並清除逐字稿／預覽／錯誤／載入旗標。
- */
-function resetPackUnitGroup(groupIdx) {
-  if (packGroupsEditBlocked.value) return;
-  const gi = Number(groupIdx);
-  const state = currentState.value;
-  const list = state.packTasksList;
-  if (!Array.isArray(list) || !Number.isFinite(gi) || gi < 0 || gi >= list.length) return;
-  ensurePackUnitSidecarArrays();
-
-  const nextList = [...list];
-  nextList[gi] = [];
-  state.packTasksList = nextList;
-
-  const types = [...(state.packUnitTypes || [])];
-  while (types.length < nextList.length) types.push(UNIT_TYPE_RAG);
-  types[gi] = UNIT_TYPE_RAG;
-  state.packUnitTypes = types;
-  const sizes = [...(state.packChunkSizes || [])];
-  sizes[gi] = DEFAULT_PACK_CHUNK_SIZE;
-  state.packChunkSizes = sizes;
-  const overs = [...(state.packChunkOverlaps || [])];
-  overs[gi] = DEFAULT_PACK_CHUNK_OVERLAP;
-  state.packChunkOverlaps = overs;
-  clearPackUnitPreviewAt(gi);
-  const err = [...(state.packUnitTranscriptError || [])];
-  err[gi] = '';
-  state.packUnitTranscriptError = err;
-  const load = [...(state.packUnitTranscriptLoading || [])];
-  load[gi] = false;
-  state.packUnitTranscriptLoading = load;
-  const loaded = [...(state.packUnitTranscriptLoaded || [])];
-  loaded[gi] = false;
-  state.packUnitTranscriptLoaded = loaded;
-  const unm = [...(state.packUnitNames || [])];
-  while (unm.length < nextList.length) unm.push('');
-  unm[gi] = '';
-  state.packUnitNames = unm;
-}
-
 function ragTabIdForTranscript() {
   return String(currentState.value.zipTabId ?? activeTabId.value ?? '').trim();
 }
@@ -1487,7 +1456,7 @@ watch(
     if (!Array.isArray(list)) return;
     for (let gi = 0; gi < list.length; gi++) {
       const ut = packUnitTypeAt(gi);
-      if (ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) continue;
+      if (!isTranscriptPackUnitType(ut)) continue;
       const folderNow = firstFolderNameInGroup(list[gi]);
       const folderWas =
         Array.isArray(prevList) && prevList[gi] != null ? firstFolderNameInGroup(prevList[gi]) : '';
@@ -1497,7 +1466,10 @@ watch(
         continue;
       }
       if (folderNow !== folderWas) {
-        void loadPackUnitMediaPreviewForType(gi, list[gi]);
+        if (folderWas) clearPackUnitPreviewAt(gi);
+        void maybeAutoLoadPackUnitPreview(gi, list[gi]);
+      } else if (!packUnitTranscriptReadyAt(gi)) {
+        void maybeAutoLoadPackUnitPreview(gi, list[gi]);
       }
     }
   },
@@ -1700,14 +1672,8 @@ async function loadPackUnitMediaPreviewForType(gi, group) {
   const s = currentState.value;
   const err = [...s.packUnitTranscriptError];
   const prev = String(err[gi] ?? '');
-  const retryHint =
-    ut === UNIT_TYPE_MP3
-      ? '仍可嘗試「載入語音文字」'
-      : ut === UNIT_TYPE_YOUTUBE
-        ? '仍可嘗試「載入影片文字」'
-        : '仍可嘗試載入文字';
   const mediaMsg =
-    `來源影音預覽載入失敗（請確認 ZIP 資料夾內有對應音訊／YouTube 說明檔）；${retryHint}`;
+    '來源影音預覽載入失敗（請確認 ZIP 資料夾內有對應音訊／YouTube 說明檔）';
   if (ok) {
     if (prev.startsWith('來源影音')) err[gi] = '';
   } else if (!prev.startsWith('逐字稿')) {
@@ -1765,8 +1731,8 @@ function packUnitYoutubeEmbedUrl(gi) {
 }
 
 /**
- * 主按鈕依 unit_type：文字「載入檔案文字」→ GET `/rag/transcript/text`；mp3「載入語音文字」→ `/rag/transcript/audio`；YouTube「載入影片文字」→ `/rag/transcript/youtube`（有嵌入網址時附 `youtube_url`）。
- * 播放器預覽仍見 `loadPackUnitMediaPreviewForType`。
+ * 依 unit_type 自動取得逐字稿：文字 GET `/rag/transcript/text`；mp3 GET `/rag/transcript/audio`；YouTube GET `/rag/transcript/youtube`（有嵌入網址時附 `youtube_url`）。
+ * 播放器預覽見 `loadPackUnitMediaPreviewForType`／`maybeAutoLoadPackUnitPreview`。
  */
 async function loadPackUnitPreviewForType(gi, group) {
   const ut = packUnitTypeAt(gi);
@@ -4099,7 +4065,7 @@ async function confirmPack() {
   const missingTranscriptIndexes = missingPackUnitTranscriptIndexes(state);
   if (missingTranscriptIndexes.length > 0) {
     const labels = missingTranscriptIndexes.map((i) => `單元 ${i + 1}`).join('、');
-    state.packError = `${labels} 尚未載入內容；請於各單元編輯區上方依類型點選「載入檔案文字」、「載入語音文字」或「載入影片文字」。`;
+    state.packError = `${labels} 尚未載入內容；請確認已選擇類型且資料夾組合已設定。`;
     return;
   }
   if (!unitList) {
@@ -5661,7 +5627,7 @@ async function confirmAnswer(item) {
               {{ packUnitSectionHeadingTitle }}
             </div>
             <div
-              class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
+              class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-3"
               role="heading"
               aria-level="2"
             >
@@ -5694,11 +5660,8 @@ async function confirmAnswer(item) {
             </div>
           </div>
           <!-- 單元：分頁列切換（位於資料夾下方） -->
-          <div class="my-pack-unit-field">
-            <div
-              class="w-100 min-w-0 d-flex justify-content-center"
-            >
-              <div class="my-pack-unit-tabs-nav">
+          <div class="my-pack-unit-field my-pack-unit-field--tabs">
+            <div class="my-pack-unit-tabs-nav mx-auto">
               <button
                 v-if="packUnitCarouselCountEffective > 0"
                 type="button"
@@ -5831,7 +5794,6 @@ async function confirmAnswer(item) {
                   </li>
                 </ul>
               </div>
-              </div>
             </div>
           </div>
 
@@ -5839,19 +5801,12 @@ async function confirmAnswer(item) {
           <div class="my-pack-unit-settings-carousel">
             <div
               v-if="packUnitCarouselCountEffective > 0"
-              class="d-flex flex-column gap-2 w-100 min-w-0"
+              :key="'rg-' + activePackUnitGi"
+              class="my-pack-unit-attrs-panel rounded-4 my-bgcolor-gray-3 p-3 w-100 min-w-0"
+              role="group"
+              aria-label="單元設定"
             >
-              <div
-                class="w-100 min-w-0 d-flex flex-column gap-2"
-                role="group"
-                aria-label="單元設定"
-              >
-              <div
-                :key="'rg-' + activePackUnitGi"
-                class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-3"
-              >
-                <div class="my-design-pack-unit-blocks w-100 min-w-0">
-                  <div class="row g-3 w-100 min-w-0">
+              <div class="row gx-2 gy-0 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
                     <div class="my-font-sm-400 my-color-gray-1 mb-0">
@@ -5890,7 +5845,7 @@ async function confirmAnswer(item) {
                   </div>
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-sm-400 my-color-gray-1 mb-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-0 mt-4">
                         類型
                       </div>
                       <div
@@ -5922,7 +5877,7 @@ async function confirmAnswer(item) {
                     >
                       <div class="my-design-pack-unit-section w-100 min-w-0">
                       <label
-                        class="my-font-sm-400 my-color-gray-1 mb-0"
+                        class="my-font-sm-400 my-color-gray-1 mb-0 mt-4"
                         :for="'rag-pack-chunk-size-' + activePackUnitGi"
                       >分段長度（字元）</label>
                       <input
@@ -5930,7 +5885,7 @@ async function confirmAnswer(item) {
                         type="number"
                         min="1"
                         step="1"
-                        class="form-control my-input-md my-input-md--on-dark rounded-pill w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
                         :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
                         :value="ensureNumber(currentState.packChunkSizes?.[activePackUnitGi], DEFAULT_PACK_CHUNK_SIZE)"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 分段長度（字元）`"
@@ -5945,7 +5900,7 @@ async function confirmAnswer(item) {
                     >
                       <div class="my-design-pack-unit-section w-100 min-w-0">
                       <label
-                        class="my-font-sm-400 my-color-gray-1 mb-0"
+                        class="my-font-sm-400 my-color-gray-1 mb-0 mt-4"
                         :for="'rag-pack-chunk-overlap-' + activePackUnitGi"
                       >分段重疊（字元）</label>
                       <input
@@ -5953,7 +5908,7 @@ async function confirmAnswer(item) {
                         type="number"
                         min="0"
                         step="1"
-                        class="form-control my-input-md my-input-md--on-dark rounded-pill w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
                         :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
                         :value="ensureNumber(currentState.packChunkOverlaps?.[activePackUnitGi], DEFAULT_PACK_CHUNK_OVERLAP)"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 分段重疊（字元）`"
@@ -5967,10 +5922,21 @@ async function confirmAnswer(item) {
                     class="col-12 min-w-0"
                   >
                   <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="my-font-sm-400 my-color-gray-1 mb-0">
+                    <div class="my-font-sm-400 my-color-gray-1 mb-0 mt-4">
                       來源內容
                     </div>
-                    <div class="d-flex flex-column gap-2 w-100 min-w-0 mt-1">
+                    <div class="d-flex flex-column gap-1 w-100 min-w-0 mt-1">
+                      <p
+                        v-if="packUnitSourceContentLoading(activePackUnitGi)"
+                        class="my-font-sm-400 my-color-gray-4 mb-0"
+                      >
+                        讀取中…
+                      </p>
+                      <div
+                        v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_TEXT && packUnitTranscriptTextAt(activePackUnitGi).trim()"
+                        class="my-font-sm-400 my-color-black lh-base text-break w-100 min-w-0 rounded-2 my-bgcolor-white p-2"
+                        style="max-height: 12rem; overflow: auto; white-space: pre-wrap;"
+                      >{{ packUnitTranscriptTextAt(activePackUnitGi) }}</div>
                       <audio
                         v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[activePackUnitGi] ?? '').trim() !== ''"
                         :key="currentState.packUnitMp3PreviewUrls[activePackUnitGi]"
@@ -5992,24 +5958,6 @@ async function confirmAnswer(item) {
                           allowfullscreen
                         />
                       </div>
-                      <div class="d-flex justify-content-center w-100 min-w-0 pt-1 pb-1">
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-4 py-1"
-                          :disabled="packUnitTranscriptBusy(activePackUnitGi) || packGroupsEditBlocked || activePackUnitGroup.length === 0"
-                          :aria-busy="packUnitTranscriptBusy(activePackUnitGi)"
-                          :aria-label="packUnitLoadTranscriptButtonLabel(activePackUnitGi)"
-                          @click="loadPackUnitPreviewForType(activePackUnitGi, activePackUnitGroup)"
-                        >
-                          {{ packUnitLoadTranscriptButtonLabel(activePackUnitGi) }}
-                        </button>
-                      </div>
-                      <p
-                        v-if="packUnitTranscriptLoadedAt(activePackUnitGi)"
-                        class="my-font-sm-400 my-color-gray-1 mb-0 text-center w-100 min-w-0"
-                      >
-                        已載入；建置後可於「設定單元」檢視
-                      </p>
                       <p
                         v-if="currentState.packUnitTranscriptError?.[activePackUnitGi]"
                         class="my-font-sm-400 my-color-red mb-0"
@@ -6019,27 +5967,6 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                   </div>
-                  <div
-                    v-if="(currentState.packTasksList || []).length > 0"
-                    class="col-12 min-w-0"
-                  >
-                  <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="d-flex flex-nowrap justify-content-center align-items-center gap-2 w-100 min-w-0">
-                      <button
-                        type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-2 px-4 py-1"
-                        aria-label="重設此資料夾組合"
-                        :disabled="packGroupsEditBlocked"
-                        @click.stop="resetPackUnitGroup(activePackUnitGi)"
-                      >
-                        重設
-                      </button>
-                    </div>
-                  </div>
-                  </div>
-                  </div>
-                </div>
-                </div>
               </div>
             </div>
           </div>
@@ -6704,9 +6631,6 @@ async function confirmAnswer(item) {
   background-color: var(--my-pack-folder-field-bg) !important;
   border-color: var(--my-color-gray-2) !important;
 }
-.my-design-pack-unit-blocks .form-control.my-input-md.rounded-pill {
-  border-radius: var(--bs-border-radius-pill);
-}
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;
   border-color: var(--my-color-blue) !important;
@@ -6723,7 +6647,7 @@ async function confirmAnswer(item) {
 .my-pack-unit-settings-body {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   width: 100%;
   min-width: 0;
 }
@@ -6734,11 +6658,17 @@ async function confirmAnswer(item) {
   width: 100%;
   min-width: 0;
 }
-/* 標題→控件間距沿用 common.css --my-field-label-input-gap，勿與 flex gap 疊加 */
+.my-pack-unit-field--tabs {
+  align-items: center;
+}
+/* 設定單元屬性灰底面板：單層 padding，欄位間距由 .row.g-2 負責 */
+.my-pack-unit-attrs-panel > .row {
+  --bs-gutter-x: 0.5rem;
+  --bs-gutter-y: 0;
+}
 .my-pack-unit-settings-carousel {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
   width: 100%;
   min-width: 0;
 }
