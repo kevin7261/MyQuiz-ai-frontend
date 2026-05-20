@@ -9,7 +9,7 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
  *
  * 顯示：題號（可隱藏）、題目內容（Markdown，marked + DOMPurify）、提示／參考答案（有內容時透過「顯示提示」「顯示參考答案」切換顯示）、答案區（作答輸入預設空白）、批改結果；hideGradingPrompt 時批改結果區塊最底部設「批改規則」pill（開 Modal；無快照時顯示「—」）。
  * 可輸入答案並按「開始批改」送出評分；**測驗頁**（hideGradingPrompt）在已批改（card.confirmed）後不顯示此鈕；建立題庫等未帶 hideGradingPrompt 時仍顯示按鈕群。
- * 單元題區塊內「儲存並開始批改／開始批改」（llm-grade／llm-grade-db）按鈕啟停用對齊「儲存並產生題目／產生題目」：批改規則須相對 baseline 已改動才可儲存送出；載入過／已同步之規則可「開始批改」；並檢 rag_quiz_id。
+ * 單元題區塊內「開始批改」（llm-grade／llm-grade-db，由父層依規則是否改動路由）：啟停用對齊「產生題目」；gradingPromptInModal 時僅顯示單一「開始批改」鈕。
  * 「答案」不因 rag_id 與題庫不一致而停用（仍可鍵入；並顯示警示）；**測驗頁（hideGradingPrompt）在有批改結果文字後答案改為停用**（再次送出批改時會先清空結果）；其餘情境已批改後 textarea 仍可編輯（僅 readOnlyAnswer／分析頁為靜態）。
  * **RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致；**不顯示「儲存並開始批改」**（仍可依後端既有規則使用「開始批改」）。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
@@ -361,6 +361,16 @@ const ragGradeDbButtonDisabled = computed(() => {
     || !ragQuizIdLooksValid.value
     || !isGradingPromptSyncedWithBaseline.value
   );
+});
+
+/** 稿頁 gradingPromptInModal：合併「儲存並開始批改／開始批改」為單一「開始批改」 */
+const mergedGradeButtonDisabled = computed(() => {
+  if (props.gradeSubmitting) return true;
+  if (props.gradeSaveAllowed !== undefined && props.gradeDbAllowed !== undefined) {
+    return !props.gradeSaveAllowed && !props.gradeDbAllowed;
+  }
+  if (cardMarkedForExam.value) return ragGradeDbButtonDisabled.value;
+  return saveAndGradeButtonDisabled.value && ragGradeDbButtonDisabled.value;
 });
 
 /**
@@ -857,7 +867,7 @@ const quizAnswerFieldDisabled = computed(
             <button
               v-if="!cardMarkedForExam"
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-2"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
               title="還原為上次載入或送出後的內容"
               aria-label="重設批改規則"
               :disabled="gradingPromptResetDisabled"
@@ -866,27 +876,16 @@ const quizAnswerFieldDisabled = computed(
               重設
             </button>
             <button
-              v-if="showRagGradeDbButton && showStartGradeButton"
+              v-if="showStartGradeButton"
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
-              title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
-              :disabled="ragGradeDbButtonDisabled"
+              title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
+              :disabled="mergedGradeButtonDisabled"
               :aria-busy="gradeSubmitting"
               aria-label="開始批改"
-              @click="emit('confirm-grade-db', card)"
-            >
-              開始批改
-            </button>
-            <button
-              v-if="showStartGradeButton && !cardMarkedForExam"
-              type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
-              :disabled="saveAndGradeButtonDisabled"
-              :aria-busy="gradeSubmitting"
-              aria-label="儲存並開始批改"
               @click="emit('confirm-answer', card)"
             >
-              儲存並開始批改
+              開始批改
             </button>
           </div>
         </div>
@@ -918,7 +917,7 @@ const quizAnswerFieldDisabled = computed(
             <button
               v-if="!cardMarkedForExam"
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-2"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
               title="還原為上次載入或送出後的內容"
               aria-label="重設批改規則"
               :disabled="gradingPromptResetDisabled"

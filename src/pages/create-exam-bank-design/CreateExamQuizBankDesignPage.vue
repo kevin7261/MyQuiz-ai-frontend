@@ -771,8 +771,8 @@ const loadingOverlayText = computed(() => {
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存並追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return '產生題目中...';
-  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '儲存並產生題目中...';
-  if (hasAnySlotGenerating.value) return '儲存並產生題目中...';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '產生題目中...';
+  if (hasAnySlotGenerating.value) return '產生題目中...';
   const st = currentState.value;
   if (st?.zipLoading) return '上傳中...';
   if (st?.packLoading) return '建立單元中...';
@@ -2655,13 +2655,30 @@ function canEnableUnitQuizGenerate(card, slotIndex) {
   return isQuizUserPromptDirty(card);
 }
 
-/** 「產生題目」（llm-generate-db／llm-generate-followup-db）：須已有 rag_quiz_id，且曾成功「儲存並產生題目」或載入時後端已有出題規則；出題規則若與 baseline 不同（未儲存）則不可按 */
+/** 「產生題目」（llm-generate-db／llm-generate-followup-db）：須已有 rag_quiz_id，且曾成功儲存出題規則或載入時後端已有出題規則；出題規則若與 baseline 不同（未儲存）則不可按 */
 function canEnableUnitQuizGenerateFromDb(card, slotIndex) {
   if (!card || typeof card !== 'object') return false;
   if (card.hasUsedSaveAndGenerateOnce !== true) return false;
   if (isQuizUserPromptDirty(card)) return false;
   const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, card);
   return rqid != null && rqid >= 1;
+}
+
+/** 「產生題目」（合併 llm-generate／llm-generate-db）：有非空白出題規則且（規則已改動或可走後端已存規則） */
+function canEnableUnitQuizGenerateMerged(card, slotIndex) {
+  if (!card || typeof card !== 'object') return false;
+  if (!promptTextForQuizRow(card, slotIndex)) return false;
+  return canEnableUnitQuizGenerate(card, slotIndex)
+    || canEnableUnitQuizGenerateFromDb(card, slotIndex);
+}
+
+async function submitUnitQuizGenerateMerged(slotIndex, quizCardRow = null) {
+  const card = quizCardRow;
+  if (!card || typeof card !== 'object') return;
+  if (isQuizUserPromptDirty(card) || !canEnableUnitQuizGenerateFromDb(card, slotIndex)) {
+    return submitUnitQuizLlmGenerate(slotIndex, quizCardRow);
+  }
+  return submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow);
 }
 
 /** 「儲存並開始批改」可按：對齊 {@link canEnableUnitQuizGenerate}—trim 後非空批改規則且與 baseline 不同（不依賴 slot 回填，規則僅在題卡）。 */
@@ -2680,6 +2697,22 @@ function canEnableUnitQuizGradeDb(card, slotIndex) {
   if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
   const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, card);
   return rqid != null && rqid >= 1;
+}
+
+/** 「開始批改」（合併 llm-grade／llm-grade-db）：非空批改規則且（規則已改動或可走後端已存規則） */
+function canEnableUnitQuizGradeMerged(card, slotIndex) {
+  return canEnableUnitQuizGrade(card, slotIndex) || canEnableUnitQuizGradeDb(card, slotIndex);
+}
+
+async function confirmGradeMerged(item) {
+  if (!item || typeof item !== 'object') return;
+  const slotIndex = activeUnitSlotIndex.value;
+  const dirty =
+    String(item.gradingPrompt ?? '') !== String(item.gradingPromptBaseline ?? '');
+  if (dirty || !canEnableUnitQuizGradeDb(item, slotIndex)) {
+    return confirmAnswer(item);
+  }
+  return confirmAnswerGradeDb(item);
 }
 
 /** 該列出題文字：優先題卡本身，再以 slot（舊相容）回填 */
@@ -6098,7 +6131,7 @@ async function confirmAnswer(item) {
                     <button
                       v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
                       type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-2"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
                       title="還原為上次載入或產生後的內容"
                       aria-label="重設出題規則"
                       :disabled="
@@ -6112,29 +6145,16 @@ async function confirmAnswer(item) {
                     <button
                       type="button"
                       class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                      title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」或「重設」"
+                      title="依出題規則產生題目；規則已改動時會先儲存再產生，否則使用後端已儲存規則"
                       :disabled="
                         getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                        !canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)
+                        !canEnableUnitQuizGenerateMerged(activeUnitQuizCard, activeUnitSlotIndex)
                       "
                       :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                       aria-label="產生題目"
-                      @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
+                      @click="submitUnitQuizGenerateMerged(activeUnitSlotIndex, activeUnitQuizCard)"
                     >
                       產生題目
-                    </button>
-                    <button
-                      v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                      type="button"
-                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                      :disabled="
-                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                        !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)
-                      "
-                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                      @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
-                    >
-                      儲存並產生題目
                     </button>
                   </div>
                 </div>
@@ -6142,8 +6162,8 @@ async function confirmAnswer(item) {
                   v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
                   :card="activeUnitQuizCard"
                   :slot-index="activeUnitQuizTypeIdxResolved + 1"
-                  :grade-save-allowed="canEnableUnitQuizGrade(activeUnitQuizCard, activeUnitSlotIndex)"
-                  :grade-db-allowed="canEnableUnitQuizGradeDb(activeUnitQuizCard, activeUnitSlotIndex)"
+                  :grade-save-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
+                  :grade-db-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
                   :current-rag-id="currentRagIdForQuizCards"
                   design-embedded
                   hide-slot-index
@@ -6156,10 +6176,8 @@ async function confirmAnswer(item) {
                   hint-reference-in-modal
                   show-bank-quiz-history-button
                   show-rag-quiz-for-exam-action
-                  show-rag-grade-db-button
                   hide-rag-quiz-for-exam-toolbar
-                  @confirm-answer="confirmAnswer"
-                  @confirm-grade-db="confirmAnswerGradeDb"
+                  @confirm-answer="confirmGradeMerged"
                   @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                   @open-grading-prompt-edit="openBankGradingPromptEditModal"
                   @open-quiz-history="openBankQuizHistoryModal"
