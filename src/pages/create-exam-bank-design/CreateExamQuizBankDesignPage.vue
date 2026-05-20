@@ -2472,6 +2472,40 @@ const activeUnitQuizCard = computed(() => {
   return cards[i] ?? null;
 });
 
+/** 題型區：已產出題幹（答案／批改子區塊與題幹 QuizCard 顯示條件） */
+const activeUnitQuizHasGeneratedBody = computed(() => {
+  const card = activeUnitQuizCard.value;
+  if (!card) return false;
+  return String(card.quiz ?? '').trim().length > 0;
+});
+
+/** 稿頁題型區 QuizCard 共用 bind（各子區塊另設 design-sub-block） */
+const designUnitQuizCardBind = computed(() => {
+  const card = activeUnitQuizCard.value;
+  const slotIndex = activeUnitSlotIndex.value;
+  return {
+    card,
+    slotIndex: activeUnitQuizTypeIdxResolved.value + 1,
+    gradeSaveAllowed: canEnableUnitQuizGradeMerged(card, slotIndex),
+    gradeDbAllowed: canEnableUnitQuizGradeMerged(card, slotIndex),
+    currentRagId: currentRagIdForQuizCards.value,
+    designEmbedded: true,
+    hideSlotIndex: true,
+    gradeSubmitting:
+      gradingSubmittingCardId.value != null
+      && card != null
+      && String(gradingSubmittingCardId.value) === String(card.id),
+    designUi: true,
+    createExamBankDesignLayout: true,
+    designGradingResultSample: DESIGN_DEMO_GRADING_RESULT_SAMPLE,
+    gradingPromptInModal: true,
+    hintReferenceInModal: true,
+    showBankQuizHistoryButton: false,
+    showRagQuizForExamAction: true,
+    hideRagQuizForExamToolbar: true,
+  };
+});
+
 watch(activeUnitQuizCards, () => {
   const state = currentState.value;
   const cards = activeUnitQuizCards.value;
@@ -6138,34 +6172,13 @@ async function confirmAnswer(item) {
                     追問出題
                   </button>
                 </div>
-                <!-- 子區塊：題目（出題規則／產生題目／題幹）；pe-5 在灰底、白底外側 -->
-                <div class="my-design-quiz-sub-block-outer pe-5 w-100 min-w-0">
+                <!-- 子區塊：題目；外層 pe-5＝灰底留白 -->
+                <div class="my-design-quiz-sub-block-outer pe-5">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4 w-100 min-w-0 d-flex flex-column gap-3"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4 d-flex flex-column gap-3"
                   >
                     <div class="d-flex flex-column min-w-0">
-                      <div
-                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                        class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
-                      >
-                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          出題規則
-                        </div>
-                        <button
-                          type="button"
-                          class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 ms-auto"
-                          title="編輯出題規則"
-                          aria-label="編輯出題規則"
-                          :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                          @click="openBankQuizUserPromptEditModal"
-                        >
-                          <i class="fa-solid fa-pen" aria-hidden="true" />
-                        </button>
-                      </div>
-                      <div
-                        v-else
-                        class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                      >
+                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
                         出題規則
                       </div>
                       <div class="min-w-0 w-100">
@@ -6177,47 +6190,48 @@ async function confirmAnswer(item) {
                         />
                       </div>
                     </div>
-                    <div class="d-flex flex-column align-items-start gap-2 w-100">
-                      <div
-                        class="d-flex justify-content-start align-items-center flex-wrap gap-3"
+                    <div class="d-flex justify-content-start align-items-center flex-wrap gap-2">
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+                        title="依出題規則產生題目；規則已改動時會先儲存再產生，否則使用後端已儲存規則"
+                        :disabled="
+                          getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
+                          !canEnableUnitQuizGenerateMerged(activeUnitQuizCard, activeUnitSlotIndex)
+                        "
+                        :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                        aria-label="產生題目"
+                        @click="submitUnitQuizGenerateMerged(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                          title="依出題規則產生題目；規則已改動時會先儲存再產生，否則使用後端已儲存規則"
-                          :disabled="
-                            getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                            !canEnableUnitQuizGenerateMerged(activeUnitQuizCard, activeUnitSlotIndex)
-                          "
-                          :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                          aria-label="產生題目"
-                          @click="submitUnitQuizGenerateMerged(activeUnitSlotIndex, activeUnitQuizCard)"
-                        >
-                          產生題目
-                        </button>
-                      </div>
+                        產生題目
+                      </button>
+                      <button
+                        type="button"
+                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-gray-3 my-design-quiz-action-edit-btn lh-1"
+                        title="編輯出題規則"
+                        aria-label="編輯出題規則"
+                        :disabled="
+                          !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                          || isRagQuizMarkedForExam(activeUnitQuizCard)
+                        "
+                        @click="openBankQuizUserPromptEditModal"
+                      >
+                        <i class="fa-solid fa-pen my-color-black" aria-hidden="true" />
+                      </button>
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+                        aria-label="查看先前出題"
+                        @click="openBankQuizHistoryModal"
+                      >
+                        先前出題
+                      </button>
                     </div>
                     <QuizCard
-                      v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
-                      :card="activeUnitQuizCard"
-                      :slot-index="activeUnitQuizTypeIdxResolved + 1"
-                      :grade-save-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
-                      :grade-db-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
-                      :current-rag-id="currentRagIdForQuizCards"
-                      design-embedded
+                      v-if="activeUnitQuizHasGeneratedBody"
+                      v-bind="designUnitQuizCardBind"
+                      create-exam-bank-design-layout
                       design-sub-block="question"
-                      hide-slot-index
-                      :grade-submitting="
-                        gradingSubmittingCardId != null &&
-                        String(gradingSubmittingCardId) === String(activeUnitQuizCard.id)
-                      "
-                      design-ui
-                      :design-grading-result-sample="DESIGN_DEMO_GRADING_RESULT_SAMPLE"
-                      grading-prompt-in-modal
-                      hint-reference-in-modal
-                      show-bank-quiz-history-button
-                      show-rag-quiz-for-exam-action
-                      hide-rag-quiz-for-exam-toolbar
                       @confirm-answer="confirmGradeMerged"
                       @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                       @open-grading-prompt-edit="openBankGradingPromptEditModal"
@@ -6225,34 +6239,16 @@ async function confirmAnswer(item) {
                     />
                   </div>
                 </div>
-                <!-- 子區塊：答案；ps-5 在灰底、白底外側 -->
+                <!-- 子區塊：答案；外層 ps-5＝灰底留白 -->
                 <div
-                  v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
-                  class="my-design-quiz-sub-block-outer ps-5 w-100 min-w-0"
+                  v-if="activeUnitQuizHasGeneratedBody"
+                  class="my-design-quiz-sub-block-outer ps-5"
                 >
-                  <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4 w-100 min-w-0"
-                  >
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4">
                     <QuizCard
-                      :card="activeUnitQuizCard"
-                      :slot-index="activeUnitQuizTypeIdxResolved + 1"
-                      :grade-save-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
-                      :grade-db-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
-                      :current-rag-id="currentRagIdForQuizCards"
-                      design-embedded
+                      v-bind="designUnitQuizCardBind"
+                      create-exam-bank-design-layout
                       design-sub-block="answer"
-                      hide-slot-index
-                      :grade-submitting="
-                        gradingSubmittingCardId != null &&
-                        String(gradingSubmittingCardId) === String(activeUnitQuizCard.id)
-                      "
-                      design-ui
-                      :design-grading-result-sample="DESIGN_DEMO_GRADING_RESULT_SAMPLE"
-                      grading-prompt-in-modal
-                      hint-reference-in-modal
-                      show-bank-quiz-history-button
-                      show-rag-quiz-for-exam-action
-                      hide-rag-quiz-for-exam-toolbar
                       @confirm-answer="confirmGradeMerged"
                       @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                       @open-grading-prompt-edit="openBankGradingPromptEditModal"
@@ -6260,34 +6256,16 @@ async function confirmAnswer(item) {
                     />
                   </div>
                 </div>
-                <!-- 子區塊：批改；pe-5 在灰底、白底外側 -->
+                <!-- 子區塊：批改；外層 pe-5＝灰底留白 -->
                 <div
-                  v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
-                  class="my-design-quiz-sub-block-outer pe-5 w-100 min-w-0"
+                  v-if="activeUnitQuizHasGeneratedBody"
+                  class="my-design-quiz-sub-block-outer pe-5"
                 >
-                  <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4 w-100 min-w-0"
-                  >
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-4">
                     <QuizCard
-                      :card="activeUnitQuizCard"
-                      :slot-index="activeUnitQuizTypeIdxResolved + 1"
-                      :grade-save-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
-                      :grade-db-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
-                      :current-rag-id="currentRagIdForQuizCards"
-                      design-embedded
+                      v-bind="designUnitQuizCardBind"
+                      create-exam-bank-design-layout
                       design-sub-block="grading"
-                      hide-slot-index
-                      :grade-submitting="
-                        gradingSubmittingCardId != null &&
-                        String(gradingSubmittingCardId) === String(activeUnitQuizCard.id)
-                      "
-                      design-ui
-                      :design-grading-result-sample="DESIGN_DEMO_GRADING_RESULT_SAMPLE"
-                      grading-prompt-in-modal
-                      hint-reference-in-modal
-                      show-bank-quiz-history-button
-                      show-rag-quiz-for-exam-action
-                      hide-rag-quiz-for-exam-toolbar
                       @confirm-answer="confirmGradeMerged"
                       @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                       @open-grading-prompt-edit="openBankGradingPromptEditModal"
@@ -6558,18 +6536,24 @@ async function confirmAnswer(item) {
   width: 100%;
   min-width: 0;
 }
-/* 設定單元題型灰底區塊內：題目／答案／批改（外層 pe/ps 在灰底；內層白底圓角面板） */
-.my-design-quiz-sub-block-outer {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
+/* 題型區三子區塊：outer＝灰底上 pe/ps；sub-block＝白底圓角面板（寬度撐滿父層） */
+.my-design-quiz-sub-block-outer,
 .my-design-quiz-sub-block {
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+/* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕（僅稿頁；含 QuizCard 批改子區塊內按鈕） */
+.btn.my-design-quiz-action-edit-btn,
+.my-design-quiz-sub-block :deep(.btn.my-design-quiz-action-edit-btn) {
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border: none;
 }
 
 </style>

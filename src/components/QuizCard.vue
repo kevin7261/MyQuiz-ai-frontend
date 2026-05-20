@@ -75,11 +75,16 @@ const props = defineProps({
   hintReferenceInModal: { type: Boolean, default: false },
   /** 稿頁：「先前出題」置於「題目」標題列右側 */
   showBankQuizHistoryButton: { type: Boolean, default: false },
-  /** 稿頁：題卡尚無批改結果時，黑底區顯示之示範文字（不計入 hasGrade／confirmed） */
+  /**
+   * 僅 create-exam-bank_design：題卡尚無批改結果時，黑底區顯示之示範文字（不計入 hasGrade／confirmed）。
+   */
   designGradingResultSample: { type: String, default: '' },
   /**
-   * 稿頁三子區塊：僅渲染對應區段（question＝題目、answer＝答案、grading＝批改規則／開始批改／批改結果）。
-   * 須 designUi；與 designEmbedded 併用，由父層包三個 .my-design-quiz-sub-block。
+   * 僅 create-exam-bank_design：true 時啟用三子區塊拆分與稿頁專用按鈕排版（須併 designUi、designEmbedded）。
+   */
+  createExamBankDesignLayout: { type: Boolean, default: false },
+  /**
+   * 僅 create-exam-bank_design 且 createExamBankDesignLayout 為 true：question／answer／grading 各渲染一段。
    */
   designSubBlock: {
     type: String,
@@ -126,11 +131,11 @@ const cardMarkedForExam = computed(
 /** 題卡實際批改文字（不含稿頁 placeholder sample） */
 const gradingResultActual = computed(() => String(props.card?.gradingResult ?? '').trim());
 
-/** 稿頁：無真實批改時以 sample 填黑底預覽；其餘頁僅顯示實際結果 */
+/** create-exam-bank_design：無真實批改時以 sample 填黑底預覽；其餘頁僅顯示實際結果 */
 const gradingResultDisplay = computed(() => {
   if (gradingResultActual.value) return props.card.gradingResult;
   const sample = String(props.designGradingResultSample ?? '').trim();
-  if (props.designUi && sample) return sample;
+  if (props.createExamBankDesignLayout && sample) return sample;
   return '';
 });
 
@@ -302,9 +307,15 @@ const showQuizCardHeaderBand = computed(
   () => !props.designUi || !props.hideSlotIndex,
 );
 
-const isDesignSubBlockFragment = computed(() =>
-  props.designUi
-  && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
+const isDesignSubBlockFragment = computed(
+  () =>
+    props.createExamBankDesignLayout
+    && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
+);
+
+/** create-exam-bank_design 批改子區塊：編輯鈕在「開始批改」右側（非標題列） */
+const showDesignLayoutGradingToolbar = computed(
+  () => isDesignSubBlockFragment.value && props.designSubBlock === 'grading',
 );
 
 const showDesignSubBlockQuestion = computed(
@@ -327,6 +338,13 @@ const showDesignSubBlockPromptModals = computed(
 /** 子區塊模式：提示／參考答案 Modal 掛在 answer 實例 */
 const showDesignSubBlockHintModals = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'answer',
+);
+
+/** create-exam-bank_design 題目子區塊：先前出題由父層放在產生題目列 */
+const showBankQuizHistoryInStemHeader = computed(
+  () =>
+    props.showBankQuizHistoryButton
+    && !(props.createExamBankDesignLayout && props.designSubBlock === 'question'),
 );
 
 /** 建立測驗題庫頁在 card 上帶入 baseline；未帶入時維持原僅檢查非空即可送出 */
@@ -586,13 +604,13 @@ const quizAnswerFieldDisabled = computed(
       >
         <div
           class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
-          :class="designUi && showBankQuizHistoryButton ? 'align-items-end' : 'align-items-center'"
+          :class="designUi && showBankQuizHistoryInStemHeader ? 'align-items-end' : 'align-items-center'"
         >
           <div
             :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
           >題目</div>
           <button
-            v-if="showBankQuizHistoryButton"
+            v-if="showBankQuizHistoryInStemHeader"
             type="button"
             class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
             aria-label="查看先前出題"
@@ -900,7 +918,7 @@ const quizAnswerFieldDisabled = computed(
           :class="isDesignSubBlockFragment ? '' : 'mt-3'"
         >
           <div
-            v-if="!cardMarkedForExam"
+            v-if="!showDesignLayoutGradingToolbar && !cardMarkedForExam"
             class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
           >
             <div
@@ -921,7 +939,7 @@ const quizAnswerFieldDisabled = computed(
           </div>
           <div
             v-else
-            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
+            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1' : 'form-label my-font-sm-600 mb-1 my-color-gray-1'"
           >
             批改規則
           </div>
@@ -934,10 +952,10 @@ const quizAnswerFieldDisabled = computed(
             />
           </div>
           <div
-            v-if="showStartGradeButton || !cardMarkedForExam"
+            v-if="showDesignLayoutGradingToolbar || showStartGradeButton || !cardMarkedForExam"
             :class="
-              designUi && isDesignSubBlockFragment
-                ? 'd-flex justify-content-start align-items-center flex-wrap gap-3 mt-2 pt-2'
+              showDesignLayoutGradingToolbar
+                ? 'd-flex justify-content-start align-items-center flex-wrap gap-2 mt-2 pt-2'
                 : designUi
                   ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
                   : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
@@ -954,6 +972,17 @@ const quizAnswerFieldDisabled = computed(
               @click="emit('confirm-answer', card)"
             >
               開始批改
+            </button>
+            <button
+              v-if="showDesignLayoutGradingToolbar"
+              type="button"
+              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-gray-3 my-design-quiz-action-edit-btn lh-1"
+              title="編輯批改規則"
+              aria-label="編輯批改規則"
+              :disabled="gradeSubmitting || cardMarkedForExam"
+              @click="emit('open-grading-prompt-edit')"
+            >
+              <i class="fa-solid fa-pen my-color-black" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -977,8 +1006,8 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="showStartGradeButton || !cardMarkedForExam"
             :class="
-              designUi && isDesignSubBlockFragment
-                ? 'd-flex justify-content-start align-items-center flex-wrap gap-3 mt-2 pt-2'
+              showDesignLayoutGradingToolbar
+                ? 'd-flex justify-content-start align-items-center flex-wrap gap-2 mt-2 pt-2'
                 : designUi
                   ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
                   : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
