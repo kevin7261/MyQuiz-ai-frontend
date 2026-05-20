@@ -434,9 +434,9 @@ const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.v
 const hasBuiltRagSummary = computed(
   () => hasRagMetadata.value || currentState.value.packResponseJson != null
 );
-/** 右側欄：上傳完成、left 出現「設定單元」後顯示（建置前／建置後） */
+/** 右側欄：單元建置完成後顯示（上傳檔名＋單元列表） */
 const showDesignRightView = computed(
-  () => !!activeTabId.value && hasUploadedFileMetadata.value,
+  () => !!activeTabId.value && hasUploadedFileMetadata.value && hasBuiltRagSummary.value,
 );
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
@@ -6214,13 +6214,13 @@ async function confirmAnswer(item) {
                 class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
               >
                 <div
-                  class="d-inline-flex gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-center p-2"
+                  class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-center p-1"
                   role="group"
                   aria-label="出題模式"
                 >
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
                     :class="
                       !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                         ? 'my-button-gray-3'
@@ -6233,7 +6233,7 @@ async function confirmAnswer(item) {
                   </button>
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
                     :class="
                       isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                         ? 'my-button-gray-3'
