@@ -49,6 +49,19 @@ export const DESIGN_DEMO_GRADING_PROMPT_SAMPLE = `## 評分原則
 - 先肯定答對部分，再指出可補強處
 - 使用繁體中文；**勿**貼上參考答案全文`;
 
+/** 稿頁批改結果示範（answer_critique JSON；經 formatGradingResult 顯示於題卡） */
+export const DESIGN_DEMO_GRADING_CRITIQUE_JSON = {
+  quiz_score: 4,
+  quiz_comments: [
+    '能掌握題幹要求，回答有對應教材重點。',
+    '優點：概念方向正確，並嘗試區分兩者差異與應用情境。',
+    '可補強：建議補充「多層神經網路／特徵學習」等關鍵描述，並以條列整理會更清楚。',
+  ],
+};
+export const DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE = JSON.stringify(
+  DESIGN_DEMO_GRADING_CRITIQUE_JSON,
+);
+
 /** 稿頁單元內容 Modal：MP3 示範用（不呼叫 API） */
 export const DESIGN_DEMO_MP3_SAMPLE_URL =
   'https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3';
@@ -100,6 +113,10 @@ const DESIGN_DEMO_QUIZZES_BY_UNIT = [
       quiz_content: '請說明「機器學習」與「深度學習」的差異，並各舉一個應用例子。',
       quiz_hint: '可從資料與模型複雜度比較。',
       quiz_reference_answer: '機器學習泛指從資料學習模式；深度學習以多層神經網路為代表。',
+      answer_content:
+        '機器學習是讓電腦從資料學習規律；深度學習用很多層的神經網路，例如影像辨識。',
+      quiz_score: 4,
+      answer_critique: DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE,
     }),
     demoQuiz({
       quiz_name: '追問出題',
@@ -129,12 +146,9 @@ const DESIGN_DEMO_QUIZZES_BY_UNIT = [
       quiz_content: 'Chapter 02 中提到的三個重點是什麼？',
       quiz_hint: '參考第二段條列。',
       quiz_reference_answer: '重點一、重點二、重點三（示範）。',
-      answer_content: '我記得有提到定義、例子還有練習題。',
+      answer_content: '我記得有提到定義、例子還有練習題，但沒有完整條列三點。',
       quiz_score: 4,
-      answer_critique: JSON.stringify({
-        quiz_score: 4,
-        feedback: '答出大致方向，但缺少條列完整性。',
-      }),
+      answer_critique: DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE,
       answer_user_prompt_text: '以鼓勵為主，指出缺漏條目即可。',
     }),
     demoQuiz({

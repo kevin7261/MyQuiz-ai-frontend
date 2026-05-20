@@ -1,6 +1,12 @@
 /**
  * 建立測驗題庫（稿）— 批改（不呼叫後端，僅更新題卡 UI）
  */
+import { formatGradingResult } from '../../../utils/grading.js';
+import {
+  DESIGN_DEMO_GRADING_CRITIQUE_JSON,
+  DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE,
+} from '../mockData.js';
+
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
@@ -9,12 +15,11 @@ const delay = (ms) => new Promise((r) => setTimeout(r, ms));
 export async function submitGrade(item) {
   if (!item || typeof item !== 'object') return;
   item.confirmed = false;
+  item.gradingResult = '';
   await delay(400);
   item.gradingResult =
-    '（稿）示範批改結果\n\n總分：4 / 5\n\n答題方向正確，可再補充細節。';
-  item.gradingResponseJson = {
-    quiz_score: 4,
-    answer_critique: '（稿）示範批改：答題方向正確。',
-  };
+    formatGradingResult(DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE)
+    || '4 / 5\n\n（稿）示範批改結果';
+  item.gradingResponseJson = { ...DESIGN_DEMO_GRADING_CRITIQUE_JSON };
   item.confirmed = true;
 }
