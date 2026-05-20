@@ -692,12 +692,12 @@ const quizAnswerFieldDisabled = computed(
         <template v-if="designUi && hasQuizBody">
           <div
             v-if="showDesignStemToolbarRow"
-            class="d-flex flex-row flex-wrap align-items-center gap-2 w-100 min-w-0"
+            class="d-flex flex-row flex-nowrap align-items-center gap-2 w-100 min-w-0"
             :class="designStemToolbarJustifyClass"
           >
             <div
               v-if="stemToolbarLeftPills"
-              class="d-inline-flex flex-wrap align-items-center gap-2 min-w-0"
+              class="d-inline-flex flex-nowrap align-items-center gap-2 min-w-0"
             >
               <button
                 v-if="hideGradingPrompt && quizUserPromptSnapshotTrimmed !== ''"
@@ -910,7 +910,7 @@ const quizAnswerFieldDisabled = computed(
                 </h3>
                 <div
                   v-if="hintReferenceInModal"
-                  class="d-inline-flex align-items-center gap-2 flex-shrink-0 ms-auto"
+                  class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
                 >
                   <button
                     v-if="hasHintText"
@@ -1083,11 +1083,11 @@ const quizAnswerFieldDisabled = computed(
             </div>
             <div
               v-if="showDesignGradingStartRow"
-              class="d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
+              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3"
             >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="mergedGradeButtonDisabled"
                 :aria-busy="gradeSubmitting"
