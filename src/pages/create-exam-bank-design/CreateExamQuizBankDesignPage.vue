@@ -6114,26 +6114,28 @@ async function confirmAnswer(item) {
                 >{{ designRightUploadFileLabel || '—' }}</span>
               </div>
 
-              <div
-                class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
-                :class="{ 'my-font-md-600': createRagStepperPhase === 2 }"
-              >{{ packUnitSectionHeadingTitle }}</div>
-              <template v-if="designRightUnitSubTabItems.length">
+              <template v-if="hasBuiltRagSummary">
                 <div
-                  v-for="item in designRightUnitSubTabItems"
-                  :key="item.key"
-                  class="nav-item"
-                >
-                  <button
-                    type="button"
-                    class="nav-link w-100 text-start text-break"
-                    :class="{ active: item.active }"
-                    :aria-current="item.active ? 'page' : undefined"
-                    @click="onDesignRightSubTabClick(item)"
+                  class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
+                  :class="{ 'my-font-md-600': createRagStepperPhase === 2 }"
+                >{{ packUnitSectionHeadingTitle }}</div>
+                <template v-if="designRightUnitSubTabItems.length">
+                  <div
+                    v-for="item in designRightUnitSubTabItems"
+                    :key="item.key"
+                    class="nav-item"
                   >
-                    {{ item.label }}
-                  </button>
-                </div>
+                    <button
+                      type="button"
+                      class="nav-link w-100 text-start text-break"
+                      :class="{ active: item.active }"
+                      :aria-current="item.active ? 'page' : undefined"
+                      @click="onDesignRightSubTabClick(item)"
+                    >
+                      {{ item.label }}
+                    </button>
+                  </div>
+                </template>
               </template>
             </nav>
           </aside>
