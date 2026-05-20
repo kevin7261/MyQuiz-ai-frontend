@@ -867,16 +867,17 @@ const createRagStepperPhase = computed(() => {
   return 3;
 });
 
-/** 右側欄：設定單元子分頁 */
-const designRightUnitSubTabItems = computed(() =>
-  packUnitListItemsForNav.value.map((item) => ({
+/** 右側欄：設定單元子分頁（建置完成後） */
+const designRightUnitSubTabItems = computed(() => {
+  if (!hasBuiltRagSummary.value) return [];
+  return packUnitListItemsForNav.value.map((item) => ({
     key: `pack-unit-${item.index}`,
     label: item.label,
     index: item.index,
     kind: 'pack-unit',
     active: item.index === activePackUnitGi.value,
-  })),
-);
+  }));
+});
 
 function onDesignRightSubTabClick(item) {
   if (!item) return;
@@ -1093,11 +1094,22 @@ const packUnitListItemsForNav = computed(() =>
   hasBuiltRagSummary.value ? readonlyPackUnitListItems.value : packUnitListItems.value,
 );
 
-/** 設定單元區塊標題：設定單元 (目前序號/總數) */
+/** 設定單元區塊標題：單元 (總數) */
 const packUnitSectionHeadingTitle = computed(() => {
   const total = packUnitCarouselCountEffective.value;
-  if (total <= 0) return '設定單元 (0)';
-  return `設定單元 (${activePackUnitGi.value + 1}/${total})`;
+  return `單元 (${total})`;
+});
+
+/** 建置完成後 left「設定單元」區塊標題：目前單元名稱（非「設定單元 (n/total)」） */
+const builtPackUnitSectionHeadingTitle = computed(() => {
+  const row = activeReadonlyPackUnitRow.value;
+  if (!row) return '—';
+  const name = String(row.unitNameDisplay ?? '').trim();
+  if (name && name !== '—') return name;
+  const navItem = packUnitListItemsForNav.value[activePackUnitGi.value];
+  if (navItem?.label) return navItem.label;
+  const title = String(row.title ?? '').trim();
+  return title || '—';
 });
 
 watch(activeTabId, () => {
@@ -2248,13 +2260,6 @@ const activeUnitQuizTypeIdxResolved = computed(() => {
   if (!Array.isArray(cards) || cards.length === 0) return 0;
   if (!Number.isFinite(i) || i < 0 || i >= cards.length) return 0;
   return i;
-});
-
-/** 設定單元題型區塊標題：設定單元題型 (目前題型序號/題型總數) */
-const unitQuizTypeSectionHeadingTitle = computed(() => {
-  const total = activeUnitQuizCards.value.length;
-  if (total <= 0) return '設定單元題型 (0)';
-  return `設定單元題型 (${activeUnitQuizTypeIdxResolved.value + 1}/${total})`;
 });
 
 const activeUnitQuizCard = computed(() => {
@@ -4981,7 +4986,7 @@ async function confirmAnswer(item) {
       <div class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout">
         <div
           class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
-          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-9' : 'col-12'"
+          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-10' : 'col-12'"
         >
           <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
       <div
@@ -5475,22 +5480,24 @@ async function confirmAnswer(item) {
           aria-level="2"
         >
           <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
+          <div class="d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
+            <span class="my-font-lg-600 my-test-section-heading-title">{{ builtPackUnitSectionHeadingTitle }}</span>
+            <span
+              v-if="activeReadonlyPackUnitRow?.typeLabel"
+              class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
+            >{{ activeReadonlyPackUnitRow.typeLabel }}</span>
+          </div>
           <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
         </div>
-        <div class="my-pack-unit-settings-body">
+        <div class="my-pack-unit-settings-body d-flex flex-column gap-2 w-100 min-w-0">
           <template v-if="!packUnitCarouselCountEffective">
-            <div
-              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
-            >
-              —
-            </div>
+            <span class="my-font-md-400 my-color-black">—</span>
           </template>
-          <div
-            v-else-if="activeReadonlyPackUnitRow"
-            :key="'ro-rg-' + activeReadonlyPackUnitRow.key"
-            class="my-rag-unit-panel-block d-flex flex-column gap-2"
-          >
+          <template v-else-if="activeReadonlyPackUnitRow">
+            <div
+              :key="'ro-rg-' + activeReadonlyPackUnitRow.key"
+              class="d-flex flex-column gap-2 w-100 min-w-0"
+            >
             <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
               <div
                 class="d-flex flex-column gap-0 min-w-0"
@@ -5527,30 +5534,6 @@ async function confirmAnswer(item) {
                 </div>
                 <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
                   {{ activeReadonlyPackUnitRow.sourceDisplay }}
-                </div>
-              </div>
-            </div>
-            <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
-              <div
-                class="d-flex flex-column gap-0 min-w-0"
-                style="flex: 1 1 0;"
-              >
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                  單元名稱
-                </div>
-                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                  {{ activeReadonlyPackUnitRow.unitNameDisplay }}
-                </div>
-              </div>
-              <div
-                class="d-flex flex-column gap-0 min-w-0"
-                style="flex: 1 1 0;"
-              >
-                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                  類型
-                </div>
-                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                  {{ activeReadonlyPackUnitRow.typeLabel }}
                 </div>
               </div>
             </div>
@@ -5601,7 +5584,7 @@ async function confirmAnswer(item) {
                 </div>
                 <div
                   v-else-if="seg.kind === 'markdown'"
-                  class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
+                  class="my-rag-unit-type-text-scroll min-w-0"
                   :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
                   role="region"
                   aria-label="單元逐字稿"
@@ -5664,7 +5647,8 @@ async function confirmAnswer(item) {
                 </div>
               </template>
             </div>
-          </div>
+            </div>
+          </template>
         </div>
       </section>
       <!-- 設定單元題型 -->
@@ -5678,7 +5662,7 @@ async function confirmAnswer(item) {
           aria-level="2"
         >
           <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ unitQuizTypeSectionHeadingTitle }}</span>
+          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">設定單元題型</span>
           <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
         </div>
         <div
@@ -6091,7 +6075,7 @@ async function confirmAnswer(item) {
         </div>
         <div
           v-if="showDesignRightView"
-          class="col-4 col-lg-3 col-xl-3 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
