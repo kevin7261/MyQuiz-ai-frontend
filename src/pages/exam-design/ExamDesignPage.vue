@@ -51,7 +51,7 @@ import {
   markDesignExamDeleted,
   nextDesignExamId,
 } from './mockData.js';
-import { DESIGN_DEMO_GRADING_RESULT_SAMPLE } from '../create-exam-bank-design/mockData.js';
+import { DESIGN_DEMO_GRADING_PROMPT_SAMPLE } from '../create-exam-bank-design/mockData.js';
 
 const designDelay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -558,6 +558,63 @@ function findExamRagQuizRowBySelectedPick(unitItem, quizNameTrimmed) {
   return null;
 }
 
+/** 自 Rag_Quiz／Exam_Quiz 列取出批改規則（不顯示於 UI，供「開始批改」啟用判斷） */
+function extractAnswerUserPromptFromSource(raw) {
+  if (!raw || typeof raw !== 'object') return '';
+  for (const key of [
+    'answer_user_prompt_text',
+    'answerUserPromptText',
+    'critique_user_prompt_instruction',
+  ]) {
+    const val = raw[key];
+    if (val == null) continue;
+    const text = String(val).trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+function syncExamCardPromptBaselines(card) {
+  if (!card || typeof card !== 'object') return;
+  card.gradingPromptBaseline = String(card.gradingPrompt ?? '');
+  card.quizAnswerBaseline = String(card.quiz_answer ?? '');
+}
+
+/** 稿頁題卡：寫入批改規則與 baseline（對齊 create-exam-bank_design syncQuizCardPromptBaselines） */
+function applyExamDesignCardGradingFields(card, promptSources = []) {
+  if (!card || typeof card !== 'object') return;
+  let gp = '';
+  for (const src of promptSources) {
+    gp = extractAnswerUserPromptFromSource(src).trim();
+    if (gp) break;
+  }
+  if (!gp) gp = String(DESIGN_DEMO_GRADING_PROMPT_SAMPLE ?? '').trim();
+  card.gradingPrompt = gp;
+  card.hasUsedSaveAndGradeOnce = gp !== '';
+  syncExamCardPromptBaselines(card);
+}
+
+/** 「儲存並開始批改」可按：對齊 create-exam-bank_design canEnableUnitQuizGrade */
+function canEnableExamDesignGrade(card) {
+  if (!card || typeof card !== 'object') return false;
+  const gpTrim = String(card.gradingPrompt ?? '').trim();
+  if (!gpTrim) return false;
+  return String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '');
+}
+
+/** 「開始批改」（llm-grade-db）：對齊 create-exam-bank_design canEnableUnitQuizGradeDb */
+function canEnableExamDesignGradeDb(card) {
+  if (!card || typeof card !== 'object') return false;
+  if (card.hasUsedSaveAndGradeOnce !== true) return false;
+  if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
+  const rq = Number(card.rag_quiz_id ?? card.quiz_id);
+  return Number.isFinite(rq) && rq >= 1;
+}
+
+function canEnableExamDesignGradeMerged(card) {
+  return canEnableExamDesignGrade(card) || canEnableExamDesignGradeDb(card);
+}
+
 /** @param {number} slotIndex */
 function examQuizDropdownItemsForSlot(slotIndex) {
   const slotState = getSlotFormState(slotIndex);
@@ -903,6 +960,76 @@ watch(forExamRag, (rag) => {
 /** 「產生題目」「新增題目」：試卷題庫清單載入中則暫停（create 僅需 exam_tab_id，不依賴 rag_unit_id） */
 const generateQuizBlocked = computed(() => forExamLoading.value);
 
+/** 右側欄：有題目槽位時顯示題目清單（對齊 create-exam-bank_design 單元清單） */
+const showDesignRightView = computed(
+  () => !!activeTabId.value && (Number(currentState.value.quizSlotsCount) || 0) > 0,
+);
+
+/** 題目 Carousel：一次只顯示一題，由右側清單切換 */
+const activeExamSlotIndex = ref(0);
+
+const examSlotCarouselCount = computed(
+  () => Number(currentState.value.quizSlotsCount) || 0,
+);
+
+const activeExamSlotGi = computed(() => {
+  const n = examSlotCarouselCount.value;
+  if (n <= 0) return 0;
+  return Math.min(Math.max(0, activeExamSlotIndex.value), n - 1);
+});
+
+/** 目前顯示的題目槽序（1-based，供 template） */
+const activeExamSlotIndex1 = computed(() => activeExamSlotGi.value + 1);
+
+function examQuizNavDisplayLabel(slotIndex) {
+  return `第 ${slotIndex} 題`;
+}
+
+/** 右側欄：題目子分頁 */
+const designRightQuizSubTabItems = computed(() => {
+  const n = examSlotCarouselCount.value;
+  if (n <= 0) return [];
+  const items = [];
+  for (let i = 1; i <= n; i++) {
+    items.push({
+      key: `exam-slot-${i}`,
+      label: examQuizNavDisplayLabel(i),
+      index: i - 1,
+      slotIndex: i,
+      kind: 'exam-slot',
+      active: i - 1 === activeExamSlotGi.value,
+    });
+  }
+  return items;
+});
+
+function selectExamSlot(index) {
+  const n = examSlotCarouselCount.value;
+  if (n <= 0) return;
+  const i = Number(index);
+  if (!Number.isFinite(i) || i < 0 || i >= n) return;
+  activeExamSlotIndex.value = i;
+}
+
+function onDesignRightQuizClick(item) {
+  if (!item) return;
+  if (item.kind === 'exam-slot') selectExamSlot(item.index);
+}
+
+watch(examSlotCarouselCount, (n) => {
+  if (n <= 0) {
+    activeExamSlotIndex.value = 0;
+    return;
+  }
+  if (activeExamSlotIndex.value >= n) {
+    activeExamSlotIndex.value = n - 1;
+  }
+});
+
+watch(activeTabId, () => {
+  activeExamSlotIndex.value = 0;
+});
+
 /** 稿頁：進入時載入示範資料 */
 watch(
   () => authStore.user,
@@ -981,7 +1108,7 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
   const rid = quiz.rag_id ?? quiz.ragId ?? fallbackRagId;
   const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
-  return {
+  const card = {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? quiz.quiz ?? quiz.question ?? '',
     hint: quiz.quiz_hint ?? quiz.hint ?? '',
@@ -1010,6 +1137,9 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     answer_id: answerId,
     gradingPrompt: '',
     quiz_user_prompt_text: '',
+    hasUsedSaveAndGradeOnce: false,
+    gradingPromptBaseline: '',
+    quizAnswerBaseline: '',
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
     follow_up: examQuizApiRowIsFollowUp(quiz),
     follow_up_exam_quiz_id:
@@ -1017,6 +1147,8 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
         ? Number(quiz.follow_up_exam_quiz_id)
         : null,
   };
+  applyExamDesignCardGradingFields(card, [quiz]);
+  return card;
 }
 
 /** 將 GET /exam/tabs 題卡上的 unit／題名對到試卷題庫下拉（需已載入 GET /exam/rag-for-exams） */
@@ -1580,23 +1712,9 @@ function examQuizNameHintWhenDisabled(slotIndex) {
   return '';
 }
 
-/** 「產生題目」：須已有 exam_quiz_id（「新增題目」create 或後端已錨定之列）；須選單元；該單元有 quizzes[] 時須選 quiz_name */
-function examGenerateQuizButtonDisabled(slotIndex) {
-  const slotState = getSlotFormState(slotIndex);
-  const base =
-    slotState.loading || slotState.draftCreating || generateQuizBlocked.value;
-  const hasExamRowId =
-    examSlotHasAnchoredExamQuizId(slotIndex)
-    || (slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1);
-  if (!hasExamRowId) return true;
-  if (examUnitSelectDropdownOptions.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
-    return true;
-  }
-  const quizOpts = examQuizDropdownItemsForSlot(slotIndex);
-  if (quizOpts.length > 0 && !String(slotState.examQuizNamePick ?? '').trim()) {
-    return true;
-  }
-  return base;
+/** 稿頁「產生題目」：永遠可點（示範用，不鎖選項／錨定條件） */
+function examGenerateQuizButtonDisabled() {
+  return false;
 }
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
@@ -1805,6 +1923,7 @@ async function openNextQuizSlot() {
   state.showQuizGeneratorBlock = true;
   state.quizSlotsCount = (state.quizSlotsCount || 0) + 1;
   const idx = state.quizSlotsCount;
+  activeExamSlotIndex.value = idx - 1;
   while (state.cardList.length < idx) {
     state.cardList.push(null);
   }
@@ -2023,6 +2142,14 @@ async function generateQuiz(slotIndex) {
         const fuReq = examFollowUpExamQuizIdForSlot(slotIndex);
         if (fuReq != null) newCard.follow_up_exam_quiz_id = fuReq;
       }
+      const unitItem = findExamUnitDropdownItemBySelectId(
+        String(slotState.examUnitSelectId ?? '').trim(),
+      );
+      const pickName =
+        String(newCard.examQuizDisplayName ?? '').trim()
+        || String(slotState.examQuizNamePick ?? '').trim();
+      const ragRow = findExamRagQuizRowBySelectedPick(unitItem, pickName);
+      applyExamDesignCardGradingFields(newCard, [data, ragRow]);
     }
     slotState.draftExamQuizId = null;
     syncAllExamSlotQuizHistoryLists();
@@ -2050,6 +2177,11 @@ async function confirmAnswer(item) {
   gradingSubmittingCardId.value = item.id;
   try {
     await submitGrade(item);
+    if (item.confirmed) {
+      item.gradingPromptBaseline = String(item.gradingPrompt ?? '');
+      item.quizAnswerBaseline = String(item.quiz_answer ?? '');
+      item.hasUsedSaveAndGradeOnce = true;
+    }
   } finally {
     gradingSubmittingCardId.value = null;
   }
@@ -2061,17 +2193,18 @@ function designExamQuizCardBind(slotIndex) {
   return {
     card,
     slotIndex,
+    gradeSaveAllowed: canEnableExamDesignGradeMerged(card),
+    gradeDbAllowed: canEnableExamDesignGradeMerged(card),
     currentRagId: currentRagIdForQuizCards.value,
     showExamRating: true,
     designUi: true,
     designEmbedded: true,
     createExamBankDesignLayout: true,
     hideSlotIndex: true,
-    hideGradingPrompt: true,
     hideExamRulePills: true,
     gradingPromptInModal: true,
     hintReferenceInModal: true,
-    designGradingResultSample: DESIGN_DEMO_GRADING_RESULT_SAMPLE,
+    showBankQuizHistoryButton: true,
     gradeSubmitting: examCardGradeSubmitting(card),
     examQuizHistoryList: examSlotIsFollowupMode(slotIndex)
       ? examQuizFollowupHistoryListForDisplay(slotIndex)
@@ -2231,10 +2364,10 @@ onActivated(() => {
       </div>
     </div>
 
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-hidden my-bgcolor-gray-4 d-flex flex-column min-h-0">
       <div
         v-if="examList.length === 0"
-        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
+        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 overflow-auto"
       >
         <button
           v-if="!examListLoading"
@@ -2250,22 +2383,36 @@ onActivated(() => {
           新增{{ quizBankNoun }}
         </button>
       </div>
-      <div v-else class="container-fluid px-3 px-md-4 py-4">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-            <div
-              v-if="activeTabId"
-              class="text-start my-page-block-spacing"
-            >
-              <div
-                class="d-flex flex-column gap-4 w-100 min-w-0"
-              >
-                <template v-for="(slotIndex) in currentState.quizSlotsCount" :key="slotIndex">
+      <div
+        v-else
+        class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout"
+      >
+        <div
+          class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
+          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-10' : 'col-12'"
+        >
+          <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
+            <div class="container-fluid px-3 px-md-4 py-4">
+              <div class="row justify-content-center">
+                <div
+                  :class="
+                    showDesignRightView
+                      ? 'col-12 col-lg-12 col-xl-10 col-xxl-8'
+                      : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
+                  "
+                >
                   <div
-                    class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
+                    v-if="activeTabId"
+                    class="text-start my-page-block-spacing"
                   >
+                    <div class="d-flex flex-column gap-4 w-100 min-w-0">
+                      <template v-if="currentState.quizSlotsCount > 0">
+                        <div
+                          :key="activeExamSlotIndex1"
+                          class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
+                        >
                       <div class="my-font-lg-600 my-color-black">
-                        第 {{ slotIndex }} 題
+                        第 {{ activeExamSlotIndex1 }} 題
                       </div>
                       <div
                         class="d-flex flex-column gap-3 w-100 min-w-0"
@@ -2275,73 +2422,73 @@ onActivated(() => {
                         >
                           <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
                             <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                              <template v-if="examSlotRagChoicesLocked(slotIndex)">
+                              <template v-if="examSlotRagChoicesLocked(activeExamSlotIndex1)">
                                 <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
                                   單元
                                 </div>
                                 <div
                                   class="my-font-md-400 my-color-black text-break lh-base mt-1"
                                   role="status"
-                                  :aria-label="`單元：${examSlotLockedStaticUnitLabel(slotIndex)}`"
+                                  :aria-label="`單元：${examSlotLockedStaticUnitLabel(activeExamSlotIndex1)}`"
                                 >
-                                  {{ examSlotLockedStaticUnitLabel(slotIndex) }}
+                                  {{ examSlotLockedStaticUnitLabel(activeExamSlotIndex1) }}
                                 </div>
                               </template>
                               <template v-else>
                                 <label
                                   class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                                  :for="`exam-slot-${slotIndex}-unit-toggle-filled`"
+                                  :for="`exam-slot-${activeExamSlotIndex1}-unit-toggle-filled`"
                                 >選擇單元</label>
                                 <UnitSelectDropdown
-                                  v-model="getSlotFormState(slotIndex).examUnitSelectId"
+                                  v-model="getSlotFormState(activeExamSlotIndex1).examUnitSelectId"
                                   :options="examUnitSelectDropdownOptions"
                                   :option-value="examUnitSelectValue"
                                   :option-label="(u) => String(u.label ?? '').trim() || '—'"
                                   placeholder="— 請選擇單元 —"
-                                  :menu-id="`exam-slot-${slotIndex}-unit-filled`"
-                                  :disabled="examUnitSelectDropdownDisabled(slotIndex)"
-                                  :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
-                                  @update:model-value="onExamSlotUnitChange(slotIndex)"
+                                  :menu-id="`exam-slot-${activeExamSlotIndex1}-unit-filled`"
+                                  :disabled="examUnitSelectDropdownDisabled(activeExamSlotIndex1)"
+                                  :hint-when-disabled="examUnitSelectHintWhenDisabled(activeExamSlotIndex1)"
+                                  @update:model-value="onExamSlotUnitChange(activeExamSlotIndex1)"
                                 />
                               </template>
                             </div>
                           </div>
                           <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
                             <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                              <template v-if="examSlotRagChoicesLocked(slotIndex)">
+                              <template v-if="examSlotRagChoicesLocked(activeExamSlotIndex1)">
                                 <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
                                   題型
                                 </div>
                                 <div
                                   class="my-font-md-400 my-color-black text-break lh-base mt-1"
                                   role="status"
-                                  :aria-label="`題型：${examSlotLockedStaticQuizTypeLabel(slotIndex)}`"
+                                  :aria-label="`題型：${examSlotLockedStaticQuizTypeLabel(activeExamSlotIndex1)}`"
                                 >
-                                  {{ examSlotLockedStaticQuizTypeLabel(slotIndex) }}
+                                  {{ examSlotLockedStaticQuizTypeLabel(activeExamSlotIndex1) }}
                                 </div>
                               </template>
                               <template v-else>
                                 <label
                                   class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                                  :for="`exam-slot-${slotIndex}-quiz-dd-filled`"
+                                  :for="`exam-slot-${activeExamSlotIndex1}-quiz-dd-filled`"
                                 >選擇題型</label>
                                 <UnitSelectDropdown
-                                  v-model="getSlotFormState(slotIndex).examQuizNamePick"
-                                  :options="examQuizDropdownItemsForSlot(slotIndex)"
+                                  v-model="getSlotFormState(activeExamSlotIndex1).examQuizNamePick"
+                                  :options="examQuizDropdownItemsForSlot(activeExamSlotIndex1)"
                                   :option-value="examQuizPickSelectValue"
                                   :option-label="examQuizTypeDisplayLabelForDropdownOption"
                                   placeholder="— 請選擇題型 —"
-                                  :menu-id="`exam-slot-${slotIndex}-quiz-dd-filled`"
-                                  :disabled="examQuizNameDropdownDisabled(slotIndex)"
-                                  :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
+                                  :menu-id="`exam-slot-${activeExamSlotIndex1}-quiz-dd-filled`"
+                                  :disabled="examQuizNameDropdownDisabled(activeExamSlotIndex1)"
+                                  :hint-when-disabled="examQuizNameHintWhenDisabled(activeExamSlotIndex1)"
                                 />
                               </template>
                             </div>
                           </div>
                         </div>
-                        <template v-if="examSlotShowUnitTranscriptUi(slotIndex)">
+                        <template v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1)">
                           <div
-                            v-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_TEXT"
+                            v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
                             class="w-100 min-w-0"
                           >
                             <div
@@ -2350,9 +2497,9 @@ onActivated(() => {
                               aria-label="單元逐字稿"
                             >
                               <div
-                                v-if="examSlotUnitTranscriptMdHtml(slotIndex)"
+                                v-if="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
                                 class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                                v-html="examSlotUnitTranscriptMdHtml(slotIndex)"
+                                v-html="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
                               />
                               <span
                                 v-else
@@ -2361,31 +2508,31 @@ onActivated(() => {
                             </div>
                           </div>
                           <div
-                            v-else-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_YOUTUBE"
+                            v-else-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_YOUTUBE"
                             class="d-flex flex-column gap-2 w-100 min-w-0"
                           >
                             <div
-                              v-if="examSlotYoutubeEmbedUrl(slotIndex)"
+                              v-if="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
                               class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
                             >
                               <iframe
                                 class="border-0"
                                 title="YouTube 影片"
-                                :src="examSlotYoutubeEmbedUrl(slotIndex)"
+                                :src="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                 referrerpolicy="strict-origin-when-cross-origin"
                                 allowfullscreen
                               />
                             </div>
                             <span
-                              v-if="!examSlotYoutubeEmbedUrl(slotIndex)"
+                              v-if="!examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
                               class="my-font-md-400 my-color-black text-break"
-                            >{{ examSlotUnitTranscriptSection(slotIndex).sourceDisplay }}</span>
+                            >{{ examSlotUnitTranscriptSection(activeExamSlotIndex1).sourceDisplay }}</span>
                             <div class="d-flex justify-content-center w-100 pt-1">
                               <button
                                 type="button"
                                 class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                                @click="openExamUnitTranscriptModal(slotIndex)"
+                                @click="openExamUnitTranscriptModal(activeExamSlotIndex1)"
                               >
                                 逐字稿
                               </button>
@@ -2393,7 +2540,7 @@ onActivated(() => {
                           </div>
                         </template>
                         <template
-                          v-if="examSlotShowUnitTranscriptUi(slotIndex) && examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
+                          v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1) && examSlotUnitTranscriptSection(activeExamSlotIndex1)?.unitType === UNIT_TYPE_MP3"
                         >
                           <audio
                             controls
@@ -2402,13 +2549,13 @@ onActivated(() => {
                           />
                         </template>
                         <div
-                          v-if="examSlotShowUnitTranscriptUi(slotIndex) && examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
+                          v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1) && examSlotUnitTranscriptSection(activeExamSlotIndex1)?.unitType === UNIT_TYPE_MP3"
                           class="d-flex justify-content-center w-100 min-w-0 pt-1"
                         >
                           <button
                             type="button"
                             class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                            @click="openExamUnitTranscriptModal(slotIndex)"
+                            @click="openExamUnitTranscriptModal(activeExamSlotIndex1)"
                           >
                             逐字稿
                           </button>
@@ -2419,107 +2566,138 @@ onActivated(() => {
                         <div
                           class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 d-flex flex-column"
                         >
-                          <template v-if="examSlotQuizBodyTrim(slotIndex) === ''">
+                          <template v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) === ''">
                             <div
-                              class="d-flex justify-content-start align-items-center flex-wrap gap-2 p-3"
+                              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3"
                             >
                               <button
                                 type="button"
-                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                                aria-label="查看先前出題"
-                                :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
-                                @click="openExamQuizHistoryModal(slotIndex)"
-                              >
-                                先前出題
-                              </button>
-                              <button
-                                type="button"
                                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
-                                :disabled="examGenerateQuizButtonDisabled(slotIndex)"
-                                :aria-busy="getSlotFormState(slotIndex).loading || getSlotFormState(slotIndex).draftCreating"
+                                :disabled="examGenerateQuizButtonDisabled(activeExamSlotIndex1)"
+                                :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
                                 aria-label="產生題目"
-                                @click="generateQuiz(slotIndex)"
+                                @click="generateQuiz(activeExamSlotIndex1)"
                               >
                                 產生題目
                               </button>
                             </div>
                             <div
-                              v-if="getSlotFormState(slotIndex).error"
+                              v-if="getSlotFormState(activeExamSlotIndex1).error"
                               class="my-alert-danger-soft my-font-sm-400 py-2 mx-3 mb-3"
                             >
-                              {{ getSlotFormState(slotIndex).error }}
+                              {{ getSlotFormState(activeExamSlotIndex1).error }}
                             </div>
                           </template>
                           <div
-                            v-if="examSlotQuizBodyTrim(slotIndex) !== ''"
+                            v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                             class="w-100 min-w-0"
                           >
                             <QuizCard
-                              v-bind="designExamQuizCardBind(slotIndex)"
+                              v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
                               create-exam-bank-design-layout
                               design-sub-block="question"
                               @confirm-answer="confirmAnswer"
-                              @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[slotIndex - 1], dir)"
-                              @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
-                              @update:grading_prompt="(val) => { currentState.cardList[slotIndex - 1].gradingPrompt = val }"
+                              @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[activeExamSlotGi], dir)"
+                              @open-quiz-history="openExamQuizHistoryModal(activeExamSlotIndex1)"
+                              @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                              @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
                             />
                           </div>
                         </div>
                       </div>
                       <!-- 子區塊：答案；外層 ps-5＝灰底上、白底左側留白 -->
                       <div
-                        v-if="examSlotQuizBodyTrim(slotIndex) !== ''"
+                        v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                         class="my-design-quiz-sub-block-outer ps-5"
                       >
                         <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
                           <div class="w-100 min-w-0 pt-2">
                             <QuizCard
-                              v-bind="designExamQuizCardBind(slotIndex)"
+                              v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
                               create-exam-bank-design-layout
                               design-sub-block="answer"
                               @confirm-answer="confirmAnswer"
-                              @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
-                              @update:grading_prompt="(val) => { currentState.cardList[slotIndex - 1].gradingPrompt = val }"
+                              @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                              @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
                             />
                           </div>
                         </div>
                       </div>
                       <!-- 子區塊：批改；外層 pe-5＝灰底上、白底右側留白 -->
                       <div
-                        v-if="examSlotQuizBodyTrim(slotIndex) !== ''"
+                        v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                         class="my-design-quiz-sub-block-outer pe-5"
                       >
                         <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
                           <QuizCard
-                            v-bind="designExamQuizCardBind(slotIndex)"
+                            v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
                             create-exam-bank-design-layout
                             design-sub-block="grading"
                             @confirm-answer="confirmAnswer"
-                            @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
-                            @update:grading_prompt="(val) => { currentState.cardList[slotIndex - 1].gradingPrompt = val }"
+                            @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                            @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
                           />
                         </div>
                       </div>
-                  </div>
-                </template>
+                        </div>
+                      </template>
 
-                <div class="d-flex justify-content-center pt-4 mb-0 w-100">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
-                    title="新增題目"
-                    aria-label="新增題目"
-                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim()"
-                    :aria-busy="examAddQuestionSubmitting"
-                    @click="openNextQuizSlot"
-                  >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增題目
-                  </button>
+                      <div class="d-flex justify-content-center pt-4 mb-0 w-100">
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                          title="新增題目"
+                          aria-label="新增題目"
+                          :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim()"
+                          :aria-busy="examAddQuestionSubmitting"
+                          @click="openNextQuizSlot"
+                        >
+                          <i class="fa-solid fa-plus" aria-hidden="true" />
+                          新增題目
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+        <div
+          v-if="showDesignRightView"
+          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+        >
+          <aside
+            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
+            aria-label="題目清單"
+          >
+            <nav
+              v-if="activeTabId"
+              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
+              aria-label="題目清單"
+            >
+              <div class="my-design-right-step-heading my-font-md-400 my-color-black">
+                題目
+              </div>
+              <template v-if="designRightQuizSubTabItems.length">
+                <div
+                  v-for="item in designRightQuizSubTabItems"
+                  :key="item.key"
+                  class="nav-item"
+                >
+                  <button
+                    type="button"
+                    class="nav-link w-100 text-start text-break"
+                    :class="{ active: item.active }"
+                    :aria-current="item.active ? 'page' : undefined"
+                    @click="onDesignRightQuizClick(item)"
+                  >
+                    {{ item.label }}
+                  </button>
+                </div>
+              </template>
+            </nav>
+          </aside>
         </div>
       </div>
     </div>
@@ -2527,6 +2705,44 @@ onActivated(() => {
 </template>
 
 <style scoped>
+/* 左右分欄（對齊 create-exam-bank_design） */
+.my-design-tab-split-layout {
+  min-height: 0;
+  flex: 1 1 0;
+}
+.my-design-tab-left-view,
+.my-design-tab-right-view {
+  min-width: 0;
+  min-height: 0;
+}
+.my-design-tab-left-view-scroll {
+  min-height: 0;
+}
+.my-design-right-step-heading {
+  line-height: 1.35;
+  word-break: break-word;
+  padding: 0 0.5rem;
+}
+.my-design-right-nav .nav-link {
+  color: var(--my-color-black);
+  border: none;
+  background: transparent;
+}
+.my-design-right-nav button.nav-link {
+  cursor: pointer;
+}
+.my-design-right-nav .nav-link:not(.active):hover,
+.my-design-right-nav .nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+}
+.my-design-right-nav .nav-link.active,
+.my-design-right-nav .nav-link.active:hover,
+.my-design-right-nav .nav-link.active:focus,
+.my-design-right-nav .nav-link.active:focus-visible {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
 /* 題型區三子區塊：outer＝灰底上 pe-5／ps-5（題目、批改右留白；答案左留白）；sub-block＝白底圓角面板 */
 .my-design-quiz-sub-block-outer,
 .my-design-quiz-sub-block {
@@ -2565,6 +2781,11 @@ onActivated(() => {
 .my-design-quiz-sub-block :deep(.btn.my-design-quiz-stem-history-btn) {
   border: none;
   white-space: nowrap;
+}
+/* 稿頁 pill 按鈕（產生題目、開始批改等）不換行 — 對齊 create-exam-bank_design */
+.my-design-quiz-sub-block :deep(.btn.rounded-pill) {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .form-control.my-design-quiz-answer-input,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {

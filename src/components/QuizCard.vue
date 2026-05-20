@@ -133,11 +133,11 @@ const cardMarkedForExam = computed(
 /** 題卡實際批改文字（不含稿頁 placeholder sample） */
 const gradingResultActual = computed(() => String(props.card?.gradingResult ?? '').trim());
 
-/** create-exam-bank_design：無真實批改時以 sample 填黑底預覽；其餘頁僅顯示實際結果 */
+/** create-exam-bank_design：無真實批改時以 sample 填預覽；測驗／exam_design（hideGradingPrompt）僅顯示實際結果 */
 const gradingResultDisplay = computed(() => {
   if (gradingResultActual.value) return props.card.gradingResult;
   const sample = String(props.designGradingResultSample ?? '').trim();
-  if (props.createExamBankDesignLayout && sample) return sample;
+  if (props.createExamBankDesignLayout && sample && !props.hideGradingPrompt) return sample;
   return '';
 });
 
@@ -194,9 +194,12 @@ const promptModalTitle = computed(() =>
   promptModalKind.value === 'question' ? '出題規則' : '批改規則'
 );
 
-/** 測驗頁：可查看此題先前出題（批改後仍保留；須父層傳入 history 相關 props） */
+/** 測驗頁：可查看此題先前出題（批改後仍保留；須父層傳入 history 相關 props）；稿頁題目標題列已有時不重复顯示 */
 const showQuizHistoryPreviewButton = computed(
-  () => props.hideGradingPrompt && props.examQuizHistoryList !== undefined,
+  () =>
+    props.hideGradingPrompt
+    && props.examQuizHistoryList !== undefined
+    && !props.showBankQuizHistoryButton,
 );
 
 const examQuizHistoryButtonDisabled = computed(
@@ -324,10 +327,14 @@ const showDesignLayoutGradingToolbar = computed(
   () => isDesignSubBlockFragment.value && props.designSubBlock === 'grading',
 );
 
-/** 稿頁批改子區：「開始批改」列（對應「產生題目」；常駐顯示） */
-const showDesignGradingStartRow = computed(
-  () => showDesignLayoutGradingToolbar.value && showStartGradeButton.value,
-);
+/** 稿頁批改子區：「開始批改」列（對應「產生題目」；create-exam-bank_design 常駐顯示） */
+const showDesignGradingStartRow = computed(() => {
+  if (!showDesignLayoutGradingToolbar.value) return false;
+  if (props.gradeSaveAllowed !== undefined || props.gradeDbAllowed !== undefined) {
+    return true;
+  }
+  return showStartGradeButton.value;
+});
 
 /** 稿頁批改子區：「批改結果」plain 區（對應「題目」；含稿頁示範 sample） */
 const showDesignGradingResultBlock = computed(
@@ -483,6 +490,16 @@ const standaloneStartGradeButtonDisabled = computed(
     || blockExamStyleGradeResubmitUntilDirty.value,
 );
 
+/** 稿頁批改子區「開始批改」：父層傳 gradeSaveAllowed／gradeDbAllowed 時對齊 create-exam-bank_design */
+const designGradingStartButtonDisabled = computed(() => {
+  if (props.gradeSaveAllowed !== undefined || props.gradeDbAllowed !== undefined) {
+    return mergedGradeButtonDisabled.value;
+  }
+  return props.hideGradingPrompt
+    ? standaloneStartGradeButtonDisabled.value
+    : mergedGradeButtonDisabled.value;
+});
+
 const gradingPromptResetDisabled = computed(
   () =>
     cardMarkedForExam.value
@@ -491,12 +508,13 @@ const gradingPromptResetDisabled = computed(
       === String(props.card?.gradingPromptBaseline ?? ''),
 );
 
-/** 測驗頁（hideGradingPrompt）：批改結果區有文字時鎖定答案；送出批改時父層 gradeSubmitting 與 submitGrade 清空結果後恢復可編輯 */
+/** 測驗頁（hideGradingPrompt）：批改結果區有文字時鎖定答案；稿頁三子區塊（createExamBankDesignLayout）對齊 create-exam-bank_design 不鎖 */
 const quizAnswerFieldDisabled = computed(
   () =>
     props.gradeSubmitting
     || (
       props.hideGradingPrompt
+      && !props.createExamBankDesignLayout
       && String(props.card?.gradingResult ?? '').trim() !== ''
     ),
 );
@@ -652,6 +670,7 @@ const quizAnswerFieldDisabled = computed(
                   type="button"
                   class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1 ms-auto"
                   aria-label="查看先前出題"
+                  :disabled="examQuizHistoryButtonDisabled"
                   @click="emit('open-quiz-history')"
                 >
                   先前出題
@@ -689,6 +708,7 @@ const quizAnswerFieldDisabled = computed(
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
               aria-label="查看先前出題"
+              :disabled="examQuizHistoryButtonDisabled"
               @click="emit('open-quiz-history')"
             >
               先前出題
@@ -1106,13 +1126,13 @@ const quizAnswerFieldDisabled = computed(
             </div>
             <div
               v-if="showDesignGradingStartRow"
-              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3"
+              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3 my-design-quiz-grading-start-row"
             >
               <button
                 type="button"
                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
-                :disabled="mergedGradeButtonDisabled"
+                :disabled="designGradingStartButtonDisabled"
                 :aria-busy="gradeSubmitting"
                 aria-label="開始批改"
                 @click="emit('confirm-answer', card)"
@@ -1188,7 +1208,7 @@ const quizAnswerFieldDisabled = computed(
             </div>
           </template>
           <div
-            v-if="!showDesignLayoutGradingToolbar && (showStartGradeButton || !cardMarkedForExam)"
+            v-if="!showDesignLayoutGradingToolbar && !showDesignGradingStartRow && (showStartGradeButton || !cardMarkedForExam)"
             :class="
               designUi
                 ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
@@ -1198,7 +1218,7 @@ const quizAnswerFieldDisabled = computed(
             <button
               v-if="showStartGradeButton"
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
               title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
               :disabled="mergedGradeButtonDisabled"
               :aria-busy="gradeSubmitting"
@@ -1294,7 +1314,7 @@ const quizAnswerFieldDisabled = computed(
           <button
             v-if="showStartGradeButton"
             type="button"
-            class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
             :disabled="standaloneStartGradeButtonDisabled"
             :aria-busy="gradeSubmitting"
             aria-label="開始批改"
@@ -1403,5 +1423,26 @@ const quizAnswerFieldDisabled = computed(
 }
 .quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 400px;
+}
+/* 稿頁答案子區塊：白底、淡灰框（與 create-exam-bank_design 頁內 :deep 規則一致） */
+:deep(.form-control.my-design-quiz-answer-input) {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
+  color: var(--my-color-black);
+}
+:deep(.form-control.my-design-quiz-answer-input:focus) {
+  background-color: var(--my-color-white);
+  border-color: var(--my-color-gray-2);
+  box-shadow: none;
+}
+:deep(.form-control.my-design-quiz-answer-input:disabled) {
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-2);
+  opacity: 1;
+}
+/* 稿頁批改子區「開始批改」：左對齊 pill，與 create-exam-bank_design 一致（黑底白字 my-button-white） */
+:deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 </style>
