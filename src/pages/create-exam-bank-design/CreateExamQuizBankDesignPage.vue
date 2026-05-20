@@ -6099,29 +6099,28 @@ async function confirmAnswer(item) {
                     </button>
                   </div>
                   <div class="d-flex flex-column min-w-0">
-                    <div
-                      class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
-                    >
-                      <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                        出題規則
-                      </div>
+                    <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">
+                      出題規則
+                    </div>
+                    <div class="position-relative min-w-0 w-100">
                       <button
                         v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
                         type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
+                        class="btn rounded-circle position-absolute top-0 end-0 z-1 d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-on-design-dark-preview my-btn-circle lh-1 shadow-none border-0 m-1"
+                        title="編輯出題規則"
                         aria-label="編輯出題規則"
                         :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                         @click="openBankQuizUserPromptEditModal"
                       >
-                        編輯出題規則
+                        <i class="fa-solid fa-pen" aria-hidden="true" />
                       </button>
+                      <EnglishExamMarkdownEditor
+                        :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
+                        preview-only
+                        preview-design-dark
+                        :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                      />
                     </div>
-                    <EnglishExamMarkdownEditor
-                      :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
-                      preview-only
-                      preview-design-dark
-                      :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                    />
                   </div>
                 </div>
                 <div class="d-flex flex-column align-items-center gap-2 w-100">

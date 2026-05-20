@@ -782,19 +782,21 @@ const quizAnswerFieldDisabled = computed(
               v-if="hasHintText"
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-              aria-label="顯示提示"
+              title="提示"
+              aria-label="提示"
               @click="openHintRefModal('hint')"
             >
-              顯示提示
+              提示
             </button>
             <button
               v-if="hasReferenceAnswerText"
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-              aria-label="顯示參考答案"
+              title="參考答案"
+              aria-label="參考答案"
               @click="openHintRefModal('reference')"
             >
-              顯示參考答案
+              參考答案
             </button>
           </div>
           <span
@@ -832,30 +834,29 @@ const quizAnswerFieldDisabled = computed(
           class="d-flex flex-column w-100 min-w-0 mt-3"
         >
           <div
-            class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
+            :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1' : 'form-label my-font-sm-600 mb-1 my-color-gray-1'"
           >
-            <div
-              :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-            >
-              批改規則
-            </div>
+            批改規則
+          </div>
+          <div class="position-relative min-w-0 w-100">
             <button
               v-if="!cardMarkedForExam"
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
-              :disabled="gradeSubmitting"
+              class="btn rounded-circle position-absolute top-0 end-0 z-1 d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-on-design-dark-preview my-btn-circle lh-1 shadow-none border-0 m-1"
+              title="編輯批改規則"
               aria-label="編輯批改規則"
+              :disabled="gradeSubmitting"
               @click="emit('open-grading-prompt-edit')"
             >
-              編輯批改規則
+              <i class="fa-solid fa-pen" aria-hidden="true" />
             </button>
+            <EnglishExamMarkdownEditor
+              :model-value="String(card.gradingPrompt ?? '')"
+              :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
+              preview-only
+              preview-design-dark
+            />
           </div>
-          <EnglishExamMarkdownEditor
-            :model-value="String(card.gradingPrompt ?? '')"
-            :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
-            preview-only
-            preview-design-dark
-          />
           <div
             v-if="showStartGradeButton || !cardMarkedForExam"
             :class="

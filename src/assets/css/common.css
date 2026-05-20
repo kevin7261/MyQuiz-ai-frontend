@@ -272,6 +272,24 @@ code {
   background-color: color-mix(in srgb, var(--my-color-gray-1) 14%, transparent);
 }
 
+/* 32×32 圓形：疊在黑底規則預覽角上（父層多為 gray-3，白字無框） */
+.btn.my-btn-on-design-dark-preview.my-btn-circle {
+  color: var(--my-color-white);
+  background-color: transparent;
+  border: none;
+  box-shadow: none;
+}
+.btn.my-btn-on-design-dark-preview.my-btn-circle:hover:not(:disabled),
+.btn.my-btn-on-design-dark-preview.my-btn-circle:active:not(:disabled),
+.btn.my-btn-on-design-dark-preview.my-btn-circle:focus-visible:not(:disabled) {
+  color: var(--my-color-white);
+  border: none;
+  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+}
+.btn.my-btn-on-design-dark-preview.my-btn-circle:disabled {
+  opacity: 0.55;
+}
+
 /* 線框按鈕（灰深邊線；勿用 Bootstrap btn-outline-*） */
 .btn.my-btn-outline-gray-2 {
   color: var(--my-color-black);
@@ -1264,7 +1282,7 @@ div.form-control {
 
 /* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（black 與 white 皆黑底白字，黑稿內 white 例外）；描邊 .my-button-white-border／.my-btn-outline-gray-1／.my-btn-outline-*-hollow；transparent-borderless 為黑無框（黑稿內例外淺字） —— */
 .btn.rounded-pill:not(.my-button-white-border):not(.my-btn-outline-gray-1):not(.my-btn-outline-blue-hollow):not(.my-btn-outline-green-hollow),
-.btn.rounded-circle:not(.my-button-white-border) {
+.btn.rounded-circle:not(.my-button-white-border):not(.my-btn-on-design-dark-preview) {
   border: none;
 }
 
