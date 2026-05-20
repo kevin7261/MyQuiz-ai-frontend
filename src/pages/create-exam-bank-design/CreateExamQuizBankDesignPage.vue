@@ -2501,7 +2501,7 @@ const designUnitQuizCardBind = computed(() => {
     designGradingResultSample: DESIGN_DEMO_GRADING_RESULT_SAMPLE,
     gradingPromptInModal: true,
     hintReferenceInModal: true,
-    showBankQuizHistoryButton: false,
+    showBankQuizHistoryButton: true,
     showRagQuizForExamAction: true,
     hideRagQuizForExamToolbar: true,
   };
@@ -6167,12 +6167,13 @@ async function confirmAnswer(item) {
                 <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白 -->
                 <div class="my-design-quiz-sub-block-outer pe-5">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2 d-flex flex-column"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 d-flex flex-column"
                   >
-                    <section
-                      class="my-design-quiz-question-prompt-block w-100 min-w-0"
-                      aria-label="出題規則"
-                    >
+                    <div class="my-design-quiz-question-prompt-wrap px-2 pt-2 pb-0 w-100 min-w-0">
+                      <section
+                        class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                        aria-label="出題規則"
+                      >
                       <header class="my-design-quiz-question-prompt-block__head">
                         <div
                           class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
@@ -6206,9 +6207,10 @@ async function confirmAnswer(item) {
                           :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         />
                       </div>
-                    </section>
+                      </section>
+                    </div>
                     <div
-                      class="d-flex justify-content-start align-items-center flex-wrap gap-2 mt-2"
+                      class="d-flex justify-content-start align-items-center flex-wrap gap-2 p-2"
                     >
                       <button
                         type="button"
@@ -6224,18 +6226,10 @@ async function confirmAnswer(item) {
                       >
                         產生題目
                       </button>
-                      <button
-                        type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                        aria-label="查看先前出題"
-                        @click="openBankQuizHistoryModal"
-                      >
-                        先前出題
-                      </button>
                     </div>
                     <div
                       v-if="activeUnitQuizHasGeneratedBody"
-                      class="w-100 min-w-0 mt-2"
+                      class="w-100 min-w-0 pt-2"
                     >
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
@@ -6254,16 +6248,18 @@ async function confirmAnswer(item) {
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer ps-5"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2">
-                    <QuizCard
-                      v-bind="designUnitQuizCardBind"
-                      create-exam-bank-design-layout
-                      design-sub-block="answer"
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
+                    <div class="w-100 min-w-0 pt-2">
+                      <QuizCard
+                        v-bind="designUnitQuizCardBind"
+                        create-exam-bank-design-layout
+                        design-sub-block="answer"
                       @confirm-answer="confirmGradeMerged"
                       @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                       @open-grading-prompt-edit="openBankGradingPromptEditModal"
                       @open-quiz-history="openBankQuizHistoryModal"
-                    />
+                      />
+                    </div>
                   </div>
                 </div>
                 <!-- 子區塊：批改；外層 pe-5＝灰底上、白底右側留白 -->
@@ -6271,7 +6267,7 @@ async function confirmAnswer(item) {
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer pe-5"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-2">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
                     <QuizCard
                       v-bind="designUnitQuizCardBind"
                       create-exam-bank-design-layout
@@ -6554,8 +6550,8 @@ async function confirmAnswer(item) {
   max-width: 100%;
   min-width: 0;
 }
-/* 稿頁三子區塊：灰框白底（題目／答案／批改）；出題規則為黑底區 */
-/* 灰框欄位：圓角灰邊白底 */
+/* 稿頁三子區塊：題目／答案無框；批改規則／批改結果為灰框白底；出題規則為黑底區 */
+/* 灰框欄位：圓角灰邊白底（批改子區） */
 .my-design-quiz-field-inset,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
   box-sizing: border-box;
@@ -6565,6 +6561,13 @@ async function confirmAnswer(item) {
   border: 1px solid var(--my-color-gray-2);
   border-radius: 0.5rem;
   background-color: var(--my-color-white);
+}
+/* 題目／答案：無灰框，沿用子區白底 */
+.my-design-quiz-field-inset--plain,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset--plain) {
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
 }
 .my-design-quiz-field-inset-label,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
@@ -6631,20 +6634,26 @@ async function confirmAnswer(item) {
   border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
   opacity: 1;
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark) {
+/* 黑底預覽內層：無白框（頁內出題規則 + QuizCard 內批改規則） */
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel--design-dark) {
   margin-bottom: 0;
   background: transparent !important;
   border: none !important;
   border-radius: 0;
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel) {
   margin-bottom: 0;
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
   color: var(--my-color-white);
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
   color: var(--my-color-gray-2);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
@@ -6653,35 +6662,73 @@ async function confirmAnswer(item) {
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h1),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h2),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h3),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th) {
   color: var(--my-color-white);
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body a) {
   color: var(--my-color-blue-hover);
   word-break: break-word;
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body pre) {
   background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
   color: var(--my-color-white);
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body code) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body code) {
   color: var(--my-color-white);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p code),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li code) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li code) {
   background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
   color: var(--my-color-white);
 }
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
   border-left-color: var(--my-color-gray-2);
   color: var(--my-color-gray-2);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td) {
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td) {
   border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
 }
 .my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
   margin-bottom: 0;
+}
+/* 題目／答案標題列 pill（先前出題、提示、參考答案）：淡灰底、無描邊 */
+.btn.my-design-quiz-stem-history-btn,
+.my-design-quiz-sub-block :deep(.btn.my-design-quiz-stem-history-btn) {
+  border: none;
+}
+/* 答案子區塊：作答欄淡灰底 */
+.form-control.my-design-quiz-answer-input,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
+  background-color: var(--my-color-gray-3);
+  border: none;
+}
+.form-control.my-design-quiz-answer-input:focus,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
+  background-color: var(--my-color-gray-3);
+  border: none;
+  box-shadow: none;
+}
+.form-control.my-design-quiz-answer-input:disabled,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
+  background-color: var(--my-color-gray-4);
+  border: none;
+  opacity: 1;
 }
 /* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕（僅稿頁；含 QuizCard 批改子區塊內按鈕） */
 .btn.my-design-quiz-action-edit-btn,

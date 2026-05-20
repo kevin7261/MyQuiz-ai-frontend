@@ -100,13 +100,21 @@ function demoQuiz(overrides = {}) {
 
 /**
  * 各單元題型示範（索引對應 DESIGN_DEMO_FOLDER_NAMES）：
- * 涵蓋選擇／簡答、測驗用、已產題、僅出題規則、已批改、追問、空白草稿、無題型等。
+ * 涵蓋「產生題目」按鈕（quiz_content 空）與「題目」區塊（已有題幹）、測驗用、批改、追問等。
  */
 const DESIGN_DEMO_QUIZZES_BY_UNIT = [
   [
     demoQuiz({
       rag_quiz_id: 1001,
-      quiz_name: '選擇題範例',
+      quiz_name: '示範｜產生題目按鈕',
+      quiz_user_prompt_text:
+        '出 1 題選擇題，題幹須來自 Chapter 01 教材。（此列尚未按「產生題目」，僅顯示按鈕）',
+      quiz_content: '',
+      quiz_hint: '',
+      quiz_reference_answer: '',
+    }),
+    demoQuiz({
+      quiz_name: '示範｜題目區塊',
       quiz_content: 'What is the capital of Taiwan?',
       quiz_hint: 'Think about the island.',
       quiz_reference_answer: 'Taipei',
@@ -144,7 +152,7 @@ const DESIGN_DEMO_QUIZZES_BY_UNIT = [
       ],
     }),
     demoQuiz({
-      quiz_name: '未命名題型',
+      quiz_name: '示範｜產生題目（未命名）',
       quiz_content: '',
       quiz_hint: '',
       quiz_reference_answer: '',
@@ -152,7 +160,7 @@ const DESIGN_DEMO_QUIZZES_BY_UNIT = [
   ],
   [
     demoQuiz({
-      quiz_name: '簡答題（已批改）',
+      quiz_name: '示範｜題目區塊（已批改）',
       quiz_user_prompt_text: '依逐字稿出 1 題簡答並附參考答案。',
       quiz_content: 'Chapter 02 中提到的三個重點是什麼？',
       quiz_hint: '參考第二段條列。',
@@ -163,7 +171,7 @@ const DESIGN_DEMO_QUIZZES_BY_UNIT = [
       answer_user_prompt_text: '以鼓勵為主，指出缺漏條目即可。',
     }),
     demoQuiz({
-      quiz_name: '待產生題目',
+      quiz_name: '示範｜產生題目按鈕',
       quiz_user_prompt_text: '出 1 題是非題，題幹須來自本章逐字稿，不可憑空捏造。',
       quiz_content: '',
       quiz_hint: '',

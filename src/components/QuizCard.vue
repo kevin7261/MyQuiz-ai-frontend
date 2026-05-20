@@ -313,9 +313,19 @@ const isDesignSubBlockFragment = computed(
     && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
 );
 
-/** create-exam-bank_design 批改子區塊：編輯鈕在「開始批改」右側（非標題列） */
+/** create-exam-bank_design 批改子區塊 */
 const showDesignLayoutGradingToolbar = computed(
   () => isDesignSubBlockFragment.value && props.designSubBlock === 'grading',
+);
+
+/** 稿頁批改子區：「開始批改」列（對應「產生題目」；常駐顯示） */
+const showDesignGradingStartRow = computed(
+  () => showDesignLayoutGradingToolbar.value && showStartGradeButton.value,
+);
+
+/** 稿頁批改子區：「批改結果」plain 區（對應「題目」；含稿頁示範 sample） */
+const showDesignGradingResultBlock = computed(
+  () => showDesignLayoutGradingToolbar.value && showGradingResultSection.value,
 );
 
 /** create-exam-bank_design 子區塊：欄位標題寫在輸入框內（非框外 label） */
@@ -345,11 +355,9 @@ const showDesignSubBlockHintModals = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'answer',
 );
 
-/** create-exam-bank_design 題目子區塊：先前出題由父層放在產生題目列 */
+/** 稿頁／題庫：「先前出題」置於題目標題列右側（含 design 題目子區塊灰框標題列） */
 const showBankQuizHistoryInStemHeader = computed(
-  () =>
-    props.showBankQuizHistoryButton
-    && !(props.createExamBankDesignLayout && props.designSubBlock === 'question'),
+  () => props.showBankQuizHistoryButton,
 );
 
 /** 建立測驗題庫頁在 card 上帶入 baseline；未帶入時維持原僅檢查非空即可送出 */
@@ -609,7 +617,7 @@ const quizAnswerFieldDisabled = computed(
       >
         <template v-if="useDesignFieldLabelInset">
           <section
-            class="my-design-quiz-field-inset w-100 min-w-0"
+            class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
             aria-label="題目"
           >
             <header class="my-design-quiz-field-inset__head">
@@ -619,6 +627,15 @@ const quizAnswerFieldDisabled = computed(
                 <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
                   題目
                 </h3>
+                <button
+                  v-if="showBankQuizHistoryInStemHeader"
+                  type="button"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1 ms-auto"
+                  aria-label="查看先前出題"
+                  @click="emit('open-quiz-history')"
+                >
+                  先前出題
+                </button>
               </div>
               <div class="px-3 py-0">
                 <hr class="my-design-quiz-field-inset__rule m-0">
@@ -880,56 +897,63 @@ const quizAnswerFieldDisabled = computed(
         :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
         <template v-if="useDesignFieldLabelInset">
-          <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
-            <div
-              class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0"
-            >
-              <label
-                :for="`quiz-answer-${card.id}`"
-                class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1 mb-0"
-              >答案</label>
+          <section
+            class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
+            aria-label="答案"
+          >
+            <header class="my-design-quiz-field-inset__head">
               <div
-                v-if="hintReferenceInModal"
-                class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"
+                class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
               >
-                <button
-                  v-if="hasHintText"
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                  title="提示"
-                  aria-label="提示"
-                  @click="openHintRefModal('hint')"
+                <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                  答案
+                </h3>
+                <div
+                  v-if="hintReferenceInModal"
+                  class="d-inline-flex align-items-center gap-2 flex-shrink-0 ms-auto"
                 >
-                  提示
-                </button>
-                <button
-                  v-if="hasReferenceAnswerText"
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                  title="參考答案"
-                  aria-label="參考答案"
-                  @click="openHintRefModal('reference')"
-                >
-                  參考答案
-                </button>
+                  <button
+                    v-if="hasHintText"
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                    title="提示"
+                    aria-label="提示"
+                    @click="openHintRefModal('hint')"
+                  >
+                    提示
+                  </button>
+                  <button
+                    v-if="hasReferenceAnswerText"
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                    title="參考答案"
+                    aria-label="參考答案"
+                    @click="openHintRefModal('reference')"
+                  >
+                    參考答案
+                  </button>
+                </div>
+                <span
+                  v-else-if="!readOnlyAnswer"
+                  class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0 ms-auto"
+                >{{ card.quiz_answer.length }} / 2000</span>
               </div>
-              <span
-                v-else-if="!readOnlyAnswer"
-                class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0"
-              >{{ card.quiz_answer.length }} / 2000</span>
-            </div>
-            <div class="my-design-quiz-field-inset-body min-w-0">
+              <div class="px-3 py-0">
+                <hr class="my-design-quiz-field-inset__rule m-0">
+              </div>
+            </header>
+            <div class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base">
               <template v-if="readOnlyAnswer">
                 <div
                   :id="`quiz-answer-${card.id}`"
-                  class="my-font-sm-400 my-font-md-400 my-color-black mb-0"
+                  class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 my-color-black mb-0"
                 >{{ card.quiz_answer }}</div>
               </template>
               <textarea
                 v-else
                 :id="`quiz-answer-${card.id}`"
                 :value="card.quiz_answer"
-                class="form-control my-input-md my-input-md--on-dark border-0 rounded-0 w-100 min-w-0 px-0 py-0 shadow-none"
+                class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 px-3 py-2 shadow-none"
                 :disabled="quizAnswerFieldDisabled"
                 @input="emit('update:quiz_answer', $event.target.value)"
                 rows="4"
@@ -937,7 +961,7 @@ const quizAnswerFieldDisabled = computed(
                 maxlength="2000"
               />
             </div>
-          </div>
+          </section>
         </template>
         <template v-else>
           <div
@@ -1009,8 +1033,11 @@ const quizAnswerFieldDisabled = computed(
         v-if="showDesignSubBlockGrading && !questionHintOnly && hasQuizBody"
         class="w-100 min-w-0"
         :class="[
-          designUi ? 'd-flex flex-column gap-3 mb-0' : 'mb-3',
-          !isDesignSubBlockFragment && !designUi ? '' : '',
+          designUi && isDesignSubBlockFragment
+            ? 'd-flex flex-column mb-0'
+            : designUi
+              ? 'd-flex flex-column gap-3 mb-0'
+              : 'mb-3',
         ]"
       >
         <div
@@ -1019,18 +1046,89 @@ const quizAnswerFieldDisabled = computed(
           :class="isDesignSubBlockFragment ? '' : 'mt-3'"
         >
           <template v-if="useDesignFieldLabelInset">
-            <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
-              <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
-                批改規則
-              </div>
-              <div class="my-design-quiz-field-inset-body min-w-0 w-100">
-                <EnglishExamMarkdownEditor
-                  :model-value="String(card.gradingPrompt ?? '')"
-                  :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
-                  preview-only
-                  preview-design-dark
-                />
-              </div>
+            <div class="my-design-quiz-question-prompt-wrap px-2 pt-2 pb-0 w-100 min-w-0">
+              <section
+                class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                aria-label="批改規則"
+              >
+                <header class="my-design-quiz-question-prompt-block__head">
+                  <div
+                    class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                  >
+                    <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0">
+                      批改規則
+                    </h3>
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
+                      title="編輯批改規則"
+                      aria-label="編輯批改規則"
+                      :disabled="gradeSubmitting || cardMarkedForExam"
+                      @click="emit('open-grading-prompt-edit')"
+                    >
+                      <i class="fa-solid fa-pen" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <div class="px-3 py-0">
+                    <hr class="my-design-quiz-question-prompt-block__rule m-0">
+                  </div>
+                </header>
+                <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                  <EnglishExamMarkdownEditor
+                    :model-value="String(card.gradingPrompt ?? '')"
+                    :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
+                    preview-only
+                    preview-design-dark
+                    preview-design-dark-embedded
+                  />
+                </div>
+              </section>
+            </div>
+            <div
+              v-if="showDesignGradingStartRow"
+              class="d-flex justify-content-start align-items-center flex-wrap gap-2 p-2"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+                title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
+                :disabled="mergedGradeButtonDisabled"
+                :aria-busy="gradeSubmitting"
+                aria-label="開始批改"
+                @click="emit('confirm-answer', card)"
+              >
+                開始批改
+              </button>
+            </div>
+            <div
+              v-if="showDesignGradingResultBlock"
+              class="w-100 min-w-0 pt-2"
+            >
+              <section
+                class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
+                aria-label="批改結果"
+              >
+                <header class="my-design-quiz-field-inset__head">
+                  <div
+                    class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                  >
+                    <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                      批改結果
+                    </h3>
+                  </div>
+                  <div class="px-3 py-0">
+                    <hr class="my-design-quiz-field-inset__rule m-0">
+                  </div>
+                </header>
+                <div
+                  class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base"
+                  style="white-space: pre-wrap;"
+                >
+                  <div class="my-font-md-400 my-color-black text-break">
+                    {{ gradingResultDisplay }}
+                  </div>
+                </div>
+              </section>
             </div>
           </template>
           <template v-else>
@@ -1070,13 +1168,11 @@ const quizAnswerFieldDisabled = computed(
             </div>
           </template>
           <div
-            v-if="showDesignLayoutGradingToolbar || showStartGradeButton || !cardMarkedForExam"
+            v-if="!showDesignLayoutGradingToolbar && (showStartGradeButton || !cardMarkedForExam)"
             :class="
-              showDesignLayoutGradingToolbar
-                ? 'd-flex justify-content-start align-items-center flex-wrap gap-2 mt-2 pt-2'
-                : designUi
-                  ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
-                  : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
+              designUi
+                ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
+                : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
             "
           >
             <button
@@ -1090,17 +1186,6 @@ const quizAnswerFieldDisabled = computed(
               @click="emit('confirm-answer', card)"
             >
               開始批改
-            </button>
-            <button
-              v-if="showDesignLayoutGradingToolbar"
-              type="button"
-              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-gray-3 my-design-quiz-action-edit-btn lh-1"
-              title="編輯批改規則"
-              aria-label="編輯批改規則"
-              :disabled="gradeSubmitting || cardMarkedForExam"
-              @click="emit('open-grading-prompt-edit')"
-            >
-              <i class="fa-solid fa-pen my-color-black" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -1198,24 +1283,38 @@ const quizAnswerFieldDisabled = computed(
             開始批改
           </button>
         </div>
-      <!-- 批改結果區：僅在回傳後有內容時顯示（送出中不占位） -->
+      <!-- 批改結果區：僅在回傳後有內容時顯示（送出中不占位）；稿頁批改子區塊改由 showDesignGradingResultBlock 渲染 -->
       <div
-        v-if="showGradingResultSection"
+        v-if="showGradingResultSection && !showDesignLayoutGradingToolbar"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
         <template v-if="useDesignFieldLabelInset">
-          <div class="my-design-quiz-field-inset p-3 d-flex flex-column gap-2 w-100 min-w-0">
-            <div class="my-design-quiz-field-inset-label my-font-sm-400 my-color-gray-1">
-              批改結果
-            </div>
-            <div class="my-design-quiz-field-inset-body min-w-0">
+          <section
+            class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
+            aria-label="批改結果"
+          >
+            <header class="my-design-quiz-field-inset__head">
               <div
-                class="my-font-sm-400 form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 mb-0"
-                style="white-space: pre-wrap;"
-              >{{ gradingResultDisplay }}</div>
+                class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+              >
+                <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                  批改結果
+                </h3>
+              </div>
+              <div class="px-3 py-0">
+                <hr class="my-design-quiz-field-inset__rule m-0">
+              </div>
+            </header>
+            <div
+              class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base"
+              style="white-space: pre-wrap;"
+            >
+              <div class="my-font-md-400 my-color-black text-break">
+                {{ gradingResultDisplay }}
+              </div>
             </div>
-          </div>
+          </section>
         </template>
         <template v-else>
           <div
