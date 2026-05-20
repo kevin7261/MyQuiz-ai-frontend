@@ -1053,7 +1053,7 @@ const quizAnswerFieldDisabled = computed(
               >
                 <header class="my-design-quiz-question-prompt-block__head">
                   <div
-                    class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-3"
+                    class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
                   >
                     <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0">
                       批改規則

@@ -33,7 +33,7 @@ const props = defineProps({
   /** 唯讀預覽用：Design 頁同款黑底白字（須併 previewOnly） */
   previewDesignDark: { type: Boolean, default: false },
   /**
-   * 併 previewDesignDark：預覽內文 p-3、「查看更多」px-3 pt-3 pb-3（稿頁出題規則黑底區）。
+   * 併 previewDesignDark：預覽內文 p-3、「查看更多」px-3 pt-2 pb-3（稿頁出題／批改規則黑底區）。
    */
   previewDesignDarkEmbedded: { type: Boolean, default: false },
   /** 對應外層 <label for="…">，維持無障礙關聯 */
@@ -335,8 +335,8 @@ onBeforeUnmount(() => {
         <div
           v-if="previewDesignDark && previewHadOverflow && !previewExpanded"
           class="english-exam-md-preview-more-row"
-          :class="{ 'english-exam-md-preview-more-row--embedded': previewDesignDarkEmbedded }"
-        >
+          :class="{ 'px-3 pt-2 pb-3': previewDesignDarkEmbedded }"
+          >
           <button
             type="button"
             class="english-exam-md-preview-more-btn my-font-sm-400 d-inline-flex align-items-center gap-1"
@@ -351,8 +351,8 @@ onBeforeUnmount(() => {
         <div
           v-if="previewDesignDark && previewHadOverflow && previewExpanded"
           class="english-exam-md-preview-more-row"
-          :class="{ 'english-exam-md-preview-more-row--embedded': previewDesignDarkEmbedded }"
-        >
+          :class="{ 'px-3 pt-2 pb-3': previewDesignDarkEmbedded }"
+          >
           <button
             type="button"
             class="english-exam-md-preview-more-btn my-font-sm-400 d-inline-flex align-items-center gap-1"
@@ -444,10 +444,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: 0.15rem 1rem 0;
 }
-/* 稿頁出題規則黑底區：px-3 pt-3 pb-3 */
-.english-exam-md-preview-more-row--embedded {
-  padding: 1rem 1rem 1rem;
-}
+/* 稿頁出題／批改規則黑底區「查看更多」：併 HTML px-3 pt-2 pb-3 */
 .english-exam-md-preview-more-btn {
   margin: 0;
   padding: 0;
