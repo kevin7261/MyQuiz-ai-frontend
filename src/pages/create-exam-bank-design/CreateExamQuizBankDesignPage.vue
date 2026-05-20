@@ -5157,7 +5157,7 @@ async function confirmAnswer(item) {
                 <div class="row g-3 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
                         資料夾組合
                       </div>
                       <div
@@ -5184,7 +5184,7 @@ async function confirmAnswer(item) {
                     class="col-12 min-w-0"
                   >
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
                         來源檔
                       </div>
                       <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
@@ -5198,7 +5198,7 @@ async function confirmAnswer(item) {
                     class="col-12 col-md-6 min-w-0"
                   >
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
                         {{ och.label }}
                       </div>
                       <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
@@ -5215,7 +5215,7 @@ async function confirmAnswer(item) {
                       class="col-12 min-w-0"
                     >
                       <div class="my-design-pack-unit-section w-100 min-w-0">
-                        <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                        <div class="my-font-sm-400 my-color-gray-1 mb-2">
                           說明
                         </div>
                         <div class="my-font-sm-400 lh-base my-color-black w-100 min-w-0">
@@ -5228,7 +5228,7 @@ async function confirmAnswer(item) {
                       class="col-12 min-w-0"
                     >
                       <div class="my-design-pack-unit-section w-100 min-w-0">
-                        <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                        <div class="my-font-sm-400 my-color-gray-1 mb-2">
                           {{ seg.label }}
                         </div>
                         <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
@@ -5242,7 +5242,7 @@ async function confirmAnswer(item) {
                     class="col-12 min-w-0"
                   >
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
                         內容
                       </div>
                       <div class="d-flex flex-nowrap gap-2 justify-content-start w-100 min-w-0 overflow-auto">
@@ -5854,11 +5854,11 @@ async function confirmAnswer(item) {
                   <div class="row g-3 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                    <div class="my-font-sm-400 my-color-gray-1 mb-0">
                       資料夾組合
                     </div>
                     <div
-                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target"
+                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target mt-1"
                       style="min-height: 2.5rem;"
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
@@ -5890,11 +5890,11 @@ async function confirmAnswer(item) {
                   </div>
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-0">
                         類型
                       </div>
                       <div
-                        class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1"
+                        class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1 mt-1"
                         role="group"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 類型`"
                       >
@@ -5922,7 +5922,7 @@ async function confirmAnswer(item) {
                     >
                       <div class="my-design-pack-unit-section w-100 min-w-0">
                       <label
-                        class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0"
+                        class="my-font-sm-400 my-color-gray-1 mb-0"
                         :for="'rag-pack-chunk-size-' + activePackUnitGi"
                       >分段長度（字元）</label>
                       <input
@@ -5930,7 +5930,7 @@ async function confirmAnswer(item) {
                         type="number"
                         min="1"
                         step="1"
-                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
+                        class="form-control my-input-md my-input-md--on-dark rounded-pill w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
                         :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
                         :value="ensureNumber(currentState.packChunkSizes?.[activePackUnitGi], DEFAULT_PACK_CHUNK_SIZE)"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 分段長度（字元）`"
@@ -5945,7 +5945,7 @@ async function confirmAnswer(item) {
                     >
                       <div class="my-design-pack-unit-section w-100 min-w-0">
                       <label
-                        class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0"
+                        class="my-font-sm-400 my-color-gray-1 mb-0"
                         :for="'rag-pack-chunk-overlap-' + activePackUnitGi"
                       >分段重疊（字元）</label>
                       <input
@@ -5953,7 +5953,7 @@ async function confirmAnswer(item) {
                         type="number"
                         min="0"
                         step="1"
-                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
+                        class="form-control my-input-md my-input-md--on-dark rounded-pill w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
                         :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
                         :value="ensureNumber(currentState.packChunkOverlaps?.[activePackUnitGi], DEFAULT_PACK_CHUNK_OVERLAP)"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 分段重疊（字元）`"
@@ -5967,10 +5967,10 @@ async function confirmAnswer(item) {
                     class="col-12 min-w-0"
                   >
                   <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
+                    <div class="my-font-sm-400 my-color-gray-1 mb-0">
                       來源內容
                     </div>
-                    <div class="d-flex flex-column gap-2 w-100 min-w-0">
+                    <div class="d-flex flex-column gap-2 w-100 min-w-0 mt-1">
                       <audio
                         v-if="packUnitTypeAt(activePackUnitGi) === UNIT_TYPE_MP3 && (currentState.packUnitMp3PreviewUrls?.[activePackUnitGi] ?? '').trim() !== ''"
                         :key="currentState.packUnitMp3PreviewUrls[activePackUnitGi]"
@@ -6641,7 +6641,7 @@ async function confirmAnswer(item) {
   width: 100%;
   min-width: 0;
 }
-/* 欄位區：標題 → 內容（標題字階同「設定單元題型」lg-600） */
+/* 欄位區：標題 → 內容（標題字階同「設定單元題型」小標 sm-400 gray-1） */
 .my-design-pack-unit-section {
   display: flex;
   flex-direction: column;
@@ -6649,15 +6649,15 @@ async function confirmAnswer(item) {
   width: 100%;
   min-width: 0;
 }
+/* 欄位區：標題字階同「設定單元題型」小標（my-font-sm-400 my-color-gray-1） */
 .my-design-pack-unit-section__title {
   margin-bottom: 0;
   line-height: 1.35;
-  padding-top: 1.5rem; /* pt-4 */
 }
-/* 標題與內容間距 0；內容區等同 utility pt-2 */
+/* 標題與內容間距：等同 Bootstrap mt-1 */
 .my-design-pack-unit-section__title + * {
-  margin-top: 0 !important;
-  padding-top: 0.5rem;
+  margin-top: 0.25rem !important;
+  padding-top: 0;
 }
 .my-design-page-section-heading > .my-test-section-heading-title + .my-design-page-section-heading__body {
   margin-top: 0.5rem !important;
@@ -6703,6 +6703,9 @@ async function confirmAnswer(item) {
   box-shadow: none;
   background-color: var(--my-pack-folder-field-bg) !important;
   border-color: var(--my-color-gray-2) !important;
+}
+.my-design-pack-unit-blocks .form-control.my-input-md.rounded-pill {
+  border-radius: var(--bs-border-radius-pill);
 }
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;
