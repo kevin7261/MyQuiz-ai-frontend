@@ -85,7 +85,6 @@ import { usePackTasks } from './composables/usePackTasks.js';
 import { DESIGN_MOCK_UNITS } from './mockData.js';
 import QuizCard from '../../components/QuizCard.vue';
 import QuizHistoryModal from '../../components/QuizHistoryModal.vue';
-import RagTabUnitMp3Player from '../../components/RagTabUnitMp3Player.vue';
 import Design08OptionDropdown from '../../components/Design08OptionDropdown.vue';
 import UnitSelectDropdown from '../../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../../components/TabRenameModal.vue';
@@ -423,8 +422,10 @@ const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.v
 const hasBuiltRagSummary = computed(
   () => hasRagMetadata.value || currentState.value.packResponseJson != null
 );
-/** 右側欄：與 left view「設定單元題型」區塊同時出現 */
-const showDesignRightView = computed(() => hasBuiltRagSummary.value);
+/** 右側欄：上傳完成、left 出現「設定單元」後顯示（建置前／建置後） */
+const showDesignRightView = computed(
+  () => !!activeTabId.value && hasUploadedFileMetadata.value,
+);
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
 const ragListReadonlyGroups = computed(() => {
@@ -866,16 +867,6 @@ const createRagStepperPhase = computed(() => {
   return 3;
 });
 
-/** 右側欄：上傳檔名（本機選取或已上傳） */
-const designRightUploadFileLabel = computed(() => {
-  if (hasUploadedFileMetadata.value) {
-    const name = String(uploadedZipDisplayName.value ?? '').trim();
-    if (name) return name;
-  }
-  const local = String(currentState.value.zipFileName ?? '').trim();
-  return local || '';
-});
-
 /** 右側欄：設定單元子分頁 */
 const designRightUnitSubTabItems = computed(() =>
   packUnitListItemsForNav.value.map((item) => ({
@@ -887,22 +878,9 @@ const designRightUnitSubTabItems = computed(() =>
   })),
 );
 
-/** 右側欄：設定單元題型子分頁 */
-const designRightQuizTypeSubTabItems = computed(() => {
-  if (!hasBuiltRagSummary.value) return [];
-  return activeUnitQuizCards.value.map((row, qi) => ({
-    key: `quiz-type-${qi}-${row.rag_quiz_id ?? row.id ?? qi}`,
-    label: quizTypeTabLabel(row),
-    index: qi,
-    kind: 'quiz-type',
-    active: qi === activeUnitQuizTypeIdxResolved.value,
-  }));
-});
-
 function onDesignRightSubTabClick(item) {
   if (!item) return;
   if (item.kind === 'pack-unit') selectPackUnit(item.index);
-  else if (item.kind === 'quiz-type') selectUnitQuizType(item.index);
 }
 
 /** 已有 file_metadata 時，畫面僅顯示之 ZIP 檔名 */
@@ -936,6 +914,19 @@ const uploadZipReadonlyInputValue = computed(() => {
   if (size && name) return `${name}（${size}）`;
   if (size) return `（${size}）`;
   return name;
+});
+
+/** 右側欄：上傳檔名（已上傳 metadata 或本機選取；不含檔案大小） */
+const designRightUploadFileLabel = computed(() => {
+  const fromDisplay = String(uploadedZipDisplayName.value ?? '').trim();
+  if (fromDisplay && fromDisplay !== '（已上傳）') return fromDisplay;
+  const readonly = String(uploadZipReadonlyInputValue.value ?? '').trim();
+  if (readonly && readonly !== '—') {
+    const paren = readonly.indexOf('（');
+    return paren > 0 ? readonly.slice(0, paren).trim() : readonly;
+  }
+  if (fromDisplay) return fromDisplay;
+  return String(currentState.value.zipFileName ?? '').trim();
 });
 
 const {
@@ -1081,11 +1072,6 @@ function onAddPackUnitClick() {
   scrollActivePackUnitTabIntoView();
 }
 
-/** 唯讀設定單元 Carousel 目前列 */
-const activeReadonlyPackUnitRow = computed(
-  () => quizBankSettingReadonlyUnitRows.value[activePackUnitGi.value] ?? null,
-);
-
 /** 左側單元列表（唯讀建置完成後） */
 const readonlyPackUnitListItems = computed(() =>
   quizBankSettingReadonlyUnitRows.value.map((row, index) => {
@@ -1095,6 +1081,11 @@ const readonlyPackUnitListItems = computed(() =>
       label: name && name !== '—' ? name : row.title,
     };
   }),
+);
+
+/** 唯讀設定單元 Carousel 目前列（切換由 right view 子分頁驅動） */
+const activeReadonlyPackUnitRow = computed(
+  () => quizBankSettingReadonlyUnitRows.value[activePackUnitGi.value] ?? null,
 );
 
 /** 左側單元列表：編輯中／唯讀共用 */
@@ -4990,7 +4981,7 @@ async function confirmAnswer(item) {
       <div class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout">
         <div
           class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
-          :class="showDesignRightView ? 'col-8 col-md-9 col-lg-10' : 'col-12'"
+          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-9' : 'col-12'"
         >
           <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
       <div
@@ -5013,7 +5004,13 @@ async function confirmAnswer(item) {
       </div>
       <div v-else class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div
+            :class="
+              showDesignRightView
+                ? 'col-12 col-lg-12 col-xl-10 col-xxl-8'
+                : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
+            "
+          >
       <!-- 有資料或已點新增後顯示表單 -->
       <template v-if="showCreateBankMainForm">
       <!-- 尚無 file_metadata 時顯示上傳區（無區塊外框；標題同設定單元題型） -->
@@ -5080,31 +5077,14 @@ async function confirmAnswer(item) {
               </button>
             </div>
       </section>
-      <!-- 建立 RAG：要有 file_metadata 才顯示；未建置時僅可編輯「設定單元」卡，建置完成後另顯唯讀摘要卡（rounded-4 深灰） -->
-      <template v-if="fileMetadataToShow != null">
+      <!-- 建立 RAG：要有 file_metadata 且尚未建置；建置前 left 顯示可編輯設定單元（上傳檔名改由 right view） -->
+      <template v-if="fileMetadataToShow != null && !hasBuiltRagSummary">
         <div
           class="w-100"
           :class="{ 'pe-none my-color-gray-4': !hasRagMetadata && packGroupsEditBlocked }"
         >
+          <!-- 設定單元（建置前可編輯） -->
           <section class="text-start my-page-block-spacing">
-            <div
-              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
-              role="heading"
-              aria-level="2"
-            >
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">上傳檔案</span>
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-            </div>
-            <div class="my-font-md-400 my-color-black lh-base text-break text-center w-100 min-w-0">
-              {{ uploadZipReadonlyInputValue }}
-            </div>
-          </section>
-          <!-- 建置完成後僅保留下方唯讀「設定單元」卡，不重複檔名／已套用提示 -->
-          <section
-            v-if="!hasBuiltRagSummary"
-            class="text-start my-page-block-spacing"
-          >
             <div
               class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
               role="heading"
@@ -5482,279 +5462,212 @@ async function confirmAnswer(item) {
           </div>
             </div>
           </section>
-          <!-- 唯讀摘要：建置完成後顯示（含剛 build 完但列表尚未同步 rag_metadata 的情況） -->
-          <section
-            v-if="hasBuiltRagSummary"
-            class="text-start my-page-block-spacing"
-          >
+        </div>
+      </template>
+      <!-- 建置完成後：left 僅顯示設定單元區塊（無橫向 tab；切換由 right view）與設定單元題型 -->
+      <section
+        v-if="hasBuiltRagSummary"
+        class="text-start my-page-block-spacing"
+      >
+        <div
+          class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+          role="heading"
+          aria-level="2"
+        >
+          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+          <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
+          <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+        </div>
+        <div class="my-pack-unit-settings-body">
+          <template v-if="!packUnitCarouselCountEffective">
             <div
-              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
-              role="heading"
-              aria-level="2"
+              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
             >
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              —
             </div>
-            <div class="my-pack-unit-settings-body">
-              <div class="my-pack-unit-field">
-                <template v-if="!packUnitCarouselCountEffective">
-                  <div
-                    class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 lh-base text-break my-color-gray-4"
-                  >
-                    —
-                  </div>
-                </template>
+          </template>
+          <div
+            v-else-if="activeReadonlyPackUnitRow"
+            :key="'ro-rg-' + activeReadonlyPackUnitRow.key"
+            class="my-rag-unit-panel-block d-flex flex-column gap-2"
+          >
+            <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
+              <div
+                class="d-flex flex-column gap-0 min-w-0"
+                style="flex: 1 1 0;"
+              >
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                  資料夾組合
+                </div>
                 <div
-                  v-else
-                  class="w-100 min-w-0 d-flex justify-content-center"
+                  class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0"
+                  role="group"
+                  aria-label="資料夾組合"
                 >
-                  <div class="my-pack-unit-tabs-nav">
-                  <button
-                    type="button"
-                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
-                    :disabled="!canGoPrevPackUnit"
-                    aria-label="向前切換單元"
-                    @click="goPrevPackUnit"
-                  >
-                    <i class="fa-solid fa-chevron-left" aria-hidden="true" />
-                  </button>
-                  <div
-                    ref="packUnitTabsNavEl"
-                    class="my-pack-unit-tabs-host my-rag-tabs-bar my-bgcolor-gray-4"
-                  >
-                    <ul
-                      class="nav nav-tabs flex-nowrap my-pack-unit-tabs mb-0"
-                      role="tablist"
-                      aria-label="單元列表"
-                    >
-                      <li
-                        v-for="item in packUnitListItemsForNav"
-                        :key="'ro-pack-unit-tab-' + item.index"
-                        class="nav-item flex-shrink-0"
-                      >
-                        <button
-                          type="button"
-                          role="tab"
-                          class="nav-link d-flex align-items-center gap-1 text-nowrap"
-                          :class="{ active: item.index === activePackUnitGi }"
-                          :aria-selected="item.index === activePackUnitGi"
-                          :data-pack-unit-tab-index="item.index"
-                          :title="item.label"
-                          @click="selectPackUnit(item.index)"
-                        >
-                          <span class="flex-grow-1 text-start min-w-0 text-truncate">{{ item.label }}</span>
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
-                  <button
-                    type="button"
-                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
-                    :disabled="!canGoNextPackUnit"
-                    aria-label="向後切換單元"
-                    @click="goNextPackUnit"
-                  >
-                    <i class="fa-solid fa-chevron-right" aria-hidden="true" />
-                  </button>
-                  </div>
+                  <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
+                    <span
+                      v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
+                      :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
+                      class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                    >{{ tag }}</span>
+                  </template>
+                  <span
+                    v-else
+                    class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
+                  >{{ activeReadonlyPackUnitRow.title }}</span>
                 </div>
               </div>
               <div
-                v-if="packUnitCarouselCountEffective > 0"
-                class="my-pack-unit-settings-carousel"
+                v-if="Number(activeReadonlyPackUnitRow.unitType) !== UNIT_TYPE_RAG"
+                class="d-flex flex-column gap-0 min-w-0"
+                style="flex: 1 1 0;"
               >
-                <div
-                  class="w-100 min-w-0 d-flex flex-column gap-2"
-                  role="group"
-                  aria-label="單元設定（唯讀）"
-                >
-                  <div
-                    v-if="activeReadonlyPackUnitRow"
-                    :key="'ro-rg-' + activeReadonlyPackUnitRow.key"
-                    class="my-rag-unit-panel-block d-flex flex-column gap-2"
-                  >
-                    <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
-                      <div
-                        class="d-flex flex-column gap-0 min-w-0"
-                        style="flex: 1 1 0;"
-                      >
-                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          資料夾組合
-                        </div>
-                        <div
-                          class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0"
-                          role="group"
-                          aria-label="資料夾組合"
-                        >
-                          <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
-                            <span
-                              v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
-                              :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
-                              class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                            >{{ tag }}</span>
-                          </template>
-                          <span
-                            v-else
-                            class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
-                          >{{ activeReadonlyPackUnitRow.title }}</span>
-                        </div>
-                      </div>
-                      <div
-                        v-if="Number(activeReadonlyPackUnitRow.unitType) !== UNIT_TYPE_RAG"
-                        class="d-flex flex-column gap-0 min-w-0"
-                        style="flex: 1 1 0;"
-                      >
-                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          來源檔
-                        </div>
-                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ activeReadonlyPackUnitRow.sourceDisplay }}
-                        </div>
-                      </div>
-                    </div>
-                    <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
-                      <div
-                        class="d-flex flex-column gap-0 min-w-0"
-                        style="flex: 1 1 0;"
-                      >
-                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          單元名稱
-                        </div>
-                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ activeReadonlyPackUnitRow.unitNameDisplay }}
-                        </div>
-                      </div>
-                      <div
-                        class="d-flex flex-column gap-0 min-w-0"
-                        style="flex: 1 1 0;"
-                      >
-                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          類型
-                        </div>
-                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ activeReadonlyPackUnitRow.typeLabel }}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      v-if="activeReadonlyPackUnitRow.outlineChunkFields.length"
-                      class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
-                    >
-                      <div
-                        v-for="(och, oi) in activeReadonlyPackUnitRow.outlineChunkFields"
-                        :key="activeReadonlyPackUnitRow.key + '-ochunk-' + oi"
-                        class="d-flex flex-column gap-0 min-w-0"
-                        style="flex: 1 1 0;"
-                      >
-                        <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                          {{ och.label }}
-                        </div>
-                        <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                          {{ och.value }}
-                        </div>
-                      </div>
-                    </div>
-                    <div
-                      v-if="activeReadonlyPackUnitRow.detailSegments.length && canSeeRagUnitSourceFilename"
-                      class="w-100 min-w-0"
-                    >
-                      <template
-                        v-for="(seg, li) in activeReadonlyPackUnitRow.detailSegments"
-                        :key="activeReadonlyPackUnitRow.key + '-seg-' + li"
-                      >
-                        <div
-                          v-if="seg.kind === 'text'"
-                          class="my-font-sm-400 lh-base my-color-black"
-                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                        >
-                          {{ seg.text }}
-                        </div>
-                        <div
-                          v-else-if="seg.kind === 'field'"
-                          class="d-flex flex-column gap-0 w-100 min-w-0"
-                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                        >
-                          <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
-                            {{ seg.label }}
-                          </div>
-                          <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                            {{ seg.value }}
-                          </div>
-                        </div>
-                        <div
-                          v-else-if="seg.kind === 'markdown'"
-                          class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                          role="region"
-                          aria-label="單元逐字稿"
-                        >
-                          <div
-                            class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                            v-html="quizBankReadonlyMarkdownHtml(seg.markdown)"
-                          />
-                        </div>
-                        <div
-                          v-else-if="seg.kind === 'audio'"
-                          class="col-12 min-w-0"
-                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                          style="padding: 0;"
-                        >
-                          <RagTabUnitMp3Player
-                            :rag-tab-id="seg.ragTabId"
-                            :rag-unit-id="seg.ragUnitId"
-                          />
-                        </div>
-                        <div
-                          v-else-if="seg.kind === 'youtube'"
-                          class="d-flex flex-column gap-2 min-w-0"
-                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                        >
-                          <div
-                            v-if="seg.embedSrc"
-                            class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                          >
-                            <iframe
-                              class="border-0"
-                              title="YouTube 影片"
-                              :src="seg.embedSrc"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              referrerpolicy="strict-origin-when-cross-origin"
-                              allowfullscreen
-                            />
-                          </div>
-                          <span
-                            v-else-if="seg.pageUrl"
-                            class="my-font-md-400 my-color-black text-break"
-                          >{{ seg.pageUrl }}</span>
-                          <span
-                            v-else
-                            class="my-font-md-400 my-color-black text-break"
-                          >—</span>
-                        </div>
-                        <div
-                          v-else-if="seg.kind === 'transcript_button'"
-                          class="d-flex justify-content-center w-100 min-w-0 pt-1"
-                          :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
-                        >
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                            @click="openRagUnitTranscriptModal(seg.markdown)"
-                          >
-                            逐字稿
-                          </button>
-                        </div>
-                      </template>
-                    </div>
-                  </div>
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                  來源檔
+                </div>
+                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                  {{ activeReadonlyPackUnitRow.sourceDisplay }}
                 </div>
               </div>
             </div>
-          </section>
+            <div class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start">
+              <div
+                class="d-flex flex-column gap-0 min-w-0"
+                style="flex: 1 1 0;"
+              >
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                  單元名稱
+                </div>
+                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                  {{ activeReadonlyPackUnitRow.unitNameDisplay }}
+                </div>
+              </div>
+              <div
+                class="d-flex flex-column gap-0 min-w-0"
+                style="flex: 1 1 0;"
+              >
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                  類型
+                </div>
+                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                  {{ activeReadonlyPackUnitRow.typeLabel }}
+                </div>
+              </div>
+            </div>
+            <div
+              v-if="activeReadonlyPackUnitRow.outlineChunkFields.length"
+              class="mb-2 d-flex flex-row flex-nowrap gap-3 w-100 min-w-0 align-items-start"
+            >
+              <div
+                v-for="(och, oi) in activeReadonlyPackUnitRow.outlineChunkFields"
+                :key="activeReadonlyPackUnitRow.key + '-ochunk-' + oi"
+                class="d-flex flex-column gap-0 min-w-0"
+                style="flex: 1 1 0;"
+              >
+                <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                  {{ och.label }}
+                </div>
+                <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                  {{ och.value }}
+                </div>
+              </div>
+            </div>
+            <div
+              v-if="activeReadonlyPackUnitRow.detailSegments.length && canSeeRagUnitSourceFilename"
+              class="w-100 min-w-0"
+            >
+              <template
+                v-for="(seg, li) in activeReadonlyPackUnitRow.detailSegments"
+                :key="activeReadonlyPackUnitRow.key + '-seg-' + li"
+              >
+                <div
+                  v-if="seg.kind === 'text'"
+                  class="my-font-sm-400 lh-base my-color-black"
+                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                >
+                  {{ seg.text }}
+                </div>
+                <div
+                  v-else-if="seg.kind === 'field'"
+                  class="d-flex flex-column gap-0 w-100 min-w-0"
+                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                >
+                  <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0">
+                    {{ seg.label }}
+                  </div>
+                  <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                    {{ seg.value }}
+                  </div>
+                </div>
+                <div
+                  v-else-if="seg.kind === 'markdown'"
+                  class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
+                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                  role="region"
+                  aria-label="單元逐字稿"
+                >
+                  <div
+                    class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                    v-html="quizBankReadonlyMarkdownHtml(seg.markdown)"
+                  />
+                </div>
+                <div
+                  v-else-if="seg.kind === 'audio'"
+                  class="col-12 min-w-0"
+                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                  style="padding: 0;"
+                >
+                  <RagTabUnitMp3Player
+                    :rag-tab-id="seg.ragTabId"
+                    :rag-unit-id="seg.ragUnitId"
+                  />
+                </div>
+                <div
+                  v-else-if="seg.kind === 'youtube'"
+                  class="d-flex flex-column gap-2 min-w-0"
+                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                >
+                  <div
+                    v-if="seg.embedSrc"
+                    class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                  >
+                    <iframe
+                      class="border-0"
+                      title="YouTube 影片"
+                      :src="seg.embedSrc"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      allowfullscreen
+                    />
+                  </div>
+                  <span
+                    v-else-if="seg.pageUrl"
+                    class="my-font-md-400 my-color-black text-break"
+                  >{{ seg.pageUrl }}</span>
+                  <span
+                    v-else
+                    class="my-font-md-400 my-color-black text-break"
+                  >—</span>
+                </div>
+                <div
+                  v-else-if="seg.kind === 'transcript_button'"
+                  class="d-flex justify-content-center w-100 min-w-0 pt-1"
+                  :class="li < activeReadonlyPackUnitRow.detailSegments.length - 1 ? 'mb-2' : 'mb-0'"
+                >
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                    @click="openRagUnitTranscriptModal(seg.markdown)"
+                  >
+                    逐字稿
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
         </div>
-      </template>
-      <!-- 設定單元題型：標題與 tab 間距同「設定單元」 -->
+      </section>
+      <!-- 設定單元題型 -->
       <section
         v-if="hasBuiltRagSummary"
         class="text-start my-page-block-spacing"
@@ -6178,13 +6091,13 @@ async function confirmAnswer(item) {
         </div>
         <div
           v-if="showDesignRightView"
-          class="col-4 col-md-3 col-lg-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+          class="col-4 col-lg-3 col-xl-3 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
             aria-label="設計輔助面板"
           >
-            <!-- 建立流程：三步標題 + 子項目垂直列表（樣式對齊 LeftView nav） -->
+            <!-- 建立流程：上傳檔案、設定單元 + 子項目垂直列表（樣式對齊 LeftView nav） -->
             <nav
               v-if="showStepperSection"
               class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
@@ -6194,14 +6107,11 @@ async function confirmAnswer(item) {
                 class="my-design-right-step-heading my-font-md-400 my-color-black"
                 :class="{ 'my-font-md-600': createRagStepperPhase === 1 }"
               >上傳檔案</div>
-              <div
-                v-if="designRightUploadFileLabel"
-                class="nav-item"
-              >
+              <div class="nav-item">
                 <span
                   class="nav-link w-100 text-start text-break"
                   :class="{ active: createRagStepperPhase === 1 }"
-                >{{ designRightUploadFileLabel }}</span>
+                >{{ designRightUploadFileLabel || '—' }}</span>
               </div>
 
               <div
@@ -6211,28 +6121,6 @@ async function confirmAnswer(item) {
               <template v-if="designRightUnitSubTabItems.length">
                 <div
                   v-for="item in designRightUnitSubTabItems"
-                  :key="item.key"
-                  class="nav-item"
-                >
-                  <button
-                    type="button"
-                    class="nav-link w-100 text-start text-break"
-                    :class="{ active: item.active }"
-                    :aria-current="item.active ? 'page' : undefined"
-                    @click="onDesignRightSubTabClick(item)"
-                  >
-                    {{ item.label }}
-                  </button>
-                </div>
-              </template>
-
-              <div
-                class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
-                :class="{ 'my-font-md-600': createRagStepperPhase === 3 }"
-              >{{ unitQuizTypeSectionHeadingTitle }}</div>
-              <template v-if="designRightQuizTypeSubTabItems.length">
-                <div
-                  v-for="item in designRightQuizTypeSubTabItems"
                   :key="item.key"
                   class="nav-item"
                 >
