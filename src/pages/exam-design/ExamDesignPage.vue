@@ -2590,7 +2590,7 @@ onActivated(() => {
                           </template>
                           <div
                             v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
-                            class="w-100 min-w-0"
+                            class="w-100 min-w-0 pt-2"
                           >
                             <QuizCard
                               v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
