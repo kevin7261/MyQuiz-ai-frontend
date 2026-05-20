@@ -938,22 +938,19 @@ const quizAnswerFieldDisabled = computed(
                   class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0 ms-auto"
                 >{{ card.quiz_answer.length }} / 2000</span>
               </div>
-              <div class="px-3 py-0">
-                <hr class="my-design-quiz-field-inset__rule m-0">
-              </div>
             </header>
-            <div class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base">
+            <div class="my-design-quiz-field-inset-body px-3 pt-0 pb-3 min-w-0 lh-base">
               <template v-if="readOnlyAnswer">
                 <div
                   :id="`quiz-answer-${card.id}`"
-                  class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 my-color-black mb-0"
+                  class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 py-2 my-font-md-400 my-color-black mb-0"
                 >{{ card.quiz_answer }}</div>
               </template>
               <textarea
                 v-else
                 :id="`quiz-answer-${card.id}`"
                 :value="card.quiz_answer"
-                class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 px-3 py-2 shadow-none"
+                class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 py-2 shadow-none"
                 :disabled="quizAnswerFieldDisabled"
                 @input="emit('update:quiz_answer', $event.target.value)"
                 rows="4"

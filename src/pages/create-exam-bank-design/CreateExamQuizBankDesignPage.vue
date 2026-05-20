@@ -6712,22 +6712,22 @@ async function confirmAnswer(item) {
 .my-design-quiz-sub-block :deep(.btn.my-design-quiz-stem-history-btn) {
   border: none;
 }
-/* 答案子區塊：作答欄淡灰底 */
+/* 答案子區塊：作答欄白底、淡灰框（--my-color-gray-2） */
 .form-control.my-design-quiz-answer-input,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
-  background-color: var(--my-color-gray-3);
-  border: none;
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
 }
 .form-control.my-design-quiz-answer-input:focus,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
-  background-color: var(--my-color-gray-3);
-  border: none;
+  background-color: var(--my-color-white);
+  border-color: var(--my-color-gray-2);
   box-shadow: none;
 }
 .form-control.my-design-quiz-answer-input:disabled,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
   background-color: var(--my-color-gray-4);
-  border: none;
+  border-color: var(--my-color-gray-2);
   opacity: 1;
 }
 /* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕（僅稿頁；含 QuizCard 批改子區塊內按鈕） */
