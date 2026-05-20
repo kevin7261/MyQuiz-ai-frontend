@@ -91,7 +91,6 @@ import {
 } from './mockData.js';
 import QuizCard from '../../components/QuizCard.vue';
 import QuizHistoryModal from '../../components/QuizHistoryModal.vue';
-import Design08OptionDropdown from '../../components/Design08OptionDropdown.vue';
 import UnitSelectDropdown from '../../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../../components/TabRenameModal.vue';
 import LoadingOverlay from '../../components/LoadingOverlay.vue';
@@ -146,6 +145,11 @@ const renameUnitQuizDraftRagQuizId = ref(null);
 const renameUnitQuizInitialName = ref('');
 const renameUnitQuizSaving = ref(false);
 const renameUnitQuizError = ref('');
+/** 設定單元 sub-tab 更名（本機 packUnitNames） */
+const renamePackUnitModalOpen = ref(false);
+const renamePackUnitDraftIndex = ref(null);
+const renamePackUnitInitialName = ref('');
+const renamePackUnitError = ref('');
 /** POST build-rag-zip 成功後：Bootstrap Modal「單元建立完成」 */
 const packBuildSuccessModalOpen = ref(false);
 /** 建置完成後：唯讀單元屬性（與 left 原 row/col 版面相同） */
@@ -1195,11 +1199,8 @@ const packUnitListItemsForNav = computed(() =>
   hasBuiltRagSummary.value ? readonlyPackUnitListItems.value : packUnitListItems.value,
 );
 
-/** 設定單元區塊標題：單元 (總數) */
-const packUnitSectionHeadingTitle = computed(() => {
-  const total = packUnitCarouselCountEffective.value;
-  return `單元 (${total})`;
-});
+/** 設定單元區塊標題（對齊「設定單元題型」小標樣式） */
+const packUnitSectionHeadingTitle = computed(() => '設定單元');
 
 /** 建置完成後 left「設定單元」區塊標題：目前單元名稱（非「設定單元 (n/total)」） */
 const builtPackUnitSectionHeadingTitle = computed(() => {
@@ -1338,13 +1339,53 @@ function onPackChunkOverlapInput(gi, ev) {
   state.packChunkOverlaps = arr;
 }
 
-function onPackUnitNameInput(gi, ev) {
+function getPackUnitNameForEdit(gi) {
   const state = currentState.value;
+  const custom = String(state.packUnitNames?.[gi] ?? '').trim();
+  if (custom) return custom;
+  const item = packUnitListItems.value.find((x) => x.index === gi);
+  return item?.label ?? '';
+}
+
+function openRenamePackUnitTab(gi) {
+  if (packGroupsEditBlocked.value) return;
+  const i = Number(gi);
+  if (!Number.isFinite(i) || i < 0) return;
+  renamePackUnitDraftIndex.value = i;
+  renamePackUnitInitialName.value = getPackUnitNameForEdit(i);
+  renamePackUnitError.value = '';
+  renamePackUnitModalOpen.value = true;
+}
+
+function onRenamePackUnitSave(name) {
+  if (!name || !String(name).trim()) {
+    renamePackUnitError.value = '請輸入名稱';
+    return;
+  }
+  const gi = renamePackUnitDraftIndex.value;
+  if (gi == null || !Number.isFinite(gi) || gi < 0) {
+    renamePackUnitError.value = '找不到此單元，請重新整理頁面後再試';
+    return;
+  }
   ensurePackUnitSidecarArrays();
-  const arr = [...(state.packUnitNames || [])];
-  const raw = ev?.target?.value;
-  arr[gi] = raw != null ? String(raw) : '';
-  state.packUnitNames = arr;
+  const arr = [...(currentState.value.packUnitNames || [])];
+  arr[gi] = String(name).trim();
+  currentState.value.packUnitNames = arr;
+  renamePackUnitModalOpen.value = false;
+}
+
+function onDeletePackUnitTab(gi) {
+  if (packGroupsEditBlocked.value) return;
+  const i = Number(gi);
+  if (!Number.isFinite(i) || i < 0) return;
+  removeRagListGroup(i);
+  const n = packUnitCarouselCountEffective.value;
+  if (n <= 0) {
+    activePackUnitIndex.value = 0;
+  } else if (activePackUnitIndex.value >= n) {
+    activePackUnitIndex.value = n - 1;
+  }
+  scrollActivePackUnitTabIntoView();
 }
 
 function ensurePackUnitSidecarArrays() {
@@ -5073,6 +5114,14 @@ async function confirmAnswer(item) {
       title="修改題型"
       @save="onRenameUnitQuizSave"
     />
+    <TabRenameModal
+      v-model="renamePackUnitModalOpen"
+      :initial-name="renamePackUnitInitialName"
+      :saving="false"
+      :error="renamePackUnitError"
+      title="修改單元"
+      @save="onRenamePackUnitSave"
+    />
     <Teleport to="body">
       <div
         v-if="packUnitDetailModalOpen && activeReadonlyPackUnitRow"
@@ -5602,23 +5651,30 @@ async function confirmAnswer(item) {
           class="w-100"
           :class="{ 'pe-none my-color-gray-4': !hasRagMetadata && packGroupsEditBlocked }"
         >
-          <!-- 設定單元（建置前可編輯） -->
+          <!-- 設定單元（建置前可編輯；標題／面板樣式對齊建置後「設定單元題型」） -->
           <section class="text-start my-page-block-spacing">
+            <div class="my-design-pack-unit-blocks w-100 min-w-0">
             <div
-              class="d-flex align-items-center gap-3 mb-4 w-100 min-w-0"
+              id="design-pack-unit-section-label"
+              class="my-font-sm-400 my-color-gray-1 mb-2"
+            >
+              {{ packUnitSectionHeadingTitle }}
+            </div>
+            <div
+              class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
               role="heading"
               aria-level="2"
             >
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
-              <span class="my-font-lg-600 my-test-section-heading-title flex-shrink-0">{{ packUnitSectionHeadingTitle }}</span>
-              <div class="my-test-section-heading-line flex-grow-1" aria-hidden="true" />
+              <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
+                <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0">{{ designRightUploadFileLabel || '—' }}</span>
+              </div>
             </div>
             <div class="my-pack-unit-settings-body">
           <!-- 課程：可拖曳至設定單元 -->
           <div v-if="secondFoldersFull.length" class="my-pack-unit-field">
-            <div class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1">資料夾</div>
+            <div class="my-font-sm-400 my-color-gray-1 flex-shrink-0 mb-0">請將資料夾拖曳到各單元的資料夾組合中</div>
             <div
-              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center"
+              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex flex-wrap gap-2 align-items-center mt-1"
               role="group"
               aria-label="資料夾"
             >
@@ -5668,18 +5724,45 @@ async function confirmAnswer(item) {
                     :key="'pack-unit-tab-' + item.index"
                     class="nav-item flex-shrink-0"
                   >
-                    <button
-                      type="button"
+                    <div
                       role="tab"
                       class="nav-link d-flex align-items-center gap-1 text-nowrap"
                       :class="{ active: item.index === activePackUnitGi }"
                       :aria-selected="item.index === activePackUnitGi"
+                      :tabindex="item.index === activePackUnitGi ? 0 : -1"
                       :data-pack-unit-tab-index="item.index"
                       :title="item.label"
-                      @click="selectPackUnit(item.index)"
                     >
-                      <span class="flex-grow-1 text-start min-w-0 text-truncate">{{ item.label }}</span>
-                    </button>
+                      <span
+                        class="flex-grow-1 text-start pe-2 min-w-0 text-truncate"
+                        style="cursor: pointer"
+                        @click="selectPackUnit(item.index)"
+                      >{{ item.label }}</span>
+                      <button
+                        v-if="item.index === activePackUnitGi"
+                        type="button"
+                        class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 pe-2"
+                        title="重新命名單元"
+                        :disabled="packGroupsEditBlocked"
+                        @click.stop="openRenamePackUnitTab(item.index)"
+                      >
+                        <i class="fa-solid fa-pen" aria-hidden="true" />
+                      </button>
+                      <span
+                        v-if="item.index === activePackUnitGi"
+                        class="d-inline-flex justify-content-center align-items-center flex-shrink-0 my-tab-nav-action-btn"
+                      >
+                        <button
+                          type="button"
+                          class="btn btn-link text-decoration-none my-color-gray-4 p-0 border-0 lh-1 align-middle"
+                          title="刪除此單元"
+                          :disabled="packGroupsEditBlocked"
+                          @click.stop="onDeletePackUnitTab(item.index)"
+                        >
+                          <i class="fa-solid fa-xmark" aria-hidden="true" />
+                        </button>
+                      </span>
+                    </div>
                   </li>
                 </ul>
               </div>
@@ -5765,7 +5848,7 @@ async function confirmAnswer(item) {
               >
               <div
                 :key="'rg-' + activePackUnitGi"
-                class="my-rag-unit-panel-block"
+                class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-3"
               >
                 <div class="my-design-pack-unit-blocks w-100 min-w-0">
                   <div class="row g-3 w-100 min-w-0">
@@ -5807,37 +5890,30 @@ async function confirmAnswer(item) {
                   </div>
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <label
-                        class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0"
-                        :for="'rag-pack-unit-name-' + activePackUnitGi"
-                      >單元名稱</label>
-                      <input
-                        :id="'rag-pack-unit-name-' + activePackUnitGi"
-                        type="text"
-                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400"
-                        :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
-                        :value="currentState.packUnitNames?.[activePackUnitGi] ?? ''"
-                        :aria-label="`設定單元 ${activePackUnitGi + 1} 單元名稱`"
-                        autocomplete="off"
-                        placeholder="選填"
-                        @input="onPackUnitNameInput(activePackUnitGi, $event)"
-                      >
-                    </div>
-                  </div>
-                  <div class="col-12 min-w-0">
-                    <div class="my-design-pack-unit-section w-100 min-w-0">
                       <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
                         類型
                       </div>
-                      <Design08OptionDropdown
-                        :model-value="packUnitTypeAt(activePackUnitGi)"
-                        :options="PACK_UNIT_TYPE_OPTIONS"
-                        :menu-id="'pack-unit-type-' + activePackUnitGi"
-                        :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
-                        block
+                      <div
+                        class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1"
+                        role="group"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 類型`"
-                        @update:model-value="onPackUnitTypePick(activePackUnitGi, $event)"
-                      />
+                      >
+                        <button
+                          v-for="opt in PACK_UNIT_TYPE_OPTIONS"
+                          :key="'pack-unit-type-' + activePackUnitGi + '-' + opt.value"
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                          :class="
+                            packUnitTypeAt(activePackUnitGi) === opt.value
+                              ? 'my-button-gray-3'
+                              : 'my-button-transparent-borderless'
+                          "
+                          :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
+                          @click="onPackUnitTypePick(activePackUnitGi, opt.value)"
+                        >
+                          {{ opt.label }}
+                        </button>
+                      </div>
                     </div>
                   </div>
                     <div
@@ -5948,9 +6024,6 @@ async function confirmAnswer(item) {
                     class="col-12 min-w-0"
                   >
                   <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="my-font-lg-600 my-test-section-heading-title my-design-pack-unit-section__title flex-shrink-0 mb-0">
-                      操作
-                    </div>
                     <div class="d-flex flex-nowrap justify-content-center align-items-center gap-2 w-100 min-w-0">
                       <button
                         type="button"
@@ -5960,15 +6033,6 @@ async function confirmAnswer(item) {
                         @click.stop="resetPackUnitGroup(activePackUnitGi)"
                       >
                         重設
-                      </button>
-                      <button
-                        type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-2 px-4 py-1"
-                        aria-label="刪除此資料夾組合"
-                        :disabled="packGroupsEditBlocked"
-                        @click.stop="removeRagListGroup(activePackUnitGi)"
-                      >
-                        刪除
                       </button>
                     </div>
                   </div>
@@ -5999,6 +6063,7 @@ async function confirmAnswer(item) {
           >
             {{ currentState.packError }}
           </div>
+            </div>
             </div>
           </section>
         </div>
@@ -6638,16 +6703,6 @@ async function confirmAnswer(item) {
   box-shadow: none;
   background-color: var(--my-pack-folder-field-bg) !important;
   border-color: var(--my-color-gray-2) !important;
-}
-/* 設定單元外層面板（rounded-4、gray-3、p-4） */
-.my-rag-unit-panel-block {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  padding: 1rem;
-  background-color: var(--my-color-gray-3);
-  border-radius: var(--bs-border-radius-xl, 1rem);
 }
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;
