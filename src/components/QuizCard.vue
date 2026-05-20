@@ -75,6 +75,17 @@ const props = defineProps({
   hintReferenceInModal: { type: Boolean, default: false },
   /** 稿頁：「先前出題」置於「題目」標題列右側 */
   showBankQuizHistoryButton: { type: Boolean, default: false },
+  /** 稿頁：題卡尚無批改結果時，黑底區顯示之示範文字（不計入 hasGrade／confirmed） */
+  designGradingResultSample: { type: String, default: '' },
+  /**
+   * 稿頁三子區塊：僅渲染對應區段（question＝題目、answer＝答案、grading＝批改規則／開始批改／批改結果）。
+   * 須 designUi；與 designEmbedded 併用，由父層包三個 .my-design-quiz-sub-block。
+   */
+  designSubBlock: {
+    type: String,
+    default: '',
+    validator: (v) => ['', 'question', 'answer', 'grading'].includes(String(v ?? '')),
+  },
 });
 
 const emit = defineEmits([
@@ -112,13 +123,24 @@ const cardMarkedForExam = computed(
   () => props.card?.rag_quiz_for_exam === true || props.card?.rag_quiz_for_exam === 1,
 );
 
-/** 有後端／驗證回傳文字且非送出中時才顯示「批改結果」區塊（不預留空白、不顯示尚未批改） */
+/** 題卡實際批改文字（不含稿頁 placeholder sample） */
+const gradingResultActual = computed(() => String(props.card?.gradingResult ?? '').trim());
+
+/** 稿頁：無真實批改時以 sample 填黑底預覽；其餘頁僅顯示實際結果 */
+const gradingResultDisplay = computed(() => {
+  if (gradingResultActual.value) return props.card.gradingResult;
+  const sample = String(props.designGradingResultSample ?? '').trim();
+  if (props.designUi && sample) return sample;
+  return '';
+});
+
+/** 有後端／驗證回傳或稿頁 sample，且非送出中時顯示「批改結果」區塊 */
 const showGradingResultSection = computed(
   () =>
     !props.hideGradingResult &&
     !props.questionHintOnly &&
     !props.gradeSubmitting &&
-    String(props.card?.gradingResult ?? '').trim() !== ''
+    String(gradingResultDisplay.value ?? '').trim() !== ''
 );
 
 const showRagQuizForExamToolbar = computed(() => {
@@ -280,6 +302,33 @@ const showQuizCardHeaderBand = computed(
   () => !props.designUi || !props.hideSlotIndex,
 );
 
+const isDesignSubBlockFragment = computed(() =>
+  props.designUi
+  && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
+);
+
+const showDesignSubBlockQuestion = computed(
+  () => !isDesignSubBlockFragment.value || props.designSubBlock === 'question',
+);
+
+const showDesignSubBlockAnswer = computed(
+  () => !isDesignSubBlockFragment.value || props.designSubBlock === 'answer',
+);
+
+const showDesignSubBlockGrading = computed(
+  () => !isDesignSubBlockFragment.value || props.designSubBlock === 'grading',
+);
+
+/** 子區塊模式：出題／批改規則 Modal 僅掛在 question 實例 */
+const showDesignSubBlockPromptModals = computed(
+  () => !isDesignSubBlockFragment.value || props.designSubBlock === 'question',
+);
+
+/** 子區塊模式：提示／參考答案 Modal 掛在 answer 實例 */
+const showDesignSubBlockHintModals = computed(
+  () => !isDesignSubBlockFragment.value || props.designSubBlock === 'answer',
+);
+
 /** 建立測驗題庫頁在 card 上帶入 baseline；未帶入時維持原僅檢查非空即可送出 */
 function cardHasGradeBaselines(card) {
   if (!card || typeof card !== 'object') return false;
@@ -404,7 +453,7 @@ const quizAnswerFieldDisabled = computed(
 
 <template>
   <div>
-    <Teleport to="body">
+    <Teleport v-if="showDesignSubBlockPromptModals" to="body">
       <div
         v-if="promptModalKind"
         class="modal fade show d-block my-modal-backdrop"
@@ -445,6 +494,7 @@ const quizAnswerFieldDisabled = computed(
         </div>
       </div>
       <QuizHistoryModal
+        v-if="showDesignSubBlockPromptModals"
         v-model="quizHistoryModalOpen"
         :unit-label="examQuizHistoryUnitLabel"
         :quiz-type-label="examQuizHistoryQuizTypeLabel"
@@ -452,6 +502,8 @@ const quizAnswerFieldDisabled = computed(
         :history-list="quizHistoryModalList"
         :title-id="`quiz-card-history-modal-title-${card.id}`"
       />
+    </Teleport>
+    <Teleport v-if="showDesignSubBlockHintModals" to="body">
       <div
         v-if="hintRefModalKind"
         class="modal fade show d-block my-modal-backdrop"
@@ -499,18 +551,26 @@ const quizAnswerFieldDisabled = computed(
     </Teleport>
     <div
       :class="[
-        designUi
-          ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-3 rounded-4 p-4 mb-0 w-100 min-w-0')
-          : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
-        { 'mt-4': !designUi && slotIndex > 1 },
+        isDesignSubBlockFragment
+          ? 'w-100 min-w-0'
+          : [
+            designUi
+              ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-3 rounded-4 p-4 mb-0 w-100 min-w-0')
+              : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
+            { 'mt-4': !designUi && slotIndex > 1 },
+          ],
       ]"
     >
     <div
       class="text-start w-100 min-w-0"
-      :class="designUi ? 'd-flex flex-column gap-4' : ''"
+      :class="
+        isDesignSubBlockFragment
+          ? 'd-flex flex-column gap-3'
+          : (designUi ? 'd-flex flex-column gap-4' : '')
+      "
     >
       <div
-        v-if="showQuizCardHeaderBand"
+        v-if="showDesignSubBlockQuestion && showQuizCardHeaderBand"
         :class="designUi ? 'd-flex flex-column gap-3 w-100 min-w-0' : ''"
       >
       <div
@@ -520,6 +580,7 @@ const quizAnswerFieldDisabled = computed(
       >第 {{ slotIndex }} 題</div>
       </div>
       <div
+        v-if="showDesignSubBlockQuestion"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
@@ -687,7 +748,7 @@ const quizAnswerFieldDisabled = computed(
         </button>
       </div>
       <div
-        v-if="!(designUi && hasQuizBody) && !hintReferenceInModal && (hasHintText || (!questionHintOnly && hasReferenceAnswerText))"
+        v-if="showDesignSubBlockQuestion && !(designUi && hasQuizBody) && !hintReferenceInModal && (hasHintText || (!questionHintOnly && hasReferenceAnswerText))"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column gap-1 mb-0' : 'mb-3'"
       >
@@ -756,13 +817,8 @@ const quizAnswerFieldDisabled = computed(
           </div>
         </div>
       </div>
-      <!-- 答案、批改規則按鈕與批改結果同欄 gap-1，避免與上方題幹區 gap-4 拉開過遠 -->
       <div
-        class="w-100 min-w-0"
-        :class="designUi ? 'd-flex flex-column' : ''"
-      >
-      <div
-        v-if="!questionHintOnly && hasQuizBody"
+        v-if="showDesignSubBlockAnswer && !questionHintOnly && hasQuizBody"
         class="w-100 min-w-0"
         :class="designUi ? 'd-flex flex-column mb-0' : 'mb-3'"
       >
@@ -829,9 +885,19 @@ const quizAnswerFieldDisabled = computed(
             :class="designUi ? 'my-font-sm-400 my-color-red mt-1' : 'form-text my-font-sm-400 my-color-red'"
           >此題與目前題庫版本不一致，無法作答。請改題或重新產生題目。</div>
         </template>
+      </div>
+      <div
+        v-if="showDesignSubBlockGrading && !questionHintOnly && hasQuizBody"
+        class="w-100 min-w-0"
+        :class="[
+          designUi ? 'd-flex flex-column gap-3 mb-0' : 'mb-3',
+          !isDesignSubBlockFragment && !designUi ? '' : '',
+        ]"
+      >
         <div
           v-if="!hideGradingPrompt && gradingPromptInModal"
-          class="d-flex flex-column w-100 min-w-0 mt-3"
+          class="d-flex flex-column w-100 min-w-0"
+          :class="isDesignSubBlockFragment ? '' : 'mt-3'"
         >
           <div
             v-if="!cardMarkedForExam"
@@ -870,9 +936,11 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="showStartGradeButton || !cardMarkedForExam"
             :class="
-              designUi
-                ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
-                : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
+              designUi && isDesignSubBlockFragment
+                ? 'd-flex justify-content-start align-items-center flex-wrap gap-3 mt-2 pt-2'
+                : designUi
+                  ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
+                  : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
             "
           >
             <button
@@ -909,9 +977,11 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="showStartGradeButton || !cardMarkedForExam"
             :class="
-              designUi
-                ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
-                : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
+              designUi && isDesignSubBlockFragment
+                ? 'd-flex justify-content-start align-items-center flex-wrap gap-3 mt-2 pt-2'
+                : designUi
+                  ? 'd-flex justify-content-center align-items-center flex-wrap gap-3 mt-2 pt-2'
+                  : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
             "
           >
             <button
@@ -981,7 +1051,6 @@ const quizAnswerFieldDisabled = computed(
             開始批改
           </button>
         </div>
-      </div>
       <!-- 批改結果區：僅在回傳後有內容時顯示（送出中不占位） -->
       <div
         v-if="showGradingResultSection"
@@ -995,7 +1064,7 @@ const quizAnswerFieldDisabled = computed(
           class="my-font-sm-400"
           style="white-space: pre-wrap;"
           :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-        >{{ card.gradingResult }}</div>
+        >{{ gradingResultDisplay }}</div>
         <div
           v-if="showRagQuizForExamToolbar"
           class="w-100 min-w-0 d-flex flex-column align-items-center gap-2 mt-3"
@@ -1031,7 +1100,7 @@ const quizAnswerFieldDisabled = computed(
       </div>
       </div>
     </div>
-  </div>
+    </div>
   </div>
 </template>
 

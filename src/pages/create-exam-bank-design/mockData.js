@@ -1,6 +1,7 @@
 /**
  * 建立測驗題庫（稿）頁面用示範資料，不呼叫後端 API。
  */
+import { formatGradingResult } from '../../utils/grading.js';
 
 /** ZIP 內資料夾／設定單元橫向列表示範（10 筆） */
 export const DESIGN_DEMO_FOLDER_NAMES = [
@@ -61,6 +62,16 @@ export const DESIGN_DEMO_GRADING_CRITIQUE_JSON = {
 export const DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE = JSON.stringify(
   DESIGN_DEMO_GRADING_CRITIQUE_JSON,
 );
+
+/** 稿頁黑底預覽：批改結果示範（題卡尚無真實批改時顯示；不寫入 card.gradingResult） */
+export const DESIGN_DEMO_GRADING_RESULT_SAMPLE =
+  formatGradingResult(DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE)
+  || [
+    '4',
+    '能掌握題幹要求，回答有對應教材重點。',
+    '優點：概念方向正確，並嘗試區分兩者差異與應用情境。',
+    '可補強：建議補充「多層神經網路／特徵學習」等關鍵描述，並以條列整理會更清楚。',
+  ].join('\n');
 
 /** 稿頁單元內容 Modal：MP3 示範用（不呼叫 API） */
 export const DESIGN_DEMO_MP3_SAMPLE_URL =
