@@ -423,6 +423,8 @@ const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.v
 const hasBuiltRagSummary = computed(
   () => hasRagMetadata.value || currentState.value.packResponseJson != null
 );
+/** 右側欄：與 left view「設定單元題型」區塊同時出現 */
+const showDesignRightView = computed(() => hasBuiltRagSummary.value);
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
 const ragListReadonlyGroups = computed(() => {
@@ -864,12 +866,43 @@ const createRagStepperPhase = computed(() => {
   return 3;
 });
 
-/** 已到達步驟與目前步：黑底白字；未到：淺灰底 */
-function createRagStepperNumVariant(step) {
-  const p = createRagStepperPhase.value;
-  if (!Number.isFinite(Number(p)) || p < 1 || p > 3) return 'my-create-rag-stepper-num--off';
-  if (p >= step) return 'my-create-rag-stepper-num--on';
-  return 'my-create-rag-stepper-num--off';
+/** 右側欄：上傳檔名（本機選取或已上傳） */
+const designRightUploadFileLabel = computed(() => {
+  if (hasUploadedFileMetadata.value) {
+    const name = String(uploadedZipDisplayName.value ?? '').trim();
+    if (name) return name;
+  }
+  const local = String(currentState.value.zipFileName ?? '').trim();
+  return local || '';
+});
+
+/** 右側欄：設定單元子分頁 */
+const designRightUnitSubTabItems = computed(() =>
+  packUnitListItemsForNav.value.map((item) => ({
+    key: `pack-unit-${item.index}`,
+    label: item.label,
+    index: item.index,
+    kind: 'pack-unit',
+    active: item.index === activePackUnitGi.value,
+  })),
+);
+
+/** 右側欄：設定單元題型子分頁 */
+const designRightQuizTypeSubTabItems = computed(() => {
+  if (!hasBuiltRagSummary.value) return [];
+  return activeUnitQuizCards.value.map((row, qi) => ({
+    key: `quiz-type-${qi}-${row.rag_quiz_id ?? row.id ?? qi}`,
+    label: quizTypeTabLabel(row),
+    index: qi,
+    kind: 'quiz-type',
+    active: qi === activeUnitQuizTypeIdxResolved.value,
+  }));
+});
+
+function onDesignRightSubTabClick(item) {
+  if (!item) return;
+  if (item.kind === 'pack-unit') selectPackUnit(item.index);
+  else if (item.kind === 'quiz-type') selectUnitQuizType(item.index);
 }
 
 /** 已有 file_metadata 時，畫面僅顯示之 ZIP 檔名 */
@@ -4954,8 +4987,12 @@ async function confirmAnswer(item) {
     </div>
 
     <div class="flex-grow-1 overflow-hidden my-bgcolor-gray-4 d-flex flex-column min-h-0">
-      <div class="row g-0 flex-grow-1 min-h-0 my-design-tab-split-layout">
-        <div class="col-8 col-md-9 col-lg-10 min-h-0 overflow-auto d-flex flex-column my-design-tab-left-view">
+      <div class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout">
+        <div
+          class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
+          :class="showDesignRightView ? 'col-8 col-md-9 col-lg-10' : 'col-12'"
+        >
+          <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
       <div
         v-if="!showCreateBankMainForm"
         class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
@@ -6138,65 +6175,79 @@ async function confirmAnswer(item) {
         </div>
       </div>
         </div>
-        <div class="col-4 col-md-3 col-lg-2 min-h-0 overflow-hidden my-bgcolor-gray-3">
+        </div>
+        <div
+          v-if="showDesignRightView"
+          class="col-4 col-md-3 col-lg-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+        >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
             aria-label="設計輔助面板"
           >
-            <!-- 建立流程 stepper（垂直；右側欄） -->
-            <section
+            <!-- 建立流程：三步標題 + 子項目垂直列表（樣式對齊 LeftView nav） -->
+            <nav
               v-if="showStepperSection"
-              class="my-create-rag-stepper-bar my-create-rag-stepper-bar--vertical flex-shrink-0 p-3"
+              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
+              aria-label="建立流程"
             >
-              <div class="my-create-rag-stepper my-create-rag-stepper--vertical text-start">
-                <div class="my-create-rag-stepper-step">
-                  <div class="d-flex align-items-center gap-2 w-100 min-w-0">
-                    <span
-                      class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
-                      :class="createRagStepperNumVariant(1)"
-                    >1</span>
-                    <span
-                      class="my-create-rag-stepper-label"
-                      :class="createRagStepperPhase >= 1 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-                    >上傳檔案</span>
-                  </div>
-                </div>
-                <div
-                  class="my-create-rag-stepper-line my-create-rag-stepper-line--vertical"
-                  :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-line--on' : ''"
-                  aria-hidden="true"
-                />
-                <div class="my-create-rag-stepper-step">
-                  <div class="d-flex align-items-center gap-2 w-100 min-w-0">
-                    <span
-                      class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
-                      :class="createRagStepperNumVariant(2)"
-                    >2</span>
-                    <span
-                      class="my-create-rag-stepper-label"
-                      :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-                    >設定單元</span>
-                  </div>
-                </div>
-                <div
-                  class="my-create-rag-stepper-line my-create-rag-stepper-line--vertical"
-                  :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-line--on' : ''"
-                  aria-hidden="true"
-                />
-                <div class="my-create-rag-stepper-step">
-                  <div class="d-flex align-items-center gap-2 w-100 min-w-0">
-                    <span
-                      class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
-                      :class="createRagStepperNumVariant(3)"
-                    >3</span>
-                    <span
-                      class="my-create-rag-stepper-label"
-                      :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-                    >設定單元題型</span>
-                  </div>
-                </div>
+              <div
+                class="my-design-right-step-heading my-font-md-400 my-color-black"
+                :class="{ 'my-font-md-600': createRagStepperPhase === 1 }"
+              >上傳檔案</div>
+              <div
+                v-if="designRightUploadFileLabel"
+                class="nav-item"
+              >
+                <span
+                  class="nav-link w-100 text-start text-break"
+                  :class="{ active: createRagStepperPhase === 1 }"
+                >{{ designRightUploadFileLabel }}</span>
               </div>
-            </section>
+
+              <div
+                class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
+                :class="{ 'my-font-md-600': createRagStepperPhase === 2 }"
+              >{{ packUnitSectionHeadingTitle }}</div>
+              <template v-if="designRightUnitSubTabItems.length">
+                <div
+                  v-for="item in designRightUnitSubTabItems"
+                  :key="item.key"
+                  class="nav-item"
+                >
+                  <button
+                    type="button"
+                    class="nav-link w-100 text-start text-break"
+                    :class="{ active: item.active }"
+                    :aria-current="item.active ? 'page' : undefined"
+                    @click="onDesignRightSubTabClick(item)"
+                  >
+                    {{ item.label }}
+                  </button>
+                </div>
+              </template>
+
+              <div
+                class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
+                :class="{ 'my-font-md-600': createRagStepperPhase === 3 }"
+              >{{ unitQuizTypeSectionHeadingTitle }}</div>
+              <template v-if="designRightQuizTypeSubTabItems.length">
+                <div
+                  v-for="item in designRightQuizTypeSubTabItems"
+                  :key="item.key"
+                  class="nav-item"
+                >
+                  <button
+                    type="button"
+                    class="nav-link w-100 text-start text-break"
+                    :class="{ active: item.active }"
+                    :aria-current="item.active ? 'page' : undefined"
+                    @click="onDesignRightSubTabClick(item)"
+                  >
+                    {{ item.label }}
+                  </button>
+                </div>
+              </template>
+            </nav>
           </aside>
         </div>
       </div>
@@ -6213,34 +6264,36 @@ async function confirmAnswer(item) {
 .my-design-tab-left-view,
 .my-design-tab-right-view {
   min-width: 0;
+  min-height: 0;
 }
-.my-create-rag-stepper-bar--vertical {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  background-color: var(--my-color-gray-3);
+.my-design-tab-left-view-scroll {
+  min-height: 0;
 }
-.my-create-rag-stepper--vertical {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0;
-}
-.my-create-rag-stepper--vertical .my-create-rag-stepper-label {
-  margin-top: 0;
+.my-design-right-step-heading {
   line-height: 1.35;
   word-break: break-word;
+  padding: 0 0.5rem;
 }
-.my-create-rag-stepper--vertical .my-create-rag-stepper-line--vertical {
-  flex: 0 0 auto;
-  width: 2px;
-  min-width: 2px;
-  height: 1.5rem;
-  min-height: 1rem;
-  margin-top: 0.25rem;
-  margin-bottom: 0.25rem;
-  margin-left: calc(2.25rem / 2 - 1px);
-  align-self: flex-start;
+/* 對齊 LeftView 側欄 nav-pills */
+.my-design-right-nav .nav-link {
+  color: var(--my-color-black);
+  border: none;
+  background: transparent;
+}
+.my-design-right-nav button.nav-link {
+  cursor: pointer;
+}
+.my-design-right-nav .nav-link:not(.active):hover,
+.my-design-right-nav .nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+}
+.my-design-right-nav .nav-link.active,
+.my-design-right-nav .nav-link.active:hover,
+.my-design-right-nav .nav-link.active:focus,
+.my-design-right-nav .nav-link.active:focus-visible {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
 }
 .my-pack-folder-field-input {
   box-sizing: border-box;
