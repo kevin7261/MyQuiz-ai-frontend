@@ -4953,7 +4953,9 @@ async function confirmAnswer(item) {
       </div>
     </div>
 
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-hidden my-bgcolor-gray-4 d-flex flex-column min-h-0">
+      <div class="row g-0 flex-grow-1 min-h-0 my-design-tab-split-layout">
+        <div class="col-8 col-md-9 col-lg-10 min-h-0 overflow-auto d-flex flex-column my-design-tab-left-view">
       <div
         v-if="!showCreateBankMainForm"
         class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
@@ -4977,53 +4979,6 @@ async function confirmAnswer(item) {
           <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
       <!-- 有資料或已點新增後顯示表單 -->
       <template v-if="showCreateBankMainForm">
-      <!-- 建立流程 stepper：1–3（已完成灰底細框／當前黑底／未到淺灰；連線達下一階即加深） -->
-      <section v-if="showStepperSection" class="my-create-rag-stepper-bar my-page-block-spacing p-3">
-        <div class="my-create-rag-stepper text-start">
-          <div class="d-flex justify-content-between align-items-start gap-2 gap-sm-3 w-100">
-          <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
-            <span
-              class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
-              :class="createRagStepperNumVariant(1)"
-            >1</span>
-            <span
-              class="my-create-rag-stepper-label"
-              :class="createRagStepperPhase >= 1 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-            >上傳檔案</span>
-          </div>
-          <div
-            class="my-create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
-            :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-line--on' : ''"
-            aria-hidden="true"
-          />
-          <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
-            <span
-              class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
-              :class="createRagStepperNumVariant(2)"
-            >2</span>
-            <span
-              class="my-create-rag-stepper-label"
-              :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-            >設定單元</span>
-          </div>
-          <div
-            class="my-create-rag-stepper-line align-self-center flex-grow-1 mx-n1 mx-sm-0"
-            :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-line--on' : ''"
-            aria-hidden="true"
-          />
-          <div class="flex-grow-1 d-flex flex-column align-items-center text-center px-1">
-            <span
-              class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
-              :class="createRagStepperNumVariant(3)"
-            >3</span>
-            <span
-              class="my-create-rag-stepper-label"
-              :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
-            >設定單元題型</span>
-          </div>
-          </div>
-        </div>
-      </section>
       <!-- 尚無 file_metadata 時顯示上傳區（無區塊外框；標題同設定單元題型） -->
       <section v-if="showUploadFileSection" class="text-start my-page-block-spacing">
         <div
@@ -6182,18 +6137,110 @@ async function confirmAnswer(item) {
           </div>
         </div>
       </div>
+        </div>
+        <div class="col-4 col-md-3 col-lg-2 min-h-0 overflow-hidden my-bgcolor-gray-3">
+          <aside
+            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
+            aria-label="設計輔助面板"
+          >
+            <!-- 建立流程 stepper（垂直；右側欄） -->
+            <section
+              v-if="showStepperSection"
+              class="my-create-rag-stepper-bar my-create-rag-stepper-bar--vertical flex-shrink-0 p-3"
+            >
+              <div class="my-create-rag-stepper my-create-rag-stepper--vertical text-start">
+                <div class="my-create-rag-stepper-step">
+                  <div class="d-flex align-items-center gap-2 w-100 min-w-0">
+                    <span
+                      class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
+                      :class="createRagStepperNumVariant(1)"
+                    >1</span>
+                    <span
+                      class="my-create-rag-stepper-label"
+                      :class="createRagStepperPhase >= 1 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
+                    >上傳檔案</span>
+                  </div>
+                </div>
+                <div
+                  class="my-create-rag-stepper-line my-create-rag-stepper-line--vertical"
+                  :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-line--on' : ''"
+                  aria-hidden="true"
+                />
+                <div class="my-create-rag-stepper-step">
+                  <div class="d-flex align-items-center gap-2 w-100 min-w-0">
+                    <span
+                      class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
+                      :class="createRagStepperNumVariant(2)"
+                    >2</span>
+                    <span
+                      class="my-create-rag-stepper-label"
+                      :class="createRagStepperPhase >= 2 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
+                    >設定單元</span>
+                  </div>
+                </div>
+                <div
+                  class="my-create-rag-stepper-line my-create-rag-stepper-line--vertical"
+                  :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-line--on' : ''"
+                  aria-hidden="true"
+                />
+                <div class="my-create-rag-stepper-step">
+                  <div class="d-flex align-items-center gap-2 w-100 min-w-0">
+                    <span
+                      class="my-create-rag-stepper-num rounded-circle d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-600"
+                      :class="createRagStepperNumVariant(3)"
+                    >3</span>
+                    <span
+                      class="my-create-rag-stepper-label"
+                      :class="createRagStepperPhase >= 3 ? 'my-create-rag-stepper-label--current my-font-sm-600' : 'my-create-rag-stepper-label--inactive my-font-sm-400'"
+                    >設定單元題型</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 /* 以下樣式僅供 create-exam-bank_design，勿移至 common.css（避免影響 /create-exam-bank） */
-.my-create-rag-stepper-bar {
+.my-design-tab-split-layout {
+  min-height: 0;
+  flex: 1 1 0;
+}
+.my-design-tab-left-view,
+.my-design-tab-right-view {
+  min-width: 0;
+}
+.my-create-rag-stepper-bar--vertical {
   position: sticky;
   top: 0;
   z-index: 20;
-  background-color: var(--my-color-gray-4);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--my-color-gray-2) 65%, transparent);
+  background-color: var(--my-color-gray-3);
+}
+.my-create-rag-stepper--vertical {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+.my-create-rag-stepper--vertical .my-create-rag-stepper-label {
+  margin-top: 0;
+  line-height: 1.35;
+  word-break: break-word;
+}
+.my-create-rag-stepper--vertical .my-create-rag-stepper-line--vertical {
+  flex: 0 0 auto;
+  width: 2px;
+  min-width: 2px;
+  height: 1.5rem;
+  min-height: 1rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  margin-left: calc(2.25rem / 2 - 1px);
+  align-self: flex-start;
 }
 .my-pack-folder-field-input {
   box-sizing: border-box;
