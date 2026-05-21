@@ -4,7 +4,8 @@
  * 與 Design 08 一致：外層 .my-design-08-dropdown；觸發 rounded-2、my-button-white（白底、gray-2 邊）；選單 .dropdown-menu Bootstrap 預設。
  * omitEmptyChoice：不列「清空」項，適用必選之單元切換列。
  */
-import { computed } from 'vue';
+import { computed, ref, nextTick } from 'vue';
+import { Dropdown } from 'bootstrap';
 import { unitSelectValue } from '../utils/rag.js';
 
 const props = defineProps({
@@ -26,6 +27,7 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue']);
 
+const rootRef = ref(null);
 const toggleId = computed(() => `${props.menuId}-toggle`);
 
 function optValue(o) {
@@ -60,13 +62,24 @@ const buttonTitle = computed(() => {
   return buttonLabel.value;
 });
 
+function hideDropdownMenu() {
+  nextTick(() => {
+    const toggle = rootRef.value?.querySelector('[data-bs-toggle="dropdown"]');
+    if (!toggle) return;
+    const instance = Dropdown.getInstance(toggle) ?? Dropdown.getOrCreateInstance(toggle);
+    instance.hide();
+  });
+}
+
 function select(val) {
   emit('update:modelValue', val);
+  hideDropdownMenu();
 }
 </script>
 
 <template>
   <div
+    ref="rootRef"
     class="dropdown w-100 my-design-08-dropdown"
     data-bs-display="static"
   >
@@ -116,8 +129,11 @@ function select(val) {
   max-width: 100%;
 }
 .my-unit-select-dd-menu {
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
   max-height: 280px;
   overflow-y: auto;
-  max-width: 100%;
+  box-sizing: border-box;
 }
 </style>

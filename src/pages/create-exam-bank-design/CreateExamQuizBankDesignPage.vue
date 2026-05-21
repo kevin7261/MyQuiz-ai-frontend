@@ -5190,25 +5190,28 @@ async function confirmAnswer(item) {
                 <div class="row g-3 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
-                        資料夾組合
-                      </div>
                       <div
-                        class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0"
+                        class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative p-2"
+                        style="min-height: 2.5rem;"
                         role="group"
                         aria-label="資料夾組合"
                       >
-                        <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
-                          <span
-                            v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
-                            :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
-                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                          >{{ tag }}</span>
-                        </template>
-                        <span
-                          v-else
-                          class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
-                        >{{ activeReadonlyPackUnitRow.title }}</span>
+                        <div class="d-flex flex-column gap-1 flex-grow-1 w-100 min-w-0">
+                          <span class="my-font-sm-400 my-color-black">資料夾組合</span>
+                          <div class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0">
+                            <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
+                              <span
+                                v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
+                                :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
+                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                              >{{ tag }}</span>
+                            </template>
+                            <span
+                              v-else
+                              class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
+                            >{{ activeReadonlyPackUnitRow.title }}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -5820,36 +5823,38 @@ async function confirmAnswer(item) {
               <div class="row gx-2 gy-0 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="my-font-sm-400 my-color-gray-1 mb-0">
-                      資料夾組合
-                    </div>
                     <div
-                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target mt-1 p-2"
+                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target p-2"
                       style="min-height: 2.5rem;"
+                      role="group"
+                      aria-label="資料夾組合"
                       @dragover.prevent="onDragOver($event)"
                       @dragenter.prevent="onDragEnter($event)"
                       @dragleave="onDragLeave($event)"
                       @drop.prevent="onDropRagList($event, activePackUnitGi)"
                     >
-                      <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1 min-w-0">
-                        <div
-                          v-for="(tag, ti) in activePackUnitGroup"
-                          :key="'t-' + activePackUnitGi + '-' + ti"
-                          class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                          style="cursor: grab;"
-                          draggable="true"
-                          role="button"
-                          @dragstart="onDragStartTag($event, tag, true, activePackUnitGi, ti)"
-                          @dragend="onDragEndTag"
-                        >
-                          {{ tag }}
-                          <span
-                            class="my-color-gray-4 ms-1"
-                            style="cursor: pointer;"
-                            @click.stop="removeFromRagList(activePackUnitGi, ti)"
-                          >×</span>
+                      <div class="d-flex flex-column gap-1 flex-grow-1 w-100 min-w-0">
+                        <span class="my-font-sm-400 my-color-black">資料夾組合</span>
+                        <div class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0">
+                          <div
+                            v-for="(tag, ti) in activePackUnitGroup"
+                            :key="'t-' + activePackUnitGi + '-' + ti"
+                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                            style="cursor: grab;"
+                            draggable="true"
+                            role="button"
+                            @dragstart="onDragStartTag($event, tag, true, activePackUnitGi, ti)"
+                            @dragend="onDragEndTag"
+                          >
+                            {{ tag }}
+                            <span
+                              class="my-color-gray-4 ms-1"
+                              style="cursor: pointer;"
+                              @click.stop="removeFromRagList(activePackUnitGi, ti)"
+                            >×</span>
+                          </div>
+                          <span v-if="!activePackUnitGroup.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
                         </div>
-                        <span v-if="!activePackUnitGroup.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
                       </div>
                     </div>
                     </div>
@@ -6222,44 +6227,79 @@ async function confirmAnswer(item) {
               </div>
               <div
                 v-if="activeUnitQuizCard"
-                class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
+                class="w-100 min-w-0 text-start d-flex flex-column gap-3"
               >
-                <div
-                  class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-center p-1"
-                  role="group"
-                  aria-label="出題模式"
-                >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
-                    :class="
-                      !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                        ? 'my-button-gray-3'
-                        : 'my-button-transparent-borderless'
-                    "
-                    :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                    @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
+                <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
+                  <div
+                    class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100 min-w-0"
                   >
-                    一般出題
-                  </button>
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
-                    :class="
-                      isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                        ? 'my-button-gray-3'
-                        : 'my-button-transparent-borderless'
-                    "
-                    :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                    @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
+                    <div
+                      class="my-design-quiz-generate-mode-toggle d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 p-1"
+                      role="group"
+                      aria-label="出題模式"
+                    >
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        :class="
+                          !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                            ? 'my-design-quiz-generate-mode-toggle__btn--active'
+                            : 'my-button-transparent-borderless'
+                        "
+                        :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                        @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
+                      >
+                        一般出題
+                      </button>
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        :class="
+                          isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                            ? 'my-design-quiz-generate-mode-toggle__btn--active'
+                            : 'my-button-transparent-borderless'
+                        "
+                        :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                        @click="setUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
+                      >
+                        追問出題
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 px-3 py-1 ms-auto"
+                      :class="
+                        isRagQuizMarkedForExam(activeUnitQuizCard)
+                          ? 'my-button-green'
+                          : 'my-btn-outline-green-hollow'
+                      "
+                      :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
+                      :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
+                      :aria-label="isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'"
+                      @click="onMarkRagQuizForExam(activeUnitQuizCard)"
+                    >
+                      <template v-if="isRagQuizMarkedForExam(activeUnitQuizCard)">
+                        <i class="fa-solid fa-check" aria-hidden="true" />
+                        測驗用
+                      </template>
+                      <template v-else>
+                        設為測驗用
+                      </template>
+                    </button>
+                  </div>
+                  <div
+                    v-if="String(activeUnitQuizCard.ragQuizForExamError ?? '').trim()"
+                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
+                    style="max-width: 42rem"
+                    role="alert"
                   >
-                    追問出題
-                  </button>
+                    {{ activeUnitQuizCard.ragQuizForExamError }}
+                  </div>
                 </div>
                 <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白 -->
                 <div class="my-design-quiz-sub-block-outer pe-5">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 d-flex flex-column"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 d-flex flex-column"
                   >
                     <div class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0">
                       <section
@@ -6359,7 +6399,7 @@ async function confirmAnswer(item) {
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer pe-5"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0">
                     <QuizCard
                       v-bind="designUnitQuizCardBind"
                       create-exam-bank-design-layout
@@ -6371,34 +6411,11 @@ async function confirmAnswer(item) {
                     />
                   </div>
                 </div>
-                <div class="d-flex flex-column align-items-center gap-2 w-100 min-w-0 pt-1">
-                  <button
-                    type="button"
-                    :class="
-                      isRagQuizMarkedForExam(activeUnitQuizCard)
-                        ? 'btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-outline-green-hollow px-4 py-2'
-                        : 'btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-green px-4 py-2'
-                    "
-                    :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
-                    :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
-                    @click="onMarkRagQuizForExam(activeUnitQuizCard)"
-                  >
-                    {{ isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消設為測驗用' : '設為測驗用' }}
-                  </button>
-                  <div
-                    v-if="String(activeUnitQuizCard.ragQuizForExamError ?? '').trim()"
-                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
-                    style="max-width: 42rem"
-                    role="alert"
-                  >
-                    {{ activeUnitQuizCard.ragQuizForExamError }}
-                  </div>
-                </div>
               </div>
             </template>
             <template v-else-if="!hasUnitSubTabs">
               <div
-                class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-3"
+                class="w-100 min-w-0 d-flex flex-column gap-3"
               >
                 <div class="my-font-lg-600 my-color-black mb-0">
                   {{ activeUnitTabItem ? activeUnitTabItem.label : '出題' }}
@@ -6537,6 +6554,33 @@ async function confirmAnswer(item) {
 .my-design-tab-right-view {
   min-width: 0;
   min-height: 0;
+}
+/* 右側欄：淺灰底上 scrollbar 需較深（對齊 my-pack-unit-list-nav） */
+.my-design-tab-right-view,
+.my-design-right-nav {
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-color-gray-1) var(--my-color-gray-2);
+}
+.my-design-tab-right-view::-webkit-scrollbar,
+.my-design-right-nav::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
+}
+.my-design-tab-right-view::-webkit-scrollbar-track,
+.my-design-right-nav::-webkit-scrollbar-track {
+  background: var(--my-color-gray-2);
+  border-radius: calc(var(--my-scrollbar-size) / 2);
+}
+.my-design-tab-right-view::-webkit-scrollbar-thumb,
+.my-design-right-nav::-webkit-scrollbar-thumb {
+  background-color: var(--my-color-gray-1);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+.my-design-tab-right-view::-webkit-scrollbar-thumb:hover,
+.my-design-right-nav::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-color-black);
 }
 .my-design-tab-left-view-scroll {
   min-height: 0;
@@ -6697,7 +6741,16 @@ async function confirmAnswer(item) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 題型區三子區塊：outer＝灰底上 pe-5／ps-5（題目、批改右留白；答案左留白）；sub-block＝白底圓角面板 */
+/* 出題模式：淺灰底軌道＋選中白按鈕 */
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active,
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:hover:not(:disabled),
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:focus-visible,
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:active:not(:disabled) {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+  border: none;
+}
+/* 題型區三子區塊：outer＝pe-5／ps-5；題目／批改＝淺灰底 gray-3；答案＝白底 */
 .my-design-quiz-sub-block-outer,
 .my-design-quiz-sub-block {
   box-sizing: border-box;
@@ -6862,11 +6915,39 @@ async function confirmAnswer(item) {
 .my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
   margin-bottom: 0;
 }
-/* 題目／答案標題列 pill（先前出題、提示、參考答案）：淡灰底、無描邊 */
-.btn.my-design-quiz-stem-history-btn,
-.my-design-quiz-sub-block :deep(.btn.my-design-quiz-stem-history-btn) {
+/* 題目標題列「先前出題」pill：白底、無描邊 */
+.btn.my-design-quiz-history-btn,
+:deep(.btn.my-design-quiz-history-btn) {
   border: none;
   white-space: nowrap;
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
+.btn.my-design-quiz-history-btn:hover:not(:disabled),
+.btn.my-design-quiz-history-btn:focus-visible:not(:disabled),
+.btn.my-design-quiz-history-btn:active:not(:disabled),
+:deep(.btn.my-design-quiz-history-btn:hover:not(:disabled)),
+:deep(.btn.my-design-quiz-history-btn:focus-visible:not(:disabled)),
+:deep(.btn.my-design-quiz-history-btn:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  color: var(--my-color-black);
+}
+/* 答案標題列 pill（提示、參考答案、詳細資訊等）：略深灰底 gray-2、無描邊 */
+.btn.my-design-quiz-stem-history-btn,
+:deep(.btn.my-design-quiz-stem-history-btn) {
+  border: none;
+  white-space: nowrap;
+  background-color: var(--my-color-gray-2);
+  color: var(--my-color-black);
+}
+.btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
+.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled),
+.btn.my-design-quiz-stem-history-btn:active:not(:disabled),
+:deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
+:deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
+:deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-2));
+  color: var(--my-color-black);
 }
 /* 答案子區塊：作答欄白底、淡灰框（--my-color-gray-2） */
 .form-control.my-design-quiz-answer-input,

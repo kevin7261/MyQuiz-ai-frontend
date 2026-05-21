@@ -322,6 +322,15 @@ const isDesignSubBlockFragment = computed(
     && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
 );
 
+/** exam_design 題目子區：讚／差列與題幹 inset 內距對齊 */
+const designStemToolbarRowPaddingClass = computed(() =>
+  isDesignSubBlockFragment.value
+  && props.designSubBlock === 'question'
+  && props.showExamRating
+    ? 'px-3 pt-2 pb-3'
+    : '',
+);
+
 /** create-exam-bank_design 批改子區塊 */
 const showDesignLayoutGradingToolbar = computed(
   () => isDesignSubBlockFragment.value && props.designSubBlock === 'grading',
@@ -668,7 +677,7 @@ const quizAnswerFieldDisabled = computed(
                 <button
                   v-if="showBankQuizHistoryInStemHeader"
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1 ms-auto"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1 ms-auto"
                   aria-label="查看先前出題"
                   :disabled="examQuizHistoryButtonDisabled"
                   @click="emit('open-quiz-history')"
@@ -733,7 +742,7 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="showDesignStemToolbarRow"
             class="d-flex flex-row flex-nowrap align-items-center gap-2 w-100 min-w-0"
-            :class="designStemToolbarJustifyClass"
+            :class="[designStemToolbarJustifyClass, designStemToolbarRowPaddingClass]"
           >
             <div
               v-if="stemToolbarLeftPills"
