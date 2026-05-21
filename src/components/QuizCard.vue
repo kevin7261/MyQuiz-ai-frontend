@@ -1310,7 +1310,7 @@ const quizAnswerFieldDisabled = computed(
             :disabled="cardMarkedForExam ? false : gradeSubmitting"
             @update:model-value="emit('update:grading_prompt', $event)"
           />
-          <!-- 與建立題庫「出題規則」同款：編輯區下方同一列，重設在左、儲存並開始批改在右 -->
+          <!-- 建立題庫（gradingPromptInModal）重設在 Modal；其餘情境編輯區下方同一列 -->
           <div
             v-if="showStartGradeButton || !cardMarkedForExam"
             :class="
@@ -1322,7 +1322,7 @@ const quizAnswerFieldDisabled = computed(
             "
           >
             <button
-              v-if="!cardMarkedForExam"
+              v-if="!cardMarkedForExam && !gradingPromptInModal"
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-3 py-2"
               title="還原為上次載入或送出後的內容"

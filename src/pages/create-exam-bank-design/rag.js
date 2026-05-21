@@ -199,11 +199,23 @@ export function serializePackTasksList(list) {
   }).join(',');
 }
 
-/** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 未選、1 rag→PDF／Office、2 文字→.md、3 mp3→.mp3、4 youtube→.md（預設 rag） */
+/** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 舊資料相容→文字、1 rag、2 文字、3 mp3、4 youtube（新單元預設文字） */
 export const UNIT_TYPE_RAG = 1;
 export const UNIT_TYPE_TEXT = 2;
 export const UNIT_TYPE_MP3 = 3;
 export const UNIT_TYPE_YOUTUBE = 4;
+/** 新增／缺省單元類型預設 */
+export const DEFAULT_PACK_UNIT_TYPE = UNIT_TYPE_TEXT;
+
+/** 正規化 unit_type（0→文字；無效→預設文字） */
+export function normalizePackUnitType(raw) {
+  const v = Number(raw);
+  if (v === UNIT_TYPE_RAG || v === UNIT_TYPE_TEXT || v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE) {
+    return v;
+  }
+  if (v === 0) return UNIT_TYPE_TEXT;
+  return DEFAULT_PACK_UNIT_TYPE;
+}
 
 /** 出題單元預設分段長度／重疊（與 POST build-rag-zip rag_chunk_* 對齊；每群一筆） */
 export const DEFAULT_PACK_CHUNK_SIZE = 1000;
@@ -232,10 +244,6 @@ export function transcriptionsForBuildRagZip(unitTypes, markdownTexts) {
   return out;
 }
 
-function isValidUnitType(n) {
-  return n === 0 || n === 1 || n === 2 || n === 3 || n === 4;
-}
-
 function groupSig(g) {
   if (!Array.isArray(g) || g.length === 0) return '';
   return [...g].map(String).sort().join('\u0001');
@@ -252,21 +260,20 @@ export function remapPackUnitTypes(oldList, oldTypes, newList) {
   const ol = oldList || [];
   const nl = newList || [];
   const ot = [...(oldTypes || [])];
-  while (ot.length < ol.length) ot.push(UNIT_TYPE_RAG);
+  while (ot.length < ol.length) ot.push(DEFAULT_PACK_UNIT_TYPE);
   ot.length = ol.length;
   const used = new Set();
   return nl.map((g) => {
     const s = groupSig(g);
-    if (!s) return UNIT_TYPE_RAG;
+    if (!s) return DEFAULT_PACK_UNIT_TYPE;
     for (let i = 0; i < ol.length; i++) {
       if (used.has(i)) continue;
       if (groupSig(ol[i]) === s) {
         used.add(i);
-        const v = ot[i];
-        return isValidUnitType(v) ? v : UNIT_TYPE_RAG;
+        return normalizePackUnitType(ot[i]);
       }
     }
-    return UNIT_TYPE_RAG;
+    return DEFAULT_PACK_UNIT_TYPE;
   });
 }
 
@@ -371,7 +378,7 @@ export function parsePackUnitTypesFromRag(raw, groupCount) {
   const n = Math.max(0, Math.floor(Number(groupCount)) || 0);
   let arr = [];
   if (raw == null || raw === '') {
-    return Array(n).fill(UNIT_TYPE_RAG);
+    return Array(n).fill(DEFAULT_PACK_UNIT_TYPE);
   }
   if (Array.isArray(raw)) {
     arr = raw.map((x) => Number(x));
@@ -385,7 +392,7 @@ export function parsePackUnitTypesFromRag(raw, groupCount) {
   const out = [];
   for (let i = 0; i < n; i++) {
     const v = arr[i];
-    out.push(isValidUnitType(v) ? v : UNIT_TYPE_RAG);
+    out.push(normalizePackUnitType(v));
   }
   return out;
 }
@@ -397,7 +404,7 @@ export function parsePackUnitTypesFromRag(raw, groupCount) {
  */
 export function serializePackUnitTypesForApi(types) {
   if (!Array.isArray(types) || types.length === 0) return '';
-  return types.map((t) => (isValidUnitType(Number(t)) ? Number(t) : UNIT_TYPE_RAG)).join(',');
+  return types.map((t) => normalizePackUnitType(t)).join(',');
 }
 
 /**
@@ -407,7 +414,7 @@ export function serializePackUnitTypesForApi(types) {
  */
 export function packUnitTypesIntArrayForApi(types) {
   if (!Array.isArray(types) || types.length === 0) return [];
-  return types.map((t) => (isValidUnitType(Number(t)) ? Number(t) : UNIT_TYPE_RAG));
+  return types.map((t) => normalizePackUnitType(t));
 }
 
 /**

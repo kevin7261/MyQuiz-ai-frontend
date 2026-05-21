@@ -70,6 +70,7 @@ import {
   transcriptionsForBuildRagZip,
   chunkSizesOverlapsStringsForBuildRagZip,
   serializePackUnitNamesForApi,
+  normalizePackUnitType,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -1258,9 +1259,7 @@ watch(
 
 function packUnitTypeAt(gi) {
   const raw = currentState.value.packUnitTypes?.[gi];
-  const t = Number(raw);
-  if (Number.isFinite(t) && (t === 0 || t === 1 || t === 2 || t === 3 || t === 4)) return t;
-  return 1;
+  return normalizePackUnitType(raw);
 }
 
 function isTranscriptPackUnitType(ut) {
@@ -1286,18 +1285,17 @@ function maybeAutoLoadPackUnitPreview(gi, group) {
   }
 }
 
-/** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊（含 0 未選擇，供顯示／相容） */
+/** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊；預設文字，rag 在末 */
 const PACK_UNIT_TYPE_OPTIONS = [
-  { value: 0, label: '未選擇' },
-  { value: 1, label: 'rag' },
-  { value: 2, label: '文字' },
-  { value: 3, label: 'mp3' },
-  { value: 4, label: 'youtube' },
+  { value: UNIT_TYPE_TEXT, label: '文字' },
+  { value: UNIT_TYPE_MP3, label: 'mp3' },
+  { value: UNIT_TYPE_YOUTUBE, label: 'youtube' },
+  { value: UNIT_TYPE_RAG, label: 'rag' },
 ];
 
 function onPackUnitTypePick(gi, rawVal) {
   const v = Number(rawVal);
-  if (!(v === 0 || v === 1 || v === 2 || v === 3 || v === 4)) return;
+  if (!(v === UNIT_TYPE_RAG || v === UNIT_TYPE_TEXT || v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE)) return;
   const state = currentState.value;
   const n = state.packTasksList?.length ?? 0;
   const next = parsePackUnitTypesFromRag(state.packUnitTypes, n);
@@ -2962,11 +2960,12 @@ function hydratePackChunkArraysFromRag(rag, groupCount) {
   };
 }
 
-/** 設定單元唯讀：unit_type → 下拉同款文字（0＝未選擇） */
+/** 設定單元唯讀：unit_type → 下拉同款文字 */
 function packUnitTypeDisplayLabel(unitType) {
-  const hit = PACK_UNIT_TYPE_OPTIONS.find((o) => Number(o.value) === Number(unitType));
+  const normalized = normalizePackUnitType(unitType);
+  const hit = PACK_UNIT_TYPE_OPTIONS.find((o) => Number(o.value) === normalized);
   if (hit) return hit.label;
-  return 'rag';
+  return '文字';
 }
 
 /** 唯讀「設定單元」：RAG 分段參數（各欄位獨立區塊顯示） */
