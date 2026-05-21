@@ -51,7 +51,7 @@ import {
   markDesignExamDeleted,
   nextDesignExamId,
 } from './mockData.js';
-import { DESIGN_DEMO_GRADING_PROMPT_SAMPLE } from '../create-exam-bank-design/mockData.js';
+import { DESIGN_DEMO_GRADING_PROMPT_SAMPLE, DESIGN_DEMO_QUIZ_USER_PROMPT_SAMPLE } from '../create-exam-bank-design/mockData.js';
 
 const designDelay = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -577,12 +577,42 @@ function extractAnswerUserPromptFromSource(raw) {
 function syncExamCardPromptBaselines(card) {
   if (!card || typeof card !== 'object') return;
   card.gradingPromptBaseline = String(card.gradingPrompt ?? '');
+  card.quizUserPromptBaseline = String(
+    card.quiz_user_prompt_text ?? card.quizUserPromptText ?? '',
+  );
   card.quizAnswerBaseline = String(card.quiz_answer ?? '');
 }
 
-/** 稿頁題卡：寫入批改規則與 baseline（對齊 create-exam-bank_design syncQuizCardPromptBaselines） */
-function applyExamDesignCardGradingFields(card, promptSources = []) {
+function extractQuizUserPromptText(raw) {
+  if (!raw || typeof raw !== 'object') return '';
+  for (const key of [
+    'quiz_user_prompt_text',
+    'quizUserPromptText',
+    'user_prompt_text',
+    'userPromptText',
+    'prompt_text',
+    'promptText',
+  ]) {
+    const val = raw[key];
+    if (val == null) continue;
+    const text = String(val).trim();
+    if (text) return text;
+  }
+  return '';
+}
+
+/** 稿頁題卡：寫入出題／批改規則與 baseline（對齊 create-exam-bank_design syncQuizCardPromptBaselines） */
+function applyExamDesignCardPromptFields(card, promptSources = []) {
   if (!card || typeof card !== 'object') return;
+  let qp = '';
+  for (const src of promptSources) {
+    qp = extractQuizUserPromptText(src).trim();
+    if (qp) break;
+  }
+  if (!qp) qp = String(DESIGN_DEMO_QUIZ_USER_PROMPT_SAMPLE ?? '').trim();
+  card.quiz_user_prompt_text = qp;
+  card.quizUserPromptText = qp;
+
   let gp = '';
   for (const src of promptSources) {
     gp = extractAnswerUserPromptFromSource(src).trim();
@@ -1152,8 +1182,10 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     answer_id: answerId,
     gradingPrompt: '',
     quiz_user_prompt_text: '',
+    quizUserPromptText: '',
     hasUsedSaveAndGradeOnce: false,
     gradingPromptBaseline: '',
+    quizUserPromptBaseline: '',
     quizAnswerBaseline: '',
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
     follow_up: examQuizApiRowIsFollowUp(quiz),
@@ -1163,7 +1195,7 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
         ? Number(quiz.follow_up_exam_quiz_id)
         : null,
   };
-  applyExamDesignCardGradingFields(card, [quiz]);
+  applyExamDesignCardPromptFields(card, [quiz]);
   return card;
 }
 
@@ -1426,16 +1458,34 @@ function examAddQuestionModalQuizOptions(unitSelectId) {
   return examQuizDropdownItems(unitItem);
 }
 
-function openExamAddQuestionModal() {
-  if (generateQuizBlocked.value || examAddQuestionSubmitting.value) return;
+async function openExamAddQuestionModal() {
+  if (examAddQuestionSubmitting.value) return;
   if (!String(activeTabId.value ?? '').trim()) return;
   examAddQuestionModalError.value = '';
+  if (!forExamRag.value) {
+    await fetchExamRagSource();
+  }
+  if (!forExamRag.value) {
+    examAddQuestionModalError.value = forExamError.value || '無法載入試卷題庫';
+  } else if (examUnitSelectDropdownOptions.value.length === 0) {
+    examAddQuestionModalError.value = '尚無可選單元';
+  }
   examAddQuestionModalOpen.value = true;
 }
 
 async function onExamAddQuestionModalConfirm(picks) {
-  examAddQuestionModalOpen.value = false;
-  await openNextQuizSlot(picks);
+  examAddQuestionModalError.value = '';
+  examAddQuestionSubmitting.value = true;
+  try {
+    const result = await openNextQuizSlot(picks);
+    if (result.ok) {
+      examAddQuestionModalOpen.value = false;
+    } else {
+      examAddQuestionModalError.value = result.error || '產生題目失敗';
+    }
+  } finally {
+    examAddQuestionSubmitting.value = false;
+  }
 }
 
 function examCardGradeSubmitting(card) {
@@ -1945,6 +1995,7 @@ async function examTabQuizCreateDraftRow(slotIndex) {
 
 /**
  * @param {{ examUnitSelectId?: string, examQuizNamePick?: string } | undefined} picks
+ * @returns {Promise<{ ok: boolean, error: string }>}
  */
 async function openNextQuizSlot(picks) {
   const state = currentState.value;
@@ -1961,13 +2012,39 @@ async function openNextQuizSlot(picks) {
   slot.error = '';
   slot.examUnitSelectId = String(picks?.examUnitSelectId ?? '').trim();
   slot.quizGenerateMode = 'normal';
+  slot.loading = false;
   await nextTick();
-  examAddQuestionSubmitting.value = true;
-  try {
-    await examTabQuizCreateDraftRow(idx);
-  } finally {
-    examAddQuestionSubmitting.value = false;
+  await examTabQuizCreateDraftRow(idx);
+  if (slot.error || slot.draftExamQuizId == null) {
+    const errMsg = slot.error || '建立空白題目失敗';
+    state.quizSlotsCount = Math.max(0, (state.quizSlotsCount || 0) - 1);
+    if (state.cardList.length >= idx) {
+      state.cardList.splice(idx - 1, 1);
+    }
+    if (activeExamSlotIndex.value >= state.quizSlotsCount) {
+      activeExamSlotIndex.value = Math.max(0, state.quizSlotsCount - 1);
+    }
+    return { ok: false, error: errMsg };
   }
+  const unitItem = findExamUnitDropdownItemBySelectId(slot.examUnitSelectId);
+  const ragRow = findExamRagQuizRowBySelectedPick(unitItem, slot.examQuizNamePick);
+  if (ragRow && examQuizApiRowIsFollowUp(ragRow)) {
+    slot.quizGenerateMode = 'followup';
+  }
+  await generateQuiz(idx);
+  const success = !slot.error && examSlotQuizBodyTrim(idx) !== '';
+  const errMsg = slot.error || '';
+  if (!success) {
+    state.quizSlotsCount = Math.max(0, (state.quizSlotsCount || 0) - 1);
+    if (state.cardList.length >= idx) {
+      state.cardList.splice(idx - 1, 1);
+    }
+    if (activeExamSlotIndex.value >= state.quizSlotsCount) {
+      activeExamSlotIndex.value = Math.max(0, state.quizSlotsCount - 1);
+    }
+    return { ok: false, error: errMsg || '產生題目失敗' };
+  }
+  return { ok: true, error: '' };
 }
 
 function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, quizId, ragId) {
@@ -2178,7 +2255,7 @@ async function generateQuiz(slotIndex) {
         String(newCard.examQuizDisplayName ?? '').trim()
         || String(slotState.examQuizNamePick ?? '').trim();
       const ragRow = findExamRagQuizRowBySelectedPick(unitItem, pickName);
-      applyExamDesignCardGradingFields(newCard, [data, ragRow]);
+      applyExamDesignCardPromptFields(newCard, [data, ragRow]);
     }
     slotState.draftExamQuizId = null;
     syncAllExamSlotQuizHistoryLists();
@@ -2499,79 +2576,71 @@ onActivated(() => {
                           <div class="my-pack-unit-settings-body w-100 min-w-0">
                             <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
                         <template v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1)">
-                          <div
-                            v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
-                            class="w-100 min-w-0"
+                          <section
+                            class="w-100 min-w-0 rounded-4 my-border-gray-2 overflow-hidden"
+                            aria-label="單元內容"
                           >
                             <div
-                              class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                              role="region"
-                              aria-label="單元逐字稿"
+                              class="d-flex justify-content-end align-items-center w-100 min-w-0 px-3 pt-3"
                             >
-                              <div
-                                v-if="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
-                                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                                v-html="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
-                              />
-                              <span
-                                v-else
-                                class="my-font-md-400 my-color-black"
-                              >—</span>
-                            </div>
-                          </div>
-                          <div
-                            v-else-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_YOUTUBE"
-                            class="d-flex flex-column gap-2 w-100 min-w-0"
-                          >
-                            <div
-                              v-if="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
-                              class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                            >
-                              <iframe
-                                class="border-0"
-                                title="YouTube 影片"
-                                :src="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                referrerpolicy="strict-origin-when-cross-origin"
-                                allowfullscreen
-                              />
-                            </div>
-                            <span
-                              v-if="!examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
-                              class="my-font-md-400 my-color-black text-break"
-                            >{{ examSlotUnitTranscriptSection(activeExamSlotIndex1).sourceDisplay }}</span>
-                            <div class="d-flex justify-content-center w-100 pt-1">
                               <button
                                 type="button"
-                                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                                title="逐字稿"
+                                aria-label="逐字稿"
                                 @click="openExamUnitTranscriptModal(activeExamSlotIndex1)"
                               >
                                 逐字稿
                               </button>
                             </div>
-                          </div>
+                            <div class="px-3 pt-2 pb-3 min-w-0">
+                              <div
+                                v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
+                                class="my-rag-unit-type-text-scroll px-3 py-2 my-bgcolor-gray-4 min-w-0 rounded-2"
+                                role="region"
+                                aria-label="單元逐字稿"
+                              >
+                                <div
+                                  v-if="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
+                                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                                  v-html="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
+                                />
+                                <span
+                                  v-else
+                                  class="my-font-md-400 my-color-black"
+                                >—</span>
+                              </div>
+                              <div
+                                v-else-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_YOUTUBE"
+                                class="w-100 min-w-0"
+                              >
+                                <div
+                                  v-if="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
+                                  class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                                >
+                                  <iframe
+                                    class="border-0"
+                                    title="YouTube 影片"
+                                    :src="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    referrerpolicy="strict-origin-when-cross-origin"
+                                    allowfullscreen
+                                  />
+                                </div>
+                                <span
+                                  v-else
+                                  class="my-font-md-400 my-color-black text-break"
+                                >{{ examSlotUnitTranscriptSection(activeExamSlotIndex1).sourceDisplay }}</span>
+                              </div>
+                              <audio
+                                v-else-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_MP3"
+                                controls
+                                class="w-100"
+                                :src="DESIGN_DEMO_MP3_SAMPLE_URL"
+                              />
+                            </div>
+                          </section>
                         </template>
-                        <template
-                          v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1) && examSlotUnitTranscriptSection(activeExamSlotIndex1)?.unitType === UNIT_TYPE_MP3"
-                        >
-                          <audio
-                            controls
-                            class="w-100"
-                            :src="DESIGN_DEMO_MP3_SAMPLE_URL"
-                          />
-                        </template>
-                        <div
-                          v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1) && examSlotUnitTranscriptSection(activeExamSlotIndex1)?.unitType === UNIT_TYPE_MP3"
-                          class="d-flex justify-content-center w-100 min-w-0 pt-1"
-                        >
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                            @click="openExamUnitTranscriptModal(activeExamSlotIndex1)"
-                          >
-                            逐字稿
-                          </button>
-                        </div>
                               <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白（對齊 create-exam-bank_design） -->
                               <div class="my-design-quiz-sub-block-outer pe-5">
                         <div
@@ -2723,7 +2792,8 @@ onActivated(() => {
 }
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
-.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row--answer .btn.my-button-white) {
   padding-top: 0.5rem !important;
   padding-bottom: 0.5rem !important;
   padding-left: 1.5rem !important;
@@ -2771,7 +2841,7 @@ onActivated(() => {
 }
 .my-design-right-step-heading {
   line-height: 1.35;
-  word-break: break-word;
+  white-space: nowrap;
   padding: 0 0.5rem;
 }
 .my-design-pack-unit-blocks {
@@ -2813,6 +2883,7 @@ onActivated(() => {
   font-weight: var(--my-font-weight-semibold);
   line-height: 1.35;
   color: var(--my-color-black);
+  white-space: nowrap;
 }
 /* 題型區三子區塊：outer＝pe-5／ps-5；題目／批改＝淺灰底 gray-3；答案＝白底 */
 .my-design-quiz-sub-block-outer,
@@ -2841,6 +2912,11 @@ onActivated(() => {
 .my-design-quiz-field-inset-label,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
   line-height: 1.35;
+  white-space: nowrap;
+}
+/* 稿頁區塊小標（單元／題型、設定單元題型等）不換行 */
+.my-design-pack-unit-blocks .my-font-sm-400.my-color-gray-1.mb-2 {
+  white-space: nowrap;
 }
 .my-design-quiz-field-inset__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {

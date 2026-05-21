@@ -47,8 +47,10 @@ const quizOptions = computed(() => {
 
 const confirmDisabled = computed(() => {
   if (props.submitting || props.blocked) return true;
-  if (props.unitOptions.length > 0 && !String(localUnitId.value ?? '').trim()) return true;
-  if (quizOptions.value.length > 0 && !String(localQuizPick.value ?? '').trim()) return true;
+  if (props.unitOptions.length === 0) return true;
+  if (!String(localUnitId.value ?? '').trim()) return true;
+  if (quizOptions.value.length === 0) return true;
+  if (!String(localQuizPick.value ?? '').trim()) return true;
   return false;
 });
 

@@ -6595,7 +6595,7 @@ async function confirmAnswer(item) {
 }
 .my-design-right-step-heading {
   line-height: 1.35;
-  word-break: break-word;
+  white-space: nowrap;
   padding: 0 0.5rem;
 }
 /* 稿頁設定單元屬性：row/col 排版，欄位間距由 .row.g-3 負責 */
@@ -6615,6 +6615,7 @@ async function confirmAnswer(item) {
   font-weight: var(--my-font-weight-semibold);
   line-height: 1.35;
   color: var(--my-color-black);
+  white-space: nowrap;
 }
 /* 區段主標題：title → 橫線 → 內容（併 .my-font-lg-600.my-test-section-heading-title） */
 .my-design-page-section-heading {
@@ -6643,6 +6644,7 @@ async function confirmAnswer(item) {
 .my-design-pack-unit-section__title {
   margin-bottom: 0;
   line-height: 1.35;
+  white-space: nowrap;
 }
 /* 標題與內容間距：等同 Bootstrap mt-1 */
 .my-design-pack-unit-section__title + * {
@@ -6796,6 +6798,7 @@ async function confirmAnswer(item) {
 .my-design-quiz-field-inset-label,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
   line-height: 1.35;
+  white-space: nowrap;
 }
 /* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 p-3 */
 .my-design-quiz-field-inset__rule,
@@ -6825,6 +6828,12 @@ async function confirmAnswer(item) {
   color: var(--my-color-gray-2);
   line-height: 1.35;
   font-weight: 400;
+  white-space: nowrap;
+}
+/* 稿頁區塊小標（設定單元題型、來源檔等）不換行 */
+.my-design-pack-unit-blocks .my-font-sm-400.my-color-gray-1.mb-2,
+.my-design-pack-unit-section > .my-font-sm-400.my-color-gray-1.mb-2 {
+  white-space: nowrap;
 }
 /* 黑底區右上編輯：白 icon、小圓鈕（對齊 sm 標題列） */
 .my-design-quiz-question-prompt-block__edit-btn,

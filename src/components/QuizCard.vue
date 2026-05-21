@@ -274,8 +274,10 @@ const designStemToolbarJustifyClass = computed(() => {
 });
 
 function openPromptModal(kind) {
-  if (kind === 'question' && quizUserPromptSnapshotTrimmed.value === '') return;
-  if (kind === 'grading' && answerUserPromptSnapshotTrimmed.value === '') return;
+  if (!isExamDesignGradingLayout.value) {
+    if (kind === 'question' && quizUserPromptSnapshotTrimmed.value === '') return;
+    if (kind === 'grading' && answerUserPromptSnapshotTrimmed.value === '') return;
+  }
   promptModalKind.value = kind;
 }
 
@@ -336,14 +338,59 @@ const showDesignLayoutGradingToolbar = computed(
   () => isDesignSubBlockFragment.value && props.designSubBlock === 'grading',
 );
 
-/** 稿頁批改子區：「開始批改」列（對應「產生題目」；create-exam-bank_design 常駐顯示） */
-const showDesignGradingStartRow = computed(() => {
-  if (!showDesignLayoutGradingToolbar.value) return false;
+/** exam_design 稿頁（hideExamRulePills、無示範批改 sample） */
+const isExamDesignGradingLayout = computed(
+  () =>
+    props.createExamBankDesignLayout
+    && props.hideExamRulePills
+    && !String(props.designGradingResultSample ?? '').trim(),
+);
+
+/** 稿頁「開始批改」是否應顯示（不含子區塊位置） */
+const showDesignGradingStartButton = computed(() => {
+  if (!props.createExamBankDesignLayout) return false;
+  if (
+    isExamDesignGradingLayout.value
+    && (gradingResultActual.value || props.card?.confirmed === true)
+  ) {
+    return false;
+  }
   if (props.gradeSaveAllowed !== undefined || props.gradeDbAllowed !== undefined) {
     return true;
   }
   return showStartGradeButton.value;
 });
+
+/** 稿頁批改子區：「開始批改」列（create-exam-bank_design；exam_design 改置答案區右下） */
+const showDesignGradingStartRow = computed(() => {
+  if (!showDesignLayoutGradingToolbar.value) return false;
+  if (isExamDesignGradingLayout.value) return false;
+  return showDesignGradingStartButton.value;
+});
+
+/** exam_design：「開始批改」置於答案輸入框右下 */
+const showDesignGradingStartInAnswerRow = computed(() => {
+  if (props.designSubBlock !== 'answer') return false;
+  if (!isExamDesignGradingLayout.value) return false;
+  return showDesignGradingStartButton.value;
+});
+
+/** exam_design：題目標題列右側「出題規則」pill */
+const showExamDesignQuizRulePill = computed(
+  () =>
+    isExamDesignGradingLayout.value
+    && props.designSubBlock === 'question'
+    && useDesignFieldLabelInset.value,
+);
+
+/** exam_design：答案標題列右側「批改規則」pill */
+const showExamDesignGradingRulePill = computed(
+  () =>
+    isExamDesignGradingLayout.value
+    && props.designSubBlock === 'answer'
+    && useDesignFieldLabelInset.value
+    && props.gradingPromptInModal,
+);
 
 /** 稿頁批改子區：「批改結果」plain 區（對應「題目」；含稿頁示範 sample） */
 const showDesignGradingResultBlock = computed(
@@ -381,10 +428,13 @@ const showDesignSubBlockGrading = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'grading',
 );
 
-/** 子區塊模式：出題／批改規則 Modal 僅掛在 question 實例 */
-const showDesignSubBlockPromptModals = computed(
-  () => !isDesignSubBlockFragment.value || props.designSubBlock === 'question',
-);
+/** 子區塊模式：出題／批改規則唯讀 Modal（question；exam_design 批改規則另掛 answer 實例） */
+const showDesignSubBlockPromptModals = computed(() => {
+  if (!isDesignSubBlockFragment.value) return true;
+  if (props.designSubBlock === 'question') return true;
+  if (isExamDesignGradingLayout.value && props.designSubBlock === 'answer') return true;
+  return false;
+});
 
 /** 子區塊模式：提示／參考答案 Modal 掛在 answer 實例 */
 const showDesignSubBlockHintModals = computed(
@@ -674,16 +724,30 @@ const quizAnswerFieldDisabled = computed(
                 <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
                   題目
                 </h3>
-                <button
-                  v-if="showBankQuizHistoryInStemHeader"
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1 ms-auto"
-                  aria-label="查看先前出題"
-                  :disabled="examQuizHistoryButtonDisabled"
-                  @click="emit('open-quiz-history')"
+                <div
+                  class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
                 >
-                  先前出題
-                </button>
+                  <button
+                    v-if="showExamDesignQuizRulePill"
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1"
+                    title="出題規則"
+                    aria-label="出題規則"
+                    @click="openPromptModal('question')"
+                  >
+                    出題規則
+                  </button>
+                  <button
+                    v-if="showBankQuizHistoryInStemHeader"
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1"
+                    aria-label="查看先前出題"
+                    :disabled="examQuizHistoryButtonDisabled"
+                    @click="emit('open-quiz-history')"
+                  >
+                    先前出題
+                  </button>
+                </div>
               </div>
               <div class="px-3 py-0">
                 <hr class="my-design-quiz-field-inset__rule m-0">
@@ -958,11 +1022,21 @@ const quizAnswerFieldDisabled = computed(
                   答案
                 </h3>
                 <div
-                  v-if="hintReferenceInModal"
+                  v-if="hintReferenceInModal || showExamDesignGradingRulePill"
                   class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
                 >
                   <button
-                    v-if="hasHintText"
+                    v-if="showExamDesignGradingRulePill"
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                    title="批改規則"
+                    aria-label="批改規則"
+                    @click="openPromptModal('grading')"
+                  >
+                    批改規則
+                  </button>
+                  <button
+                    v-if="hintReferenceInModal && hasHintText"
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
                     title="提示"
@@ -972,7 +1046,7 @@ const quizAnswerFieldDisabled = computed(
                     提示
                   </button>
                   <button
-                    v-if="hasReferenceAnswerText"
+                    v-if="hintReferenceInModal && hasReferenceAnswerText"
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
                     title="參考答案"
@@ -1006,6 +1080,22 @@ const quizAnswerFieldDisabled = computed(
                 placeholder=""
                 maxlength="2000"
               />
+              <div
+                v-if="showDesignGradingStartInAnswerRow"
+                class="d-flex justify-content-end align-items-center flex-nowrap gap-2 pt-2 my-design-quiz-grading-start-row my-design-quiz-grading-start-row--answer"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                  title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
+                  :disabled="designGradingStartButtonDisabled"
+                  :aria-busy="gradeSubmitting"
+                  aria-label="開始批改"
+                  @click="emit('confirm-answer', card)"
+                >
+                  開始批改
+                </button>
+              </div>
             </div>
           </section>
         </template>
@@ -1151,7 +1241,7 @@ const quizAnswerFieldDisabled = computed(
             </div>
             <div
               v-if="showDesignGradingResultBlock"
-              class="w-100 min-w-0"
+              class="w-100 min-w-0 pt-2"
             >
               <section
                 class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
@@ -1449,7 +1539,7 @@ const quizAnswerFieldDisabled = computed(
   border-color: var(--my-color-gray-2);
   opacity: 1;
 }
-/* 稿頁批改子區「開始批改」：左對齊 pill，與 create-exam-bank_design 一致（黑底白字 my-button-white） */
+/* 稿頁「開始批改」pill（批改子區左下、exam_design 答案區右下） */
 :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
   white-space: nowrap;
   flex-shrink: 0;

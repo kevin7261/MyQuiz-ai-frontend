@@ -215,10 +215,18 @@ const DESIGN_DEMO_QUIZZES_BY_UNIT = [
       quiz_reference_answer: '0.01',
     }),
   ],
-  [],
   [
     demoQuiz({
-      quiz_name: '影片理解題',
+      quiz_name: '示範｜題目區塊（MP3）',
+      quiz_content: '根據音檔內容，說明講者強調的第一個論點。（示範）',
+      quiz_hint: '可點「逐字稿」對照。',
+      quiz_reference_answer: '（依音檔逐字稿填寫）',
+      quiz_user_prompt_text: '出 1 題簡答，須能由逐字稿回答。',
+    }),
+  ],
+  [
+    demoQuiz({
+      quiz_name: '示範｜題目區塊（YouTube）',
       quiz_content: '根據影片內容，說明講者強調的第一個論點。（示範）',
       quiz_hint: '可點「逐字稿」對照。',
       quiz_reference_answer: '（依影片內容填寫）',
