@@ -92,8 +92,11 @@ function onConfirm() {
       aria-modal="true"
       aria-labelledby="exam-add-question-modal-title"
     >
-      <div class="modal-dialog modal-dialog-centered modal-lg" @click.stop>
-        <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+      <div
+        class="modal-dialog modal-dialog-centered modal-lg exam-add-question-modal-dialog"
+        @click.stop
+      >
+        <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3 exam-add-question-modal-content">
           <div class="modal-header border-bottom-0 p-0">
             <h5 id="exam-add-question-modal-title" class="modal-title my-color-black">新增題目</h5>
             <button
@@ -114,6 +117,7 @@ function onConfirm() {
                   >選擇單元</label>
                   <UnitSelectDropdown
                     v-model="localUnitId"
+                    in-modal
                     :options="unitOptions"
                     :option-value="unitSelectValue"
                     :option-label="unitOptionLabel"
@@ -133,6 +137,7 @@ function onConfirm() {
                   >選擇題型</label>
                   <UnitSelectDropdown
                     v-model="localQuizPick"
+                    in-modal
                     :options="quizOptions"
                     :option-value="quizPickSelectValue"
                     :option-label="quizOptionLabel"
@@ -180,3 +185,17 @@ function onConfirm() {
     </div>
   </Teleport>
 </template>
+
+<style scoped>
+/* Modal 內 Bootstrap 下拉：避免選單被裁切，樣式仍用 UnitSelectDropdown */
+.exam-add-question-modal-dialog,
+.exam-add-question-modal-content {
+  overflow: visible;
+}
+:deep(.my-design-08-dropdown) {
+  position: relative;
+}
+:deep(.my-unit-select-dd-menu) {
+  z-index: 2000;
+}
+</style>

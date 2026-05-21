@@ -1453,22 +1453,30 @@ const examAddQuestionSubmitting = ref(false);
 const examAddQuestionModalOpen = ref(false);
 const examAddQuestionModalError = ref('');
 
+/** 新增題目 Modal 開啟前載入試卷題庫 */
+const examAddQuestionModalLoading = ref(false);
+
 function examAddQuestionModalQuizOptions(unitSelectId) {
   const unitItem = findExamUnitDropdownItemBySelectId(unitSelectId);
-  return examQuizDropdownItems(unitItem);
+  return examQuizDropdownItems(unitItem).filter((o) => !o.follow_up);
 }
 
 async function openExamAddQuestionModal() {
-  if (examAddQuestionSubmitting.value) return;
+  if (examAddQuestionSubmitting.value || examAddQuestionModalLoading.value) return;
   if (!String(activeTabId.value ?? '').trim()) return;
   examAddQuestionModalError.value = '';
-  if (!forExamRag.value) {
-    await fetchExamRagSource();
-  }
-  if (!forExamRag.value) {
-    examAddQuestionModalError.value = forExamError.value || '無法載入試卷題庫';
-  } else if (examUnitSelectDropdownOptions.value.length === 0) {
-    examAddQuestionModalError.value = '尚無可選單元';
+  examAddQuestionModalLoading.value = true;
+  try {
+    if (!forExamRag.value) {
+      await fetchExamRagSource();
+    }
+    if (!forExamRag.value) {
+      examAddQuestionModalError.value = forExamError.value || '無法載入試卷題庫';
+    } else if (examUnitSelectDropdownOptions.value.length === 0) {
+      examAddQuestionModalError.value = '尚無可選單元';
+    }
+  } finally {
+    examAddQuestionModalLoading.value = false;
   }
   examAddQuestionModalOpen.value = true;
 }
@@ -2032,6 +2040,7 @@ async function openNextQuizSlot(picks) {
     slot.quizGenerateMode = 'followup';
   }
   await generateQuiz(idx);
+  syncAllExamSlotQuizHistoryLists();
   const success = !slot.error && examSlotQuizBodyTrim(idx) !== '';
   const errMsg = slot.error || '';
   if (!success) {
@@ -2346,7 +2355,7 @@ onActivated(() => {
     <ExamAddQuestionModal
       v-model="examAddQuestionModalOpen"
       :submitting="examAddQuestionSubmitting"
-      :blocked="generateQuizBlocked"
+      :blocked="examAddQuestionModalLoading"
       :error="examAddQuestionModalError"
       :unit-options="examUnitSelectDropdownOptions"
       :unit-select-value="examUnitSelectValue"
