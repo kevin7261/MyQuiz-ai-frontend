@@ -32,9 +32,10 @@ import TabRenameModal from '../../components/TabRenameModal.vue';
 import ExamAddQuestionModal from '../../components/ExamAddQuestionModal.vue';
 import {
   apiUpdateExamTabName,
-  apiExamTabQuizCreate,
   apiExamTabQuizLlmGenerate,
+  apiExamTabQuizCreateLlmGenerate,
   apiExamTabQuizLlmGenerateFollowup,
+  apiExamTabQuizCreateLlmGenerateFollowup,
   apiExamTabDelete,
 } from './examApiDesign.js';
 import { formatGradingResult } from '../../utils/grading.js';
@@ -1943,65 +1944,6 @@ watch(
 );
 
 /**
- * POST /exam/tab/quiz/create（Exam Create Quiz, no LLM）；body 僅 exam_tab_id。
- * 由「新增題目」呼叫；成功後寫入 slot.draftExamQuizId 供後續 llm-generate。
- */
-async function examTabQuizCreateDraftRow(slotIndex) {
-  const slotState = getSlotFormState(slotIndex);
-  if (slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1) return;
-  if (slotState.draftCreating) return;
-
-  const examTabStr = activeTabId.value != null && activeTabId.value !== '' ? String(activeTabId.value).trim() : '';
-  const personId = getCurrentPersonId();
-  if (!examTabStr) {
-    slotState.error = '請先選擇測驗分頁，或按「＋」建立測驗';
-    return;
-  }
-  if (!personId) {
-    slotState.error = '請先登入';
-    return;
-  }
-
-  const abortKey = examQuizDraftAbortKey(slotIndex);
-  examQuizDraftAbortBySlotIndex.get(abortKey)?.abort();
-  const ac = new AbortController();
-  examQuizDraftAbortBySlotIndex.set(abortKey, ac);
-
-  slotState.draftCreating = true;
-  slotState.error = '';
-  try {
-    const createJson = await apiExamTabQuizCreate(
-      {
-        exam_tab_id: examTabStr,
-      },
-      personId,
-      { signal: ac.signal }
-    );
-    const draftEq =
-      createJson?.exam_quiz_id != null
-        ? Number(createJson.exam_quiz_id)
-        : createJson?.quiz_id != null
-          ? Number(createJson.quiz_id)
-          : null;
-    if (!Number.isFinite(draftEq) || draftEq < 1) {
-      throw new Error('建立空白題目失敗：後端未回傳有效的 exam_quiz_id');
-    }
-    slotState.draftExamQuizId = draftEq;
-  } catch (err) {
-    const isAbort =
-      err?.name === 'AbortError'
-      || String(err?.name ?? '').includes('Abort')
-      || String(err?.message ?? '').includes('aborted');
-    if (isAbort) return;
-    slotState.error = err.message || '建立空白題目失敗';
-    slotState.draftExamQuizId = null;
-  } finally {
-    if (examQuizDraftAbortBySlotIndex.get(abortKey) === ac) examQuizDraftAbortBySlotIndex.delete(abortKey);
-    slotState.draftCreating = false;
-  }
-}
-
-/**
  * @param {{ examUnitSelectId?: string, examQuizNamePick?: string } | undefined} picks
  * @returns {Promise<{ ok: boolean, error: string }>}
  */
@@ -2022,24 +1964,12 @@ async function openNextQuizSlot(picks) {
   slot.quizGenerateMode = 'normal';
   slot.loading = false;
   await nextTick();
-  await examTabQuizCreateDraftRow(idx);
-  if (slot.error || slot.draftExamQuizId == null) {
-    const errMsg = slot.error || '建立空白題目失敗';
-    state.quizSlotsCount = Math.max(0, (state.quizSlotsCount || 0) - 1);
-    if (state.cardList.length >= idx) {
-      state.cardList.splice(idx - 1, 1);
-    }
-    if (activeExamSlotIndex.value >= state.quizSlotsCount) {
-      activeExamSlotIndex.value = Math.max(0, state.quizSlotsCount - 1);
-    }
-    return { ok: false, error: errMsg };
-  }
   const unitItem = findExamUnitDropdownItemBySelectId(slot.examUnitSelectId);
   const ragRow = findExamRagQuizRowBySelectedPick(unitItem, slot.examQuizNamePick);
   if (ragRow && examQuizApiRowIsFollowUp(ragRow)) {
     slot.quizGenerateMode = 'followup';
   }
-  await generateQuiz(idx);
+  await generateQuiz(idx, { createAndGenerate: true });
   syncAllExamSlotQuizHistoryLists();
   const success = !slot.error && examSlotQuizBodyTrim(idx) !== '';
   const errMsg = slot.error || '';
@@ -2087,10 +2017,10 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 }
 
 /**
- * 「產生題目」：POST /exam/tab/quiz/llm-generate；body 含 exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id，及本分頁相同單元／題型已出題幹之 quiz_history_list；列已存有效兩鍵時須與請求一致否則 400，列未寫入則後端以請求綁定；勿傳出題／批改提示文字。
- * exam_quiz_id 須已由「新增題目」POST /exam/tab/quiz/create 取得，或為題幹空白且後端已錨定之列。
+ * 「產生題目」：新題 POST create-llm-generate／create-llm-generate-followup；既有題列 POST llm-generate／llm-generate-followup。
+ * @param {{ createAndGenerate?: boolean }} [options]
  */
-async function generateQuiz(slotIndex) {
+async function generateQuiz(slotIndex, options = {}) {
   const slotState = getSlotFormState(slotIndex);
   const examTabStr = activeTabId.value != null && activeTabId.value !== '' ? String(activeTabId.value).trim() : '';
   const personId = getCurrentPersonId();
@@ -2150,10 +2080,9 @@ async function generateQuiz(slotIndex) {
     const d = Number(slotState.draftExamQuizId);
     if (Number.isFinite(d) && d >= 1) draftEq = d;
   }
-  if (draftEq == null) {
-    slotState.error = '請先按「新增題目」建立空白題列，或稍候建立完成。';
-    return;
-  }
+  const createAndGenerate =
+    options.createAndGenerate === true
+    || !(Number.isFinite(draftEq) && draftEq >= 1);
 
   const followupMode = examSlotIsFollowupMode(slotIndex);
   if (followupMode) {
@@ -2177,28 +2106,51 @@ async function generateQuiz(slotIndex) {
       ? slotState.quiz_history_list
       : [];
 
-    const data = followupMode
-      ? await apiExamTabQuizLlmGenerateFollowup(
-          {
-            exam_quiz_id: draftEq,
-            rag_tab_id: ragTabIdForLlm,
-            rag_unit_id: ragUnitIdForLlm,
-            rag_quiz_id: ragQuizIdForLlm,
-            follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
-            quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
-          },
-          personId,
-        )
-      : await apiExamTabQuizLlmGenerate(
-          {
-            exam_quiz_id: draftEq,
-            rag_tab_id: ragTabIdForLlm,
-            rag_unit_id: ragUnitIdForLlm,
-            rag_quiz_id: ragQuizIdForLlm,
-            quiz_history_list: quizHistoryList,
-          },
-          personId,
-        );
+    const data = createAndGenerate
+      ? (followupMode
+          ? await apiExamTabQuizCreateLlmGenerateFollowup(
+              {
+                exam_tab_id: examTabStr,
+                rag_tab_id: ragTabIdForLlm,
+                rag_unit_id: ragUnitIdForLlm,
+                rag_quiz_id: ragQuizIdForLlm,
+                follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
+                quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
+              },
+              personId,
+            )
+          : await apiExamTabQuizCreateLlmGenerate(
+              {
+                exam_tab_id: examTabStr,
+                rag_tab_id: ragTabIdForLlm,
+                rag_unit_id: ragUnitIdForLlm,
+                rag_quiz_id: ragQuizIdForLlm,
+                quiz_history_list: quizHistoryList,
+              },
+              personId,
+            ))
+      : (followupMode
+          ? await apiExamTabQuizLlmGenerateFollowup(
+              {
+                exam_quiz_id: draftEq,
+                rag_tab_id: ragTabIdForLlm,
+                rag_unit_id: ragUnitIdForLlm,
+                rag_quiz_id: ragQuizIdForLlm,
+                follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
+                quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
+              },
+              personId,
+            )
+          : await apiExamTabQuizLlmGenerate(
+              {
+                exam_quiz_id: draftEq,
+                rag_tab_id: ragTabIdForLlm,
+                rag_unit_id: ragUnitIdForLlm,
+                rag_quiz_id: ragQuizIdForLlm,
+                quiz_history_list: quizHistoryList,
+              },
+              personId,
+            ));
 
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
@@ -2222,7 +2174,7 @@ async function generateQuiz(slotIndex) {
     const quizId =
       data.exam_quiz_id != null
         ? Number(data.exam_quiz_id)
-        : (data.quiz_id != null ? Number(data.quiz_id) : draftEq);
+        : (data.quiz_id != null ? Number(data.quiz_id) : (createAndGenerate ? null : draftEq));
     const fr = forExamRag.value;
     const cardRagId = data.rag_id ?? data.ragId ?? fr?.rag_id ?? fr?.id;
     setCardAtSlot(

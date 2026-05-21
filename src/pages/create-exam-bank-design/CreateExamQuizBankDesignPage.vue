@@ -6,8 +6,7 @@
  *
  * API 對應：
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
- * - 建立 tab（按 +）：POST /rag/tab/create（rag_tab_id、person_id、tab_name 必填；local 選填，預設 false；本機前端傳 true）
- * - 上傳 ZIP：POST /rag/tab/upload-zip（Form: file、rag_tab_id、person_id、course_id）
+ * - 建立並上傳（按 + 開 Modal）：POST /rag/tab/create-upload-zip；成功後顯示設定單元
  * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；course_id、unit_list、unit_types、transcriptions〔與逗號分段同序〕、rag_chunk_sizes／rag_chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
  * - 設定單元：GET `/rag/transcript/text`、`/rag/transcript/audio`、`/rag/transcript/youtube`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url` 期間全螢幕 LoadingOverlay（來源預覽／文字逐字稿讀取為「檔案讀取中…」，語音／影片逐字稿為「分析逐字稿中…」）；選定類型且資料夾組合就緒後自動載入來源內容。
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
@@ -24,8 +23,7 @@ import {
 } from '../../constants/api.js';
 import {
   getPersonId,
-  apiCreateUnit,
-  apiUploadZip,
+  apiCreateUploadZip,
   apiDeleteRag,
   apiUpdateRagTabName,
   apiBuildRagZip,
@@ -396,7 +394,7 @@ const zipFileInputAccept = UPLOAD_ACCEPT_ATTR;
 const showCreateBankMainForm = computed(
   () => ragList.value.length > 0 || showFormWhenNoData.value
 );
-const showStepperSection = computed(() => !!activeTabId.value);
+const showDesignRightNav = computed(() => !!activeTabId.value);
 
 function checkRagHasMetadata(rag) {
   if (!rag || typeof rag !== 'object') return false;
@@ -862,16 +860,6 @@ const fileMetadataToShow = computed(() => {
 
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
-
-/**
- * Stepper 1–3 與畫面上可編輯區對齊：
- * 1 上傳檔案 → 2 設定單元（有檔中繼、尚未完成建置）→ 3 設定單元題型（已建置後：單元內容與題型設定）
- */
-const createRagStepperPhase = computed(() => {
-  if (!hasUploadedFileMetadata.value) return 1;
-  if (!hasBuiltRagSummary.value) return 2;
-  return 3;
-});
 
 /** 單元索引對應之題型數（unitSlotQuizCards；無則 fallback units[].quizzes） */
 function quizTypeCountForPackUnitIndex(index) {
@@ -3809,13 +3797,24 @@ async function confirmNewBankUpload() {
   const ragTabId = generateTabId(personId);
   const tabName = `未命名${quizBankNoun.value}`;
   try {
-    const data = await apiCreateUnit(personId, ragTabId, tabName);
-    if (data?.rag_id != null && data?.created_at != null) {
-      ragCreatedAtMap.value = { ...ragCreatedAtMap.value, [String(data.rag_id)]: data.created_at };
+    const data = await apiCreateUploadZip(
+      newBankUploadFile.value,
+      ragTabId,
+      personId,
+      tabName,
+    );
+    const create = data?.create ?? data;
+    if (create?.rag_id != null && create?.created_at != null) {
+      ragCreatedAtMap.value = { ...ragCreatedAtMap.value, [String(create.rag_id)]: create.created_at };
     }
-    const newTabId = data?.rag_tab_id != null ? String(data.rag_tab_id) : '';
+    const newTabId =
+      create?.rag_tab_id != null
+        ? String(create.rag_tab_id)
+        : data?.rag_tab_id != null
+          ? String(data.rag_tab_id)
+          : '';
     if (!newTabId) throw new Error(`建立${quizBankNoun.value}失敗`);
-    const uploadData = await apiUploadZip(newBankUploadFile.value, newTabId, personId);
+    const meta = data?.file_metadata ?? create?.file_metadata ?? data;
     ragListError.value = '';
     await fetchRagList();
     activeTabId.value = newTabId;
@@ -3827,7 +3826,6 @@ async function confirmNewBankUpload() {
     if (rag) {
       syncRagItemToState(rag, state);
     }
-    const meta = uploadData?.file_metadata ?? uploadData;
     if (meta && typeof meta === 'object') {
       state.zipResponseJson = meta;
       state.zipTabId = newTabId;
@@ -6492,25 +6490,25 @@ async function confirmAnswer(item) {
           >
             <!-- 建立流程：上傳檔案、設定單元 + 子項目垂直列表（樣式對齊 LeftView nav） -->
             <nav
-              v-if="showStepperSection"
+              v-if="showDesignRightNav"
               class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
               aria-label="建立流程"
             >
               <div
                 class="my-design-right-step-heading my-font-md-400 my-color-black"
-                :class="{ 'my-font-md-600': createRagStepperPhase === 1 }"
+                :class="{ 'my-font-md-600': !hasUploadedFileMetadata }"
               >上傳檔案</div>
               <div class="nav-item">
                 <span
                   class="nav-link w-100 text-start text-break"
-                  :class="{ active: createRagStepperPhase === 1 }"
+                  :class="{ active: !hasUploadedFileMetadata }"
                 >{{ designRightUploadFileLabel || '—' }}</span>
               </div>
 
               <template v-if="hasBuiltRagSummary">
                 <div
                   class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
-                  :class="{ 'my-font-md-600': createRagStepperPhase === 3 }"
+                  :class="{ 'my-font-md-600': hasBuiltRagSummary }"
                 >{{ packUnitSectionHeadingTitle }}</div>
                 <template v-if="designRightUnitSubTabItems.length">
                   <div

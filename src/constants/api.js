@@ -116,6 +116,8 @@ export const API_RAG_QUIZ_GRADE_RESULT = '/rag/tab/unit/quiz/grade-result';
 
 /** Create Tab（RAG）：POST /rag/tab/create；僅建立一筆 Rag；body 必填 rag_tab_id、person_id、tab_name，選填 local（預設 false；本機前端可傳 true）；回傳建立欄位（尚無檔案時不含 file_size） */
 export const API_CREATE_UNIT = '/rag/tab/create';
+/** 建立 Rag 並上傳 ZIP：POST /rag/tab/create-upload-zip（先 tab/create，再 tab/upload-zip）；multipart：file、rag_tab_id、person_id、tab_name、local（選填）；query person_id、course_id 必填；回傳 create 欄位與 file_metadata */
+export const API_CREATE_UPLOAD_ZIP = '/rag/tab/create-upload-zip';
 /** 列出 RAG：GET /rag/tabs；回傳 { rags, count }；query 可選 local（須與 Rag.local 相符；未傳時後端依連線判定）；僅 deleted=false；每筆含表欄位（含 for_exam、file_size〔MB〕、file_metadata）、units[]（每單元含 transcription、quizzes、for_exam 等；quizzes 含 follow_up）、相容頂層 quizzes／answers */
 export const API_RAG_LIST = '/rag/tabs';
 /** 上傳教材檔：POST /rag/tab/upload-zip，需先 POST /rag/tab/create；Form: file、rag_tab_id、person_id、course_id（必填）；query 亦附 course_id（loggedFetch）；file 可為 .pdf、.doc、.docx、.ppt、.pptx 等後端可解析格式；不需 llm_api_key；回傳 file_metadata（內含 file_size〔MB〕等）並寫入 DB */
@@ -206,10 +208,18 @@ export const API_TEST_GENERATE_QUIZ = API_EXAM_CREATE_QUIZ;
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE = '/exam/tab/quiz/llm-generate';
 /**
+ * POST /exam/tab/quiz/create-llm-generate — 先 create 再 llm-generate；body 不需 exam_quiz_id；其餘同 llm-generate；query person_id、course_id 必填。
+ */
+export const API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE = '/exam/tab/quiz/create-llm-generate';
+/**
  * POST /exam/tab/quiz/llm-generate-followup — Exam LLM Generate Follow-up Quiz；query：`person_id`、`course_id`（必填）。
  * Body：exam_quiz_id、rag_tab_id、rag_unit_id、rag_quiz_id、follow_up_exam_quiz_id（皆必填）；quiz_history_list 為物件陣列（quiz_content、answer_content、quiz_answer_reference、answer_critique）。
  */
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/llm-generate-followup';
+/**
+ * POST /exam/tab/quiz/create-llm-generate-followup — 先 create 再 llm-generate-followup；body 不需 exam_quiz_id；其餘同 followup。
+ */
+export const API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/create-llm-generate-followup';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */
 export const API_EXAM_QUIZ_GRADE = '/exam/tab/quiz/llm-grade';
 /** @deprecated 舊路徑 POST /exam/tab/quiz/grade；批改請使用 {@link API_EXAM_QUIZ_GRADE}（llm-grade） */

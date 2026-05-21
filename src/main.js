@@ -21,7 +21,12 @@ import { useAuthStore } from './stores/authStore.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import './assets/css/common.css';
-import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+/** 僅載入一次 ESM（含 Popper）；勿再 side-effect import bundle，也勿在元件 import 'bootstrap'，否則 Data API 重複註冊會讓下拉點擊立刻關閉 */
+import * as bootstrap from 'bootstrap';
+
+if (typeof window !== 'undefined') {
+  window.bootstrap = bootstrap;
+}
 
 const app = createApp(App);
 const pinia = createPinia();

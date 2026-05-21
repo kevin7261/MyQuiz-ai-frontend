@@ -1,12 +1,13 @@
 /**
  * RAG 相關 API 呼叫模組
  *
- * 集中封裝 tab/create、tab/upload-zip、tab/build-rag-zip、tab/quiz/create、PUT tab/tab-name（分頁更名）、tab/delete 等
+ * 集中封裝 tab/create、tab/create-upload-zip、tab/upload-zip、tab/build-rag-zip、tab/quiz/create、PUT tab/tab-name（分頁更名）、tab/delete 等
  * 使用 loggedFetch（會輸出回應內容），錯誤時以 parseFetchError 解析並 throw Error，供呼叫端 catch 顯示。
  */
 import {
   API_BASE,
   API_CREATE_UNIT,
+  API_CREATE_UPLOAD_ZIP,
   API_UPLOAD_ZIP,
   API_RAG_DELETE,
   API_RAG_UNIT_NAME,
@@ -280,6 +281,36 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
       local: isFrontendLocalHost(),
     }),
   });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * 建立 Rag 並上傳 ZIP：POST /rag/tab/create-upload-zip（先 tab/create，再 tab/upload-zip）
+ * @param {File} file
+ * @param {string} ragTabId
+ * @param {string} personId
+ * @param {string} tabName
+ * @param {string | number} [courseId] - 省略時取自 authStore.currentCourse（query）
+ * @returns {Promise<object>} 含 create 欄位與 file_metadata
+ */
+export async function apiCreateUploadZip(file, ragTabId, personId, tabName, courseId) {
+  const resolvedCourseId = courseId != null && String(courseId).trim() !== '' ? String(courseId).trim() : getCourseId();
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('rag_tab_id', String(ragTabId));
+  formData.append('person_id', String(personId));
+  formData.append('tab_name', String(tabName));
+  formData.append('local', isFrontendLocalHost() ? 'true' : 'false');
+  const res = await loggedFetch(
+    `${API_BASE}${API_CREATE_UPLOAD_ZIP}`,
+    {
+      method: 'POST',
+      body: formData,
+    },
+    resolvedCourseId ? { courseId: resolvedCourseId, personId } : { personId }
+  );
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);

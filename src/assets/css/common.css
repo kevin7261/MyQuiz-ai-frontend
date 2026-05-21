@@ -866,50 +866,6 @@ code {
   height: 1em;
 }
 
-/* 建立測驗題庫：流程 stepper（1–2–3），色票僅用 variables :root --my-color-* */
-.my-create-rag-stepper-num {
-  width: 2.25rem;
-  height: 2.25rem;
-  line-height: 1;
-  border: none;
-  box-sizing: border-box;
-}
-/* 已到達／目前步驟：黑底白字（無框） */
-.my-create-rag-stepper-num--on {
-  background-color: var(--my-color-black);
-  color: var(--my-color-white);
-  border: none;
-}
-.my-create-rag-stepper-num--off {
-  background-color: var(--my-color-gray-2);
-  color: var(--my-color-black);
-  border: none;
-}
-
-.my-create-rag-stepper-line {
-  flex: 1 1 1rem;
-  min-width: 0.35rem;
-  height: 2px;
-  margin-top: 1.125rem;
-  align-self: flex-start;
-  background-color: color-mix(in srgb, var(--my-color-black) 20%, transparent);
-  border-radius: 1px;
-}
-.my-create-rag-stepper-line--on {
-  background-color: color-mix(in srgb, var(--my-color-black) 32%, transparent);
-}
-.my-create-rag-stepper-label {
-  margin-top: 0.5rem;
-  color: var(--my-color-black);
-  -webkit-text-fill-color: var(--my-color-black);
-}
-.my-create-rag-stepper-label--current {
-  color: var(--my-color-black);
-}
-.my-create-rag-stepper-label--inactive {
-  color: var(--my-color-black);
-}
-
 /* 建立測驗題庫／測驗頁：區塊外主標題（兩側線中間）固定黑字 */
 .my-test-section-heading-line {
   display: block;

@@ -108,6 +108,13 @@ export async function apiCreateUnit(personId, ragTabId, tabName) {
   return row;
 }
 
+/** POST /rag/tab/create-upload-zip 稿頁替身：先 create 再 upload */
+export async function apiCreateUploadZip(file, ragTabId, personId, tabName) {
+  const create = await apiCreateUnit(personId, ragTabId, tabName);
+  const file_metadata = await apiUploadZip(file, ragTabId);
+  return { create, file_metadata };
+}
+
 export async function apiUploadZip(file, ragTabId) {
   await delay(400);
   const second_folders = [...DESIGN_DEMO_FOLDER_NAMES];

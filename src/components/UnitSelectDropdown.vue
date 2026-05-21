@@ -5,8 +5,12 @@
  * omitEmptyChoice：不列「清空」項，適用必選之單元切換列。
  */
 import { computed, ref, nextTick, onMounted } from 'vue';
-import { Dropdown } from 'bootstrap';
 import { unitSelectValue } from '../utils/rag.js';
+
+/** 與 main.js 同一 Bootstrap 實例（window.bootstrap）；元件內勿 import 'bootstrap' */
+function getBootstrapDropdown() {
+  return typeof window !== 'undefined' ? window.bootstrap?.Dropdown : null;
+}
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -45,9 +49,14 @@ function getToggleEl() {
   return rootRef.value?.querySelector('[data-bs-toggle="dropdown"]') ?? null;
 }
 
+function getMenuEl() {
+  return rootRef.value?.querySelector('.dropdown-menu') ?? null;
+}
+
 function getDropdownInstance() {
+  const Dropdown = getBootstrapDropdown();
   const toggle = getToggleEl();
-  if (!toggle) return null;
+  if (!Dropdown || !toggle) return null;
   const config = props.inModal ? { display: 'static' } : {};
   return Dropdown.getInstance(toggle) ?? Dropdown.getOrCreateInstance(toggle, config);
 }
@@ -93,7 +102,16 @@ const buttonTitle = computed(() => {
 
 function hideDropdownMenu() {
   nextTick(() => {
-    getDropdownInstance()?.hide();
+    const inst = getDropdownInstance();
+    if (inst) {
+      inst.hide();
+      return;
+    }
+    const toggle = getToggleEl();
+    const menu = getMenuEl();
+    toggle?.classList.remove('show');
+    toggle?.setAttribute('aria-expanded', 'false');
+    menu?.classList.remove('show');
   });
 }
 
@@ -106,7 +124,7 @@ function select(val) {
 <template>
   <div
     ref="rootRef"
-    class="dropdown w-100 my-design-08-dropdown"
+    class="dropdown w-100 my-design-08-dropdown my-unit-select-dd-root"
     v-bind="dropdownRootBind"
   >
     <button
@@ -152,6 +170,9 @@ function select(val) {
 </template>
 
 <style scoped>
+.my-unit-select-dd-root {
+  position: relative;
+}
 /* 觸發鈕與選單同寬，佔滿父層 */
 .my-unit-select-dd-toggle {
   max-width: 100%;

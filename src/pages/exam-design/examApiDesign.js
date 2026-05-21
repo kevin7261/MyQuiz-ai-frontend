@@ -21,6 +21,26 @@ export async function apiExamTabQuizCreate() {
   return { exam_quiz_id: id };
 }
 
+export async function apiExamTabQuizCreateLlmGenerate(_body) {
+  void _body;
+  await delay(600);
+  const id = nextDesignExamQuizId();
+  return {
+    exam_quiz_id: id,
+    ...DESIGN_MOCK_EXAM_QUIZ_GENERATE,
+  };
+}
+
+export async function apiExamTabQuizCreateLlmGenerateFollowup(_body) {
+  void _body;
+  await delay(600);
+  const id = nextDesignExamQuizId();
+  return {
+    exam_quiz_id: id,
+    ...DESIGN_MOCK_EXAM_QUIZ_FOLLOWUP_GENERATE,
+  };
+}
+
 export async function apiExamTabQuizLlmGenerate(body) {
   await delay(600);
   const id = body?.exam_quiz_id ?? nextDesignExamQuizId();
