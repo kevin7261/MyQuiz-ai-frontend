@@ -44,7 +44,6 @@ import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
 import QuizHistoryModal from '../components/QuizHistoryModal.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
-import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import ExamAddQuestionModal from '../components/ExamAddQuestionModal.vue';
 import {
@@ -1068,6 +1067,118 @@ watch(
 /** 「產生題目」「新增題目」：試卷題庫清單載入中則暫停（create 僅需 exam_tab_id，不依賴 rag_unit_id） */
 const generateQuizBlocked = computed(() => forExamLoading.value);
 
+/** 右側欄：有測驗分頁時顯示題目清單與「新增題目」（對齊 exam_design） */
+const showDesignRightView = computed(() => !!activeTabId.value);
+
+/** 題目 Carousel：一次只顯示一題，由右側清單切換 */
+const activeExamSlotIndex = ref(0);
+
+const examSlotCarouselCount = computed(
+  () => Number(currentState.value.quizSlotsCount) || 0,
+);
+
+const activeExamSlotGi = computed(() => {
+  const n = examSlotCarouselCount.value;
+  if (n <= 0) return 0;
+  return Math.min(Math.max(0, activeExamSlotIndex.value), n - 1);
+});
+
+/** 目前顯示的題目槽序（1-based，供 template） */
+const activeExamSlotIndex1 = computed(() => activeExamSlotGi.value + 1);
+
+function examQuizNavDisplayLabel(slotIndex) {
+  return examSlotHeadingQuestionTitle(slotIndex);
+}
+
+/** 稿頁題目區標題：小字 breadcrumb「單元 > 題型」 */
+function examSlotHeadingBreadcrumb(slotIndex) {
+  return `${examSlotUnitLabelForHistoryModal(slotIndex)} > ${examSlotQuizTypeLabelForHistoryModal(slotIndex)}`;
+}
+
+/** 稿頁題目區主標題：第 1 題、第 2 題… */
+function examSlotHeadingQuestionTitle(slotIndex) {
+  const n = Math.trunc(Number(slotIndex));
+  if (!Number.isFinite(n) || n < 1) return '—';
+  return `第 ${n} 題`;
+}
+
+/** 稿頁題目區主標題旁 badge：一般出題／追問出題 */
+function examSlotHeadingGenerateModeLabel(slotIndex) {
+  return examQuizGenerateModeLabel(examSlotIsFollowupMode(slotIndex));
+}
+
+/** 右側欄：題目子分頁 */
+const designRightQuizSubTabItems = computed(() => {
+  const n = examSlotCarouselCount.value;
+  if (n <= 0) return [];
+  const items = [];
+  for (let i = 1; i <= n; i++) {
+    items.push({
+      key: `exam-slot-${i}`,
+      label: examQuizNavDisplayLabel(i),
+      index: i - 1,
+      slotIndex: i,
+      kind: 'exam-slot',
+      active: i - 1 === activeExamSlotGi.value,
+    });
+  }
+  return items;
+});
+
+function selectExamSlot(index) {
+  const n = examSlotCarouselCount.value;
+  if (n <= 0) return;
+  const i = Number(index);
+  if (!Number.isFinite(i) || i < 0 || i >= n) return;
+  activeExamSlotIndex.value = i;
+}
+
+function onDesignRightQuizClick(item) {
+  if (!item) return;
+  if (item.kind === 'exam-slot') selectExamSlot(item.index);
+}
+
+watch(examSlotCarouselCount, (n) => {
+  if (n <= 0) {
+    activeExamSlotIndex.value = 0;
+    return;
+  }
+  if (activeExamSlotIndex.value >= n) {
+    activeExamSlotIndex.value = n - 1;
+  }
+});
+
+watch(activeTabId, () => {
+  activeExamSlotIndex.value = 0;
+});
+
+/** 單元內容區：預設展開；切換題目時還原 */
+const examUnitContentCollapsed = ref(false);
+
+function toggleExamUnitContentCollapsed() {
+  examUnitContentCollapsed.value = !examUnitContentCollapsed.value;
+}
+
+watch(activeExamSlotGi, () => {
+  examUnitContentCollapsed.value = false;
+});
+
+/** 文字單元已內嵌逐字稿；mp3／YouTube 才顯示「逐字稿」開 Modal */
+function examSlotTranscriptModalButtonVisible(slotIndex) {
+  const sec = examSlotUnitTranscriptSection(slotIndex);
+  if (!sec) return false;
+  return sec.unitType === UNIT_TYPE_MP3 || sec.unitType === UNIT_TYPE_YOUTUBE;
+}
+
+/** 評閱子區塊：已批改（confirmed 或已有批改結果）才顯示 */
+const activeExamSlotShowGradingSubBlock = computed(() => {
+  const slotIndex = activeExamSlotIndex1.value;
+  const card = currentState.value.cardList[slotIndex - 1];
+  if (!card || examSlotQuizBodyTrim(slotIndex) === '') return false;
+  if (String(card.gradingResult ?? '').trim() !== '') return true;
+  return card.confirmed === true;
+});
+
 /**
  * 載入 GET /exam/tabs、GET /exam/rag-for-exams：watch person_id 與 currentCourse.course_id（immediate）。
  * KeepAlive onActivated：再抓兩者；首次 onActivated 僅補抓試卷題庫，避免與 immediate 雙重 GET /exam/tabs。
@@ -1149,6 +1260,8 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
   const rid = quiz.rag_id ?? quiz.ragId ?? fallbackRagId;
   const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
+  const gp = extractAnswerUserPromptFromExamRagRow(quiz).trim();
+  const qp = extractQuizUserPromptFromExamRagRow(quiz).trim();
   return {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? quiz.quiz ?? quiz.question ?? '',
@@ -1176,10 +1289,15 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     generateQuizResponseJson: null,
     exam_quiz_id: quizId,
     answer_id: answerId,
-    gradingPrompt: extractAnswerUserPromptFromExamRagRow(quiz).trim(),
-    quiz_user_prompt_text: extractQuizUserPromptFromExamRagRow(quiz).trim(),
+    gradingPrompt: gp,
+    quiz_user_prompt_text: qp,
+    quizUserPromptText: qp,
+    hasUsedSaveAndGradeOnce: gp !== '',
+    gradingPromptBaseline: gp,
+    quizAnswerBaseline: quiz_answer,
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
     follow_up: examQuizApiRowIsFollowUp(quiz),
+    quizGenerateMode: examQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal',
     follow_up_exam_quiz_id:
       quiz.follow_up_exam_quiz_id != null && quiz.follow_up_exam_quiz_id !== ''
         ? Number(quiz.follow_up_exam_quiz_id)
@@ -1205,6 +1323,9 @@ function hydrateExamSlotFromRagCard(slotState, card) {
     );
   }
   if (match) slotState.examUnitSelectId = examUnitSelectValue(match);
+  if (card.quizGenerateMode === 'followup' || card.quizGenerateMode === 'normal') {
+    slotState.quizGenerateMode = card.quizGenerateMode;
+  }
   const rqNum = Number(card.rag_quiz_id);
   if (match && Number.isFinite(rqNum) && rqNum >= 1) {
     const quizzes = examQuizzesForUnitTabItem(match);
@@ -1735,18 +1856,34 @@ function syncAllExamSlotQuizHistoryLists() {
   for (let i = 1; i <= n; i++) syncExamSlotQuizHistoryList(i);
 }
 
-/** 槽位是否為追問出題（與題型標籤相同：優先試卷題庫 quizzes[] 之 follow_up，其次 Exam_Quiz 列） */
-function examSlotIsFollowupMode(slotIndex) {
-  const card = currentState.value.cardList[slotIndex - 1];
+/** 槽位是否為追問出題（使用者切換優先；否則試卷題庫 quizzes[] 之 follow_up 或 Exam_Quiz 列） */
+function examSlotFollowUpFromApi(slotIndex, card = null) {
+  const c = card ?? currentState.value.cardList[slotIndex - 1];
   const slotState = getSlotFormState(slotIndex);
   const uid = String(slotState.examUnitSelectId ?? '').trim();
   const unitItem = findExamUnitDropdownItemBySelectId(uid);
   const pick =
     String(slotState.examQuizNamePick ?? '').trim()
-    || String(card?.examQuizDisplayName ?? '').trim();
+    || String(c?.examQuizDisplayName ?? '').trim();
   const row = findExamRagQuizRowBySelectedPick(unitItem, pick);
   if (row) return examQuizApiRowIsFollowUp(row);
-  return card ? examQuizFollowUpForCard(slotIndex, card) : false;
+  return c ? examQuizFollowUpForCard(slotIndex, c) : false;
+}
+
+function resolveExamSlotGenerateMode(slotIndex, card = null) {
+  const c = card ?? currentState.value.cardList[slotIndex - 1];
+  if (c != null && typeof c === 'object') {
+    if (c.quizGenerateMode === 'followup') return 'followup';
+    if (c.quizGenerateMode === 'normal') return 'normal';
+  }
+  const slotState = getSlotFormState(slotIndex);
+  if (slotState.quizGenerateMode === 'followup') return 'followup';
+  if (slotState.quizGenerateMode === 'normal') return 'normal';
+  return examSlotFollowUpFromApi(slotIndex, c) ? 'followup' : 'normal';
+}
+
+function examSlotIsFollowupMode(slotIndex) {
+  return resolveExamSlotGenerateMode(slotIndex) === 'followup';
 }
 
 /** 追問模式 Modal：本分頁同單元／題型、此槽位之前槽位之問答（不含當前題） */
@@ -1841,20 +1978,6 @@ function examSlotRagChoicesLocked(slotIndex) {
   return examSlotQuizBodyTrim(slotIndex) !== '';
 }
 
-/** 單元下拉：產生題目中、或已產生題幹時停用（無選項時仍可操作，僅顯示 placeholder） */
-function examUnitSelectDropdownDisabled(slotIndex) {
-  const s = getSlotFormState(slotIndex);
-  if (s.loading) return true;
-  if (examSlotRagChoicesLocked(slotIndex)) return true;
-  return false;
-}
-
-function examUnitSelectHintWhenDisabled(slotIndex) {
-  if (getSlotFormState(slotIndex).loading) return '產生題目中…';
-  if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更單元';
-  return '';
-}
-
 /**
  * 題幹仍空白但後端已有 Exam_Quiz 列：產生題目時 POST llm-generate 送四鍵；列已存 rag_unit_id／rag_quiz_id 時須與請求一致；提示文字勿傳（後端自 Rag_Quiz 讀）。
  */
@@ -1863,20 +1986,6 @@ function examSlotHasAnchoredExamQuizId(slotIndex) {
   if (!c || examSlotQuizBodyTrim(slotIndex) !== '') return false;
   const id = Number(c.exam_quiz_id ?? c.quiz_id);
   return Number.isFinite(id) && id >= 1;
-}
-
-/** 題型下拉：LLM 產生中或已產生題幹後停用（無單元／無題型選項時仍可開啟，僅顯示 placeholder） */
-function examQuizNameDropdownDisabled(slotIndex) {
-  const s = getSlotFormState(slotIndex);
-  if (s.loading) return true;
-  if (examSlotRagChoicesLocked(slotIndex)) return true;
-  return false;
-}
-
-function examQuizNameHintWhenDisabled(slotIndex) {
-  if (getSlotFormState(slotIndex).loading) return '產生題目中…';
-  if (examSlotRagChoicesLocked(slotIndex)) return '已產生題目後無法變更題型';
-  return '';
 }
 
 /** 「產生題目」：須已有 exam_quiz_id（「新增題目」create 或後端已錨定之列）；須選單元；該單元有 quizzes[] 時須選 quiz_name */
@@ -1992,6 +2101,8 @@ function getDefaultExamSlotForm() {
     responseJson: null,
     /** 本分頁、相同單元與題型、此槽位之前已出過的題幹；產生題目時原樣傳入 quiz_history_list */
     quiz_history_list: [],
+    /** 出題模式：`normal`＝一般出題；`followup`＝追問出題 */
+    quizGenerateMode: 'normal',
   };
 }
 
@@ -2007,6 +2118,9 @@ function getSlotFormState(slotIndex) {
     slot.examQuizNamePick = String(slot.quizNameDraft ?? '').trim();
   }
   if (!Array.isArray(slot.quiz_history_list)) slot.quiz_history_list = [];
+  if (slot.quizGenerateMode !== 'followup' && slot.quizGenerateMode !== 'normal') {
+    slot.quizGenerateMode = 'normal';
+  }
   return slot;
 }
 
@@ -2045,13 +2159,6 @@ watch(
   },
 );
 
-async function onExamSlotUnitChange(slotIndex) {
-  if (examSlotRagChoicesLocked(slotIndex)) return;
-  const slot = getSlotFormState(slotIndex);
-  slot.examQuizNamePick = '';
-  slot.error = '';
-  await nextTick();
-}
 /**
  * @param {{ examUnitSelectId?: string, examQuizNamePick?: string } | undefined} picks
  * @returns {Promise<{ ok: boolean, error: string }>}
@@ -2061,6 +2168,7 @@ async function openNextQuizSlot(picks) {
   state.showQuizGeneratorBlock = true;
   state.quizSlotsCount = (state.quizSlotsCount || 0) + 1;
   const idx = state.quizSlotsCount;
+  activeExamSlotIndex.value = idx - 1;
   while (state.cardList.length < idx) {
     state.cardList.push(null);
   }
@@ -2085,6 +2193,9 @@ async function openNextQuizSlot(picks) {
     state.quizSlotsCount = Math.max(0, (state.quizSlotsCount || 0) - 1);
     if (state.cardList.length >= idx) {
       state.cardList.splice(idx - 1, 1);
+    }
+    if (activeExamSlotIndex.value >= state.quizSlotsCount) {
+      activeExamSlotIndex.value = Math.max(0, state.quizSlotsCount - 1);
     }
     return { ok: false, error: errMsg || '產生題目失敗' };
   }
@@ -2117,7 +2228,12 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     exam_quiz_id: quizId ?? null,
     gradingPrompt: '',
     quiz_user_prompt_text: '',
+    quizUserPromptText: '',
     examQuizDisplayName: '',
+    hasUsedSaveAndGradeOnce: false,
+    gradingPromptBaseline: '',
+    quizAnswerBaseline: '',
+    quizGenerateMode: 'normal',
   };
 }
 
@@ -2316,7 +2432,12 @@ async function generateQuiz(slotIndex, options = {}) {
       newCard.quiz_user_prompt_text = qpFromResponse || promptBundle.quiz_user_prompt_text;
       const apFromResponse = extractAnswerUserPromptFromExamRagRow(data).trim();
       const ap = apFromResponse || promptBundle.answer_user_prompt_text;
-      if (ap) newCard.gradingPrompt = ap;
+      if (ap) {
+        newCard.gradingPrompt = ap;
+        newCard.hasUsedSaveAndGradeOnce = true;
+        newCard.gradingPromptBaseline = ap;
+      }
+      newCard.quizGenerateMode = followupMode ? 'followup' : 'normal';
     }
     slotState.draftExamQuizId = null;
     syncAllExamSlotQuizHistoryLists();
@@ -2327,12 +2448,57 @@ async function generateQuiz(slotIndex, options = {}) {
   }
 }
 
-function toggleHint(item) {
-  item.hintVisible = !item.hintVisible;
+
+// ─── 題目評分（讚 / 差）與作答評改 ───────────────────────────────────────────
+
+/** 「儲存並開始批改」可按：非空批改規則且與 baseline 不同 */
+function canEnableExamDesignGrade(card) {
+  if (!card || typeof card !== 'object') return false;
+  const gpTrim = String(card.gradingPrompt ?? '').trim();
+  if (!gpTrim) return false;
+  return String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '');
 }
 
-function toggleReferenceAnswer(item) {
-  item.referenceAnswerVisible = !item.referenceAnswerVisible;
+/** 「開始批改」（llm-grade-db）：已批改過、規則未改動、rag_quiz_id 有效 */
+function canEnableExamDesignGradeDb(card) {
+  if (!card || typeof card !== 'object') return false;
+  if (card.hasUsedSaveAndGradeOnce !== true) return false;
+  if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
+  const rq = Number(card.rag_quiz_id ?? card.quiz_id);
+  return Number.isFinite(rq) && rq >= 1;
+}
+
+function canEnableExamDesignGradeMerged(card) {
+  return canEnableExamDesignGrade(card) || canEnableExamDesignGradeDb(card);
+}
+
+/** QuizCard 三子區塊共用 bind（版式對齊 exam_design／create-exam-bank） */
+function designExamQuizCardBind(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  return {
+    card,
+    slotIndex,
+    gradeSaveAllowed: canEnableExamDesignGradeMerged(card),
+    gradeDbAllowed: canEnableExamDesignGradeMerged(card),
+    currentRagId: currentRagIdForQuizCards.value,
+    showExamRating: true,
+    designUi: true,
+    designEmbedded: true,
+    createExamBankDesignLayout: true,
+    hideSlotIndex: true,
+    hideExamRulePills: true,
+    gradingPromptInModal: true,
+    hintReferenceInModal: true,
+    showBankQuizHistoryButton: true,
+    gradeSubmitting: examCardGradeSubmitting(card),
+    examQuizHistoryList: examSlotIsFollowupMode(slotIndex)
+      ? examQuizFollowupHistoryListForDisplay(slotIndex)
+      : getSlotFormState(slotIndex).quiz_history_list,
+    examQuizHistoryUnitLabel: examSlotUnitLabelForHistoryModal(slotIndex),
+    examQuizHistoryQuizTypeLabel: examSlotQuizTypeLabelForHistoryModal(slotIndex),
+    examQuizHistoryIsFollowup: examSlotIsFollowupMode(slotIndex),
+    examQuizHistoryOpenAllowed: canOpenExamQuizHistoryModal(slotIndex),
+  };
 }
 
 // ─── 題目評分（讚 / 差）與作答評改 ───────────────────────────────────────────
@@ -2419,6 +2585,11 @@ async function confirmAnswer(item) {
         quizGradeResultPath: API_EXAM_QUIZ_GRADE_RESULT,
       }
     );
+    if (item.confirmed) {
+      item.gradingPromptBaseline = String(item.gradingPrompt ?? '');
+      item.quizAnswerBaseline = String(item.quiz_answer ?? '');
+      item.hasUsedSaveAndGradeOnce = true;
+    }
   } finally {
     gradingSubmittingCardId.value = null;
   }
@@ -2594,10 +2765,10 @@ onActivated(() => {
       </div>
     </div>
 
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-hidden my-bgcolor-gray-4 d-flex flex-column min-h-0">
       <div
         v-if="examList.length === 0"
-        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
+        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 overflow-auto"
       >
         <button
           v-if="!examListLoading"
@@ -2613,453 +2784,602 @@ onActivated(() => {
           新增{{ quizBankNoun }}
         </button>
       </div>
-      <div v-else class="container-fluid px-3 px-md-4 py-4">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-            <div
-              v-if="activeTabId && !(Number(currentState.quizSlotsCount) || 0)"
-              class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
-            >
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
-                title="新增題目"
-                aria-label="新增題目"
-                :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim()"
-                :aria-busy="examAddQuestionSubmitting"
-                @click="openExamAddQuestionModal"
-              >
-                <i class="fa-solid fa-plus" aria-hidden="true" />
-                新增題目
-              </button>
-            </div>
-            <div
-              v-else-if="activeTabId"
-              class="text-start my-page-block-spacing"
-            >
-              <div
-                class="d-flex flex-column gap-4 w-100 min-w-0"
-              >
-                <template v-for="(slotIndex) in currentState.quizSlotsCount" :key="slotIndex">
-                  <template v-if="currentState.cardList[slotIndex - 1]">
-                    <div
-                      class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
-                    >
-                      <div class="my-font-lg-600 my-color-black">
-                        第 {{ slotIndex }} 題
-                      </div>
-                      <div
-                        class="d-flex flex-column gap-3 w-100 min-w-0"
-                      >
-                        <div
-                          class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3"
-                        >
-                          <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                            <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                              <template v-if="examSlotRagChoicesLocked(slotIndex)">
-                                <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
-                                  單元
-                                </div>
-                                <div
-                                  class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                                  role="status"
-                                  :aria-label="`單元：${examSlotLockedStaticUnitLabel(slotIndex)}`"
-                                >
-                                  {{ examSlotLockedStaticUnitLabel(slotIndex) }}
-                                </div>
-                              </template>
-                              <template v-else>
-                                <label
-                                  class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                                  :for="`exam-slot-${slotIndex}-unit-toggle-filled`"
-                                >選擇單元</label>
-                                <UnitSelectDropdown
-                                  v-model="getSlotFormState(slotIndex).examUnitSelectId"
-                                  :options="examUnitSelectDropdownOptions"
-                                  :option-value="examUnitSelectValue"
-                                  :option-label="(u) => String(u.label ?? '').trim() || '—'"
-                                  placeholder="— 請選擇單元 —"
-                                  :menu-id="`exam-slot-${slotIndex}-unit-filled`"
-                                  :disabled="examUnitSelectDropdownDisabled(slotIndex)"
-                                  :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
-                                  @update:model-value="onExamSlotUnitChange(slotIndex)"
-                                />
-                              </template>
-                            </div>
-                          </div>
-                          <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                            <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                              <template v-if="examSlotRagChoicesLocked(slotIndex)">
-                                <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
-                                  題型
-                                </div>
-                                <div
-                                  class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                                  role="status"
-                                  :aria-label="`題型：${examSlotLockedStaticQuizTypeLabel(slotIndex)}`"
-                                >
-                                  {{ examSlotLockedStaticQuizTypeLabel(slotIndex) }}
-                                </div>
-                              </template>
-                              <template v-else>
-                                <label
-                                  class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                                  :for="`exam-slot-${slotIndex}-quiz-dd-filled`"
-                                >選擇題型</label>
-                                <UnitSelectDropdown
-                                  v-model="getSlotFormState(slotIndex).examQuizNamePick"
-                                  :options="examQuizDropdownItemsForSlot(slotIndex)"
-                                  :option-value="examQuizPickSelectValue"
-                                  :option-label="examQuizTypeDisplayLabelForDropdownOption"
-                                  placeholder="— 請選擇題型 —"
-                                  :menu-id="`exam-slot-${slotIndex}-quiz-dd-filled`"
-                                  :disabled="examQuizNameDropdownDisabled(slotIndex)"
-                                  :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
-                                />
-                              </template>
-                            </div>
-                          </div>
-                        </div>
-                        <template v-if="examSlotShowUnitTranscriptUi(slotIndex)">
-                          <div
-                            v-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_TEXT"
-                            class="w-100 min-w-0"
-                          >
-                            <div
-                              class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                              role="region"
-                              aria-label="單元逐字稿"
-                            >
-                              <div
-                                v-if="examSlotUnitTranscriptMdHtml(slotIndex)"
-                                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                                v-html="examSlotUnitTranscriptMdHtml(slotIndex)"
-                              />
-                              <span
-                                v-else
-                                class="my-font-md-400 my-color-black"
-                              >—</span>
-                            </div>
-                          </div>
-                          <div
-                            v-else-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_YOUTUBE"
-                            class="d-flex flex-column gap-2 w-100 min-w-0"
-                          >
-                            <div
-                              v-if="examSlotYoutubeEmbedUrl(slotIndex)"
-                              class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                            >
-                              <iframe
-                                class="border-0"
-                                title="YouTube 影片"
-                                :src="examSlotYoutubeEmbedUrl(slotIndex)"
-                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                referrerpolicy="strict-origin-when-cross-origin"
-                                allowfullscreen
-                              />
-                            </div>
-                            <span
-                              v-if="!examSlotYoutubeEmbedUrl(slotIndex)"
-                              class="my-font-md-400 my-color-black text-break"
-                            >{{ examSlotUnitTranscriptSection(slotIndex).sourceDisplay }}</span>
-                            <div class="d-flex justify-content-center w-100 pt-1">
-                              <button
-                                type="button"
-                                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                                @click="openExamUnitTranscriptModal(slotIndex)"
-                              >
-                                逐字稿
-                              </button>
-                            </div>
-                          </div>
-                        </template>
-                        <template
-                          v-for="mp3Props in [examSlotMp3PlayerProps(slotIndex)]"
-                          :key="mp3Props ? `exam-mp3-${slotIndex}-${mp3Props.ragTabId}-${mp3Props.ragUnitId}` : `exam-mp3-empty-${slotIndex}`"
-                        >
-                          <RagTabUnitMp3Player
-                            v-if="mp3Props && examSlotShowUnitTranscriptUi(slotIndex)"
-                            :rag-tab-id="mp3Props.ragTabId"
-                            :rag-unit-id="mp3Props.ragUnitId"
-                          />
-                        </template>
-                        <div
-                          v-if="examSlotShowUnitTranscriptUi(slotIndex) && examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
-                          class="d-flex justify-content-center w-100 min-w-0 pt-1"
-                        >
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                            @click="openExamUnitTranscriptModal(slotIndex)"
-                          >
-                            逐字稿
-                          </button>
-                        </div>
-                      </div>
-                      <QuizCard
-                        v-if="examSlotQuizBodyTrim(slotIndex) !== ''"
-                        :card="currentState.cardList[slotIndex - 1]"
-                        :slot-index="slotIndex"
-                        :current-rag-id="currentRagIdForQuizCards"
-                        show-exam-rating
-                        design-ui
-                        design-embedded
-                        hide-slot-index
-                        hide-grading-prompt
-                        :exam-quiz-history-list="
-                          examSlotIsFollowupMode(slotIndex)
-                            ? examQuizFollowupHistoryListForDisplay(slotIndex)
-                            : getSlotFormState(slotIndex).quiz_history_list
-                        "
-                        :exam-quiz-history-unit-label="examSlotUnitLabelForHistoryModal(slotIndex)"
-                        :exam-quiz-history-quiz-type-label="examSlotQuizTypeLabelForHistoryModal(slotIndex)"
-                        :exam-quiz-history-is-followup="examSlotIsFollowupMode(slotIndex)"
-                        :exam-quiz-history-open-allowed="canOpenExamQuizHistoryModal(slotIndex)"
-                        :grade-submitting="examCardGradeSubmitting(currentState.cardList[slotIndex - 1])"
-                        @toggle-hint="toggleHint"
-                        @toggle-reference-answer="toggleReferenceAnswer"
-                        @confirm-answer="confirmAnswer"
-                        @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[slotIndex - 1], dir)"
-                        @update:quiz_answer="(val) => { currentState.cardList[slotIndex - 1].quiz_answer = val }"
-                        @update:grading_prompt="(val) => { currentState.cardList[slotIndex - 1].gradingPrompt = val }"
-                      />
-                      <template v-if="examSlotQuizBodyTrim(slotIndex) === ''">
-                        <div class="d-flex flex-column align-items-center gap-2 mt-3">
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                            aria-label="查看先前出題"
-                            :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
-                            @click="openExamQuizHistoryModal(slotIndex)"
-                          >
-                            先前出題
-                          </button>
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                            :disabled="examGenerateQuizButtonDisabled(slotIndex)"
-                            :aria-busy="getSlotFormState(slotIndex).loading || getSlotFormState(slotIndex).draftCreating"
-                            aria-label="產生題目"
-                            @click="generateQuiz(slotIndex)"
-                          >
-                            產生題目
-                          </button>
-                        </div>
-                        <div
-                          v-if="getSlotFormState(slotIndex).error"
-                          class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0"
-                        >
-                          {{ getSlotFormState(slotIndex).error }}
-                        </div>
-                      </template>
-                    </div>
-                  </template>
-                  <template v-else>
-                    <div
-                      class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-3"
-                    >
-                      <div class="my-font-lg-600 my-color-black mb-0">第 {{ slotIndex }} 題</div>
-                      <div class="text-start w-100 min-w-0">
-                        <div
-                          class="d-flex flex-column gap-3 w-100 min-w-0"
-                        >
-                          <div
-                            class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3"
-                          >
-                            <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                              <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                                <template v-if="examSlotRagChoicesLocked(slotIndex)">
-                                  <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
-                                    單元
-                                  </div>
-                                  <div
-                                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                                    role="status"
-                                    :aria-label="`單元：${examSlotLockedStaticUnitLabel(slotIndex)}`"
-                                  >
-                                    {{ examSlotLockedStaticUnitLabel(slotIndex) }}
-                                  </div>
-                                </template>
-                                <template v-else>
-                                  <label
-                                    class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                                    :for="`exam-slot-${slotIndex}-unit-toggle`"
-                                  >選擇單元</label>
-                                  <UnitSelectDropdown
-                                    v-model="getSlotFormState(slotIndex).examUnitSelectId"
-                                    :options="examUnitSelectDropdownOptions"
-                                    :option-value="examUnitSelectValue"
-                                    :option-label="(u) => String(u.label ?? '').trim() || '—'"
-                                    placeholder="— 請選擇單元 —"
-                                    :menu-id="`exam-slot-${slotIndex}-unit`"
-                                    :disabled="examUnitSelectDropdownDisabled(slotIndex)"
-                                    :hint-when-disabled="examUnitSelectHintWhenDisabled(slotIndex)"
-                                    @update:model-value="onExamSlotUnitChange(slotIndex)"
-                                  />
-                                </template>
-                              </div>
-                            </div>
-                            <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                              <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                                <template v-if="examSlotRagChoicesLocked(slotIndex)">
-                                  <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">
-                                    題型
-                                  </div>
-                                  <div
-                                    class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                                    role="status"
-                                    :aria-label="`題型：${examSlotLockedStaticQuizTypeLabel(slotIndex)}`"
-                                  >
-                                    {{ examSlotLockedStaticQuizTypeLabel(slotIndex) }}
-                                  </div>
-                                </template>
-                                <template v-else>
-                                  <label
-                                    class="my-color-gray-1 my-font-sm-400 mb-0 d-block"
-                                    :for="`exam-slot-${slotIndex}-quiz-dd-new`"
-                                  >選擇題型</label>
-                                  <UnitSelectDropdown
-                                    v-model="getSlotFormState(slotIndex).examQuizNamePick"
-                                    :options="examQuizDropdownItemsForSlot(slotIndex)"
-                                    :option-value="examQuizPickSelectValue"
-                                    :option-label="examQuizTypeDisplayLabelForDropdownOption"
-                                    placeholder="— 請選擇題型 —"
-                                    :menu-id="`exam-slot-${slotIndex}-quiz-dd-new`"
-                                    :disabled="examQuizNameDropdownDisabled(slotIndex)"
-                                    :hint-when-disabled="examQuizNameHintWhenDisabled(slotIndex)"
-                                  />
-                                </template>
-                              </div>
-                            </div>
-                          </div>
-                          <template v-if="examSlotShowUnitTranscriptUi(slotIndex)">
-                            <div
-                              v-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_TEXT"
-                              class="w-100 min-w-0"
-                            >
-                              <div
-                                class="my-rag-unit-type-text-scroll rounded-2 my-border-muted px-3 py-2 my-bgcolor-gray-4 min-w-0"
-                                role="region"
-                                aria-label="單元逐字稿"
-                              >
-                                <div
-                                  v-if="examSlotUnitTranscriptMdHtml(slotIndex)"
-                                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                                  v-html="examSlotUnitTranscriptMdHtml(slotIndex)"
-                                />
-                                <span
-                                  v-else
-                                  class="my-font-md-400 my-color-black"
-                                >—</span>
-                              </div>
-                            </div>
-                            <div
-                              v-else-if="examSlotUnitTranscriptSection(slotIndex).unitType === UNIT_TYPE_YOUTUBE"
-                              class="d-flex flex-column gap-2 w-100 min-w-0"
-                            >
-                              <div
-                                v-if="examSlotYoutubeEmbedUrl(slotIndex)"
-                                class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                              >
-                                <iframe
-                                  class="border-0"
-                                  title="YouTube 影片"
-                                  :src="examSlotYoutubeEmbedUrl(slotIndex)"
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                  referrerpolicy="strict-origin-when-cross-origin"
-                                  allowfullscreen
-                                />
-                              </div>
-                              <span
-                                v-if="!examSlotYoutubeEmbedUrl(slotIndex)"
-                                class="my-font-md-400 my-color-black text-break"
-                              >{{ examSlotUnitTranscriptSection(slotIndex).sourceDisplay }}</span>
-                              <div class="d-flex justify-content-center w-100 pt-1">
-                                <button
-                                  type="button"
-                                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                                  @click="openExamUnitTranscriptModal(slotIndex)"
-                                >
-                                  逐字稿
-                                </button>
-                              </div>
-                            </div>
-                          </template>
-                          <template
-                            v-for="mp3Props in [examSlotMp3PlayerProps(slotIndex)]"
-                            :key="mp3Props ? `exam-mp3-${slotIndex}-${mp3Props.ragTabId}-${mp3Props.ragUnitId}` : `exam-mp3-empty-${slotIndex}`"
-                          >
-                            <RagTabUnitMp3Player
-                              v-if="mp3Props && examSlotShowUnitTranscriptUi(slotIndex)"
-                              :rag-tab-id="mp3Props.ragTabId"
-                              :rag-unit-id="mp3Props.ragUnitId"
-                            />
-                          </template>
-                          <div
-                            v-if="examSlotShowUnitTranscriptUi(slotIndex) && examSlotUnitTranscriptSection(slotIndex)?.unitType === UNIT_TYPE_MP3"
-                            class="d-flex justify-content-center w-100 min-w-0 pt-1"
-                          >
-                            <button
-                              type="button"
-                              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
-                              @click="openExamUnitTranscriptModal(slotIndex)"
-                            >
-                              逐字稿
-                            </button>
-                          </div>
-                        </div>
-                        <div class="d-flex flex-column align-items-center gap-2 mt-3">
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
-                            aria-label="查看先前出題"
-                            :disabled="!canOpenExamQuizHistoryModal(slotIndex)"
-                            @click="openExamQuizHistoryModal(slotIndex)"
-                          >
-                            先前出題
-                          </button>
-                          <button
-                            type="button"
-                            class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
-                            :disabled="examGenerateQuizButtonDisabled(slotIndex)"
-                            :aria-busy="getSlotFormState(slotIndex).loading || getSlotFormState(slotIndex).draftCreating"
-                            aria-label="產生題目"
-                            @click="generateQuiz(slotIndex)"
-                          >
-                            產生題目
-                          </button>
-                        </div>
-                        <div
-                          v-if="getSlotFormState(slotIndex).error"
-                          class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0"
-                        >
-                          {{ getSlotFormState(slotIndex).error }}
-                        </div>
-                      </div>
-                    </div>
-                  </template>
-                </template>
-
-                <div class="d-flex justify-content-center pt-4 mb-0 w-100">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
-                    title="新增題目"
-                    aria-label="新增題目"
-                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
-                    :aria-busy="examAddQuestionSubmitting"
-                    @click="openExamAddQuestionModal"
+      <div
+        v-else
+        class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout"
+      >
+        <div
+          class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
+          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-10' : 'col-12'"
+        >
+          <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
+            <div class="container-fluid px-3 px-md-4 py-4">
+              <div class="row justify-content-center">
+                <div
+                  :class="
+                    showDesignRightView
+                      ? 'col-12 col-lg-12 col-xl-10 col-xxl-8'
+                      : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
+                  "
+                >
+                  <div
+                    v-if="activeTabId"
+                    class="text-start my-page-block-spacing"
                   >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增題目
-                  </button>
+                    <p
+                      v-if="!(Number(currentState.quizSlotsCount) || 0)"
+                      class="my-font-md-400 my-color-black mb-0 text-break lh-base"
+                    >
+                      目前沒有題目 請按右側新增題目按鈕新增
+                    </p>
+                    <template v-else>
+                      <div class="my-design-pack-unit-blocks w-100 min-w-0">
+                        <div
+                          :key="activeExamSlotIndex1"
+                          class="w-100 min-w-0 text-start"
+                          role="group"
+                          :aria-labelledby="`exam-slot-${activeExamSlotIndex1}-heading-label`"
+                        >
+                          <div
+                            :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
+                            class="my-font-sm-400 my-color-gray-1 mb-2"
+                            :aria-label="`單元與題型：${examSlotHeadingBreadcrumb(activeExamSlotIndex1)}`"
+                          >
+                            {{ examSlotHeadingBreadcrumb(activeExamSlotIndex1) }}
+                          </div>
+                          <div
+                            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
+                            role="heading"
+                            aria-level="2"
+                          >
+                            <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
+                              <span
+                                class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0"
+                              >{{ examSlotHeadingQuestionTitle(activeExamSlotIndex1) }}</span>
+                              <span
+                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                              >{{ examSlotHeadingGenerateModeLabel(activeExamSlotIndex1) }}</span>
+                            </div>
+                          </div>
+                          <div class="my-pack-unit-settings-body w-100 min-w-0">
+                            <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
+                              <section
+                                v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1)"
+                                class="w-100 min-w-0 mb-3"
+                                aria-label="單元內容"
+                              >
+                                <div
+                                  v-show="!examUnitContentCollapsed"
+                                  class="min-w-0 pb-2"
+                                >
+                                  <div
+                                    v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
+                                    class="my-rag-unit-type-text-scroll min-w-0"
+                                    role="region"
+                                    aria-label="單元逐字稿"
+                                  >
+                                    <div
+                                      v-if="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
+                                      class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                                      v-html="examSlotUnitTranscriptMdHtml(activeExamSlotIndex1)"
+                                    />
+                                    <span
+                                      v-else
+                                      class="my-font-md-400 my-color-black"
+                                    >—</span>
+                                  </div>
+                                  <div
+                                    v-else-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_YOUTUBE"
+                                    class="w-100 min-w-0"
+                                  >
+                                    <div
+                                      v-if="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
+                                      class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                                    >
+                                      <iframe
+                                        class="border-0"
+                                        title="YouTube 影片"
+                                        :src="examSlotYoutubeEmbedUrl(activeExamSlotIndex1)"
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                        referrerpolicy="strict-origin-when-cross-origin"
+                                        allowfullscreen
+                                      />
+                                    </div>
+                                    <span
+                                      v-else
+                                      class="my-font-md-400 my-color-black text-break"
+                                    >{{ examSlotUnitTranscriptSection(activeExamSlotIndex1).sourceDisplay }}</span>
+                                  </div>
+                                  <template
+                                    v-for="mp3Props in [examSlotMp3PlayerProps(activeExamSlotIndex1)]"
+                                    :key="mp3Props ? `exam-mp3-${activeExamSlotIndex1}-${mp3Props.ragTabId}-${mp3Props.ragUnitId}` : `exam-mp3-empty-${activeExamSlotIndex1}`"
+                                  >
+                                    <RagTabUnitMp3Player
+                                      v-if="mp3Props && examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_MP3"
+                                      :rag-tab-id="mp3Props.ragTabId"
+                                      :rag-unit-id="mp3Props.ragUnitId"
+                                    />
+                                  </template>
+                                </div>
+                                <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 w-100 min-w-0 py-2">
+                                  <button
+                                    v-if="examSlotTranscriptModalButtonVisible(activeExamSlotIndex1)"
+                                    type="button"
+                                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                                    title="逐字稿"
+                                    aria-label="逐字稿"
+                                    @click="openExamUnitTranscriptModal(activeExamSlotIndex1)"
+                                  >
+                                    逐字稿
+                                  </button>
+                                  <button
+                                    type="button"
+                                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                                    :title="examUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
+                                    :aria-label="examUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
+                                    :aria-expanded="!examUnitContentCollapsed"
+                                    @click="toggleExamUnitContentCollapsed"
+                                  >
+                                    <template v-if="examUnitContentCollapsed">
+                                      顯示文本
+                                      <i class="fa-solid fa-chevron-down" aria-hidden="true" />
+                                    </template>
+                                    <template v-else>
+                                      隱藏文本
+                                      <i class="fa-solid fa-chevron-up" aria-hidden="true" />
+                                    </template>
+                                  </button>
+                                </div>
+                              </section>
+                              <!-- 子區塊：題目 -->
+                              <div class="my-design-quiz-sub-block-outer">
+                                <div
+                                  class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
+                                >
+                                  <template v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) === ''">
+                                    <div
+                                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2"
+                                    >
+                                      <button
+                                        type="button"
+                                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                                        :disabled="examGenerateQuizButtonDisabled(activeExamSlotIndex1)"
+                                        :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
+                                        aria-label="產生題目"
+                                        @click="generateQuiz(activeExamSlotIndex1)"
+                                      >
+                                        產生題目
+                                      </button>
+                                    </div>
+                                    <div
+                                      v-if="getSlotFormState(activeExamSlotIndex1).error"
+                                      class="my-alert-danger-soft my-font-sm-400 py-2 mx-3 mb-3"
+                                    >
+                                      {{ getSlotFormState(activeExamSlotIndex1).error }}
+                                    </div>
+                                  </template>
+                                  <div
+                                    v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
+                                    class="w-100 min-w-0 pt-2"
+                                  >
+                                    <QuizCard
+                                      v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                                      create-exam-bank-design-layout
+                                      design-sub-block="question"
+                                      @confirm-answer="confirmAnswer"
+                                      @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[activeExamSlotGi], dir)"
+                                      @open-quiz-history="openExamQuizHistoryModal(activeExamSlotIndex1)"
+                                      @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                                      @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              <!-- 子區塊：答案 -->
+                              <div
+                                v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
+                                class="my-design-quiz-sub-block-outer"
+                              >
+                                <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
+                                  <div class="w-100 min-w-0 pt-2">
+                                    <QuizCard
+                                      v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                                      create-exam-bank-design-layout
+                                      design-sub-block="answer"
+                                      @confirm-answer="confirmAnswer"
+                                      @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                                      @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                              <!-- 子區塊：批改（已批改後才顯示） -->
+                              <div
+                                v-if="activeExamSlotShowGradingSubBlock"
+                                class="my-design-quiz-sub-block-outer"
+                              >
+                                <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                                  <QuizCard
+                                    v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                                    create-exam-bank-design-layout
+                                    design-sub-block="grading"
+                                    @confirm-answer="confirmAnswer"
+                                    @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                                    @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+        <div
+          v-if="showDesignRightView"
+          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+        >
+          <aside
+            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
+            aria-label="題目清單"
+          >
+            <nav
+              v-if="activeTabId"
+              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
+              aria-label="題目清單"
+            >
+              <div class="my-design-right-step-heading my-font-md-400 my-color-black">
+                題目
+              </div>
+              <div
+                v-for="item in designRightQuizSubTabItems"
+                :key="item.key"
+                class="nav-item"
+              >
+                <button
+                  type="button"
+                  class="nav-link w-100 text-start text-break"
+                  :class="{ active: item.active }"
+                  :aria-current="item.active ? 'page' : undefined"
+                  @click="onDesignRightQuizClick(item)"
+                >
+                  {{ item.label }}
+                </button>
+              </div>
+              <div class="d-flex justify-content-center pt-2 pb-1 w-100">
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                  title="新增題目"
+                  aria-label="新增題目"
+                  :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                  :aria-busy="examAddQuestionSubmitting"
+                  @click="openExamAddQuestionModal"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  新增題目
+                </button>
+              </div>
+            </nav>
+          </aside>
         </div>
       </div>
     </div>
   </div>
 </template>
 
+<style scoped>
+/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
+:deep(button.btn.rounded-pill.px-3),
+:deep(button.btn.rounded-2.px-3) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+/* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row--answer .btn.my-button-white) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+/* 左右分欄（對齊 exam_design／create-exam-bank） */
+.my-design-tab-split-layout {
+  min-height: 0;
+  flex: 1 1 0;
+}
+.my-design-tab-left-view,
+.my-design-tab-right-view {
+  min-width: 0;
+  min-height: 0;
+}
+/* 右側欄捲軸：對齊全站 gray-2 滑塊 */
+.my-design-tab-right-view,
+.my-design-right-nav {
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
+}
+.my-design-tab-right-view::-webkit-scrollbar,
+.my-design-right-nav::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
+}
+.my-design-tab-right-view::-webkit-scrollbar-track,
+.my-design-right-nav::-webkit-scrollbar-track {
+  background: var(--my-scrollbar-track);
+  border-radius: calc(var(--my-scrollbar-size) / 2);
+}
+.my-design-tab-right-view::-webkit-scrollbar-thumb,
+.my-design-right-nav::-webkit-scrollbar-thumb {
+  background-color: var(--my-scrollbar-thumb);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+.my-design-tab-right-view::-webkit-scrollbar-thumb:hover,
+.my-design-right-nav::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-scrollbar-thumb-hover);
+}
+.my-design-right-step-heading {
+  line-height: 1.35;
+  white-space: nowrap;
+  padding: 0 0.5rem;
+}
+.my-design-pack-unit-blocks {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+.my-design-right-nav .nav-link {
+  color: var(--my-color-black);
+  border: none;
+  background: transparent;
+}
+.my-design-right-nav button.nav-link {
+  cursor: pointer;
+}
+.my-design-right-nav .nav-link:not(.active):hover,
+.my-design-right-nav .nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+}
+.my-design-right-nav .nav-link.active,
+.my-design-right-nav .nav-link.active:hover,
+.my-design-right-nav .nav-link.active:focus,
+.my-design-right-nav .nav-link.active:focus-visible {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
+.my-design-pack-unit-main-title {
+  font-size: 1.5rem;
+  font-weight: var(--my-font-weight-semibold);
+  line-height: 1.35;
+  color: var(--my-color-black);
+  white-space: nowrap;
+}
+.my-design-quiz-sub-block-outer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.my-design-quiz-sub-block {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.my-design-quiz-field-inset,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-gray-2);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-white);
+}
+/* 題目／答案：無灰框，沿用子區白底 */
+.my-design-quiz-field-inset--plain,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset--plain) {
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+}
+.my-design-quiz-field-inset-label,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.my-design-pack-unit-blocks .my-font-sm-400.my-color-gray-1.mb-2,
+.my-design-pack-unit-section > .my-font-sm-400.my-color-gray-1.mb-2 {
+  white-space: nowrap;
+}
+.my-design-quiz-field-inset__rule,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
+  border: 0;
+  border-top: 1px solid var(--my-color-gray-2);
+  opacity: 1;
+}
+.my-design-quiz-question-prompt-block,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-white);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-black);
+  overflow: hidden;
+}
+.my-design-quiz-question-prompt-block__title,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {
+  color: var(--my-color-gray-2);
+  line-height: 1.35;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.my-design-quiz-question-prompt-block__edit-btn,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn) {
+  box-sizing: border-box;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  background-color: transparent;
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled)),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled)) {
+  color: var(--my-color-white);
+  border-color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+}
+.my-design-quiz-question-prompt-block__rule,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__rule) {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
+  opacity: 1;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel--design-dark) {
+  margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h1),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h2),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h3),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body code) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p code),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li code) {
+  background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
+  border-left-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td) {
+  border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
+}
+.my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+.btn.my-design-quiz-history-btn,
+:deep(.btn.my-design-quiz-history-btn) {
+  border: none;
+  white-space: nowrap;
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
+.btn.my-design-quiz-history-btn:hover:not(:disabled),
+.btn.my-design-quiz-history-btn:focus-visible:not(:disabled),
+.btn.my-design-quiz-history-btn:active:not(:disabled),
+:deep(.btn.my-design-quiz-history-btn:hover:not(:disabled)),
+:deep(.btn.my-design-quiz-history-btn:focus-visible:not(:disabled)),
+:deep(.btn.my-design-quiz-history-btn:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  color: var(--my-color-black);
+}
+.my-design-pack-unit-blocks :deep(.btn.rounded-pill),
+.my-pack-unit-settings-body :deep(.btn.rounded-pill),
+.my-design-quiz-sub-block :deep(.btn.rounded-pill) {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.form-control.my-design-quiz-answer-input,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
+}
+.form-control.my-design-quiz-answer-input:focus,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
+  background-color: var(--my-color-white);
+  border-color: var(--my-color-gray-2);
+  box-shadow: none;
+}
+.form-control.my-design-quiz-answer-input:disabled,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-2);
+  opacity: 1;
+}
+.btn.my-design-quiz-action-edit-btn,
+.my-design-quiz-sub-block :deep(.btn.my-design-quiz-action-edit-btn) {
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border: none;
+}
+</style>

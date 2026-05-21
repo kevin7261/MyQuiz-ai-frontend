@@ -329,7 +329,7 @@ const designStemToolbarRowPaddingClass = computed(() =>
   isDesignSubBlockFragment.value
   && props.designSubBlock === 'question'
   && props.showExamRating
-    ? 'px-3 pt-2 pb-3'
+    ? 'px-3 py-2'
     : '',
 );
 
