@@ -1868,6 +1868,91 @@ const bankQuizHistoryModalQuizTypeLabel = computed(() => {
   return card ? quizTypeTabLabel(card) : '—';
 });
 
+/** 出題／批改規則：列表區黑底白字預覽，按鈕開 Modal 編輯 */
+const bankPromptEditModalOpen = ref(false);
+const bankPromptEditModalKind = ref(/** @type {'quiz'|'grading'|''} */ (''));
+const bankPromptEditModalDraft = ref('');
+
+const bankPromptEditModalTitle = computed(() =>
+  bankPromptEditModalKind.value === 'grading' ? '批改規則' : '出題規則',
+);
+
+const bankPromptEditModalSavingDisabled = computed(() => {
+  if (bankPromptEditModalKind.value === 'quiz') {
+    return !!getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading;
+  }
+  const card = activeUnitQuizCard.value;
+  return (
+    gradingSubmittingCardId.value != null
+    && card
+    && String(gradingSubmittingCardId.value) === String(card.id)
+  );
+});
+
+const bankPromptEditModalResetDisabled = computed(() => {
+  if (bankPromptEditModalSavingDisabled.value) return true;
+  const card = activeUnitQuizCard.value;
+  if (!card) return true;
+  if (bankPromptEditModalKind.value === 'quiz') {
+    return (
+      String(bankPromptEditModalDraft.value ?? '')
+      === String(card.quizUserPromptBaseline ?? '')
+    );
+  }
+  if (bankPromptEditModalKind.value === 'grading') {
+    return (
+      String(bankPromptEditModalDraft.value ?? '')
+      === String(card.gradingPromptBaseline ?? '')
+    );
+  }
+  return true;
+});
+
+function resetBankPromptEditModalDraft() {
+  const card = activeUnitQuizCard.value;
+  if (!card) return;
+  if (bankPromptEditModalKind.value === 'quiz') {
+    bankPromptEditModalDraft.value = String(card.quizUserPromptBaseline ?? '');
+  } else if (bankPromptEditModalKind.value === 'grading') {
+    bankPromptEditModalDraft.value = String(card.gradingPromptBaseline ?? '');
+  }
+}
+
+function openBankQuizUserPromptEditModal() {
+  const card = activeUnitQuizCard.value;
+  if (!card) return;
+  if (getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading) return;
+  bankPromptEditModalKind.value = 'quiz';
+  bankPromptEditModalDraft.value = String(card.quizUserPromptText ?? '');
+  bankPromptEditModalOpen.value = true;
+}
+
+function openBankGradingPromptEditModal() {
+  const card = activeUnitQuizCard.value;
+  if (!card || isRagQuizMarkedForExam(card)) return;
+  bankPromptEditModalKind.value = 'grading';
+  bankPromptEditModalDraft.value = String(card.gradingPrompt ?? '');
+  bankPromptEditModalOpen.value = true;
+}
+
+function closeBankPromptEditModal() {
+  bankPromptEditModalOpen.value = false;
+  bankPromptEditModalKind.value = '';
+  bankPromptEditModalDraft.value = '';
+}
+
+function applyBankPromptEditModal() {
+  const card = activeUnitQuizCard.value;
+  if (card) {
+    if (bankPromptEditModalKind.value === 'quiz') {
+      card.quizUserPromptText = bankPromptEditModalDraft.value;
+    } else if (bankPromptEditModalKind.value === 'grading') {
+      card.gradingPrompt = bankPromptEditModalDraft.value;
+    }
+  }
+  closeBankPromptEditModal();
+}
+
 function closePackBuildSuccessModal() {
   packBuildSuccessModalOpen.value = false;
 }
@@ -2250,6 +2335,22 @@ function canEnableUnitQuizGradeDb(card, slotIndex) {
   if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
   const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, card);
   return rqid != null && rqid >= 1;
+}
+
+/** 「開始批改」（合併 llm-grade／llm-grade-db）：非空批改規則且（規則已改動或可走後端已存規則） */
+function canEnableUnitQuizGradeMerged(card, slotIndex) {
+  return canEnableUnitQuizGrade(card, slotIndex) || canEnableUnitQuizGradeDb(card, slotIndex);
+}
+
+async function confirmGradeMerged(item) {
+  if (!item || typeof item !== 'object') return;
+  const slotIndex = activeUnitSlotIndex.value;
+  const dirty =
+    String(item.gradingPrompt ?? '') !== String(item.gradingPromptBaseline ?? '');
+  if (dirty || !canEnableUnitQuizGradeDb(item, slotIndex)) {
+    return confirmAnswer(item);
+  }
+  return confirmAnswerGradeDb(item);
 }
 
 /** 該列出題文字：優先題卡本身，再以 slot（舊相容）回填 */
@@ -4534,6 +4635,65 @@ async function confirmAnswer(item) {
     />
     <Teleport to="body">
       <div
+        v-if="bankPromptEditModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="bank-prompt-edit-modal-title"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="bank-prompt-edit-modal-title"
+                class="modal-title my-color-black"
+              >{{ bankPromptEditModalTitle }}</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeBankPromptEditModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <EnglishExamMarkdownEditor
+                v-model="bankPromptEditModalDraft"
+                :textarea-id="`bank-prompt-edit-${bankPromptEditModalKind}-${activeUnitSlotIndex}`"
+                :disabled="bankPromptEditModalSavingDisabled"
+              />
+            </div>
+            <div
+              class="modal-footer border-top-0 p-0 d-flex justify-content-end align-items-center flex-nowrap gap-2 w-100"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                title="還原為上次載入或產生後的內容"
+                aria-label="重設"
+                :disabled="bankPromptEditModalResetDisabled"
+                @click="resetBankPromptEditModalDraft"
+              >
+                重設
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                :disabled="bankPromptEditModalSavingDisabled"
+                @click="applyBankPromptEditModal"
+              >
+                確定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
         v-if="newBankUploadModalOpen"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
@@ -5569,33 +5729,46 @@ async function confirmAnswer(item) {
                       追問出題
                     </button>
                   </div>
-                  <div class="d-flex flex-column gap-0 min-w-0">
-                    <label
-                      class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                      :for="
-                        isRagQuizMarkedForExam(activeUnitQuizCard)
-                          ? undefined
-                          : `rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`
-                      "
+                  <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
+                    <section
+                      class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                      aria-label="出題規則"
                     >
-                      出題規則
-                    </label>
-                    <div class="my-rag-unit-quiz-prompt-editor min-w-0">
-                      <EnglishExamMarkdownEditor
-                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
-                        v-model="activeUnitQuizCard.quizUserPromptText"
-                        :preview-only="false"
-                        :textarea-id="`rag-unit-quiz-prompt-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                        :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                      />
-                      <EnglishExamMarkdownEditor
-                        v-else
-                        :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
-                        preview-only
-                        :preview-design-dark="String(activeUnitQuizCard.quizUserPromptText ?? '').trim() !== ''"
-                        :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                      />
-                    </div>
+                      <header class="my-design-quiz-question-prompt-block__head">
+                        <div
+                          class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                        >
+                          <h3
+                            class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0"
+                          >
+                            出題規則
+                          </h3>
+                          <button
+                            v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
+                            type="button"
+                            class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
+                            title="編輯出題規則"
+                            aria-label="編輯出題規則"
+                            :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                            @click="openBankQuizUserPromptEditModal"
+                          >
+                            <i class="fa-solid fa-pen" aria-hidden="true" />
+                          </button>
+                        </div>
+                        <div class="px-3 py-0">
+                          <hr class="my-design-quiz-question-prompt-block__rule m-0">
+                        </div>
+                      </header>
+                      <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                        <EnglishExamMarkdownEditor
+                          :model-value="String(activeUnitQuizCard.quizUserPromptText ?? '')"
+                          preview-only
+                          preview-design-dark
+                          preview-design-dark-embedded
+                          :textarea-id="`rag-unit-quiz-prompt-ro-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                        />
+                      </div>
+                    </section>
                   </div>
                 </div>
                 <div class="d-flex flex-column align-items-center gap-2 w-100">
@@ -5657,8 +5830,8 @@ async function confirmAnswer(item) {
                   v-if="String(activeUnitQuizCard.quiz ?? '').trim().length > 0"
                   :card="activeUnitQuizCard"
                   :slot-index="activeUnitQuizTypeIdxResolved + 1"
-                  :grade-save-allowed="canEnableUnitQuizGrade(activeUnitQuizCard, activeUnitSlotIndex)"
-                  :grade-db-allowed="canEnableUnitQuizGradeDb(activeUnitQuizCard, activeUnitSlotIndex)"
+                  :grade-save-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
+                  :grade-db-allowed="canEnableUnitQuizGradeMerged(activeUnitQuizCard, activeUnitSlotIndex)"
                   :current-rag-id="currentRagIdForQuizCards"
                   design-embedded
                   hide-slot-index
@@ -5667,15 +5840,14 @@ async function confirmAnswer(item) {
                     String(gradingSubmittingCardId) === String(activeUnitQuizCard.id)
                   "
                   design-ui
+                  grading-prompt-in-modal
                   show-rag-quiz-for-exam-action
-                  show-rag-grade-db-button
                   hide-rag-quiz-for-exam-toolbar
                   @toggle-hint="toggleHint"
                   @toggle-reference-answer="(item) => { item.referenceAnswerVisible = !item.referenceAnswerVisible }"
-                  @confirm-answer="confirmAnswer"
-                  @confirm-grade-db="confirmAnswerGradeDb"
+                  @confirm-answer="confirmGradeMerged"
                   @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
-                  @update:grading_prompt="(val) => { activeUnitQuizCard.gradingPrompt = val }"
+                  @open-grading-prompt-edit="openBankGradingPromptEditModal"
                   @reset-grading-prompt="resetUnitQuizGradingPrompt(activeUnitQuizCard)"
                 />
                 <div class="d-flex flex-column align-items-center gap-2 w-100 min-w-0 pt-1">
@@ -5778,12 +5950,83 @@ async function confirmAnswer(item) {
   border-color: var(--my-color-blue) !important;
 }
 /* 設定單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
-/* 與英文測驗題庫「文字內容」同源 EasyMDE；略拉高編輯區高度對齊舊題說明文塊約 400px */
-.my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: min(60vh, 28rem);
+/* 出題規則黑底區：標題列 → 橫線 → 內文預覽 */
+.my-design-quiz-question-prompt-block {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-white);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-black);
+  overflow: hidden;
 }
-.my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 400px;
+.my-design-quiz-question-prompt-block__title {
+  color: var(--my-color-gray-2);
+  line-height: 1.35;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.my-design-quiz-question-prompt-block__edit-btn {
+  box-sizing: border-box;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  background-color: transparent;
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled) {
+  color: var(--my-color-white);
+  border-color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+}
+.my-design-quiz-question-prompt-block__edit-btn .fa-solid {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+}
+.my-design-quiz-question-prompt-block__rule {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
+  opacity: 1;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark) {
+  margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
 }
 .my-pack-unit-md-editor :deep(.english-exam-md-editor-root) {
   --english-md-preview-max-h: min(50vh, 22rem);

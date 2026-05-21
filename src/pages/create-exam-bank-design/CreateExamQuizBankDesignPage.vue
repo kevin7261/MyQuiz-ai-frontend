@@ -6698,12 +6698,12 @@ async function confirmAnswer(item) {
   border-color: var(--my-color-blue) !important;
 }
 /* 設定單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
-/* 與英文測驗題庫「文字內容」同源 EasyMDE；略拉高編輯區高度對齊舊題說明文塊約 400px */
+/* 出題規則 EasyMDE 編輯區：固定 96pt（與稿頁黑底預覽一致） */
 .my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: min(60vh, 28rem);
+  --english-md-preview-max-h: 96pt;
 }
 .my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 400px;
+  min-height: 96pt;
 }
 /* 設定單元：區塊內欄位／工具列統一縱向間距 */
 .my-pack-unit-settings-body {

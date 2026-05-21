@@ -1181,48 +1181,50 @@ const quizAnswerFieldDisabled = computed(
           class="d-flex flex-column w-100 min-w-0"
           :class="isDesignSubBlockFragment ? '' : 'mt-3'"
         >
-          <template v-if="useDesignFieldLabelInset">
-            <div
-              v-if="!hideExamRulePills && !hideGradingPrompt"
-              class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0"
+          <div
+            v-if="!hideExamRulePills && !hideGradingPrompt"
+            class="my-design-quiz-question-prompt-wrap w-100 min-w-0"
+            :class="useDesignFieldLabelInset ? 'px-3 pt-3 pb-0' : ''"
+          >
+            <section
+              class="my-design-quiz-question-prompt-block w-100 min-w-0"
+              aria-label="批改規則"
             >
-              <section
-                class="my-design-quiz-question-prompt-block w-100 min-w-0"
-                aria-label="批改規則"
-              >
-                <header class="my-design-quiz-question-prompt-block__head">
-                  <div
-                    class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+              <header class="my-design-quiz-question-prompt-block__head">
+                <div
+                  class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                >
+                  <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0">
+                    批改規則
+                  </h3>
+                  <button
+                    v-if="!cardMarkedForExam"
+                    type="button"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
+                    title="編輯批改規則"
+                    aria-label="編輯批改規則"
+                    :disabled="gradeSubmitting"
+                    @click="emit('open-grading-prompt-edit')"
                   >
-                    <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0">
-                      批改規則
-                    </h3>
-                    <button
-                      type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
-                      title="編輯批改規則"
-                      aria-label="編輯批改規則"
-                      :disabled="gradeSubmitting || cardMarkedForExam"
-                      @click="emit('open-grading-prompt-edit')"
-                    >
-                      <i class="fa-solid fa-pen" aria-hidden="true" />
-                    </button>
-                  </div>
-                  <div class="px-3 py-0">
-                    <hr class="my-design-quiz-question-prompt-block__rule m-0">
-                  </div>
-                </header>
-                <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
-                  <EnglishExamMarkdownEditor
-                    :model-value="String(card.gradingPrompt ?? '')"
-                    :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
-                    preview-only
-                    preview-design-dark
-                    preview-design-dark-embedded
-                  />
+                    <i class="fa-solid fa-pen" aria-hidden="true" />
+                  </button>
                 </div>
-              </section>
-            </div>
+                <div class="px-3 py-0">
+                  <hr class="my-design-quiz-question-prompt-block__rule m-0">
+                </div>
+              </header>
+              <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                <EnglishExamMarkdownEditor
+                  :model-value="String(card.gradingPrompt ?? '')"
+                  :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
+                  preview-only
+                  preview-design-dark
+                  preview-design-dark-embedded
+                />
+              </div>
+            </section>
+          </div>
+          <template v-if="useDesignFieldLabelInset">
             <div
               v-if="showDesignGradingStartRow"
               class="d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2 my-design-quiz-grading-start-row"
@@ -1268,42 +1270,6 @@ const quizAnswerFieldDisabled = computed(
                   </div>
                 </div>
               </section>
-            </div>
-          </template>
-          <template v-else>
-            <div
-              v-if="!showDesignLayoutGradingToolbar && !cardMarkedForExam"
-              class="d-flex justify-content-between align-items-end gap-2 flex-wrap w-100 min-w-0 mb-1"
-            >
-              <div
-                :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-              >
-                批改規則
-              </div>
-              <button
-                type="button"
-                class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 ms-auto"
-                title="編輯批改規則"
-                aria-label="編輯批改規則"
-                :disabled="gradeSubmitting"
-                @click="emit('open-grading-prompt-edit')"
-              >
-                <i class="fa-solid fa-pen" aria-hidden="true" />
-              </button>
-            </div>
-            <div
-              v-else
-              :class="designUi ? 'form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-1' : 'form-label my-font-sm-600 mb-1 my-color-gray-1'"
-            >
-              批改規則
-            </div>
-            <div class="min-w-0 w-100">
-              <EnglishExamMarkdownEditor
-                :model-value="String(card.gradingPrompt ?? '')"
-                :textarea-id="`quiz-grading-prompt-ro-${card.id}`"
-                preview-only
-                preview-design-dark
-              />
             </div>
           </template>
           <div
@@ -1514,14 +1480,13 @@ const quizAnswerFieldDisabled = computed(
 }
 /*
  * EasyMDE 編輯區選擇器與 CreateExamQuizBankPage「出題規則」(.my-rag-unit-quiz-prompt-editor) 對齊，
- * 避免批改規則額外套 .CodeMirror min-height 與出題區高度不一致。
- * 唯讀預覽高度仍由元件內文決定。
+ * 批改規則編輯區固定 96pt。
  */
 .quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: min(60vh, 28rem);
+  --english-md-preview-max-h: 96pt;
 }
 .quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 400px;
+  min-height: 96pt;
 }
 /* 稿頁答案子區塊：白底、淡灰框（與 create-exam-bank_design 頁內 :deep 規則一致） */
 :deep(.form-control.my-design-quiz-answer-input) {
@@ -1543,5 +1508,83 @@ const quizAnswerFieldDisabled = computed(
 :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
   white-space: nowrap;
   flex-shrink: 0;
+}
+/* 出題／批改規則黑底預覽區（gradingPromptInModal） */
+.my-design-quiz-question-prompt-block {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-white);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-black);
+  overflow: hidden;
+}
+.my-design-quiz-question-prompt-block__title {
+  color: var(--my-color-gray-2);
+  line-height: 1.35;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.my-design-quiz-question-prompt-block__edit-btn {
+  box-sizing: border-box;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  background-color: transparent;
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled) {
+  color: var(--my-color-white);
+  border-color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+}
+.my-design-quiz-question-prompt-block__edit-btn .fa-solid {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+}
+.my-design-quiz-question-prompt-block__rule {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
+  opacity: 1;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark) {
+  margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
 }
 </style>
