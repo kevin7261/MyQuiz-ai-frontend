@@ -698,6 +698,65 @@ code {
   z-index: 2;
 }
 
+/* 出題模式切換：軌 20px 高＋白圓鈕＋標籤同鈕；關＝一般出題、開＝追問出題（綠軌） */
+.my-quiz-generate-mode-switch {
+  flex-shrink: 0;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+}
+.my-quiz-generate-mode-switch:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+.my-quiz-generate-mode-switch__track {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 1.25rem;
+  border-radius: 50rem;
+  background-color: var(--my-color-gray-2);
+  transition: background-color 0.15s ease-in-out;
+}
+.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__track {
+  background-color: var(--my-color-green);
+}
+.my-quiz-generate-mode-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc(1.25rem - 4px);
+  height: calc(1.25rem - 4px);
+  border-radius: 50%;
+  background-color: var(--my-color-white);
+  transition: transform 0.15s ease-in-out;
+}
+.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__knob {
+  transform: translateX(calc(2.25rem - 1.25rem));
+}
+.my-quiz-generate-mode-switch .my-quiz-generate-mode-switch__label {
+  color: var(--my-color-gray-1);
+  line-height: 1.35;
+  transition: color 0.15s ease-in-out;
+}
+.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label {
+  color: var(--my-color-green);
+}
+/* 黑底出題規則標題列：軌／字色對齊同區塊 gray-2 標題、green 語意 */
+.my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch__track {
+  background-color: color-mix(in srgb, var(--my-color-white) 28%, transparent);
+}
+.my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__track {
+  background-color: var(--my-color-green);
+}
+.my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch .my-quiz-generate-mode-switch__label {
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label {
+  color: var(--my-color-green);
+}
+
 /* nav-tabs（建立測驗題庫分頁列、ExamPage）：Bootstrap 在 :hover／:focus 會套四邊 border-color，取消左右垂直線 */
 .nav.nav-tabs .nav-link {
   border-left: none !important;
@@ -879,32 +938,65 @@ code {
   -webkit-text-fill-color: var(--my-color-black);
 }
 
-/* 建立測驗題庫／測驗頁：unit_type=2 單元逐字稿 Markdown 區；淺底內捲軸 thumb 需較深 */
+/* 建立測驗題庫／測驗頁：unit_type=2 單元逐字稿 Markdown 區；底與 left view gray-4 一致 */
 .my-rag-unit-type-text-scroll {
   max-height: min(40vh, 20rem);
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  background-color: var(--my-color-gray-4);
   scrollbar-width: thin;
-  scrollbar-color: var(--my-color-gray-1) var(--my-color-gray-2);
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
 }
 .my-rag-unit-type-text-scroll::-webkit-scrollbar {
   width: var(--my-scrollbar-size);
 }
 .my-rag-unit-type-text-scroll::-webkit-scrollbar-track {
-  background: var(--my-color-gray-2);
+  background: var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 .my-rag-unit-type-text-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--my-color-gray-1);
+  background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 .my-rag-unit-type-text-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-color-black);
+  background-color: var(--my-scrollbar-thumb-hover);
+}
+.my-rag-unit-type-text-scroll::-webkit-scrollbar-corner {
+  background: var(--my-scrollbar-track);
+}
+
+/* 建立測驗題庫／試卷設計 left 主欄及外層容器：統一 gray-4 底（#fafafa） */
+.my-design-tab-left-view,
+.my-design-tab-left-view-scroll {
+  background-color: #fafafa;
+}
+.my-design-tab-left-view-scroll {
+  min-height: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-scrollbar-thumb) #fafafa;
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar-track {
+  background: #fafafa;
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--my-scrollbar-thumb);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid #fafafa;
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-scrollbar-thumb-hover);
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar-corner {
+  background: #fafafa;
 }
 
 /* 設定單元：頂部水平單元列表（淺灰底上需較深 thumb／track，避免全站透明軌道看不見） */
@@ -923,7 +1015,7 @@ code {
 .my-pack-unit-list-nav::-webkit-scrollbar-thumb {
   background-color: var(--my-color-gray-1);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-gray-2);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 .my-pack-unit-list-nav::-webkit-scrollbar-thumb:hover {
@@ -1242,7 +1334,7 @@ div.form-control {
   border: none;
 }
 
-/* —— 捲軸（全站可捲動區）：軌道透明；槽 6pt、滑塊 4pt（WebKit）；Firefox 僅 thin —— */
+/* —— 捲軸（全站可捲動區）：軌道 gray-4；滑塊邊框同色避免透出白底 —— */
 ::-webkit-scrollbar {
   width: var(--my-scrollbar-size);
   height: var(--my-scrollbar-size);
@@ -1256,14 +1348,14 @@ div.form-control {
 ::-webkit-scrollbar-thumb {
   background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: var(--my-scrollbar-thumb-hover);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
 }
 
 ::-webkit-scrollbar-corner {

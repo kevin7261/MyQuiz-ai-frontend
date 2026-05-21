@@ -281,7 +281,7 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 05 · 按鈕 + 09 · 徽章 + 08 · 下拉選單（同一 section） =====
-               按鈕：僅示範 create-exam-bank_design 實際使用之形式。小 px-3 py-1：gray-3、green、outline-green-hollow、transparent-borderless。中 px-4 py-2：black、white、transparent-borderless＋gray-1。大 px-4 py-3：gray-3＋gap-2。圓形 my-btn-circle＋transparent-borderless。切換：單元類型（白軌＋gray-3／transparent-borderless 小）；出題模式（my-design-quiz-generate-mode-toggle 中）。單行輸入見「06 · 輸入」。
+               按鈕：僅示範 create-exam-bank_design 實際使用之形式。小 px-3 py-1：gray-3、green、outline-green-hollow、transparent-borderless。中 px-4 py-2：black、white、transparent-borderless＋gray-1。大 px-4 py-3：gray-3＋gap-2。圓形 my-btn-circle＋transparent-borderless。切換：單元類型（白軌＋gray-3／transparent-borderless 小）；出題模式（my-quiz-generate-mode-switch 軌 20px、gap-2 標籤）。單行輸入見「06 · 輸入」。
                圓形：分頁「+」與複製鈕同規 my-btn-circle + my-button-transparent-borderless。
                09 徽章：在 08 下拉之上；僅示範 create-exam-bank_design 實際使用（my-bgcolor-surface、border）；資料夾標籤含 d-inline-flex gap-1；單元類型含 flex-shrink-0。
                08 下拉：區塊底 my-bgcolor-gray-3；外層 .my-design-08-dropdown；示範一白底觸發邊 gray-2；示範二透明底無邊框；選單 .dropdown-menu Bootstrap 預設；觸發 rounded-2 同輸入（非膠囊）。 -->
@@ -502,37 +502,30 @@ const designSampleChoiceWhite = ref('選項一');
                       </div>
                     </div>
                   </div>
-                  <!-- 出題模式切換（gray-3 軌＋中 pill；選中 __btn--active 白底、未選 transparent-borderless） -->
+                  <!-- 出題模式切換（my-quiz-generate-mode-switch；關＝一般出題、開＝追問出題綠軌） -->
                   <div>
                     <div class="my-color-gray-4 my-font-sm-400 mb-2">
-                      出題模式切換（my-design-quiz-generate-mode-toggle · 中 px-4 py-2 · 選中 __btn--active · 未選 my-button-transparent-borderless）
+                      出題模式切換（my-quiz-generate-mode-switch · 軌 20px · gap-2 · 開＝綠軌）
                     </div>
                     <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                      <div
-                        class="my-design-quiz-generate-mode-toggle d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 p-2"
-                        role="group"
-                        aria-label="示範：出題模式切換"
+                      <button
+                        type="button"
+                        role="switch"
+                        class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0 my-quiz-generate-mode-switch--on"
+                        aria-checked="true"
                       >
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-design-quiz-generate-mode-toggle__btn my-design-quiz-generate-mode-toggle__btn--active px-4 py-2"
-                        >
-                          一般出題
-                        </button>
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-design-quiz-generate-mode-toggle__btn my-button-transparent-borderless px-4 py-2"
-                        >
-                          追問出題
-                        </button>
-                      </div>
+                        <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
+                          <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
+                        </span>
+                        <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">追問出題</span>
+                      </button>
                       <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                         <code
                           class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                          >my-design-quiz-generate-mode-toggle · btn … my-design-quiz-generate-mode-toggle__btn--active px-4 py-2 · btn … my-button-transparent-borderless px-4 py-2</code>
+                          >my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 · my-quiz-generate-mode-switch--on</code>
                         <DesignPageCopyBtn
                         class="flex-shrink-0 ms-auto"
-                        text="my-design-quiz-generate-mode-toggle btn my-design-quiz-generate-mode-toggle__btn--active px-4 py-2 btn my-button-transparent-borderless px-4 py-2"
+                        text="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 my-quiz-generate-mode-switch--on"
                       :on-light-bg="false"/>
                       </div>
                     </div>
@@ -1028,22 +1021,3 @@ const designSampleChoiceWhite = ref('選項一');
     </div>
   </div>
 </template>
-
-<style scoped>
-/* 出題模式切換示範：對齊 create-exam-bank_design（勿移至 common.css） */
-.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn {
-  box-sizing: border-box;
-  font-size: var(--my-font-size-md) !important;
-  font-weight: var(--my-font-weight-regular) !important;
-  line-height: 1.35;
-  padding: 0.5rem 1.5rem !important;
-}
-.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active,
-.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:hover:not(:disabled),
-.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:focus-visible,
-.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:active:not(:disabled) {
-  background-color: var(--my-color-white);
-  color: var(--my-color-black);
-  border: none;
-}
-</style>
