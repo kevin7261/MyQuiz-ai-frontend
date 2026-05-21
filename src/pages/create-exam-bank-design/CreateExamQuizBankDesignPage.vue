@@ -6234,13 +6234,13 @@ async function confirmAnswer(item) {
                     class="d-flex flex-wrap align-items-center justify-content-between gap-2 w-100 min-w-0"
                   >
                     <div
-                      class="my-design-quiz-generate-mode-toggle d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 p-1"
+                      class="my-design-quiz-generate-mode-toggle d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 p-2"
                       role="group"
                       aria-label="出題模式"
                     >
                       <button
                         type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-design-quiz-generate-mode-toggle__btn px-4 py-2"
                         :class="
                           !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                             ? 'my-design-quiz-generate-mode-toggle__btn--active'
@@ -6253,7 +6253,7 @@ async function confirmAnswer(item) {
                       </button>
                       <button
                         type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-design-quiz-generate-mode-toggle__btn px-4 py-2"
                         :class="
                           isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                             ? 'my-design-quiz-generate-mode-toggle__btn--active'
@@ -6342,11 +6342,11 @@ async function confirmAnswer(item) {
                       </section>
                     </div>
                     <div
-                      class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3"
+                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2"
                     >
                       <button
                         type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
+                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
                         title="依出題規則產生題目；規則已改動時會先儲存再產生，否則使用後端已儲存規則"
                         :disabled="
                           getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
@@ -6542,6 +6542,14 @@ async function confirmAnswer(item) {
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
 :deep(button.btn.rounded-pill.px-3),
 :deep(button.btn.rounded-2.px-3) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+/* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
 }
@@ -6741,6 +6749,14 @@ async function confirmAnswer(item) {
   white-space: nowrap;
   flex-shrink: 0;
 }
+/* 出題模式（一般出題／追問出題）：中按鈕 my-font-md-400 px-4 py-2 */
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn {
+  box-sizing: border-box;
+  font-size: var(--my-font-size-md) !important;
+  font-weight: var(--my-font-weight-regular) !important;
+  line-height: 1.35;
+  padding: 0.5rem 1.5rem !important;
+}
 /* 出題模式：淺灰底軌道＋選中白按鈕 */
 .my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active,
 .my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:hover:not(:disabled),
@@ -6932,12 +6948,12 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* 答案標題列 pill（提示、參考答案、詳細資訊等）：略深灰底 gray-2、無描邊 */
+/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-3、無描邊 */
 .btn.my-design-quiz-stem-history-btn,
 :deep(.btn.my-design-quiz-stem-history-btn) {
   border: none;
   white-space: nowrap;
-  background-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
 }
 .btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
@@ -6946,7 +6962,7 @@ async function confirmAnswer(item) {
 :deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-2));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
   color: var(--my-color-black);
 }
 /* 答案子區塊：作答欄白底、淡灰框（--my-color-gray-2） */

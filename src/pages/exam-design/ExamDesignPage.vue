@@ -1157,6 +1157,7 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     quizAnswerBaseline: '',
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
     follow_up: examQuizApiRowIsFollowUp(quiz),
+    quizGenerateMode: examQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal',
     follow_up_exam_quiz_id:
       quiz.follow_up_exam_quiz_id != null && quiz.follow_up_exam_quiz_id !== ''
         ? Number(quiz.follow_up_exam_quiz_id)
@@ -1184,6 +1185,9 @@ function hydrateExamSlotFromRagCard(slotState, card) {
     );
   }
   if (match) slotState.examUnitSelectId = examUnitSelectValue(match);
+  if (card.quizGenerateMode === 'followup' || card.quizGenerateMode === 'normal') {
+    slotState.quizGenerateMode = card.quizGenerateMode;
+  }
   const rqNum = Number(card.rag_quiz_id);
   if (match && Number.isFinite(rqNum) && rqNum >= 1) {
     const quizzes = examQuizzesForUnitTabItem(match);
@@ -1611,18 +1615,34 @@ function syncAllExamSlotQuizHistoryLists() {
   for (let i = 1; i <= n; i++) syncExamSlotQuizHistoryList(i);
 }
 
-/** 槽位是否為追問出題（與題型標籤相同：優先試卷題庫 quizzes[] 之 follow_up，其次 Exam_Quiz 列） */
-function examSlotIsFollowupMode(slotIndex) {
-  const card = currentState.value.cardList[slotIndex - 1];
+/** 槽位是否為追問出題（使用者切換優先；否則試卷題庫 quizzes[] 之 follow_up 或 Exam_Quiz 列） */
+function examSlotFollowUpFromApi(slotIndex, card = null) {
+  const c = card ?? currentState.value.cardList[slotIndex - 1];
   const slotState = getSlotFormState(slotIndex);
   const uid = String(slotState.examUnitSelectId ?? '').trim();
   const unitItem = findExamUnitDropdownItemBySelectId(uid);
   const pick =
     String(slotState.examQuizNamePick ?? '').trim()
-    || String(card?.examQuizDisplayName ?? '').trim();
+    || String(c?.examQuizDisplayName ?? '').trim();
   const row = findExamRagQuizRowBySelectedPick(unitItem, pick);
   if (row) return examQuizApiRowIsFollowUp(row);
-  return card ? examQuizFollowUpForCard(slotIndex, card) : false;
+  return c ? examQuizFollowUpForCard(slotIndex, c) : false;
+}
+
+function resolveExamSlotGenerateMode(slotIndex, card = null) {
+  const c = card ?? currentState.value.cardList[slotIndex - 1];
+  if (c != null && typeof c === 'object') {
+    if (c.quizGenerateMode === 'followup') return 'followup';
+    if (c.quizGenerateMode === 'normal') return 'normal';
+  }
+  const slotState = getSlotFormState(slotIndex);
+  if (slotState.quizGenerateMode === 'followup') return 'followup';
+  if (slotState.quizGenerateMode === 'normal') return 'normal';
+  return examSlotFollowUpFromApi(slotIndex, c) ? 'followup' : 'normal';
+}
+
+function examSlotIsFollowupMode(slotIndex) {
+  return resolveExamSlotGenerateMode(slotIndex) === 'followup';
 }
 
 /** 追問模式 Modal：本分頁同單元／題型、此槽位之前槽位之問答（不含當前題） */
@@ -1806,6 +1826,8 @@ function getDefaultExamSlotForm() {
     responseJson: null,
     /** 本分頁、相同單元與題型、此槽位之前已出過的題幹；產生題目時原樣傳入 quiz_history_list */
     quiz_history_list: [],
+    /** 出題模式：`normal`＝一般出題；`followup`＝追問出題 */
+    quizGenerateMode: 'normal',
   };
 }
 
@@ -1821,6 +1843,9 @@ function getSlotFormState(slotIndex) {
     slot.examQuizNamePick = String(slot.quizNameDraft ?? '').trim();
   }
   if (!Array.isArray(slot.quiz_history_list)) slot.quiz_history_list = [];
+  if (slot.quizGenerateMode !== 'followup' && slot.quizGenerateMode !== 'normal') {
+    slot.quizGenerateMode = 'normal';
+  }
   return slot;
 }
 
@@ -1935,6 +1960,7 @@ async function openNextQuizSlot(picks) {
   slot.draftExamQuizId = null;
   slot.error = '';
   slot.examUnitSelectId = String(picks?.examUnitSelectId ?? '').trim();
+  slot.quizGenerateMode = 'normal';
   await nextTick();
   examAddQuestionSubmitting.value = true;
   try {
@@ -2553,11 +2579,11 @@ onActivated(() => {
                         >
                           <template v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) === ''">
                             <div
-                              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3"
+                              class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2"
                             >
                               <button
                                 type="button"
-                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
+                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
                                 :disabled="examGenerateQuizButtonDisabled(activeExamSlotIndex1)"
                                 :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
                                 aria-label="產生題目"
@@ -2689,6 +2715,20 @@ onActivated(() => {
 </template>
 
 <style scoped>
+/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
+:deep(button.btn.rounded-pill.px-3),
+:deep(button.btn.rounded-2.px-3) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+/* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
 /* 左右分欄（對齊 create-exam-bank_design） */
 .my-design-tab-split-layout {
   min-height: 0;
@@ -2825,12 +2865,12 @@ onActivated(() => {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* 答案標題列 pill（提示、參考答案）：略深灰底 gray-2、無描邊 */
+/* 答案標題列 pill（提示、參考答案）：淺灰底 gray-3、無描邊 */
 .btn.my-design-quiz-stem-history-btn,
 :deep(.btn.my-design-quiz-stem-history-btn) {
   border: none;
   white-space: nowrap;
-  background-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
 }
 .btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
@@ -2839,10 +2879,11 @@ onActivated(() => {
 :deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-2));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
   color: var(--my-color-black);
 }
 /* 稿頁 pill 按鈕（產生題目、開始批改等）不換行 — 對齊 create-exam-bank_design */
+.my-design-pack-unit-blocks :deep(.btn.rounded-pill),
 .my-design-quiz-sub-block :deep(.btn.rounded-pill) {
   white-space: nowrap;
   flex-shrink: 0;

@@ -1135,11 +1135,11 @@ const quizAnswerFieldDisabled = computed(
             </div>
             <div
               v-if="showDesignGradingStartRow"
-              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 p-3 my-design-quiz-grading-start-row"
+              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2 my-design-quiz-grading-start-row"
             >
               <button
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="designGradingStartButtonDisabled"
                 :aria-busy="gradeSubmitting"

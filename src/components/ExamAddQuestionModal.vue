@@ -5,7 +5,7 @@
  * Props:
  *   modelValue       Boolean  是否顯示
  *   submitting       Boolean  父層建立題列中
- *   blocked          Boolean  試卷題庫載入中（停用確定）
+ *   blocked          Boolean  試卷題庫載入中（停用產生題目）
  *   error            String   錯誤訊息
  *   unitOptions      Array    單元下拉選項
  *   unitSelectValue  Function 選項 value
@@ -156,7 +156,7 @@ function onConfirm() {
           <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2"
               :disabled="submitting"
               @click="close"
             >
@@ -164,12 +164,13 @@ function onConfirm() {
             </button>
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-3 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2"
               :disabled="confirmDisabled"
               :aria-busy="submitting"
+              aria-label="產生題目"
               @click="onConfirm"
             >
-              確定
+              產生題目
             </button>
           </div>
         </div>
