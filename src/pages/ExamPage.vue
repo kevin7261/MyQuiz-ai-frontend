@@ -1192,12 +1192,85 @@ watch(
   { immediate: true }
 );
 
-/** 有測驗列表時預設選第一個 tab */
-watch(examList, (list) => {
-  if (list.length > 0 && activeTabId.value == null) {
-    activeTabId.value = getExamTabId(list[0]) || list[0];
+// ─── 重新整理後還原 tab／slot（sessionStorage，依使用者分鍵） ──────────────────
+
+const EXAM_TAB_UI_STORAGE_PREFIX = 'myquiz:examTabUI:v1:';
+
+function examTabUiStorageKey(personId) {
+  return `${EXAM_TAB_UI_STORAGE_PREFIX}${String(personId ?? '').trim() || 'anon'}`;
+}
+
+function readExamTabUiPersisted(personId) {
+  try {
+    const raw = sessionStorage.getItem(examTabUiStorageKey(personId));
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || typeof o !== 'object') return null;
+    return {
+      exam_tab_id: o.exam_tab_id != null ? String(o.exam_tab_id) : '',
+      exam_slot_index: Number.isFinite(Number(o.exam_slot_index)) ? Number(o.exam_slot_index) : 0,
+    };
+  } catch {
+    return null;
   }
+}
+
+function writeExamTabUiPersisted(personId, payload) {
+  try {
+    sessionStorage.setItem(
+      examTabUiStorageKey(personId),
+      JSON.stringify({ v: 1, exam_tab_id: payload.exam_tab_id, exam_slot_index: payload.exam_slot_index })
+    );
+  } catch {
+    /* private mode / quota */
+  }
+}
+
+function persistExamTabUiSelection() {
+  const personId = getCurrentPersonId();
+  if (!personId) return;
+  const tid = String(activeTabId.value ?? '').trim();
+  if (!tid) return;
+  writeExamTabUiPersisted(personId, {
+    exam_tab_id: tid,
+    exam_slot_index: activeExamSlotIndex.value,
+  });
+}
+
+function applyPersistedExamSlotIfActive(tabId) {
+  const id = String(tabId ?? '').trim();
+  if (!id || String(activeTabId.value ?? '').trim() !== id) return;
+  const personId = getCurrentPersonId();
+  if (!personId) return;
+  const persisted = readExamTabUiPersisted(personId);
+  if (!persisted || String(persisted.exam_tab_id) !== id) return;
+  const idx = Number(persisted.exam_slot_index);
+  nextTick(() => {
+    if (String(activeTabId.value ?? '').trim() !== id) return;
+    const n = examSlotCarouselCount.value;
+    if (n > 0 && Number.isFinite(idx) && idx >= 0 && idx < n) {
+      activeExamSlotIndex.value = idx;
+    }
+  });
+}
+
+/** 有測驗列表時預設選第一個 tab；若 session 有合法上次選擇則還原 */
+watch(examList, (list) => {
+  if (list.length === 0 || activeTabId.value != null) return;
+  const personId = getCurrentPersonId();
+  const persisted = personId ? readExamTabUiPersisted(personId) : null;
+  const pick =
+    persisted?.exam_tab_id && list.some((e) => getExamTabId(e) === persisted.exam_tab_id)
+      ? persisted.exam_tab_id
+      : null;
+  activeTabId.value = pick ?? getExamTabId(list[0]) ?? list[0];
 }, { immediate: true });
+
+watch(
+  [activeTabId, activeExamSlotIndex],
+  () => { persistExamTabUiSelection(); },
+  { flush: 'post' }
+);
 
 /** 試卷單元列變動時，清除已不存在的單元選取，並重置該槽未完成的草稿請求 */
 watch(examUnitSelectDropdownOptions, (tabs) => {
@@ -1378,6 +1451,7 @@ function syncExamItemToTabState(exam) {
     state.cardList = [];
   }
   state._synced = true;
+  applyPersistedExamSlotIfActive(tabId);
 }
 
 /** 僅在首次切換到該測驗分頁時自 GET /exam/tabs 灌入卡片；已同步過的 tab 不再覆寫，保留使用者輸入 */
