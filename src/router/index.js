@@ -21,8 +21,6 @@ const VALID_VIEWS = [
   'student-answer-analysis',
   'profile',
   'create-exam-bank',
-  'create-exam-bank_design',
-  'exam_design',
   'design',
   'manage-users',
   'settings',
@@ -36,8 +34,6 @@ const VIEW_TITLES = {
   'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
   profile: '設定 - MyQuiz.ai',
   'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
-  'create-exam-bank_design': '建立測驗題庫 - MyQuiz.ai',
-  exam_design: '測驗 - MyQuiz.ai',
   design: '設計稿 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
@@ -93,6 +89,14 @@ const routes = [
   },
   {
     path: '/create-rag',
+    redirect: '/create-exam-bank',
+  },
+  {
+    path: '/exam_design',
+    redirect: '/exam',
+  },
+  {
+    path: '/create-exam-bank_design',
     redirect: '/create-exam-bank',
   },
   {

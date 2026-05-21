@@ -100,16 +100,6 @@
           <li>
             <router-link class="dropdown-item" to="/create-exam-bank" active-class="active">建立測驗題庫</router-link>
           </li>
-          <li v-if="canSeeNavLink(userType, 'exam_design')">
-            <router-link class="dropdown-item" to="/exam_design" active-class="active"
-              >測驗</router-link
-            >
-          </li>
-          <li v-if="canSeeNavLink(userType, 'create-exam-bank_design')">
-            <router-link class="dropdown-item" to="/create-exam-bank_design" active-class="active"
-              >建立測驗題庫（介面稿）</router-link
-            >
-          </li>
           <li v-if="canSeeNavLink(userType, 'design')">
             <router-link class="dropdown-item" to="/design" active-class="active">UI 元件參考</router-link>
           </li>

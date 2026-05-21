@@ -5883,34 +5883,10 @@ async function confirmAnswer(item) {
         </div>
       </template>
       <!-- 建置完成後：left 設定單元＋設定單元題型（區塊間距一致） -->
-      <div
-        v-if="hasBuiltRagSummary && !(currentState.unitTabOrder || []).length"
-        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
-      >
-        <p
-          class="my-font-lg-400 my-color-gray-1 mb-0 text-center text-break lh-base"
-        >
-          目前沒有題目<br>
-          請按右側新增題目按鈕新增
-        </p>
-      </div>
       <section
-        v-else-if="hasBuiltRagSummary"
-        class="text-start my-page-block-spacing flex-grow-1 d-flex flex-column min-h-0 w-100"
+        v-if="hasBuiltRagSummary"
+        class="text-start my-page-block-spacing"
       >
-        <template v-if="hasUnitSubTabs && !activeUnitQuizCards.length">
-          <div
-            class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
-          >
-            <p
-              class="my-font-lg-400 my-color-gray-1 mb-0 text-center text-break lh-base"
-            >
-              目前沒有題目<br>
-              請按右側新增題目按鈕新增
-            </p>
-          </div>
-        </template>
-        <template v-else>
         <div class="my-design-pack-unit-blocks w-100 min-w-0">
         <div
           class="w-100 min-w-0 text-start"
@@ -6033,13 +6009,38 @@ async function confirmAnswer(item) {
                 </button>
               </div>
             </section>
+            <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
             <div
               class="my-pack-unit-settings-body w-100 min-w-0"
               :class="{ 'my-color-gray-4': ragGenerateDisabled }"
             >
           <template v-if="hasUnitSubTabs">
             <div class="my-pack-unit-field">
-              <div class="w-100 min-w-0">
+              <div
+                v-if="!activeUnitQuizCards.length"
+                class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                  title="新增題型"
+                  aria-label="新增題型"
+                  :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                  :disabled="
+                    getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                    || renameUnitQuizSaving
+                    || deleteUnitQuizLoading
+                  "
+                  @click="createBlankUnitQuiz(activeUnitSlotIndex)"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  新增題型
+                </button>
+              </div>
+              <div
+                v-else
+                class="w-100 min-w-0"
+              >
                 <div class="w-100 min-w-0 d-flex justify-content-center">
                   <div class="my-pack-unit-tabs-nav">
                     <button
@@ -6424,11 +6425,26 @@ async function confirmAnswer(item) {
               </div>
             </template>
 
+            <!-- 新增題目按鈕：無單元子分頁時固定在最下面；與「新增測驗題庫」同款灰底膠囊＋加號 -->
+            <div
+              v-if="(currentState.unitTabOrder || []).length === 0"
+              class="d-flex justify-content-center pt-2 mb-0"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                title="新增題目"
+                aria-label="新增題目"
+                @click="openNextQuizSlot"
+              >
+                <i class="fa-solid fa-plus" aria-hidden="true" />
+                新增題目
+              </button>
+            </div>
           </div>
           </template>
         </div>
         </div>
-        </template>
       </section>
       </template>
           </div>
@@ -6480,50 +6496,6 @@ async function confirmAnswer(item) {
                       @click="onDesignRightSubTabClick(item)"
                     >
                       {{ item.label }}
-                    </button>
-                  </div>
-                </template>
-                <template v-if="hasUnitSubTabs">
-                  <div
-                    class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
-                  >
-                    題目
-                  </div>
-                  <div class="d-flex justify-content-center pt-2 pb-1 w-100">
-                    <button
-                      type="button"
-                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
-                      title="新增題目"
-                      aria-label="新增題目"
-                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                      :disabled="
-                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                        || renameUnitQuizSaving
-                        || deleteUnitQuizLoading
-                      "
-                      @click="createBlankUnitQuiz(activeUnitSlotIndex)"
-                    >
-                      <i class="fa-solid fa-plus" aria-hidden="true" />
-                      新增題目
-                    </button>
-                  </div>
-                </template>
-                <template v-else-if="hasBuiltRagSummary">
-                  <div
-                    class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
-                  >
-                    題目
-                  </div>
-                  <div class="d-flex justify-content-center pt-2 pb-1 w-100">
-                    <button
-                      type="button"
-                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
-                      title="新增題目"
-                      aria-label="新增題目"
-                      @click="openNextQuizSlot"
-                    >
-                      <i class="fa-solid fa-plus" aria-hidden="true" />
-                      新增題目
                     </button>
                   </div>
                 </template>

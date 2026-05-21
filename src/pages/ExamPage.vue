@@ -2939,6 +2939,7 @@ onActivated(() => {
                                   </button>
                                 </div>
                               </section>
+                              <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
                               <!-- 子區塊：題目 -->
                               <div class="my-design-quiz-sub-block-outer">
                                 <div
