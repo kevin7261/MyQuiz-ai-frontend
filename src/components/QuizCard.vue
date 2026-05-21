@@ -10,7 +10,7 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
  * 顯示：題號（可隱藏）、題目內容（Markdown，marked + DOMPurify）、提示／參考答案（有內容時透過「顯示提示」「顯示參考答案」切換顯示）、答案區（作答輸入預設空白）、批改結果；hideGradingPrompt 時批改結果區塊最底部設「批改規則」pill（開 Modal；無快照時顯示「—」）。
  * 可輸入答案並按「開始批改」送出評分；**測驗頁**（hideGradingPrompt）在已批改（card.confirmed）後不顯示此鈕；建立題庫等未帶 hideGradingPrompt 時仍顯示按鈕群。
  * 單元題區塊內「開始批改」（llm-grade／llm-grade-db，由父層依規則是否改動路由）：啟停用對齊「產生題目」；gradingPromptInModal 時僅顯示單一「開始批改」鈕。
- * 「答案」不因 rag_id 與題庫不一致而停用（仍可鍵入；並顯示警示）；**測驗頁（hideGradingPrompt）在有批改結果文字後答案改為停用**（再次送出批改時會先清空結果）；其餘情境已批改後 textarea 仍可編輯（僅 readOnlyAnswer／分析頁為靜態）。
+ * 「答案」不因 rag_id 與題庫不一致而停用（仍可鍵入；並顯示警示）；**測驗頁（hideGradingPrompt）在有批改結果文字後答案改為停用**（再次送出批改時會先清空結果）；**測驗稿頁三子區塊（hideExamRulePills）在有批改結果後答案改為與題目相同之純顯示**；其餘情境已批改後 textarea 仍可編輯（僅 readOnlyAnswer／分析頁為靜態）。
  * **RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致；**不顯示「儲存並開始批改」**（仍可依後端既有規則使用「開始批改」）。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
@@ -346,6 +346,19 @@ const isExamDesignGradingLayout = computed(
     && !String(props.designGradingResultSample ?? '').trim(),
 );
 
+/** 測驗稿頁：已有批改結果時答案改為與題目相同之標題＋橫線＋純文字（不可再編輯） */
+const showDesignAnswerAsGradedDisplay = computed(
+  () =>
+    isExamDesignGradingLayout.value
+    && props.designSubBlock === 'answer'
+    && gradingResultActual.value !== '',
+);
+
+/** 稿頁答案子區：純顯示（分析頁 readOnlyAnswer 或測驗已批改） */
+const showDesignAnswerPlainDisplay = computed(
+  () => props.readOnlyAnswer || showDesignAnswerAsGradedDisplay.value,
+);
+
 /** 稿頁「開始批改」是否應顯示（不含子區塊位置） */
 const showDesignGradingStartButton = computed(() => {
   if (!props.createExamBankDesignLayout) return false;
@@ -383,11 +396,11 @@ const showExamDesignQuizRulePill = computed(
     && useDesignFieldLabelInset.value,
 );
 
-/** exam_design：答案標題列右側「批改規則」pill */
+/** exam_design：批改結果標題列右側「批改規則」pill */
 const showExamDesignGradingRulePill = computed(
   () =>
     isExamDesignGradingLayout.value
-    && props.designSubBlock === 'answer'
+    && props.designSubBlock === 'grading'
     && useDesignFieldLabelInset.value
     && props.gradingPromptInModal,
 );
@@ -428,11 +441,11 @@ const showDesignSubBlockGrading = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'grading',
 );
 
-/** 子區塊模式：出題／批改規則唯讀 Modal（question；exam_design 批改規則另掛 answer 實例） */
+/** 子區塊模式：出題／批改規則唯讀 Modal（question；exam_design 批改規則掛 grading 實例） */
 const showDesignSubBlockPromptModals = computed(() => {
   if (!isDesignSubBlockFragment.value) return true;
   if (props.designSubBlock === 'question') return true;
-  if (isExamDesignGradingLayout.value && props.designSubBlock === 'answer') return true;
+  if (isExamDesignGradingLayout.value && props.designSubBlock === 'grading') return true;
   return false;
 });
 
@@ -754,7 +767,7 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body px-3 pt-3 pb-2 min-w-0 lh-base quiz-card-quiz-stem"
+              class="my-design-quiz-field-inset-body px-3 pt-2 pb-2 min-w-0 lh-base quiz-card-quiz-stem"
             >
               <div
                 v-if="quizMarkdownHtml"
@@ -1022,19 +1035,9 @@ const quizAnswerFieldDisabled = computed(
                   答案
                 </h3>
                 <div
-                  v-if="hintReferenceInModal || showExamDesignGradingRulePill"
+                  v-if="hintReferenceInModal"
                   class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
                 >
-                  <button
-                    v-if="showExamDesignGradingRulePill"
-                    type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
-                    title="批改規則"
-                    aria-label="批改規則"
-                    @click="openPromptModal('grading')"
-                  >
-                    批改規則
-                  </button>
                   <button
                     v-if="hintReferenceInModal && hasHintText"
                     type="button"
@@ -1057,17 +1060,26 @@ const quizAnswerFieldDisabled = computed(
                   </button>
                 </div>
                 <span
-                  v-else-if="!readOnlyAnswer"
+                  v-else-if="!showDesignAnswerPlainDisplay"
                   class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0 ms-auto"
                 >{{ card.quiz_answer.length }} / 2000</span>
               </div>
+              <div
+                v-if="showDesignAnswerPlainDisplay"
+                class="px-3 py-0"
+              >
+                <hr class="my-design-quiz-field-inset__rule m-0">
+              </div>
             </header>
-            <div class="my-design-quiz-field-inset-body px-3 pt-0 pb-3 min-w-0 lh-base">
-              <template v-if="readOnlyAnswer">
-                <div
+            <div
+              class="my-design-quiz-field-inset-body px-3 min-w-0 lh-base"
+              :class="showDesignAnswerPlainDisplay ? 'pt-2 pb-2' : 'pt-0 pb-2'"
+            >
+              <template v-if="showDesignAnswerPlainDisplay">
+                <span
                   :id="`quiz-answer-${card.id}`"
-                  class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 py-2 my-font-md-400 my-color-black mb-0"
-                >{{ card.quiz_answer }}</div>
+                  class="my-font-md-400 my-color-black text-break"
+                >{{ card.quiz_answer }}</span>
               </template>
               <textarea
                 v-else
@@ -1184,7 +1196,7 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="!hideExamRulePills && !hideGradingPrompt"
             class="my-design-quiz-question-prompt-wrap w-100 min-w-0"
-            :class="useDesignFieldLabelInset ? 'px-3 pt-3 pb-0' : ''"
+            :class="useDesignFieldLabelInset ? 'px-3 pt-2 pb-0' : ''"
           >
             <section
               class="my-design-quiz-question-prompt-block w-100 min-w-0"
@@ -1255,13 +1267,23 @@ const quizAnswerFieldDisabled = computed(
                     <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
                       批改結果
                     </h3>
+                    <button
+                      v-if="showExamDesignGradingRulePill"
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1 ms-auto"
+                      title="批改規則"
+                      aria-label="批改規則"
+                      @click="openPromptModal('grading')"
+                    >
+                      批改規則
+                    </button>
                   </div>
                   <div class="px-3 py-0">
                     <hr class="my-design-quiz-field-inset__rule m-0">
                   </div>
                 </header>
                 <div
-                  class="my-design-quiz-field-inset-body px-3 pt-3 pb-2 min-w-0 lh-base"
+                  class="my-design-quiz-field-inset-body px-3 pt-2 pb-2 min-w-0 lh-base"
                   style="white-space: pre-wrap;"
                 >
                   <div class="my-font-md-400 my-color-black text-break">
@@ -1411,7 +1433,7 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body px-3 pt-3 pb-2 min-w-0 lh-base"
+              class="my-design-quiz-field-inset-body px-3 pt-2 pb-2 min-w-0 lh-base"
               style="white-space: pre-wrap;"
             >
               <div class="my-font-md-400 my-color-black text-break">

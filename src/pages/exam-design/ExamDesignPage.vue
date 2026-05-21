@@ -2663,7 +2663,7 @@ onActivated(() => {
                         v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                         class="my-design-quiz-sub-block-outer"
                       >
-                        <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
+                        <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 pb-2">
                           <div class="w-100 min-w-0 pt-2">
                             <QuizCard
                               v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
@@ -2682,14 +2682,16 @@ onActivated(() => {
                         class="my-design-quiz-sub-block-outer"
                       >
                         <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
-                          <QuizCard
-                            v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
-                            create-exam-bank-design-layout
-                            design-sub-block="grading"
-                            @confirm-answer="confirmAnswer"
-                            @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
-                            @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
-                          />
+                          <div class="w-100 min-w-0 pt-2">
+                            <QuizCard
+                              v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                              create-exam-bank-design-layout
+                              design-sub-block="grading"
+                              @confirm-answer="confirmAnswer"
+                              @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                              @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
+                            />
+                          </div>
                         </div>
                       </div>
                             </div>

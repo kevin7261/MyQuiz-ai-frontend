@@ -5460,7 +5460,10 @@ async function confirmAnswer(item) {
           新增{{ quizBankNoun }}
         </button>
       </div>
-      <div v-else class="container-fluid px-3 px-md-4 py-4">
+      <div
+        v-else
+        class="container-fluid px-3 px-md-4 py-4 d-flex flex-column flex-grow-1 min-h-0"
+      >
         <div class="row justify-content-center">
           <div
             :class="
@@ -5880,10 +5883,34 @@ async function confirmAnswer(item) {
         </div>
       </template>
       <!-- 建置完成後：left 設定單元＋設定單元題型（區塊間距一致） -->
-      <section
-        v-if="hasBuiltRagSummary"
-        class="text-start my-page-block-spacing"
+      <div
+        v-if="hasBuiltRagSummary && !(currentState.unitTabOrder || []).length"
+        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
       >
+        <p
+          class="my-font-lg-400 my-color-gray-1 mb-0 text-center text-break lh-base"
+        >
+          目前沒有題目<br>
+          請按右側新增題目按鈕新增
+        </p>
+      </div>
+      <section
+        v-else-if="hasBuiltRagSummary"
+        class="text-start my-page-block-spacing flex-grow-1 d-flex flex-column min-h-0 w-100"
+      >
+        <template v-if="hasUnitSubTabs && !activeUnitQuizCards.length">
+          <div
+            class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
+          >
+            <p
+              class="my-font-lg-400 my-color-gray-1 mb-0 text-center text-break lh-base"
+            >
+              目前沒有題目<br>
+              請按右側新增題目按鈕新增
+            </p>
+          </div>
+        </template>
+        <template v-else>
         <div class="my-design-pack-unit-blocks w-100 min-w-0">
         <div
           class="w-100 min-w-0 text-start"
@@ -6012,31 +6039,7 @@ async function confirmAnswer(item) {
             >
           <template v-if="hasUnitSubTabs">
             <div class="my-pack-unit-field">
-              <div
-                v-if="!activeUnitQuizCards.length"
-                class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0"
-              >
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
-                  title="新增題型"
-                  aria-label="新增題型"
-                  :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                  :disabled="
-                    getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                    || renameUnitQuizSaving
-                    || deleteUnitQuizLoading
-                  "
-                  @click="createBlankUnitQuiz(activeUnitSlotIndex)"
-                >
-                  <i class="fa-solid fa-plus" aria-hidden="true" />
-                  新增題型
-                </button>
-              </div>
-              <div
-                v-else
-                class="w-100 min-w-0"
-              >
+              <div class="w-100 min-w-0">
                 <div class="w-100 min-w-0 d-flex justify-content-center">
                   <div class="my-pack-unit-tabs-nav">
                     <button
@@ -6214,12 +6217,13 @@ async function confirmAnswer(item) {
                     {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
                 </div>
-                <!-- 子區塊：題目 -->
+                <!-- 子區塊：題目區（頂部 pt-2 在出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
                 <div class="my-design-quiz-sub-block-outer">
-                  <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
-                  >
-                    <div class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                    <div
+                      class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top d-flex flex-column"
+                    >
+                    <div class="my-design-quiz-question-prompt-wrap px-3 pt-2 pb-0 w-100 min-w-0">
                       <section
                         class="my-design-quiz-question-prompt-block w-100 min-w-0"
                         aria-label="出題規則"
@@ -6334,6 +6338,7 @@ async function confirmAnswer(item) {
                         @open-quiz-history="openBankQuizHistoryModal"
                       />
                     </div>
+                    </div>
                   </div>
                 </div>
                 <!-- 子區塊：答案 -->
@@ -6361,15 +6366,17 @@ async function confirmAnswer(item) {
                   class="my-design-quiz-sub-block-outer"
                 >
                   <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
-                    <QuizCard
-                      v-bind="designUnitQuizCardBind"
-                      create-exam-bank-design-layout
-                      design-sub-block="grading"
-                      @confirm-answer="confirmGradeMerged"
-                      @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
-                      @open-grading-prompt-edit="openBankGradingPromptEditModal"
-                      @open-quiz-history="openBankQuizHistoryModal"
-                    />
+                    <div class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top">
+                      <QuizCard
+                        v-bind="designUnitQuizCardBind"
+                        create-exam-bank-design-layout
+                        design-sub-block="grading"
+                        @confirm-answer="confirmGradeMerged"
+                        @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
+                        @open-grading-prompt-edit="openBankGradingPromptEditModal"
+                        @open-quiz-history="openBankQuizHistoryModal"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -6417,26 +6424,11 @@ async function confirmAnswer(item) {
               </div>
             </template>
 
-            <!-- 新增題目按鈕：無單元子分頁時固定在最下面；與「新增測驗題庫」同款灰底膠囊＋加號 -->
-            <div
-              v-if="(currentState.unitTabOrder || []).length === 0"
-              class="d-flex justify-content-center pt-2 mb-0"
-            >
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
-                title="新增題目"
-                aria-label="新增題目"
-                @click="openNextQuizSlot"
-              >
-                <i class="fa-solid fa-plus" aria-hidden="true" />
-                新增題目
-              </button>
-            </div>
           </div>
           </template>
         </div>
         </div>
+        </template>
       </section>
       </template>
           </div>
@@ -6488,6 +6480,50 @@ async function confirmAnswer(item) {
                       @click="onDesignRightSubTabClick(item)"
                     >
                       {{ item.label }}
+                    </button>
+                  </div>
+                </template>
+                <template v-if="hasUnitSubTabs">
+                  <div
+                    class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
+                  >
+                    題目
+                  </div>
+                  <div class="d-flex justify-content-center pt-2 pb-1 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                      title="新增題目"
+                      aria-label="新增題目"
+                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || renameUnitQuizSaving
+                        || deleteUnitQuizLoading
+                      "
+                      @click="createBlankUnitQuiz(activeUnitSlotIndex)"
+                    >
+                      <i class="fa-solid fa-plus" aria-hidden="true" />
+                      新增題目
+                    </button>
+                  </div>
+                </template>
+                <template v-else-if="hasBuiltRagSummary">
+                  <div
+                    class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
+                  >
+                    題目
+                  </div>
+                  <div class="d-flex justify-content-center pt-2 pb-1 w-100">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                      title="新增題目"
+                      aria-label="新增題目"
+                      @click="openNextQuizSlot"
+                    >
+                      <i class="fa-solid fa-plus" aria-hidden="true" />
+                      新增題目
                     </button>
                   </div>
                 </template>
@@ -6751,7 +6787,16 @@ async function confirmAnswer(item) {
   line-height: 1.35;
   white-space: nowrap;
 }
-/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-3 pb-2 */
+/* 出題／答案／批改規則：標題列統一 px-3 py-2（頁內 + QuizCard 子區塊） */
+.my-design-quiz-question-prompt-block__title-row,
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-2 pb-2 */
 .my-design-quiz-field-inset__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
   border: 0;
@@ -6759,8 +6804,13 @@ async function confirmAnswer(item) {
   opacity: 1;
 }
 /*
- * 出題規則黑底區：標題列 px-3 py-2 → 橫線 px-3 py-0 → 內文 p-3（另含查看更多列）
+ * 出題／批改規則黑底區外層 wrap：px-3 pt-2；標題列 px-3 py-2 → 橫線 → 內文
+ * 題目／批改子區塊頂部：.my-design-quiz-stem-sub-block-top（w-100 pt-2，灰底區最上方、非題目 title 列）
  */
+.my-design-quiz-stem-sub-block-top,
+.my-design-pack-unit-blocks :deep(.my-design-quiz-stem-sub-block-top) {
+  padding-top: 0.5rem !important;
+}
 .my-design-quiz-question-prompt-block,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {
   box-sizing: border-box;

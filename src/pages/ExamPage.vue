@@ -2793,7 +2793,21 @@ onActivated(() => {
           :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-10' : 'col-12'"
         >
           <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
-            <div class="container-fluid px-3 px-md-4 py-4">
+            <div
+              v-if="activeTabId && !(Number(currentState.quizSlotsCount) || 0)"
+              class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
+            >
+              <p
+                class="my-font-lg-400 my-color-gray-1 mb-0 text-center text-break lh-base"
+              >
+                目前沒有題目<br>
+                請按右側新增題目按鈕新增
+              </p>
+            </div>
+            <div
+              v-else
+              class="container-fluid px-3 px-md-4 py-4"
+            >
               <div class="row justify-content-center">
                 <div
                   :class="
@@ -2806,13 +2820,7 @@ onActivated(() => {
                     v-if="activeTabId"
                     class="text-start my-page-block-spacing"
                   >
-                    <p
-                      v-if="!(Number(currentState.quizSlotsCount) || 0)"
-                      class="my-font-md-400 my-color-black mb-0 text-break lh-base"
-                    >
-                      目前沒有題目 請按右側新增題目按鈕新增
-                    </p>
-                    <template v-else>
+                    <template v-if="(Number(currentState.quizSlotsCount) || 0) > 0">
                       <div class="my-design-pack-unit-blocks w-100 min-w-0">
                         <div
                           :key="activeExamSlotIndex1"
@@ -2980,7 +2988,7 @@ onActivated(() => {
                                 v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                                 class="my-design-quiz-sub-block-outer"
                               >
-                                <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
+                                <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 pb-2">
                                   <div class="w-100 min-w-0 pt-2">
                                     <QuizCard
                                       v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
@@ -2999,14 +3007,16 @@ onActivated(() => {
                                 class="my-design-quiz-sub-block-outer"
                               >
                                 <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
-                                  <QuizCard
-                                    v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
-                                    create-exam-bank-design-layout
-                                    design-sub-block="grading"
+                                  <div class="w-100 min-w-0 pt-2">
+                                    <QuizCard
+                                      v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                                      create-exam-bank-design-layout
+                                      design-sub-block="grading"
                                     @confirm-answer="confirmAnswer"
                                     @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
                                     @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
-                                  />
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
