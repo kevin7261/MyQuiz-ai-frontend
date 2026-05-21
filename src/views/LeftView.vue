@@ -102,7 +102,7 @@
           </li>
           <li v-if="canSeeNavLink(userType, 'exam_design')">
             <router-link class="dropdown-item" to="/exam_design" active-class="active"
-              >測驗（介面稿）</router-link
+              >測驗</router-link
             >
           </li>
           <li v-if="canSeeNavLink(userType, 'create-exam-bank_design')">

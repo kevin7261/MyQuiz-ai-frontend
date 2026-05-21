@@ -1,5 +1,5 @@
 /**
- * 測驗（介面稿）— API 替身（不發送 HTTP；僅供 UI 互動示範）
+ * 測驗 — API 替身（不發送 HTTP；僅供 UI 互動示範）
  */
 import {
   DESIGN_MOCK_EXAM_QUIZ_GENERATE,

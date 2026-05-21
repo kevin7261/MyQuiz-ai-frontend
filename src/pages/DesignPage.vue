@@ -15,7 +15,7 @@ const designSampleChoiceWhite = ref('選項一');
     - 頁首標題「UI 元件參考」置中、無 col；主內文 container-fluid px-3 px-md-4 py-4 + row 置中，欄寬與測驗頁一致 col-lg-10 col-xl-8 col-xxl-6。
     - 章節：各 <section> 使用 my-page-block-spacing；區塊 rounded-4 my-bgcolor-gray-3、無 border；子標題 .my-font-lg-600（common 預設字色 --my-color-black）。
     - 複製：DesignPageCopyBtn 預設淺底深字；class 示範列多為黑框（.my-design-swatch-row my-bgcolor-black）複製鈕 :on-light-bg="false"；08 區塊本體 my-bgcolor-gray-3（與 canvas 區隔）；其內 class 示範列仍 .my-design-swatch-row--light、:on-light-bg="true"、<code> my-color-black。黑框內 <code>／示範 <span> 皆併 my-font-sm-400（黑底併 my-color-white）；等寬字體由 common「黑底示範列」規則統一套用 --my-font-family-courier，避免 Bootstrap code 字級覆蓋。02／03 色票每組一顆色圓；底／字 class 兩黑框橫向同一排（.my-design-swatch-rows）。
-    - 編號：05 區塊內含「09 · 徽章」與「08 · 下拉選單」；其後為 06 輸入、07 分頁、08 表格。
+    - 編號：05 區塊按鈕僅示範 create-exam-bank_design 實際使用形式；內含「09 · 徽章」與「08 · 下拉選單」；其後為 06 輸入、07 分頁、08 表格。
   -->
   <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
     <!-- 頁首：稿名，不隨內文捲動（與測驗頁同層級） -->
@@ -281,73 +281,74 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 05 · 按鈕 + 09 · 徽章 + 08 · 下拉選單（同一 section） =====
-               按鈕：小／中／大三組；小／中每組 藍／黑／描邊／黑無框；大僅藍／黑（填色，無白描邊與黑無框示範）；描邊（my-button-white-border）淺底 gray-1 邊＋字見 common。圓形黑無框下附兩鍵 btn-group + my-btn-group-pill（圓角同輸入 rounded-2、非膠囊；中）：選中 my-button-white、未選示範 my-button-gray-3（選項乙）。單行輸入見「06 · 輸入」。
+               按鈕：僅示範 create-exam-bank_design 實際使用之形式。小 px-3 py-1：gray-3、green、outline-green-hollow、transparent-borderless。中 px-4 py-2：black、white、transparent-borderless＋gray-1。大 px-4 py-3：gray-3＋gap-2。圓形 my-btn-circle＋transparent-borderless。切換：單元類型（白軌＋gray-3／transparent-borderless 小）；出題模式（my-design-quiz-generate-mode-toggle 中）。單行輸入見「06 · 輸入」。
                圓形：分頁「+」與複製鈕同規 my-btn-circle + my-button-transparent-borderless。
-               09 徽章：在 08 下拉之上；僅示範灰底黑字；class 順序 badge … my-bgcolor-gray-3、my-color-black、描邊、rounded、px-2 py-1（rounded 在 badge 與色票之後、間距置末）。
+               09 徽章：在 08 下拉之上；僅示範 create-exam-bank_design 實際使用（my-bgcolor-surface、border）；資料夾標籤含 d-inline-flex gap-1；單元類型含 flex-shrink-0。
                08 下拉：區塊底 my-bgcolor-gray-3；外層 .my-design-08-dropdown；示範一白底觸發邊 gray-2；示範二透明底無邊框；選單 .dropdown-menu Bootstrap 預設；觸發 rounded-2 同輸入（非膠囊）。 -->
           <section class="my-page-block-spacing">
             <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">05 · 按鈕</div>
                 <div class="d-flex flex-column gap-4">
-                  <!-- 小：字級 my-font-sm-400、內距 px-3 py-1 -->
+                  <!-- 小：字級 my-font-sm-400、內距 px-3 py-1（詳細資訊、測驗用、單元類型未選） -->
                   <div>
                     <div class="my-color-gray-4 my-font-sm-400 mb-2">小（my-font-sm-400 · px-3 py-1）</div>
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-blue flex-shrink-0 px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1"
                         >
-                          藍色
+                          詳細資訊
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-blue px-3 py-1</code>
+                            >btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-blue px-3 py-1"
+                          text="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white flex-shrink-0 px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 my-button-green px-3 py-1"
                         >
-                          黑色
+                          <i class="fa-solid fa-check" aria-hidden="true"></i>
+                          測驗用
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white px-3 py-1</code>
+                            >btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 my-button-green px-3 py-1</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white px-3 py-1"
+                          text="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 my-button-green px-3 py-1"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border flex-shrink-0 px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-btn-outline-green-hollow px-3 py-1"
                         >
-                          白描邊
+                          設為測驗用
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border px-3 py-1</code>
+                            >btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-btn-outline-green-hollow px-3 py-1</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-white-border px-3 py-1"
+                          text="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-btn-outline-green-hollow px-3 py-1"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless flex-shrink-0 px-3 py-1"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless px-3 py-1"
                         >
                           黑無框
                         </button>
@@ -363,121 +364,88 @@ const designSampleChoiceWhite = ref('選項一');
                       </div>
                     </div>
                   </div>
-                  <!-- 中：字級 my-font-md-400、內距 px-3 py-2（全站表單／下拉觸發與此組對齊；文字輸入見 06 · 輸入） -->
+                  <!-- 中：字級 my-font-md-400、內距 px-4 py-2（create-exam-bank_design 主操作列） -->
                   <div>
-                    <div class="my-color-gray-4 my-font-sm-400 mb-2">中（my-font-md-400 · px-3 py-2）</div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">中（my-font-md-400 · px-4 py-2）</div>
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue flex-shrink-0 px-3 py-2"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
                         >
-                          藍色
+                          關閉
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-3 py-2</code>
+                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-3 py-2"
+                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white flex-shrink-0 px-3 py-2"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2"
                         >
-                          黑色
+                          確定上傳
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-3 py-2</code>
+                            >btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-3 py-2"
+                          text="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border flex-shrink-0 px-3 py-2"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
                         >
-                          白描邊
+                          取消
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border px-3 py-2</code>
+                            >btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white-border px-3 py-2"
-                      :on-light-bg="false"/>
-                        </div>
-                      </div>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless flex-shrink-0 px-3 py-2"
-                        >
-                          黑無框
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code
-                            class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2</code>
-                          <DesignPageCopyBtn
-                          class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                          text="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <!-- 大：字級同中、內距 px-4 py-3；不示範白描邊／黑無框（class 與中組相同，僅改 px-4 py-3） -->
+                  <!-- 大：字級 my-font-md-400、內距 px-4 py-3（新增題型／新增題目） -->
                   <div>
-                    <div class="my-color-gray-4 my-font-sm-400 mb-2">大（my-font-md-400 · px-4 py-3 · 僅藍／黑）</div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">大（my-font-md-400 · px-4 py-3 · my-button-gray-3）</div>
                     <div class="d-flex flex-column gap-3">
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue flex-shrink-0 px-4 py-3"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
                         >
-                          藍色
+                          <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                          新增題型
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-4 py-3</code>
+                            >btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-4 py-3"
-                      :on-light-bg="false"/>
-                        </div>
-                      </div>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white flex-shrink-0 px-4 py-3"
-                        >
-                          黑色
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code
-                            class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-3</code>
-                          <DesignPageCopyBtn
-                          class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-3"
+                          text="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <!-- 圓形圖示鈕：32×32，與建立測驗題庫分頁「+」／ExamPage 新增分頁同規 -->
+                  <!-- 圓形圖示鈕：32×32，與 create-exam-bank_design 分頁「+」同規 -->
                   <div>
                     <div class="my-color-gray-4 my-font-sm-400 mb-2">圓形黑無框（md · my-btn-circle · 例：fa-plus）</div>
                     <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
@@ -499,37 +467,72 @@ const designSampleChoiceWhite = ref('選項一');
                       </div>
                     </div>
                   </div>
-                  <!-- 兩鍵群組（外框／分段線同 my-input-md：gray-2；選中白底深字、未選示範 my-button-gray-3；字級同「中」） -->
+                  <!-- 單元類型切換（白軌＋小 pill；選中 gray-3、未選 transparent-borderless） -->
                   <div>
                     <div class="my-color-gray-4 my-font-sm-400 mb-2">
-                      兩鍵群組（btn-group · my-btn-group-pill · rounded-2 同輸入 · 中 · 外框 gray-2 · 選中 my-button-white 白底 · 未選示範 my-button-gray-3＝填色 gray-3）
+                      單元類型切換（d-inline-flex rounded-pill my-bgcolor-white p-1 · 小 · 選中 my-button-gray-3 · 未選 my-button-transparent-borderless）
                     </div>
                     <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                       <div
-                        class="btn-group my-btn-group-pill flex-shrink-0"
+                        class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1"
                         role="group"
-                        aria-label="示範：兩鍵群組（選中／未選）"
+                        aria-label="示範：單元類型切換"
                       >
                         <button
                           type="button"
-                          class="btn d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-3 py-2"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-3 px-3 py-1"
                         >
-                          選項甲
+                          文字
                         </button>
                         <button
                           type="button"
-                          class="btn d-flex justify-content-center align-items-center my-font-md-400 my-button-gray-3 px-3 py-2"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless px-3 py-1"
                         >
-                          選項乙
+                          RAG
                         </button>
                       </div>
                       <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                         <code
                           class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                          >btn-group my-btn-group-pill · btn … my-font-md-400 my-button-white px-3 py-2 · btn … my-font-md-400 my-button-gray-3 px-3 py-2</code>
+                          >d-inline-flex rounded-pill my-bgcolor-white p-1 · btn … my-font-sm-400 my-button-gray-3 px-3 py-1 · btn … my-button-transparent-borderless px-3 py-1</code>
                         <DesignPageCopyBtn
                         class="flex-shrink-0 ms-auto"
-                        text="btn-group my-btn-group-pill btn my-font-md-400 my-button-white px-3 py-2 btn my-font-md-400 my-button-gray-3 px-3 py-2"
+                        text="d-inline-flex rounded-pill my-bgcolor-white p-1 btn my-font-sm-400 my-button-gray-3 px-3 py-1 btn my-button-transparent-borderless px-3 py-1"
+                      :on-light-bg="false"/>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 出題模式切換（gray-3 軌＋中 pill；選中 __btn--active 白底、未選 transparent-borderless） -->
+                  <div>
+                    <div class="my-color-gray-4 my-font-sm-400 mb-2">
+                      出題模式切換（my-design-quiz-generate-mode-toggle · 中 px-4 py-2 · 選中 __btn--active · 未選 my-button-transparent-borderless）
+                    </div>
+                    <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                      <div
+                        class="my-design-quiz-generate-mode-toggle d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 p-2"
+                        role="group"
+                        aria-label="示範：出題模式切換"
+                      >
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-design-quiz-generate-mode-toggle__btn my-design-quiz-generate-mode-toggle__btn--active px-4 py-2"
+                        >
+                          一般出題
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-design-quiz-generate-mode-toggle__btn my-button-transparent-borderless px-4 py-2"
+                        >
+                          追問出題
+                        </button>
+                      </div>
+                      <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
+                        <code
+                          class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
+                          >my-design-quiz-generate-mode-toggle · btn … my-design-quiz-generate-mode-toggle__btn--active px-4 py-2 · btn … my-button-transparent-borderless px-4 py-2</code>
+                        <DesignPageCopyBtn
+                        class="flex-shrink-0 ms-auto"
+                        text="my-design-quiz-generate-mode-toggle btn my-design-quiz-generate-mode-toggle__btn--active px-4 py-2 btn my-button-transparent-borderless px-4 py-2"
                       :on-light-bg="false"/>
                       </div>
                     </div>
@@ -540,23 +543,46 @@ const designSampleChoiceWhite = ref('選項一');
             <!-- 09 · 徽章（仍屬 05 同一 section；在 08 下拉之上） -->
             <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5 mt-4">
               <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">09 · 徽章</div>
-              <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                <span
-                  class="badge my-bgcolor-gray-3 my-color-black my-border-gray-2 user-select-none my-font-sm-400 flex-shrink-0 align-self-start rounded px-2 py-1"
-                >
-                  標籤
-                </span>
-                <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                  <code
-                    class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
+              <div class="d-flex flex-column gap-4">
+                <!-- 資料夾組合標籤（create-exam-bank_design 拖曳 tag） -->
+                <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                  <span
+                    class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1 flex-shrink-0 align-self-start"
                   >
-                    badge my-bgcolor-gray-3 my-color-black my-border-gray-2 user-select-none my-font-sm-400 rounded px-2 py-1
-                  </code>
-                  <DesignPageCopyBtn
-                    class="flex-shrink-0 ms-auto"
-                    text="badge my-bgcolor-gray-3 my-color-black my-border-gray-2 user-select-none my-font-sm-400 rounded px-2 py-1"
-                    :on-light-bg="false"
-                  />
+                    資料夾
+                  </span>
+                  <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
+                    <code
+                      class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
+                    >
+                      badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1
+                    </code>
+                    <DesignPageCopyBtn
+                      class="flex-shrink-0 ms-auto"
+                      text="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                      :on-light-bg="false"
+                    />
+                  </div>
+                </div>
+                <!-- 單元類型標籤（標題旁 typeLabel） -->
+                <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
+                  <span
+                    class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0 align-self-start"
+                  >
+                    文字
+                  </span>
+                  <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
+                    <code
+                      class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
+                    >
+                      badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0
+                    </code>
+                    <DesignPageCopyBtn
+                      class="flex-shrink-0 ms-auto"
+                      text="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                      :on-light-bg="false"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1002,3 +1028,22 @@ const designSampleChoiceWhite = ref('選項一');
     </div>
   </div>
 </template>
+
+<style scoped>
+/* 出題模式切換示範：對齊 create-exam-bank_design（勿移至 common.css） */
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn {
+  box-sizing: border-box;
+  font-size: var(--my-font-size-md) !important;
+  font-weight: var(--my-font-weight-regular) !important;
+  line-height: 1.35;
+  padding: 0.5rem 1.5rem !important;
+}
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active,
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:hover:not(:disabled),
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:focus-visible,
+.my-design-quiz-generate-mode-toggle .btn.my-design-quiz-generate-mode-toggle__btn--active:active:not(:disabled) {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+  border: none;
+}
+</style>

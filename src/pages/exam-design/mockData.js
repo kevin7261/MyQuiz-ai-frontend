@@ -1,5 +1,5 @@
 /**
- * 測驗（介面稿）頁面用示範資料，不呼叫後端 API。
+ * 測驗頁面用示範資料，不呼叫後端 API。
  */
 import {
   DESIGN_DEMO_GRADING_CRITIQUE_SAMPLE,

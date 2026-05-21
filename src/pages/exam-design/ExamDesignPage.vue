@@ -1,6 +1,6 @@
 <script setup>
 /**
- * ExamDesignPage - 測驗（介面稿）UI 示範，不串接 API
+ * ExamDesignPage - 測驗 UI 示範，不串接 API
  *
  * 版面與 ExamPage 相同（分頁、單元／題型選擇、逐字稿／MP3／YouTube、產生題目、作答與評分、讚／差），
  * 樣式對齊 create-exam-bank_design（QuizCard 三子區塊：題目／答案／批改）。
@@ -64,7 +64,7 @@ const authStore = useAuthStore();
 // ─── 頁面描述常數 ──────────────────────────────────────────────────────────────
 
 /** 與 ExamPage 相同命名，供標題／載入文案／空狀態按鈕共用 */
-const pageTitle = computed(() => '測驗（介面稿）');
+const pageTitle = computed(() => '測驗');
 const quizBankNoun = computed(() => '試卷');
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
