@@ -1520,7 +1520,7 @@ const examAddQuestionModalLoading = ref(false);
 
 function examAddQuestionModalQuizOptions(unitSelectId) {
   const unitItem = findExamUnitDropdownItemBySelectId(unitSelectId);
-  return examQuizDropdownItems(unitItem).filter((o) => !o.follow_up);
+  return examQuizDropdownItems(unitItem);
 }
 
 async function openExamAddQuestionModal() {
@@ -1813,6 +1813,14 @@ function examQuizFollowupHistoryListForLlm(slotIndex) {
   return examQuizFollowupHistoryListForDisplay(slotIndex);
 }
 
+/** 實際走追問 API：題型為追問且已有同題型先前題目與問答；首題（無先前題）改走一般 llm-generate */
+function examSlotUseFollowupLlmGenerate(slotIndex) {
+  if (!examSlotIsFollowupMode(slotIndex)) return false;
+  const followUpExamQuizId = examFollowUpExamQuizIdForSlot(slotIndex);
+  if (followUpExamQuizId == null) return false;
+  return examQuizFollowupHistoryListForLlm(slotIndex).length > 0;
+}
+
 /**
  * 須已選單元（若有選項）且能解析題型名稱才可開啟「先前出題」。
  * 勿僅查 examQuizDisplayName：已產題／GET 載入時題名常來自 rag 列對齊。
@@ -1922,7 +1930,7 @@ const loadingOverlayText = computed(() => {
     const n = Number(currentState.value.quizSlotsCount) || 0;
     for (let i = 1; i <= n; i++) {
       if (!getSlotFormState(i).loading) continue;
-      if (examSlotIsFollowupMode(i)) return '追問出題中...';
+      if (examSlotUseFollowupLlmGenerate(i)) return '追問出題中...';
     }
     return '產生題目中...';
   }
@@ -2183,14 +2191,10 @@ async function generateQuiz(slotIndex, options = {}) {
     || !(Number.isFinite(draftEq) && draftEq >= 1);
 
   const followupMode = examSlotIsFollowupMode(slotIndex);
-  if (followupMode) {
+  const useFollowupGenerate = examSlotUseFollowupLlmGenerate(slotIndex);
+  if (followupMode && !useFollowupGenerate) {
     const followUpExamQuizId = examFollowUpExamQuizIdForSlot(slotIndex);
-    const followupHistory = examQuizFollowupHistoryListForLlm(slotIndex);
-    if (followUpExamQuizId == null) {
-      slotState.error = '追問出題須先有同題型之先前題目';
-      return;
-    }
-    if (!followupHistory.length) {
+    if (followUpExamQuizId != null) {
       slotState.error = '追問出題須先有題目與作答內容';
       return;
     }
@@ -2206,7 +2210,7 @@ async function generateQuiz(slotIndex, options = {}) {
       : [];
 
     const data = createAndGenerate
-      ? (followupMode
+      ? (useFollowupGenerate
           ? await apiExamTabQuizCreateLlmGenerateFollowup(
               {
                 exam_tab_id: examTabStr,
@@ -2228,7 +2232,7 @@ async function generateQuiz(slotIndex, options = {}) {
               },
               personId,
             ))
-      : (followupMode
+      : (useFollowupGenerate
           ? await apiExamTabQuizLlmGenerateFollowup(
               {
                 exam_quiz_id: draftEq,
@@ -2304,7 +2308,7 @@ async function generateQuiz(slotIndex, options = {}) {
       );
       if (Number.isFinite(fuFromApi) && fuFromApi >= 1) {
         newCard.follow_up_exam_quiz_id = Math.trunc(fuFromApi);
-      } else if (followupMode) {
+      } else if (useFollowupGenerate) {
         const fuReq = examFollowUpExamQuizIdForSlot(slotIndex);
         if (fuReq != null) newCard.follow_up_exam_quiz_id = fuReq;
       }
