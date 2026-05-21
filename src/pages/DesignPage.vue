@@ -491,13 +491,25 @@ const designSampleChoiceWhite = ref('選項一');
                           type="button"
                           class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-gray-3 px-3 py-1"
                         >
+                          rag
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                        >
                           文字
                         </button>
                         <button
                           type="button"
                           class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless px-3 py-1"
                         >
-                          RAG
+                          mp3
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                        >
+                          youtube
                         </button>
                       </div>
                       <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">

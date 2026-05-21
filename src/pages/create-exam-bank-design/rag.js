@@ -199,15 +199,15 @@ export function serializePackTasksList(list) {
   }).join(',');
 }
 
-/** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 舊資料相容→文字、1 rag、2 文字、3 mp3、4 youtube（新單元預設文字） */
+/** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 舊資料相容→文字、1 rag、2 文字、3 mp3、4 youtube（新單元預設 rag） */
 export const UNIT_TYPE_RAG = 1;
 export const UNIT_TYPE_TEXT = 2;
 export const UNIT_TYPE_MP3 = 3;
 export const UNIT_TYPE_YOUTUBE = 4;
 /** 新增／缺省單元類型預設 */
-export const DEFAULT_PACK_UNIT_TYPE = UNIT_TYPE_TEXT;
+export const DEFAULT_PACK_UNIT_TYPE = UNIT_TYPE_RAG;
 
-/** 正規化 unit_type（0→文字；無效→預設文字） */
+/** 正規化 unit_type（0→文字；無效→預設 rag） */
 export function normalizePackUnitType(raw) {
   const v = Number(raw);
   if (v === UNIT_TYPE_RAG || v === UNIT_TYPE_TEXT || v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE) {

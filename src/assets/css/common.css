@@ -977,49 +977,49 @@ code {
 .my-design-tab-left-view-scroll {
   min-height: 0;
   scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) #fafafa;
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
 }
 .my-design-tab-left-view-scroll::-webkit-scrollbar {
   width: var(--my-scrollbar-size);
   height: var(--my-scrollbar-size);
 }
 .my-design-tab-left-view-scroll::-webkit-scrollbar-track {
-  background: #fafafa;
+  background: var(--my-scrollbar-track);
 }
 .my-design-tab-left-view-scroll::-webkit-scrollbar-thumb {
   background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid #fafafa;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 .my-design-tab-left-view-scroll::-webkit-scrollbar-thumb:hover {
   background-color: var(--my-scrollbar-thumb-hover);
 }
 .my-design-tab-left-view-scroll::-webkit-scrollbar-corner {
-  background: #fafafa;
+  background: var(--my-scrollbar-track);
 }
 
-/* 設定單元：頂部水平單元列表（淺灰底上需較深 thumb／track，避免全站透明軌道看不見） */
+/* 設定單元：頂部水平單元列表 */
 .my-pack-unit-list-nav {
   scrollbar-width: thin;
-  scrollbar-color: var(--my-color-gray-1) var(--my-color-gray-2);
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
 }
 .my-pack-unit-list-nav::-webkit-scrollbar {
   width: var(--my-scrollbar-size);
   height: var(--my-scrollbar-size);
 }
 .my-pack-unit-list-nav::-webkit-scrollbar-track {
-  background: var(--my-color-gray-2);
+  background: var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 .my-pack-unit-list-nav::-webkit-scrollbar-thumb {
-  background-color: var(--my-color-gray-1);
+  background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-gray-2);
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 .my-pack-unit-list-nav::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-color-black);
+  background-color: var(--my-scrollbar-thumb-hover);
 }
 
 .my-callout-primary-soft {
@@ -1334,7 +1334,7 @@ div.form-control {
   border: none;
 }
 
-/* —— 捲軸（全站可捲動區）：軌道 gray-4；滑塊邊框同色避免透出白底 —— */
+/* —— 捲軸（全站可捲動區）：軌道 gray-4；滑塊 gray-2 —— */
 ::-webkit-scrollbar {
   width: var(--my-scrollbar-size);
   height: var(--my-scrollbar-size);

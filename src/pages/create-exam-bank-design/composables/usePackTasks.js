@@ -15,7 +15,7 @@ import {
   remapPackParallelStrings,
   remapPackParallelBools,
   serializePackTasksList,
-  UNIT_TYPE_TEXT,
+  DEFAULT_PACK_UNIT_TYPE,
   DEFAULT_PACK_CHUNK_SIZE,
   DEFAULT_PACK_CHUNK_OVERLAP,
 } from '../rag.js';
@@ -185,7 +185,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const state = currentState.value;
     const list = [...(state.packTasksList || [])];
     const types = [...(state.packUnitTypes || [])];
-    while (types.length < list.length) types.push(UNIT_TYPE_TEXT);
+    while (types.length < list.length) types.push(DEFAULT_PACK_UNIT_TYPE);
     const sizes = [...(state.packChunkSizes || [])];
     const overs = [...(state.packChunkOverlaps || [])];
     const names = [...(state.packUnitNames || [])];
@@ -235,7 +235,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
   function addRagListGroup() {
     const state = currentState.value;
     state.packTasksList = [...(state.packTasksList || []), []];
-    state.packUnitTypes = [...(state.packUnitTypes || []), UNIT_TYPE_TEXT];
+    state.packUnitTypes = [...(state.packUnitTypes || []), DEFAULT_PACK_UNIT_TYPE];
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
     state.packUnitNames = [...(state.packUnitNames || []), ''];
@@ -271,7 +271,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const existing = state.packTasksList ?? [];
     const newGroups = names.map((name) => [name]);
     state.packTasksList = [...existing, ...newGroups];
-    state.packUnitTypes = [...(state.packUnitTypes || []), ...names.map(() => UNIT_TYPE_TEXT)];
+    state.packUnitTypes = [...(state.packUnitTypes || []), ...names.map(() => DEFAULT_PACK_UNIT_TYPE)];
     state.packChunkSizes = [...(state.packChunkSizes || []), ...names.map(() => DEFAULT_PACK_CHUNK_SIZE)];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), ...names.map(() => DEFAULT_PACK_CHUNK_OVERLAP)];
     state.packUnitNames = [...(state.packUnitNames || []), ...names.map(() => '')];
@@ -291,7 +291,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const state = currentState.value;
     const existing = state.packTasksList ?? [];
     state.packTasksList = [...existing, [...names]];
-    state.packUnitTypes = [...(state.packUnitTypes || []), UNIT_TYPE_TEXT];
+    state.packUnitTypes = [...(state.packUnitTypes || []), DEFAULT_PACK_UNIT_TYPE];
     state.packChunkSizes = [...(state.packChunkSizes || []), DEFAULT_PACK_CHUNK_SIZE];
     state.packChunkOverlaps = [...(state.packChunkOverlaps || []), DEFAULT_PACK_CHUNK_OVERLAP];
     state.packUnitNames = [...(state.packUnitNames || []), ''];

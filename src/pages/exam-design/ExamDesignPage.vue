@@ -2782,11 +2782,11 @@ onActivated(() => {
   min-width: 0;
   min-height: 0;
 }
-/* 右側欄：淺灰底上 scrollbar 需較深（對齊 create-exam-bank_design） */
+/* 右側欄捲軸：對齊全站 gray-2 滑塊 */
 .my-design-tab-right-view,
 .my-design-right-nav {
   scrollbar-width: thin;
-  scrollbar-color: var(--my-color-gray-1) var(--my-color-gray-2);
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
 }
 .my-design-tab-right-view::-webkit-scrollbar,
 .my-design-right-nav::-webkit-scrollbar {
@@ -2795,19 +2795,19 @@ onActivated(() => {
 }
 .my-design-tab-right-view::-webkit-scrollbar-track,
 .my-design-right-nav::-webkit-scrollbar-track {
-  background: var(--my-color-gray-2);
+  background: var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 .my-design-tab-right-view::-webkit-scrollbar-thumb,
 .my-design-right-nav::-webkit-scrollbar-thumb {
-  background-color: var(--my-color-gray-1);
+  background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 .my-design-tab-right-view::-webkit-scrollbar-thumb:hover,
 .my-design-right-nav::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-color-black);
+  background-color: var(--my-scrollbar-thumb-hover);
 }
 .my-design-tab-left-view-scroll {
   min-height: 0;

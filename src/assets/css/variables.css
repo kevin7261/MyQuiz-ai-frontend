@@ -60,12 +60,12 @@
   /* Bootstrap .btn-close：SVG fill 對齊 --my-color-black（#333333） */
   --my-btn-close-bg-svg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23333333'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e");
 
-  /* 捲軸：軌道 gray-4（同 left view／body 主畫面）；滑塊 gray-1／gray-2 混色 */
+  /* 捲軸：軌道 gray-4（同 body 主畫面）；滑塊 gray-2 */
   --my-scrollbar-track: var(--my-color-gray-4);
   --my-scrollbar-size: 6pt;
   --my-scrollbar-thumb-inset: 1pt; /* 左右／上下各 1pt → 6 − 2 = 4pt */
-  --my-scrollbar-thumb: color-mix(in srgb, var(--my-color-gray-1) 38%, var(--my-color-gray-2));
-  --my-scrollbar-thumb-hover: var(--my-color-gray-1);
+  --my-scrollbar-thumb: var(--my-color-gray-2);
+  --my-scrollbar-thumb-hover: var(--my-color-gray-2);
 
   /* 欄位標題（label.form-label／div.form-label／label[for]）與下一個控件或包裝 div 的垂直間距 */
   --my-field-label-input-gap: 0.25rem;

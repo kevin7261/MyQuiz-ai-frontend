@@ -1273,12 +1273,12 @@ function packUnitLoadTranscriptButtonLabel(gi) {
   return '載入逐字稿';
 }
 
-/** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊；預設文字，rag 在末 */
+/** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊；順序 rag、文字、mp3、youtube；預設 rag */
 const PACK_UNIT_TYPE_OPTIONS = [
+  { value: UNIT_TYPE_RAG, label: 'rag' },
   { value: UNIT_TYPE_TEXT, label: '文字' },
   { value: UNIT_TYPE_MP3, label: 'mp3' },
   { value: UNIT_TYPE_YOUTUBE, label: 'youtube' },
-  { value: UNIT_TYPE_RAG, label: 'rag' },
 ];
 
 function onPackUnitTypePick(gi, rawVal) {
@@ -5980,7 +5980,7 @@ async function confirmAnswer(item) {
                 <button
                   v-if="bankUnitTranscriptModalButtonVisible"
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-transparent-borderless my-design-quiz-stem-history-btn px-3 py-1"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
                   title="逐字稿"
                   aria-label="逐字稿"
                   @click="openBankUnitTranscriptModal"
@@ -5989,18 +5989,18 @@ async function confirmAnswer(item) {
                 </button>
                 <button
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless my-design-quiz-stem-history-btn px-3 py-1"
-                  :title="bankUnitContentCollapsed ? '顯示' : '隱藏'"
-                  :aria-label="bankUnitContentCollapsed ? '顯示單元內容' : '隱藏單元內容'"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                  :title="bankUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
+                  :aria-label="bankUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
                   :aria-expanded="!bankUnitContentCollapsed"
                   @click="toggleBankUnitContentCollapsed"
                 >
                   <template v-if="bankUnitContentCollapsed">
-                    顯示
+                    顯示文本
                     <i class="fa-solid fa-chevron-down" aria-hidden="true" />
                   </template>
                   <template v-else>
-                    隱藏
+                    隱藏文本
                     <i class="fa-solid fa-chevron-up" aria-hidden="true" />
                   </template>
                 </button>
@@ -6529,11 +6529,11 @@ async function confirmAnswer(item) {
   min-width: 0;
   min-height: 0;
 }
-/* 右側欄：淺灰底上 scrollbar 需較深（對齊 my-pack-unit-list-nav） */
+/* 右側欄捲軸：對齊全站 gray-2 滑塊 */
 .my-design-tab-right-view,
 .my-design-right-nav {
   scrollbar-width: thin;
-  scrollbar-color: var(--my-color-gray-1) var(--my-color-gray-2);
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
 }
 .my-design-tab-right-view::-webkit-scrollbar,
 .my-design-right-nav::-webkit-scrollbar {
@@ -6542,19 +6542,19 @@ async function confirmAnswer(item) {
 }
 .my-design-tab-right-view::-webkit-scrollbar-track,
 .my-design-right-nav::-webkit-scrollbar-track {
-  background: var(--my-color-gray-2);
+  background: var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 .my-design-tab-right-view::-webkit-scrollbar-thumb,
 .my-design-right-nav::-webkit-scrollbar-thumb {
-  background-color: var(--my-color-gray-1);
+  background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid transparent;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 .my-design-tab-right-view::-webkit-scrollbar-thumb:hover,
 .my-design-right-nav::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-color-black);
+  background-color: var(--my-scrollbar-thumb-hover);
 }
 .my-design-right-step-heading {
   line-height: 1.35;
