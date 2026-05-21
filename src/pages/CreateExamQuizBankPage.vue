@@ -2304,7 +2304,7 @@ function openBankQuizUserPromptEditModal() {
 
 function openBankGradingPromptEditModal() {
   const card = activeUnitQuizCard.value;
-  if (!card || isRagQuizMarkedForExam(card)) return;
+  if (!card) return;
   bankPromptEditModalKind.value = 'grading';
   bankPromptEditModalDraft.value = String(card.gradingPrompt ?? '');
   bankPromptEditModalOpen.value = true;
@@ -6182,28 +6182,27 @@ async function confirmAnswer(item) {
               >
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                   <div
-                    class="d-flex flex-wrap align-items-center justify-content-end gap-2 w-100 min-w-0"
+                    class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                   >
                     <button
                       type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-2 my-font-sm-400 px-3 py-1"
-                      :class="
-                        isRagQuizMarkedForExam(activeUnitQuizCard)
-                          ? 'my-button-green'
-                          : 'my-btn-outline-green-hollow'
+                      role="switch"
+                      class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
+                      :class="{
+                        'my-quiz-generate-mode-switch--on': isRagQuizMarkedForExam(activeUnitQuizCard),
+                      }"
+                      :aria-checked="isRagQuizMarkedForExam(activeUnitQuizCard)"
+                      :aria-label="
+                        isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'
                       "
                       :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
                       :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
-                      :aria-label="isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'"
                       @click="onMarkRagQuizForExam(activeUnitQuizCard)"
                     >
-                      <template v-if="isRagQuizMarkedForExam(activeUnitQuizCard)">
-                        <i class="fa-solid fa-check" aria-hidden="true" />
-                        測驗用
-                      </template>
-                      <template v-else>
-                        設為測驗用
-                      </template>
+                      <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
+                        <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
+                      </span>
+                      <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
                     </button>
                   </div>
                   <div
@@ -6263,7 +6262,6 @@ async function confirmAnswer(item) {
                               <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">追問出題</span>
                             </button>
                             <button
-                              v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
                               type="button"
                               class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
                               title="編輯出題規則"

@@ -281,7 +281,7 @@ const designSampleChoiceWhite = ref('選項一');
           </section>
 
           <!-- ===== 05 · 按鈕 + 09 · 徽章 + 08 · 下拉選單（同一 section） =====
-               按鈕：僅示範 create-exam-bank_design 實際使用之形式。小 px-3 py-1：gray-3、green、outline-green-hollow、transparent-borderless。中 px-4 py-2：black、white、transparent-borderless＋gray-1。大 px-4 py-3：gray-3＋gap-2。圓形 my-btn-circle＋transparent-borderless。切換：單元類型（白軌＋gray-3／transparent-borderless 小）；出題模式（my-quiz-generate-mode-switch 軌 20px、gap-2 標籤）。單行輸入見「06 · 輸入」。
+               按鈕：僅示範 create-exam-bank_design 實際使用之形式。小 px-3 py-1：gray-3、transparent-borderless。中 px-4 py-2：black、white、transparent-borderless＋gray-1。大 px-4 py-3：gray-3＋gap-2。圓形 my-btn-circle＋transparent-borderless。切換：單元類型（白軌＋gray-3／transparent-borderless 小）；出題模式／設為測驗用（my-quiz-generate-mode-switch 軌 20px、gap-2 標籤）。單行輸入見「06 · 輸入」。
                圓形：分頁「+」與複製鈕同規 my-btn-circle + my-button-transparent-borderless。
                09 徽章：在 08 下拉之上；僅示範 create-exam-bank_design 實際使用（my-bgcolor-surface、border）；資料夾標籤含 d-inline-flex gap-1；單元類型含 flex-shrink-0。
                08 下拉：區塊底 my-bgcolor-gray-3；外層 .my-design-08-dropdown；示範一白底觸發邊 gray-2；示範二透明底無邊框；選單 .dropdown-menu Bootstrap 預設；觸發 rounded-2 同輸入（非膠囊）。 -->
@@ -289,7 +289,7 @@ const designSampleChoiceWhite = ref('選項一');
             <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
             <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">05 · 按鈕</div>
                 <div class="d-flex flex-column gap-4">
-                  <!-- 小：字級 my-font-sm-400、內距 px-3 py-1（詳細資訊、測驗用、單元類型未選） -->
+                  <!-- 小：字級 my-font-sm-400、內距 px-3 py-1（詳細資訊、單元類型未選）；設為測驗用見 my-quiz-generate-mode-switch -->
                   <div>
                     <div class="my-color-gray-4 my-font-sm-400 mb-2">小（my-font-sm-400 · px-3 py-1）</div>
                     <div class="d-flex flex-column gap-3">
@@ -313,35 +313,44 @@ const designSampleChoiceWhite = ref('選項一');
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 my-button-green px-3 py-1"
+                          role="switch"
+                          class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
+                          aria-checked="false"
                         >
-                          <i class="fa-solid fa-check" aria-hidden="true"></i>
-                          測驗用
+                          <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
+                            <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
+                          </span>
+                          <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 my-button-green px-3 py-1</code>
+                            >my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 · 設為測驗用（關）</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 gap-1 my-font-sm-400 my-button-green px-3 py-1"
+                          text="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2"
                       :on-light-bg="false"/>
                         </div>
                       </div>
                       <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-btn-outline-green-hollow px-3 py-1"
+                          role="switch"
+                          class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0 my-quiz-generate-mode-switch--on"
+                          aria-checked="true"
                         >
-                          設為測驗用
+                          <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
+                            <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
+                          </span>
+                          <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
                         </button>
                         <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
                           <code
                             class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white"
-                            >btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-btn-outline-green-hollow px-3 py-1</code>
+                            >my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 my-quiz-generate-mode-switch--on · 設為測驗用（開）</code>
                           <DesignPageCopyBtn
                           class="flex-shrink-0 ms-auto"
-                          text="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-btn-outline-green-hollow px-3 py-1"
+                          text="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 my-quiz-generate-mode-switch--on"
                       :on-light-bg="false"/>
                         </div>
                       </div>

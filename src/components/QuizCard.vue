@@ -1198,7 +1198,6 @@ const quizAnswerFieldDisabled = computed(
                     批改規則
                   </h3>
                   <button
-                    v-if="!cardMarkedForExam"
                     type="button"
                     class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
                     title="編輯批改規則"
