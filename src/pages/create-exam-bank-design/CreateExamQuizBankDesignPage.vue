@@ -6293,10 +6293,10 @@ async function confirmAnswer(item) {
                     {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
                 </div>
-                <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白 -->
-                <div class="my-design-quiz-sub-block-outer pe-5">
+                <!-- 子區塊：題目 -->
+                <div class="my-design-quiz-sub-block-outer">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 d-flex flex-column"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
                   >
                     <div class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0">
                       <section
@@ -6372,10 +6372,10 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：答案；外層 ps-5＝灰底上、白底左側留白 -->
+                <!-- 子區塊：答案 -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
-                  class="my-design-quiz-sub-block-outer ps-5"
+                  class="my-design-quiz-sub-block-outer"
                 >
                   <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
                     <div class="w-100 min-w-0 pt-2">
@@ -6391,12 +6391,12 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：批改；外層 pe-5＝灰底上、白底右側留白 -->
+                <!-- 子區塊：批改 -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
-                  class="my-design-quiz-sub-block-outer pe-5"
+                  class="my-design-quiz-sub-block-outer"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
                     <QuizCard
                       v-bind="designUnitQuizCardBind"
                       create-exam-bank-design-layout
@@ -6765,8 +6765,13 @@ async function confirmAnswer(item) {
   color: var(--my-color-black);
   border: none;
 }
-/* 題型區三子區塊：outer＝pe-5／ps-5；題目／批改＝淺灰底 gray-3；答案＝白底 */
-.my-design-quiz-sub-block-outer,
+/* 題型區三子區塊：題目／批改＝淺灰底 gray-3；答案＝白底 */
+.my-design-quiz-sub-block-outer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
 .my-design-quiz-sub-block {
   box-sizing: border-box;
   width: 100%;
@@ -6797,7 +6802,7 @@ async function confirmAnswer(item) {
   line-height: 1.35;
   white-space: nowrap;
 }
-/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 p-3 */
+/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-3 pb-2 */
 .my-design-quiz-field-inset__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
   border: 0;

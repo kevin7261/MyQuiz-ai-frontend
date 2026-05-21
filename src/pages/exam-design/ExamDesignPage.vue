@@ -2546,6 +2546,7 @@ onActivated(() => {
                             aria-label="單元內容"
                           >
                             <div
+                              v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType !== UNIT_TYPE_TEXT"
                               class="d-flex justify-content-end align-items-center w-100 min-w-0 px-3 pt-3"
                             >
                               <button
@@ -2558,7 +2559,14 @@ onActivated(() => {
                                 逐字稿
                               </button>
                             </div>
-                            <div class="px-3 pt-2 pb-3 min-w-0">
+                            <div
+                              class="px-3 pb-3 min-w-0"
+                              :class="
+                                examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT
+                                  ? 'pt-3'
+                                  : 'pt-2'
+                              "
+                            >
                               <div
                                 v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
                                 class="my-rag-unit-type-text-scroll px-3 py-2 my-bgcolor-gray-4 min-w-0 rounded-2"
@@ -2606,10 +2614,10 @@ onActivated(() => {
                             </div>
                           </section>
                         </template>
-                              <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白（對齊 create-exam-bank_design） -->
-                              <div class="my-design-quiz-sub-block-outer pe-5">
+                              <!-- 子區塊：題目 -->
+                              <div class="my-design-quiz-sub-block-outer">
                         <div
-                          class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 d-flex flex-column"
+                          class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
                         >
                           <template v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) === ''">
                             <div
@@ -2650,10 +2658,10 @@ onActivated(() => {
                           </div>
                         </div>
                       </div>
-                      <!-- 子區塊：答案；外層 ps-5＝灰底上、白底左側留白 -->
+                      <!-- 子區塊：答案 -->
                       <div
                         v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
-                        class="my-design-quiz-sub-block-outer ps-5"
+                        class="my-design-quiz-sub-block-outer"
                       >
                         <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
                           <div class="w-100 min-w-0 pt-2">
@@ -2668,12 +2676,12 @@ onActivated(() => {
                           </div>
                         </div>
                       </div>
-                      <!-- 子區塊：批改；外層 pe-5＝灰底上、白底右側留白 -->
+                      <!-- 子區塊：批改 -->
                       <div
                         v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
-                        class="my-design-quiz-sub-block-outer pe-5"
+                        class="my-design-quiz-sub-block-outer"
                       >
-                        <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0">
+                        <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
                           <QuizCard
                             v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
                             create-exam-bank-design-layout
@@ -2850,8 +2858,13 @@ onActivated(() => {
   color: var(--my-color-black);
   white-space: nowrap;
 }
-/* 題型區三子區塊：outer＝pe-5／ps-5；題目／批改＝淺灰底 gray-3；答案＝白底 */
-.my-design-quiz-sub-block-outer,
+/* 題型區三子區塊：題目／批改＝淺灰底 gray-3；答案＝白底 */
+.my-design-quiz-sub-block-outer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
 .my-design-quiz-sub-block {
   box-sizing: border-box;
   width: 100%;

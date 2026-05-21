@@ -754,7 +754,7 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base quiz-card-quiz-stem"
+              class="my-design-quiz-field-inset-body px-3 pt-3 pb-2 min-w-0 lh-base quiz-card-quiz-stem"
             >
               <div
                 v-if="quizMarkdownHtml"
@@ -1243,7 +1243,7 @@ const quizAnswerFieldDisabled = computed(
             </div>
             <div
               v-if="showDesignGradingResultBlock"
-              class="w-100 min-w-0 pt-2"
+              class="w-100 min-w-0"
             >
               <section
                 class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
@@ -1262,7 +1262,7 @@ const quizAnswerFieldDisabled = computed(
                   </div>
                 </header>
                 <div
-                  class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base"
+                  class="my-design-quiz-field-inset-body px-3 pt-3 pb-2 min-w-0 lh-base"
                   style="white-space: pre-wrap;"
                 >
                   <div class="my-font-md-400 my-color-black text-break">
@@ -1412,7 +1412,7 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body p-3 min-w-0 lh-base"
+              class="my-design-quiz-field-inset-body px-3 pt-3 pb-2 min-w-0 lh-base"
               style="white-space: pre-wrap;"
             >
               <div class="my-font-md-400 my-color-black text-break">

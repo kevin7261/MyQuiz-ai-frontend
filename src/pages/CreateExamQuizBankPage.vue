@@ -1175,6 +1175,69 @@ const builtPackUnitSectionHeadingTitle = computed(() => {
   return title || '—';
 });
 
+/** 設定單元題型區：unit_type 2／3／4 之內容與逐字稿（對齊 exam_design examSlotUnitTranscriptSection） */
+const bankUnitTranscriptSection = computed(() => {
+  const row = activeReadonlyPackUnitRow.value;
+  if (!row) return null;
+  const gi = activePackUnitGi.value;
+  const state = currentState.value;
+  const rag = currentRagItem.value;
+  const rawTab = state.unitTabOrder?.[gi];
+  const tab = rawTab ? tabWithResolvedTranscription(rawTab, gi, state, rag) : null;
+  const ut = Number(row.unitType ?? tab?.unitType ?? UNIT_TYPE_RAG);
+  if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return null;
+  const transcription = resolveUnitSlotTranscription(gi, tab ?? {}, state, rag);
+  const sourceDisplay =
+    quizBankReadonlySourceDisplay(tab ?? {}) || String(row.sourceDisplay ?? '').trim() || '—';
+  const youtubeHref =
+    ut === UNIT_TYPE_YOUTUBE ? String(tab?.youtubeUrl ?? sourceDisplay ?? '').trim() : '';
+  return { unitType: ut, transcription, sourceDisplay, youtubeHref, tab };
+});
+
+/** 文字／YouTube／MP3 單元：顯示單元內容區（對齊 exam_design examSlotShowUnitTranscriptUi） */
+const bankShowUnitTranscriptUi = computed(() => bankUnitTranscriptSection.value != null);
+
+/** 文字單元已內嵌逐字稿；mp3／YouTube 才顯示「逐字稿」開 Modal */
+const bankUnitTranscriptModalButtonVisible = computed(() => {
+  const sec = bankUnitTranscriptSection.value;
+  if (!sec) return false;
+  return sec.unitType === UNIT_TYPE_MP3 || sec.unitType === UNIT_TYPE_YOUTUBE;
+});
+
+const bankUnitTranscriptMdHtml = computed(() => {
+  const sec = bankUnitTranscriptSection.value;
+  if (!sec) return '';
+  return renderMarkdownToSafeHtml(sec.transcription != null ? String(sec.transcription) : '');
+});
+
+const bankUnitYoutubeEmbedUrl = computed(() => {
+  const sec = bankUnitTranscriptSection.value;
+  if (!sec || sec.unitType !== UNIT_TYPE_YOUTUBE) return '';
+  const raw = (sec.youtubeHref || sec.sourceDisplay || '').trim();
+  return youtubeEmbedUrlFromInput(raw);
+});
+
+/** unit_type=3：RagTabUnitMp3Player 之 rag_tab_id、rag_unit_id */
+const bankUnitMp3PlayerProps = computed(() => {
+  const sec = bankUnitTranscriptSection.value;
+  if (!sec || sec.unitType !== UNIT_TYPE_MP3) return null;
+  const tab = sec.tab;
+  if (!tab) return null;
+  const ragTabId = String(tab.ragTabId ?? '').trim();
+  const ru = tab.ragUnitDbId != null ? Number(tab.ragUnitDbId) : 0;
+  if (!ragTabId || !Number.isFinite(ru) || ru < 1) return null;
+  return { ragTabId, ragUnitId: ru };
+});
+
+function openBankUnitTranscriptModal() {
+  const sec = bankUnitTranscriptSection.value;
+  if (!sec) return;
+  openRagUnitContentModal({
+    kind: 'transcript',
+    markdown: String(sec.transcription ?? ''),
+  });
+}
+
 watch(activeTabId, () => {
   activePackUnitIndex.value = 0;
 });
@@ -6149,6 +6212,74 @@ async function confirmAnswer(item) {
                 </div>
               </div>
             </div>
+              <section
+                v-if="bankShowUnitTranscriptUi"
+                class="w-100 min-w-0 rounded-4 my-border-gray-2 overflow-hidden mt-3"
+                aria-label="單元內容"
+              >
+                <div
+                  v-if="bankUnitTranscriptModalButtonVisible"
+                  class="d-flex justify-content-end align-items-center w-100 min-w-0 px-3 pt-3"
+                >
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                    title="逐字稿"
+                    aria-label="逐字稿"
+                    @click="openBankUnitTranscriptModal"
+                  >
+                    逐字稿
+                  </button>
+                </div>
+                <div
+                  class="px-3 pb-3 min-w-0"
+                  :class="bankUnitTranscriptSection?.unitType === UNIT_TYPE_TEXT ? 'pt-3' : 'pt-2'"
+                >
+                  <div
+                    v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_TEXT"
+                    class="my-rag-unit-type-text-scroll px-3 py-2 my-bgcolor-gray-4 min-w-0 rounded-2"
+                    role="region"
+                    aria-label="單元逐字稿"
+                  >
+                    <div
+                      v-if="bankUnitTranscriptMdHtml"
+                      class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                      v-html="bankUnitTranscriptMdHtml"
+                    />
+                    <span
+                      v-else
+                      class="my-font-md-400 my-color-black"
+                    >—</span>
+                  </div>
+                  <div
+                    v-else-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_YOUTUBE"
+                    class="w-100 min-w-0"
+                  >
+                    <div
+                      v-if="bankUnitYoutubeEmbedUrl"
+                      class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                    >
+                      <iframe
+                        class="border-0"
+                        title="YouTube 影片"
+                        :src="bankUnitYoutubeEmbedUrl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen
+                      />
+                    </div>
+                    <span
+                      v-else
+                      class="my-font-md-400 my-color-black text-break"
+                    >{{ bankUnitTranscriptSection?.sourceDisplay }}</span>
+                  </div>
+                  <RagTabUnitMp3Player
+                    v-else-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_MP3 && bankUnitMp3PlayerProps"
+                    :rag-tab-id="bankUnitMp3PlayerProps.ragTabId"
+                    :rag-unit-id="bankUnitMp3PlayerProps.ragUnitId"
+                  />
+                </div>
+              </section>
               <div
                 v-if="getSlotFormState(activeUnitSlotIndex).unitQuizCreateError"
                 class="d-flex justify-content-center pt-2 mb-0 w-100 px-1"
@@ -6232,10 +6363,10 @@ async function confirmAnswer(item) {
                     {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
                 </div>
-                <!-- 子區塊：題目；外層 pe-5＝灰底上、白底右側留白 -->
-                <div class="my-design-quiz-sub-block-outer pe-5">
+                <!-- 子區塊：題目 -->
+                <div class="my-design-quiz-sub-block-outer">
                   <div
-                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 d-flex flex-column"
+                    class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
                   >
                     <div class="my-design-quiz-question-prompt-wrap px-3 pt-3 pb-0 w-100 min-w-0">
                       <section
@@ -6326,10 +6457,10 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：答案；外層 ps-5＝灰底上、白底左側留白 -->
+                <!-- 子區塊：答案 -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
-                  class="my-design-quiz-sub-block-outer ps-5"
+                  class="my-design-quiz-sub-block-outer"
                 >
                   <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
                     <div class="w-100 min-w-0 pt-2">
@@ -6345,12 +6476,12 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：批改；外層 pe-5＝灰底上、白底右側留白 -->
+                <!-- 子區塊：批改 -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
-                  class="my-design-quiz-sub-block-outer pe-5"
+                  class="my-design-quiz-sub-block-outer"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
                     <QuizCard
                       v-bind="designUnitQuizCardBind"
                       create-exam-bank-design-layout
@@ -6723,8 +6854,13 @@ async function confirmAnswer(item) {
   color: var(--my-color-black);
   border: none;
 }
-/* 題型區三子區塊：outer＝pe-5／ps-5；題目／批改＝淺灰底 gray-3；答案＝白底 */
-.my-design-quiz-sub-block-outer,
+/* 題型區三子區塊：題目／批改＝淺灰底 gray-3；答案＝白底 */
+.my-design-quiz-sub-block-outer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
 .my-design-quiz-sub-block {
   box-sizing: border-box;
   width: 100%;
@@ -6755,7 +6891,7 @@ async function confirmAnswer(item) {
   line-height: 1.35;
   white-space: nowrap;
 }
-/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 p-3 */
+/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-3 pb-2 */
 .my-design-quiz-field-inset__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
   border: 0;
