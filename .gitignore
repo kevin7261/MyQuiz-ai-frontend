@@ -25,3 +25,6 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+
+# Vercel CLI（vercel link 產生的本機專案 ID，勿提交）
+.vercel/
