@@ -756,6 +756,15 @@ code {
 .my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label {
   color: var(--my-color-green);
 }
+/* 追問出題 toggle：開啟時黃色（軌／字）；覆蓋 green */
+.my-quiz-generate-mode-switch--followup.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__track,
+.my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch--followup.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__track {
+  background-color: var(--my-color-yellow);
+}
+.my-quiz-generate-mode-switch--followup.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label,
+.my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch--followup.my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label {
+  color: var(--my-color-yellow);
+}
 
 /* nav-tabs（建立測驗題庫分頁列、ExamPage）：Bootstrap 在 :hover／:focus 會套四邊 border-color，取消左右垂直線 */
 .nav.nav-tabs .nav-link {

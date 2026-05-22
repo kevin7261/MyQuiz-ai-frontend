@@ -46,6 +46,8 @@
   --my-color-green-hover: #1e966a;
   --my-color-blue: #1b6fd6;
   --my-color-blue-hover: #155db3;
+  --my-color-yellow: #ffd000;
+  --my-color-yellow-hover: #e8bc00;
 
   /* ZIP／檔案拖放區（淺底以 --my-color-white 混色） */
   --my-drop-zone-border: color-mix(in srgb, var(--my-color-black) 20%, transparent);

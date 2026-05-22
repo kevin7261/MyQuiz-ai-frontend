@@ -459,7 +459,7 @@ onBeforeUnmount(() => {
 .english-exam-md-preview-more-btn:hover,
 .english-exam-md-preview-more-btn:focus-visible {
   color: var(--my-color-white);
-  text-decoration: underline;
+  text-decoration: none;
   outline: none;
 }
 

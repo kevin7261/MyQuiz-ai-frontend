@@ -2931,8 +2931,8 @@ onActivated(() => {
                                 aria-label="單元內容"
                               >
                                 <div
-                                  v-show="!examUnitContentCollapsed"
-                                  class="min-w-0 pb-2"
+                                  class="min-w-0 pb-2 position-relative"
+                                  :style="examUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
                                 >
                                   <div
                                     v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
@@ -2982,8 +2982,15 @@ onActivated(() => {
                                       :rag-unit-id="mp3Props.ragUnitId"
                                     />
                                   </template>
+                                  <div
+                                    v-if="examUnitContentCollapsed"
+                                    style="position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, transparent, var(--my-color-gray-4)); pointer-events: none;"
+                                  />
                                 </div>
-                                <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 w-100 min-w-0 py-2">
+                                <div
+                                  v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1)?.unitType !== UNIT_TYPE_MP3"
+                                  class="d-flex justify-content-center align-items-center flex-wrap gap-2 w-100 min-w-0 py-2"
+                                >
                                   <button
                                     v-if="examSlotTranscriptModalButtonVisible(activeExamSlotIndex1)"
                                     type="button"

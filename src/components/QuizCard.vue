@@ -454,9 +454,11 @@ const showDesignSubBlockHintModals = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'answer',
 );
 
-/** 稿頁／題庫：「先前出題」置於題目標題列右側（含 design 題目子區塊灰框標題列） */
+/** 稿頁／題庫：「先前出題」只在 question sub-block（或非 sub-block 模式）顯示 */
 const showBankQuizHistoryInStemHeader = computed(
-  () => props.showBankQuizHistoryButton,
+  () =>
+    props.showBankQuizHistoryButton &&
+    (!isDesignSubBlockFragment.value || props.designSubBlock === 'question'),
 );
 
 /** 建立測驗題庫頁在 card 上帶入 baseline；未帶入時維持原僅檢查非空即可送出 */
@@ -1214,7 +1216,7 @@ const quizAnswerFieldDisabled = computed(
                     class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
                     title="編輯批改規則"
                     aria-label="編輯批改規則"
-                    :disabled="gradeSubmitting"
+                    :disabled="gradeSubmitting || cardMarkedForExam"
                     @click="emit('open-grading-prompt-edit')"
                   >
                     <i class="fa-solid fa-pen" aria-hidden="true" />

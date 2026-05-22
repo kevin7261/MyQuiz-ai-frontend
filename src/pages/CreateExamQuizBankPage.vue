@@ -1222,7 +1222,7 @@ watch(
 
 /** 右側欄：設定單元子分頁（建置完成後） */
 const designRightUnitSubTabItems = computed(() => {
-  if (!hasBuiltRagSummary.value) return [];
+  if (!hasUploadedFileMetadata.value) return [];
   return packUnitListItemsForNav.value.map((item) => ({
     key: `pack-unit-${item.index}`,
     label: packUnitNavDisplayLabel(item.label, item.index),
@@ -6116,7 +6116,7 @@ async function confirmAnswer(item) {
                             <button
                               type="button"
                               role="switch"
-                              class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
+                              class="my-quiz-generate-mode-switch my-quiz-generate-mode-switch--followup d-inline-flex align-items-center gap-2 flex-shrink-0"
                               :class="{
                                 'my-quiz-generate-mode-switch--on': isUnitQuizFollowupMode(
                                   activeUnitSlotIndex,
@@ -6124,7 +6124,7 @@ async function confirmAnswer(item) {
                                 ),
                               }"
                               :aria-checked="isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
-                              :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                              :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || isRagQuizMarkedForExam(activeUnitQuizCard)"
                               @click="
                                 setUnitQuizGenerateMode(
                                   activeUnitSlotIndex,
@@ -6145,7 +6145,7 @@ async function confirmAnswer(item) {
                               class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
                               title="編輯出題規則"
                               aria-label="編輯出題規則"
-                              :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                              :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || isRagQuizMarkedForExam(activeUnitQuizCard)"
                               @click="openBankQuizUserPromptEditModal"
                             >
                               <i class="fa-solid fa-pen" aria-hidden="true" />
@@ -6330,34 +6330,32 @@ async function confirmAnswer(item) {
         </div>
         <div
           v-if="showDesignRightView"
-          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
             aria-label="設計輔助面板"
           >
-            <!-- 建立流程：上傳檔案、設定單元 + 子項目垂直列表（樣式對齊 LeftView nav） -->
+            <!-- 建立流程：上傳檔案、設定單元 + 子項目垂直列表 -->
             <nav
               v-if="showDesignRightNav"
-              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
+              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-auto px-3 py-3"
               aria-label="建立流程"
             >
-              <div
-                class="my-design-right-step-heading my-font-md-400 my-color-black"
-                :class="{ 'my-font-md-600': !hasUploadedFileMetadata }"
-              >上傳檔案</div>
-              <div class="nav-item">
-                <span
-                  class="nav-link w-100 text-start text-break"
-                  :class="{ active: !hasUploadedFileMetadata }"
-                >{{ designRightUploadFileLabel || '—' }}</span>
+              <!-- 區塊 1：上傳檔案 -->
+              <div class="my-design-right-step-block">
+                <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">上傳檔案</div>
+                <div class="nav-item">
+                  <span
+                    class="nav-link w-100 text-start text-break"
+                    :class="{ active: !hasUploadedFileMetadata }"
+                  >{{ designRightUploadFileLabel || '—' }}</span>
+                </div>
               </div>
 
-              <template v-if="hasBuiltRagSummary">
-                <div
-                  class="my-design-right-step-heading my-font-md-400 my-color-black mt-3"
-                  :class="{ 'my-font-md-600': hasBuiltRagSummary }"
-                >{{ packUnitSectionHeadingTitle }}</div>
+              <!-- 區塊 2：單元 -->
+              <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block">
+                <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">單元</div>
                 <template v-if="designRightUnitSubTabItems.length">
                   <div
                     v-for="item in designRightUnitSubTabItems"
@@ -6375,7 +6373,7 @@ async function confirmAnswer(item) {
                     </button>
                   </div>
                 </template>
-              </template>
+              </div>
             </nav>
           </aside>
         </div>
@@ -6440,10 +6438,17 @@ async function confirmAnswer(item) {
 .my-design-right-nav::-webkit-scrollbar-thumb:hover {
   background-color: var(--my-scrollbar-thumb-hover);
 }
+.my-design-right-step-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: var(--my-color-gray-3);
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.25rem;
+}
 .my-design-right-step-heading {
   line-height: 1.35;
   white-space: nowrap;
-  padding: 0 0.5rem;
 }
 /* 稿頁設定單元屬性：row/col 排版，欄位間距由 .row.g-3 負責 */
 .my-design-pack-unit-blocks {
