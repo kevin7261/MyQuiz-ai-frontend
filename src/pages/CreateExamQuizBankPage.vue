@@ -1129,13 +1129,6 @@ const bankUnitTranscriptSection = computed(() => {
 /** 文字／YouTube／MP3 單元：顯示單元內容區（對齊 exam_design examSlotShowUnitTranscriptUi） */
 const bankShowUnitTranscriptUi = computed(() => bankUnitTranscriptSection.value != null);
 
-/** 文字單元已內嵌逐字稿；mp3／YouTube 才顯示「逐字稿」開 Modal */
-const bankUnitTranscriptModalButtonVisible = computed(() => {
-  const sec = bankUnitTranscriptSection.value;
-  if (!sec) return false;
-  return sec.unitType === UNIT_TYPE_MP3 || sec.unitType === UNIT_TYPE_YOUTUBE;
-});
-
 const bankUnitTranscriptMdHtml = computed(() => {
   const sec = bankUnitTranscriptSection.value;
   if (!sec) return '';
@@ -1160,15 +1153,6 @@ const bankUnitMp3PlayerProps = computed(() => {
   if (!ragTabId || !Number.isFinite(ru) || ru < 1) return null;
   return { ragTabId, ragUnitId: ru };
 });
-
-function openBankUnitTranscriptModal() {
-  const sec = bankUnitTranscriptSection.value;
-  if (!sec) return;
-  openRagUnitContentModal({
-    kind: 'transcript',
-    markdown: String(sec.transcription ?? ''),
-  });
-}
 
 /** 單元內容區：預設展開；切換單元時還原 */
 const bankUnitContentCollapsed = ref(false);
@@ -2183,65 +2167,6 @@ const bankQuizHistoryModalQuizTypeLabel = computed(() => {
   const card = activeUnitQuizCard.value;
   return card ? quizTypeTabLabel(card) : '—';
 });
-
-/** 單元內容 Modal（逐字稿／語音／影片）：與建立測驗題庫頁唯讀單元預覽對齊，改以按鈕開啟 */
-const ragUnitContentModalKind = ref(/** @type {'transcript'|'audio'|'youtube'} */ ('transcript'));
-const ragUnitContentModalMarkdownOverride = ref(/** @type {string | null} */ (null));
-const ragUnitContentModalYoutube = ref({ embedSrc: '', pageUrl: '' });
-const ragUnitContentModalAudio = ref({ ragTabId: '', ragUnitId: 0 });
-
-const ragUnitContentModalOpen = ref(false);
-
-const ragUnitContentModalTitle = computed(() => {
-  const k = ragUnitContentModalKind.value;
-  if (k === 'audio') return '語音';
-  if (k === 'youtube') return '影片';
-  return '逐字稿';
-});
-
-const ragUnitContentModalBodyHtml = computed(() => {
-  const override = ragUnitContentModalMarkdownOverride.value;
-  if (override != null) {
-    return renderMarkdownToSafeHtml(String(override));
-  }
-  const tab = activeUnitTabItem.value;
-  const raw = tab?.transcription;
-  return renderMarkdownToSafeHtml(raw != null ? String(raw) : '');
-});
-
-/**
- * @param {{ kind: 'transcript'|'audio'|'youtube', markdown?: string, ragTabId?: string, ragUnitId?: number, embedSrc?: string, pageUrl?: string }} action
- */
-function openRagUnitContentModal(action) {
-  if (!action || typeof action !== 'object' || !action.kind) return;
-  ragUnitContentModalKind.value = action.kind;
-  if (action.kind === 'transcript') {
-    const s = String(action.markdown ?? '').trim();
-    ragUnitContentModalMarkdownOverride.value = s !== '' ? s : null;
-  } else {
-    ragUnitContentModalMarkdownOverride.value = null;
-  }
-  if (action.kind === 'youtube') {
-    ragUnitContentModalYoutube.value = {
-      embedSrc: String(action.embedSrc ?? ''),
-      pageUrl: String(action.pageUrl ?? ''),
-    };
-  } else if (action.kind === 'audio') {
-    ragUnitContentModalAudio.value = {
-      ragTabId: String(action.ragTabId ?? ''),
-      ragUnitId: action.ragUnitId != null ? Number(action.ragUnitId) : 0,
-    };
-  }
-  ragUnitContentModalOpen.value = true;
-}
-
-function closeRagUnitContentModal() {
-  ragUnitContentModalOpen.value = false;
-  ragUnitContentModalKind.value = 'transcript';
-  ragUnitContentModalMarkdownOverride.value = null;
-  ragUnitContentModalYoutube.value = { embedSrc: '', pageUrl: '' };
-  ragUnitContentModalAudio.value = { ragTabId: '', ragUnitId: 0 };
-}
 
 /** 出題／批改規則：列表區黑底白字預覽，按鈕開 Modal 編輯 */
 const bankPromptEditModalOpen = ref(false);
@@ -5054,6 +4979,27 @@ async function confirmAnswer(item) {
                       </div>
                     </div>
                   </div>
+                  <div
+                    v-if="bankUnitMp3PlayerProps"
+                    class="col-12 min-w-0"
+                  >
+                    <RagTabUnitMp3Player
+                      :rag-tab-id="bankUnitMp3PlayerProps.ragTabId"
+                      :rag-unit-id="bankUnitMp3PlayerProps.ragUnitId"
+                    />
+                  </div>
+                  <div
+                    v-if="bankUnitTranscriptMdHtml && bankUnitTranscriptSection && (bankUnitTranscriptSection.unitType === UNIT_TYPE_MP3 || bankUnitTranscriptSection.unitType === UNIT_TYPE_YOUTUBE)"
+                    class="col-12 min-w-0"
+                  >
+                    <div class="my-design-pack-unit-section w-100 min-w-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-2">逐字稿</div>
+                      <div
+                        class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                        v-html="bankUnitTranscriptMdHtml"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -5065,75 +5011,6 @@ async function confirmAnswer(item) {
               >
                 關閉
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-    <Teleport to="body">
-      <div
-        v-if="ragUnitContentModalOpen"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="rag-unit-content-modal-title"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5 id="rag-unit-content-modal-title" class="modal-title my-color-black">{{ ragUnitContentModalTitle }}</h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeRagUnitContentModal"
-              />
-            </div>
-            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
-              <template v-if="ragUnitContentModalKind === 'transcript'">
-                <div
-                  v-if="ragUnitContentModalBodyHtml"
-                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                  v-html="ragUnitContentModalBodyHtml"
-                />
-                <span
-                  v-else
-                  class="my-font-md-400 my-color-black"
-                >—</span>
-              </template>
-              <template v-else-if="ragUnitContentModalKind === 'audio'">
-                <RagTabUnitMp3Player
-                  :rag-tab-id="ragUnitContentModalAudio.ragTabId"
-                  :rag-unit-id="ragUnitContentModalAudio.ragUnitId"
-                />
-              </template>
-              <template v-else-if="ragUnitContentModalKind === 'youtube'">
-                <div
-                  v-if="ragUnitContentModalYoutube.embedSrc"
-                  class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                >
-                  <iframe
-                    class="border-0"
-                    title="YouTube 影片"
-                    :src="ragUnitContentModalYoutube.embedSrc"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    allowfullscreen
-                  />
-                </div>
-                <span
-                  v-else-if="ragUnitContentModalYoutube.pageUrl"
-                  class="my-font-md-400 my-color-black text-break"
-                >{{ ragUnitContentModalYoutube.pageUrl }}</span>
-                <span
-                  v-else
-                  class="my-font-md-400 my-color-black"
-                >—</span>
-              </template>
             </div>
           </div>
         </div>
@@ -5932,8 +5809,8 @@ async function confirmAnswer(item) {
               aria-label="單元內容"
             >
               <div
-                v-show="!bankUnitContentCollapsed"
-                class="min-w-0 pb-2"
+                class="min-w-0 pb-2 position-relative"
+                :style="bankUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
               >
                 <div
                   v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_TEXT"
@@ -5978,18 +5855,15 @@ async function confirmAnswer(item) {
                   :rag-tab-id="bankUnitMp3PlayerProps.ragTabId"
                   :rag-unit-id="bankUnitMp3PlayerProps.ragUnitId"
                 />
+                <div
+                  v-if="bankUnitContentCollapsed"
+                  style="position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, transparent, var(--my-color-gray-4)); pointer-events: none;"
+                />
               </div>
-              <div class="d-flex justify-content-center align-items-center flex-wrap gap-2 w-100 min-w-0 py-2">
-                <button
-                  v-if="bankUnitTranscriptModalButtonVisible"
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
-                  title="逐字稿"
-                  aria-label="逐字稿"
-                  @click="openBankUnitTranscriptModal"
-                >
-                  逐字稿
-                </button>
+              <div
+                v-if="bankUnitTranscriptSection?.unitType !== UNIT_TYPE_MP3"
+                class="d-flex justify-content-center align-items-center flex-wrap gap-2 w-100 min-w-0 py-2"
+              >
                 <button
                   type="button"
                   class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
@@ -6297,30 +6171,33 @@ async function confirmAnswer(item) {
                       class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
                     >
                       <button
+                        v-if="!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)"
                         type="button"
                         class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
                         title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設"
-                        :disabled="
-                          getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                          !canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)
-                        "
-                        :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                         aria-label="產生題目"
                         @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
                         產生題目
                       </button>
                       <button
-                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard)"
+                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard) && !getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)"
                         type="button"
                         class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
-                        :disabled="
-                          getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading ||
-                          !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)
-                        "
-                        :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
                         aria-label="儲存並產生題目"
                         @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
+                      >
+                        儲存並產生題目
+                      </button>
+                      <button
+                        v-if="
+                          (getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || !canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)) &&
+                          (isRagQuizMarkedForExam(activeUnitQuizCard) || getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex))
+                        "
+                        type="button"
+                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                        aria-label="儲存並產生題目"
+                        disabled
                       >
                         儲存並產生題目
                       </button>
@@ -6347,7 +6224,7 @@ async function confirmAnswer(item) {
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0">
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 pb-2">
                     <div class="w-100 min-w-0 pt-2">
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
@@ -6408,10 +6285,9 @@ async function confirmAnswer(item) {
                   </div>
                   <div class="d-flex justify-content-center mt-3">
                     <button
+                      v-if="!getSlotFormState(activeUnitSlotIndex).loading && String(getSlotFormState(activeUnitSlotIndex).generateQuizTabId || '').trim()"
                       type="button"
                       class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
-                      :disabled="getSlotFormState(activeUnitSlotIndex).loading || !String(getSlotFormState(activeUnitSlotIndex).generateQuizTabId || '').trim()"
-                      :aria-busy="getSlotFormState(activeUnitSlotIndex).loading"
                       aria-label="儲存並產生題目"
                       @click="generateQuiz(activeUnitSlotIndex)"
                     >
