@@ -1104,11 +1104,6 @@ function examSlotHeadingQuestionTitle(slotIndex) {
   return `第 ${n} 題`;
 }
 
-/** 稿頁題目區主標題旁 badge：一般出題／追問出題 */
-function examSlotHeadingGenerateModeLabel(slotIndex) {
-  return examQuizGenerateModeLabel(examSlotIsFollowupMode(slotIndex));
-}
-
 /** 右側欄：題目子分頁 */
 const designRightQuizSubTabItems = computed(() => {
   const n = examSlotCarouselCount.value;
@@ -2065,25 +2060,6 @@ function examSlotHasAnchoredExamQuizId(slotIndex) {
   return Number.isFinite(id) && id >= 1;
 }
 
-/** 「產生題目」：須已有 exam_quiz_id（「新增題目」create 或後端已錨定之列）；須選單元；該單元有 quizzes[] 時須選 quiz_name */
-function examGenerateQuizButtonDisabled(slotIndex) {
-  const slotState = getSlotFormState(slotIndex);
-  const base =
-    slotState.loading || slotState.draftCreating || generateQuizBlocked.value;
-  const hasExamRowId =
-    examSlotHasAnchoredExamQuizId(slotIndex)
-    || (slotState.draftExamQuizId != null && Number(slotState.draftExamQuizId) >= 1);
-  if (!hasExamRowId) return true;
-  if (examUnitSelectDropdownOptions.value.length > 0 && !String(slotState.examUnitSelectId ?? '').trim()) {
-    return true;
-  }
-  const quizOpts = examQuizDropdownItemsForSlot(slotIndex);
-  if (quizOpts.length > 0 && !String(slotState.examQuizNamePick ?? '').trim()) {
-    return true;
-  }
-  return base;
-}
-
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
 /** 任一題列「產生題目」流程中（含建立空白列與 llm-generate） */
@@ -2180,6 +2156,8 @@ function getDefaultExamSlotForm() {
     quiz_history_list: [],
     /** 出題模式：`normal`＝一般出題；`followup`＝追問出題 */
     quizGenerateMode: 'normal',
+    /** 追問出題：已完成批改之舊輪次快照（題目／答案／批改），繼續追問前存入 */
+    followupRounds: [],
   };
 }
 
@@ -3092,12 +3070,11 @@ onActivated(() => {
                               <!-- 繼續追問：追問出題模式且已有批改結果 -->
                               <div
                                 v-if="examSlotIsFollowupMode(activeExamSlotIndex1) && activeExamSlotShowGradingSubBlock"
-                                class="d-flex justify-content-center w-100 pt-2"
+                                class="d-flex justify-content-center w-100"
                               >
                                 <button
                                   type="button"
                                   class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
-                                  :disabled="examGenerateQuizButtonDisabled(activeExamSlotIndex1)"
                                   :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
                                   aria-label="繼續追問"
                                   @click="generateQuiz(activeExamSlotIndex1)"
