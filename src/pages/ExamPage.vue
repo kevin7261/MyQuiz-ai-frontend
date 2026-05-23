@@ -1308,6 +1308,21 @@ function examQuizDisplayNameFromRow(quiz) {
   return '';
 }
 
+/**
+ * latestAnswer 是否含有真實批改資料（quiz_score／quiz_comments／answer_metadata）。
+ * 若只有 answer_content（作答但未批改），回傳 false，避免誤設 confirmed 與 gradingResult。
+ */
+function answerHasGradingEvidence(ans) {
+  if (!ans) return false;
+  const score = ans.quiz_score;
+  if (score != null && String(score).trim() !== '') return true;
+  const comments = ans.quiz_comments;
+  if (Array.isArray(comments) && comments.some((c) => c != null && String(c).trim() !== '')) return true;
+  if (ans.answer_metadata != null && String(ans.answer_metadata).trim() !== '') return true;
+  if (ans.answer_feedback_metadata != null && String(ans.answer_feedback_metadata).trim() !== '') return true;
+  return false;
+}
+
 /** 由 GET /exam/tabs 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片（欄位後備與 CreateExamQuizBankPage buildCardFromRagQuiz 對齊） */
 function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
   const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
@@ -1324,8 +1339,10 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     latestSubmitted != null && String(latestSubmitted).trim() !== ''
       ? String(latestSubmitted)
       : '';
-  const gradingResult = latestAnswer
-    ? (formatGradingResult(JSON.stringify(latestAnswer)) || (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))
+  // 僅在有真實批改資料時設 gradingResult／confirmed；純作答紀錄不算批改
+  const hasGrading = answerHasGradingEvidence(latestAnswer);
+  const gradingResult = hasGrading
+    ? (formatGradingResult(JSON.stringify(latestAnswer)) || '已批改')
     : '';
   const quizId = quiz.exam_quiz_id ?? quiz.quiz_id ?? null;
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
@@ -1354,7 +1371,7 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     referenceAnswerVisible: false,
     quiz_rate: normalizeExamQuizRate(quiz.quiz_rate),
     rateError: '',
-    confirmed: !!latestAnswer,
+    confirmed: hasGrading,
     gradingResult,
     gradingResponseJson: latestAnswer ?? null,
     generateQuizResponseJson: null,
@@ -1363,9 +1380,9 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     gradingPrompt: gp,
     quiz_user_prompt_text: qp,
     quizUserPromptText: qp,
-    hasUsedSaveAndGradeOnce: gp !== '',
+    hasUsedSaveAndGradeOnce: hasGrading,
     gradingPromptBaseline: gp,
-    quizAnswerBaseline: quiz_answer,
+    quizAnswerBaseline: hasGrading ? quiz_answer : '',
     examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
     follow_up: examQuizApiRowIsFollowUp(quiz),
     quizGenerateMode: examQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal',
@@ -2506,25 +2523,17 @@ async function generateQuiz(slotIndex, options = {}) {
 
 // ─── 題目評分（讚 / 差）與作答評改 ───────────────────────────────────────────
 
-/** 「儲存並開始批改」可按：非空批改規則且與 baseline 不同 */
-function canEnableExamDesignGrade(card) {
-  if (!card || typeof card !== 'object') return false;
-  const gpTrim = String(card.gradingPrompt ?? '').trim();
-  if (!gpTrim) return false;
-  return String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '');
-}
-
-/** 「開始批改」（llm-grade-db）：已批改過、規則未改動、rag_quiz_id 有效 */
-function canEnableExamDesignGradeDb(card) {
-  if (!card || typeof card !== 'object') return false;
-  if (card.hasUsedSaveAndGradeOnce !== true) return false;
-  if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
-  const rq = Number(card.rag_quiz_id ?? card.quiz_id);
-  return Number.isFinite(rq) && rq >= 1;
-}
-
+/**
+ * 測驗頁「開始批改」：答案非空且（未批改過，或答案／規則相對上次批改有異動）。
+ * gradingPrompt 通常為空（題庫規則由後端讀），故不依賴規則是否 dirty 作為唯一條件。
+ */
 function canEnableExamDesignGradeMerged(card) {
-  return canEnableExamDesignGrade(card) || canEnableExamDesignGradeDb(card);
+  if (!card || typeof card !== 'object') return false;
+  if (String(card.quiz_answer ?? '').trim() === '') return false;
+  if (!card.confirmed) return true;
+  const answerDirty = String(card.quiz_answer ?? '') !== String(card.quizAnswerBaseline ?? '');
+  const promptDirty = String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '');
+  return answerDirty || promptDirty;
 }
 
 /** QuizCard 三子區塊共用 bind（版式對齊 exam_design／create-exam-bank） */
