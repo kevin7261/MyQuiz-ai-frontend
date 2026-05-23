@@ -853,31 +853,6 @@ const fileMetadataToShow = computed(() => {
 /** 是否已上傳過 ZIP（file_metadata 僅在上傳後才會有） */
 const hasUploadedFileMetadata = computed(() => fileMetadataToShow.value != null);
 
-/** 單元索引對應之題型數（unitSlotQuizCards；無則 fallback units[].quizzes） */
-function quizTypeCountForPackUnitIndex(index) {
-  const i = Number(index);
-  if (!Number.isFinite(i) || i < 0) return 0;
-  const state = currentState.value;
-  const stacks = state.unitSlotQuizCards;
-  if (Array.isArray(stacks) && i < stacks.length) {
-    const row = stacks[i];
-    if (Array.isArray(row)) return row.length;
-  }
-  const rag = currentRagItem.value;
-  const units = rag ? unitsFromRagTabsRow(rag) : [];
-  if (i < units.length) {
-    const uqs = units[i]?.quizzes;
-    if (Array.isArray(uqs)) return uqs.length;
-  }
-  return 0;
-}
-
-/** 右側／導覽用：單元名稱 (題型數) */
-function packUnitNavDisplayLabel(unitLabel, index) {
-  const base = String(unitLabel ?? '').trim() || `單元 ${Number(index) + 1}`;
-  return `${base} (${quizTypeCountForPackUnitIndex(index)})`;
-}
-
 const newBankUploadConfirmDisabled = computed(
   () => createRagLoading.value || !newBankUploadFile.value,
 );
@@ -1225,7 +1200,8 @@ const designRightUnitSubTabItems = computed(() => {
   if (!hasUploadedFileMetadata.value) return [];
   return packUnitListItemsForNav.value.map((item) => ({
     key: `pack-unit-${item.index}`,
-    label: packUnitNavDisplayLabel(item.label, item.index),
+    label: String(item.label ?? '').trim() || `單元 ${Number(item.index) + 1}`,
+    unitTypeLabel: packUnitTypeDisplayLabel(packUnitTypeAt(item.index)),
     index: item.index,
     kind: 'pack-unit',
     active: item.index === activePackUnitGi.value,
@@ -6138,7 +6114,7 @@ async function confirmAnswer(item) {
                               <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
                                 <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
                               </span>
-                              <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">追問出題</span>
+                              <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">追問</span>
                             </button>
                             <button
                               type="button"
@@ -6343,7 +6319,7 @@ async function confirmAnswer(item) {
               aria-label="建立流程"
             >
               <!-- 區塊 1：上傳檔案 -->
-              <div class="my-design-right-step-block">
+              <div class="my-design-right-step-block py-2">
                 <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">上傳檔案</div>
                 <div class="nav-item">
                   <span
@@ -6354,7 +6330,7 @@ async function confirmAnswer(item) {
               </div>
 
               <!-- 區塊 2：單元 -->
-              <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block">
+              <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block py-2">
                 <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">單元</div>
                 <template v-if="designRightUnitSubTabItems.length">
                   <div
@@ -6369,7 +6345,7 @@ async function confirmAnswer(item) {
                       :aria-current="item.active ? 'page' : undefined"
                       @click="onDesignRightSubTabClick(item)"
                     >
-                      {{ item.label }}
+                      {{ item.label }}<span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">{{ item.unitTypeLabel }}</span>
                     </button>
                   </div>
                 </template>
@@ -6411,6 +6387,12 @@ async function confirmAnswer(item) {
   min-width: 0;
   min-height: 0;
 }
+.my-design-tab-left-view-scroll {
+  scrollbar-width: none;
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar {
+  display: none;
+}
 /* 右側欄捲軸：對齊全站 gray-2 滑塊 */
 .my-design-tab-right-view,
 .my-design-right-nav {
@@ -6444,7 +6426,6 @@ async function confirmAnswer(item) {
   gap: 0;
   background-color: var(--my-color-gray-3);
   border-radius: 0.75rem;
-  padding: 0.5rem 0.25rem;
 }
 .my-design-right-step-heading {
   line-height: 1.35;
@@ -6510,6 +6491,7 @@ async function confirmAnswer(item) {
 .my-design-right-nav .nav-link {
   color: var(--my-color-black);
   border: none;
+  border-radius: 0;
   background: transparent;
 }
 .my-design-right-nav button.nav-link {

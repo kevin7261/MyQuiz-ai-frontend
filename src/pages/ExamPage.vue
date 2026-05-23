@@ -1090,9 +1090,11 @@ function examQuizNavDisplayLabel(slotIndex) {
   return examSlotHeadingQuestionTitle(slotIndex);
 }
 
-/** 稿頁題目區標題：小字 breadcrumb「單元 > 題型」 */
+/** 稿頁題目區標題：小字 breadcrumb「單元 > 題型」（不含出題模式） */
 function examSlotHeadingBreadcrumb(slotIndex) {
-  return `${examSlotUnitLabelForHistoryModal(slotIndex)} > ${examSlotQuizTypeLabelForHistoryModal(slotIndex)}`;
+  const fullLabel = examSlotQuizTypeLabelForHistoryModal(slotIndex);
+  const nameOnly = fullLabel.replace(/ \((?:一般出題|追問出題)\)$/, '');
+  return `${examSlotUnitLabelForHistoryModal(slotIndex)} > ${nameOnly}`;
 }
 
 /** 稿頁題目區主標題：第 1 題、第 2 題… */
@@ -1116,6 +1118,7 @@ const designRightQuizSubTabItems = computed(() => {
     items.push({
       key: `exam-slot-${i}`,
       label: examQuizNavDisplayLabel(i),
+      followup: examSlotIsFollowupMode(i),
       index: i - 1,
       slotIndex: i,
       kind: 'exam-slot',
@@ -2919,8 +2922,9 @@ onActivated(() => {
                                 class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0"
                               >{{ examSlotHeadingQuestionTitle(activeExamSlotIndex1) }}</span>
                               <span
+                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"
                                 class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-                              >{{ examSlotHeadingGenerateModeLabel(activeExamSlotIndex1) }}</span>
+                              >追問</span>
                             </div>
                           </div>
                           <div class="my-pack-unit-settings-body w-100 min-w-0">
@@ -3026,28 +3030,12 @@ onActivated(() => {
                                 <div
                                   class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
                                 >
-                                  <template v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) === ''">
-                                    <div
-                                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2"
-                                    >
-                                      <button
-                                        type="button"
-                                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
-                                        :disabled="examGenerateQuizButtonDisabled(activeExamSlotIndex1)"
-                                        :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
-                                        aria-label="產生題目"
-                                        @click="generateQuiz(activeExamSlotIndex1)"
-                                      >
-                                        產生題目
-                                      </button>
-                                    </div>
-                                    <div
-                                      v-if="getSlotFormState(activeExamSlotIndex1).error"
-                                      class="my-alert-danger-soft my-font-sm-400 py-2 mx-3 mb-3"
-                                    >
-                                      {{ getSlotFormState(activeExamSlotIndex1).error }}
-                                    </div>
-                                  </template>
+                                  <div
+                                    v-if="getSlotFormState(activeExamSlotIndex1).error"
+                                    class="my-alert-danger-soft my-font-sm-400 py-2 mx-3 mb-3"
+                                  >
+                                    {{ getSlotFormState(activeExamSlotIndex1).error }}
+                                  </div>
                                   <div
                                     v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                                     class="w-100 min-w-0 pt-2"
@@ -3101,6 +3089,22 @@ onActivated(() => {
                                   </div>
                                 </div>
                               </div>
+                              <!-- 繼續追問：追問出題模式且已有批改結果 -->
+                              <div
+                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1) && activeExamSlotShowGradingSubBlock"
+                                class="d-flex justify-content-center w-100 pt-2"
+                              >
+                                <button
+                                  type="button"
+                                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                                  :disabled="examGenerateQuizButtonDisabled(activeExamSlotIndex1)"
+                                  :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
+                                  aria-label="繼續追問"
+                                  @click="generateQuiz(activeExamSlotIndex1)"
+                                >
+                                  繼續追問
+                                </button>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -3114,7 +3118,7 @@ onActivated(() => {
         </div>
         <div
           v-if="showDesignRightView"
-          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-3"
+          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
@@ -3122,40 +3126,38 @@ onActivated(() => {
           >
             <nav
               v-if="activeTabId"
-              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-1 overflow-auto px-3 py-3"
+              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-auto px-3 py-3"
               aria-label="題目清單"
             >
-              <div class="my-design-right-step-heading my-font-md-400 my-color-black">
-                題目
-              </div>
-              <div
-                v-for="item in designRightQuizSubTabItems"
-                :key="item.key"
-                class="nav-item"
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                title="新增題目"
+                aria-label="新增題目"
+                :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                :aria-busy="examAddQuestionSubmitting"
+                @click="openExamAddQuestionModal"
               >
-                <button
-                  type="button"
-                  class="nav-link w-100 text-start text-break"
-                  :class="{ active: item.active }"
-                  :aria-current="item.active ? 'page' : undefined"
-                  @click="onDesignRightQuizClick(item)"
+                <i class="fa-solid fa-plus" aria-hidden="true" />
+                新增題目
+              </button>
+              <div class="my-design-right-step-block py-2">
+                <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">題目</div>
+                <div
+                  v-for="item in designRightQuizSubTabItems"
+                  :key="item.key"
+                  class="nav-item"
                 >
-                  {{ item.label }}
-                </button>
-              </div>
-              <div class="d-flex justify-content-center pt-2 pb-1 w-100">
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
-                  title="新增題目"
-                  aria-label="新增題目"
-                  :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
-                  :aria-busy="examAddQuestionSubmitting"
-                  @click="openExamAddQuestionModal"
-                >
-                  <i class="fa-solid fa-plus" aria-hidden="true" />
-                  新增題目
-                </button>
+                  <button
+                    type="button"
+                    class="nav-link w-100 text-start text-break"
+                    :class="{ active: item.active }"
+                    :aria-current="item.active ? 'page' : undefined"
+                    @click="onDesignRightQuizClick(item)"
+                  >
+                    {{ item.label }}<span v-if="item.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">追問</span>
+                  </button>
+                </div>
               </div>
             </nav>
           </aside>
@@ -3191,6 +3193,12 @@ onActivated(() => {
   min-width: 0;
   min-height: 0;
 }
+.my-design-tab-left-view-scroll {
+  scrollbar-width: none;
+}
+.my-design-tab-left-view-scroll::-webkit-scrollbar {
+  display: none;
+}
 /* 右側欄捲軸：對齊全站 gray-2 滑塊 */
 .my-design-tab-right-view,
 .my-design-right-nav {
@@ -3218,10 +3226,16 @@ onActivated(() => {
 .my-design-right-nav::-webkit-scrollbar-thumb:hover {
   background-color: var(--my-scrollbar-thumb-hover);
 }
+.my-design-right-step-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background-color: var(--my-color-gray-3);
+  border-radius: 0.75rem;
+}
 .my-design-right-step-heading {
   line-height: 1.35;
   white-space: nowrap;
-  padding: 0 0.5rem;
 }
 .my-design-pack-unit-blocks {
   display: flex;
@@ -3239,6 +3253,7 @@ onActivated(() => {
 .my-design-right-nav .nav-link {
   color: var(--my-color-black);
   border: none;
+  border-radius: 0;
   background: transparent;
 }
 .my-design-right-nav button.nav-link {
