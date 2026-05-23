@@ -48,10 +48,10 @@ import TabRenameModal from '../components/TabRenameModal.vue';
 import ExamAddQuestionModal from '../components/ExamAddQuestionModal.vue';
 import {
   apiUpdateExamTabName,
+  apiExamTabQuizCreate,
   apiExamTabQuizLlmGenerate,
   apiExamTabQuizCreateLlmGenerate,
   apiExamTabQuizLlmGenerateFollowup,
-  apiExamTabQuizCreateLlmGenerateFollowup,
 } from '../services/examApi.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { submitGrade } from '../composables/useQuizGrading.js';
@@ -1393,6 +1393,62 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
   };
 }
 
+/**
+ * 若 follow_up_quiz 巢狀節點缺 answers 陣列，從嵌入欄位（answer_content／quiz_score／answer_critique）補回，
+ * 讓 buildCardFromExamQuiz 可正常讀取 gradingResult。
+ */
+function normalizeFollowupQuizAnswers(q) {
+  if (!q || typeof q !== 'object') return q;
+  if (Array.isArray(q.answers) && q.answers.length > 0) return q;
+  const c = q.answer_content;
+  const g = q.quiz_score;
+  const crit = q.answer_critique;
+  const hasEmbedded =
+    (c != null && String(c).trim() !== '')
+    || (g != null && String(g).trim() !== '')
+    || (crit != null && String(crit).trim() !== '');
+  if (!hasEmbedded) return q;
+  const row = {
+    quiz_answer: c ?? '',
+    student_answer: c ?? '',
+    exam_quiz_id: q.exam_quiz_id,
+  };
+  if (crit != null && String(crit).trim() !== '') {
+    // answer_critique 可能是 JSON 批改字串（API 原始格式）或純文字（本地快照已格式化）；
+    // 先透過 formatGradingResult 統一格式化。
+    // 注意：不將 quiz_score 設入 row，避免與 formattedCrit（可能已含分數）重複輸出。
+    const formattedCrit = formatGradingResult(String(crit));
+    row.quiz_comments = [formattedCrit.trim()];
+  } else {
+    // 無批改文字時，僅保留分數（供 answerHasGradingEvidence 偵測）
+    row.quiz_score = g;
+  }
+  return { ...q, answers: [row] };
+}
+
+/**
+ * 沿 follow_up_quiz 鏈走到底：
+ * API 鏈方向：頂層 quiz 為最新題目，follow_up_quiz 往歷史方向串接（新→舊）。
+ * 例：Q4（最新，頂層）→ follow_up_quiz → Q3 → Q2 → Q1（最舊，無 follow_up_quiz）
+ *
+ * 處理：
+ * - 頂層 quiz（Q4）= activeQuiz（當前槽位可作答之卡片）
+ * - follow_up_quiz 鏈（Q3→Q2→Q1）沿鏈收集後反轉 = followupRounds（舊→新順序顯示）
+ * 支援任意深度鏈。
+ */
+function buildFollowupChain(quiz) {
+  // 收集 follow_up_quiz 鏈（新→舊），最後 reverse 成舊→新顯示順序
+  // 保留原始（normalized）API 格式，統一由 activeExamSlotFollowupRoundCards computed 轉成卡片
+  const reverseRounds = [];
+  let current = quiz.follow_up_quiz;
+  while (current) {
+    reverseRounds.push(normalizeFollowupQuizAnswers(current));
+    current = current.follow_up_quiz;
+  }
+  // 頂層 quiz 本身即為當前活躍卡片（已透過 mergeQuizzesWithTopLevelAnswers 處理）
+  return { rounds: reverseRounds.reverse(), activeQuiz: quiz };
+}
+
 /** 將 GET /exam/tabs 題卡上的 unit／題名對到試卷題庫下拉（需已載入 GET /exam/rag-for-exams） */
 function hydrateExamSlotFromRagCard(slotState, card) {
   if (!slotState || !card) return;
@@ -1452,13 +1508,27 @@ function syncExamItemToTabState(exam) {
     state.showQuizGeneratorBlock = true;
     state.quizSlotsCount = quizzesWithAnswers.length;
     const fallbackRid = rag?.rag_id ?? rag?.id;
-    state.cardList = quizzesWithAnswers.map((q) =>
-      buildCardFromExamQuiz(q, q.unit_name ?? q.rag_name ?? firstRagName, fallbackRid));
+    // 展開每題的 follow_up_quiz 鏈：取歷史輪次 + 當前活躍題目
+    const chainInfos = quizzesWithAnswers.map((q) => (
+      q.follow_up_quiz
+        ? buildFollowupChain(q)
+        : { rounds: [], activeQuiz: q }
+    ));
+    state.cardList = chainInfos.map(({ activeQuiz }, idx) => {
+      const rn = quizzesWithAnswers[idx].unit_name ?? quizzesWithAnswers[idx].rag_name ?? firstRagName;
+      return buildCardFromExamQuiz(activeQuiz, activeQuiz.unit_name ?? rn, fallbackRid);
+    });
     for (let i = 1; i <= state.quizSlotsCount; i++) {
       const card = state.cardList[i - 1];
       if (!card) continue;
       if (!state.slotFormState[i]) state.slotFormState[i] = reactive(getDefaultExamSlotForm());
       hydrateExamSlotFromRagCard(state.slotFormState[i], card);
+      const { rounds } = chainInfos[i - 1];
+      if (rounds.length > 0) {
+        state.slotFormState[i].followupRounds = rounds;
+        // 鏈中有歷史輪次時強制 followup 模式，即使 activeQuiz.follow_up 不為 true
+        state.slotFormState[i].quizGenerateMode = 'followup';
+      }
     }
     syncAllExamSlotQuizHistoryLists();
   } else {
@@ -2079,6 +2149,28 @@ function examSlotHasAnchoredExamQuizId(slotIndex) {
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
+/**
+ * 當前活躍槽位的追問歷史輪次卡片（統一由原始 API 格式轉換）。
+ * followupRounds 儲存 /tabs API 相容格式（quiz_content、answer_content、answer_critique 等），
+ * 此處統一透過 normalizeFollowupQuizAnswers + buildCardFromExamQuiz pipeline 轉成顯示用卡片，
+ * 確保 API 載入（buildFollowupChain）與本地追問快照（generateQuiz）走同一條路。
+ */
+const activeExamSlotFollowupRoundCards = computed(() => {
+  const slotIdx = activeExamSlotIndex1.value;
+  if (!slotIdx) return [];
+  const slotState = getSlotFormState(slotIdx);
+  if (!slotState) return [];
+  const rounds = slotState.followupRounds;
+  if (!Array.isArray(rounds) || rounds.length === 0) return [];
+  const fallbackRid = forExamRag.value?.rag_id ?? forExamRag.value?.id ?? null;
+  return rounds.map((round, idx) => {
+    const normalized = normalizeFollowupQuizAnswers(round);
+    const ragName = round.unit_name ?? '';
+    const card = buildCardFromExamQuiz(normalized, ragName, fallbackRid);
+    return { ...card, _roundId: card.exam_quiz_id ?? round.exam_quiz_id ?? `round-${idx}` };
+  });
+});
+
 /** 任一題列「產生題目」流程中（含建立空白列與 llm-generate） */
 const examGenerateQuizOverlayVisible = computed(() => {
   const state = currentState.value;
@@ -2190,6 +2282,7 @@ function getSlotFormState(slotIndex) {
     slot.examQuizNamePick = String(slot.quizNameDraft ?? '').trim();
   }
   if (!Array.isArray(slot.quiz_history_list)) slot.quiz_history_list = [];
+  if (!Array.isArray(slot.followupRounds)) slot.followupRounds = [];
   if (slot.quizGenerateMode !== 'followup' && slot.quizGenerateMode !== 'normal') {
     slot.quizGenerateMode = 'normal';
   }
@@ -2310,8 +2403,8 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
 }
 
 /**
- * 「產生題目」：新題（createAndGenerate）POST create-llm-generate／create-llm-generate-followup；
- * 既有題列 POST llm-generate／llm-generate-followup（須 exam_quiz_id）。
+ * 「產生題目」：追問模式（useFollowupGenerate）一律 POST llm-generate-followup（無 exam_quiz_id 時先 create）；
+ * 一般模式新題 POST create-llm-generate，既有題列 POST llm-generate（須 exam_quiz_id）。
  * @param {{ createAndGenerate?: boolean }} [options]
  */
 async function generateQuiz(slotIndex, options = {}) {
@@ -2388,6 +2481,23 @@ async function generateQuiz(slotIndex, options = {}) {
     }
   }
 
+  // 追問模式：將當前已批改卡片快照進 followupRounds（/tabs 相容格式），再產生下一題
+  if (followupMode && existingCard && String(existingCard.gradingResult ?? '').trim()) {
+    if (!Array.isArray(slotState.followupRounds)) slotState.followupRounds = [];
+    slotState.followupRounds.push({
+      exam_quiz_id: existingCard.exam_quiz_id ?? existingCard.quiz_id,
+      quiz_content: existingCard.quiz ?? '',
+      quiz_hint: existingCard.hint ?? '',
+      quiz_answer_reference: existingCard.referenceAnswer ?? '',
+      answer_content: existingCard.quiz_answer ?? '',
+      answer_critique: existingCard.gradingResult ?? '',
+      quiz_score: null,
+      unit_name: existingCard.ragName ?? '',
+      rag_unit_id: existingCard.rag_unit_id,
+      rag_quiz_id: existingCard.rag_quiz_id,
+    });
+  }
+
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
@@ -2397,51 +2507,52 @@ async function generateQuiz(slotIndex, options = {}) {
       ? slotState.quiz_history_list
       : [];
 
-    const data = createAndGenerate
-      ? (useFollowupGenerate
-          ? await apiExamTabQuizCreateLlmGenerateFollowup(
-              {
-                exam_tab_id: examTabStr,
-                rag_tab_id: ragTabIdForLlm,
-                rag_unit_id: ragUnitIdForLlm,
-                rag_quiz_id: ragQuizIdForLlm,
-                follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
-                quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
-              },
-              personId,
-            )
-          : await apiExamTabQuizCreateLlmGenerate(
-              {
-                exam_tab_id: examTabStr,
-                rag_tab_id: ragTabIdForLlm,
-                rag_unit_id: ragUnitIdForLlm,
-                rag_quiz_id: ragQuizIdForLlm,
-                quiz_history_list: quizHistoryList,
-              },
-              personId,
-            ))
-      : (useFollowupGenerate
-          ? await apiExamTabQuizLlmGenerateFollowup(
-              {
-                exam_quiz_id: draftEq,
-                rag_tab_id: ragTabIdForLlm,
-                rag_unit_id: ragUnitIdForLlm,
-                rag_quiz_id: ragQuizIdForLlm,
-                follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
-                quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
-              },
-              personId,
-            )
-          : await apiExamTabQuizLlmGenerate(
-              {
-                exam_quiz_id: draftEq,
-                rag_tab_id: ragTabIdForLlm,
-                rag_unit_id: ragUnitIdForLlm,
-                rag_quiz_id: ragQuizIdForLlm,
-                quiz_history_list: quizHistoryList,
-              },
-              personId,
-            ));
+    // 追問模式：一律走 llm-generate-followup（無 exam_quiz_id 時先 create 取得）
+    let data;
+    if (useFollowupGenerate) {
+      let examQuizIdForGenerate = createAndGenerate ? null : draftEq;
+      if (!(Number.isFinite(examQuizIdForGenerate) && examQuizIdForGenerate >= 1)) {
+        const created = await apiExamTabQuizCreate({ exam_tab_id: examTabStr }, personId);
+        examQuizIdForGenerate = Number(created.exam_quiz_id ?? created.quiz_id);
+        if (!Number.isFinite(examQuizIdForGenerate) || examQuizIdForGenerate < 1) {
+          throw new Error('建立 Exam_Quiz 後無法取得 exam_quiz_id');
+        }
+        slotState.draftExamQuizId = examQuizIdForGenerate;
+      }
+      data = await apiExamTabQuizLlmGenerateFollowup(
+        {
+          exam_quiz_id: examQuizIdForGenerate,
+          rag_tab_id: ragTabIdForLlm,
+          rag_unit_id: ragUnitIdForLlm,
+          rag_quiz_id: ragQuizIdForLlm,
+          follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
+          quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
+        },
+        personId,
+      );
+    } else if (createAndGenerate) {
+      data = await apiExamTabQuizCreateLlmGenerate(
+        {
+          exam_tab_id: examTabStr,
+          rag_tab_id: ragTabIdForLlm,
+          rag_unit_id: ragUnitIdForLlm,
+          rag_quiz_id: ragQuizIdForLlm,
+          quiz_history_list: quizHistoryList,
+        },
+        personId,
+      );
+    } else {
+      data = await apiExamTabQuizLlmGenerate(
+        {
+          exam_quiz_id: draftEq,
+          rag_tab_id: ragTabIdForLlm,
+          rag_unit_id: ragUnitIdForLlm,
+          rag_quiz_id: ragQuizIdForLlm,
+          quiz_history_list: quizHistoryList,
+        },
+        personId,
+      );
+    }
 
     slotState.responseJson = data;
     const quizContent = data[API_RESPONSE_QUIZ_CONTENT] ?? data[API_RESPONSE_QUIZ_LEGACY] ?? data.quiz_content ?? '';
@@ -3012,6 +3123,68 @@ onActivated(() => {
                                 </div>
                               </section>
                               <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
+                              <!-- 追問歷史輪次（唯讀，舊→新順序） -->
+                              <template v-if="activeExamSlotFollowupRoundCards.length">
+                                <template
+                                  v-for="roundCard in activeExamSlotFollowupRoundCards"
+                                  :key="roundCard._roundId"
+                                >
+                                  <div class="my-design-quiz-sub-block-outer">
+                                    <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                                      <div class="w-100 min-w-0 pt-2">
+                                        <QuizCard
+                                          :card="roundCard"
+                                          create-exam-bank-design-layout
+                                          design-sub-block="question"
+                                          :design-embedded="true"
+                                          :design-ui="true"
+                                          :hide-slot-index="true"
+                                          :hide-exam-rule-pills="true"
+                                          :show-exam-rating="false"
+                                          :hint-reference-in-modal="true"
+                                          :grading-prompt-in-modal="true"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div class="my-design-quiz-sub-block-outer">
+                                    <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 pb-2">
+                                      <div class="w-100 min-w-0 pt-2">
+                                        <QuizCard
+                                          :card="roundCard"
+                                          create-exam-bank-design-layout
+                                          design-sub-block="answer"
+                                          :design-embedded="true"
+                                          :design-ui="true"
+                                          :hide-slot-index="true"
+                                          :read-only-answer="true"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div
+                                    v-if="roundCard.gradingResult"
+                                    class="my-design-quiz-sub-block-outer"
+                                  >
+                                    <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                                      <div class="w-100 min-w-0 pt-2">
+                                        <QuizCard
+                                          :card="roundCard"
+                                          create-exam-bank-design-layout
+                                          design-sub-block="grading"
+                                          :design-embedded="true"
+                                          :design-ui="true"
+                                          :hide-slot-index="true"
+                                          :hide-exam-rule-pills="true"
+                                          :grading-prompt-in-modal="true"
+                                          :hide-grading-prompt="true"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
+                                </template>
+                              </template>
                               <!-- 子區塊：題目 -->
                               <div class="my-design-quiz-sub-block-outer">
                                 <div
