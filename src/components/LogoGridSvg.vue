@@ -13,9 +13,18 @@ const props = defineProps({
   colors: { type: Object, default: () => ({}) },
   svgWidth: { type: Number, default: 240 },
   svgHeight: { type: Number, default: 180 },
+  /** full：完整 logo；primary：僅黑色圖層；secondary：僅灰色圖層 */
+  layer: {
+    type: String,
+    default: 'full',
+    validator: (v) => ['full', 'primary', 'secondary'].includes(v),
+  },
 });
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
+
+const showPrimary = computed(() => props.layer === 'full' || props.layer === 'primary');
+const showSecondary = computed(() => props.layer === 'full' || props.layer === 'secondary');
 
 const svgStyle = computed(() => ({
   width: `${props.svgWidth}px`,
@@ -29,12 +38,12 @@ const svgStyle = computed(() => ({
   <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" :style="svgStyle">
     <rect x="0" y="0" width="240" height="160" :fill="c.background"/>
     <!-- 格 1／2／3／4／6：弧線 -->
-    <path d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="c.primary" stroke-width="40"/>
-    <path d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="c.primary" stroke-width="40"/>
-    <path d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="c.secondary" stroke-width="40"/>
-    <path d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="c.secondary" stroke-width="40"/>
-    <path d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="c.primary" stroke-width="40"/>
-    <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="c.secondary" stroke-width="40"/>
+    <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="c.primary" stroke-width="40"/>
+    <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="c.primary" stroke-width="40"/>
+    <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="c.secondary" stroke-width="40"/>
+    <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="c.secondary" stroke-width="40"/>
+    <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="c.primary" stroke-width="40"/>
+    <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="c.secondary" stroke-width="40"/>
     <defs>
       <clipPath :id="`${idPrefix}-clip-51`"><rect x="80"  y="80"  width="40" height="40"/></clipPath>
       <clipPath :id="`${idPrefix}-clip-52`"><rect x="120" y="80"  width="40" height="40"/></clipPath>
@@ -42,23 +51,23 @@ const svgStyle = computed(() => ({
       <clipPath :id="`${idPrefix}-clip-54`"><rect x="120" y="120" width="40" height="40"/></clipPath>
     </defs>
     <!-- 51–54 -->
-    <g :clip-path="`url(#${idPrefix}-clip-51)`">
+    <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-51)`">
       <path d="M 80 120 A 40 40 0 0 0 120 80 L 80 80 Z" :fill="c.secondary"/>
     </g>
-    <g :clip-path="`url(#${idPrefix}-clip-52)`">
+    <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-52)`">
       <path d="M 160 120 A 40 40 0 0 1 120 80 L 160 80 Z" :fill="c.primary"/>
     </g>
-    <g :clip-path="`url(#${idPrefix}-clip-53)`">
+    <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-53)`">
       <path d="M 80 120 A 40 40 0 0 1 120 160 L 80 160 Z" :fill="c.secondary"/>
     </g>
-    <g :clip-path="`url(#${idPrefix}-clip-54)`">
+    <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-54)`">
       <path d="M 160 120 A 40 40 0 0 0 120 160 L 160 160 Z" :fill="c.primary"/>
     </g>
-    <rect x="200" y="80"  width="40" height="80" :fill="c.secondary"/>
+    <rect v-if="showSecondary" x="200" y="80"  width="40" height="80" :fill="c.secondary"/>
     <!-- 延伸列 71／72／81 -->
-    <rect x="80"  y="160" width="40" height="20" :fill="c.secondary"/>
-    <rect x="120" y="160" width="40" height="20" :fill="c.primary"/>
-    <rect x="200" y="160" width="40" height="20" :fill="c.secondary"/>
+    <rect v-if="showSecondary" x="80"  y="160" width="40" height="20" :fill="c.secondary"/>
+    <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="c.primary"/>
+    <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="c.secondary"/>
     <template v-if="showGrid">
       <rect x="0" y="0" width="240" height="160" fill="none" stroke="#b0b0b0" stroke-width="1"/>
       <rect x="80"  y="160" width="40" height="20" fill="none" stroke="#b0b0b0" stroke-width="1"/>

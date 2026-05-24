@@ -23,6 +23,20 @@ const sizeVariants = [
 ];
 
 const sizeHeight = (width) => Math.round(width * (180 / 240));
+
+/** 04 區塊：分層（僅黑／僅灰） */
+const layerVariants = [
+  { id: 'primary', label: '僅黑色', layer: 'primary' },
+  { id: 'secondary', label: '僅灰色', layer: 'secondary' },
+];
+
+/** Q & A 區塊：兩圖各有多種尺寸 */
+const qaSizeVariants = [
+  { id: '160', label: '160px', width: 160 },
+  { id: '80', label: '80px', width: 80 },
+  { id: '48', label: '48px', width: 48 },
+  { id: '32', label: '32px', width: 32 },
+];
 </script>
 
 <template>
@@ -121,6 +135,76 @@ const sizeHeight = (width) => Math.round(width * (180 / 240));
                         :svg-width="size.width"
                         :svg-height="sizeHeight(size.width)"
                       />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ===== 04 · 分層（黑／灰） ===== -->
+            <section class="my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
+                  04 · 分層（黑／灰）
+                </div>
+                <div
+                  v-for="layerVariant in layerVariants"
+                  :key="layerVariant.id"
+                  class="mb-4"
+                >
+                  <p class="my-font-sm-600 my-color-black mb-3">{{ layerVariant.label }}</p>
+                  <div class="d-flex flex-wrap gap-4 align-items-end">
+                    <div
+                      v-for="size in sizeVariants"
+                      :key="`${layerVariant.id}-${size.id}`"
+                      class="d-flex flex-column align-items-center gap-2"
+                    >
+                      <p class="my-font-sm-400 my-color-black mb-0">{{ size.label }}</p>
+                      <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
+                        <LogoGridSvg
+                          :show-grid="false"
+                          :id-prefix="`layer-${layerVariant.id}-${size.id}`"
+                          :layer="layerVariant.layer"
+                          :svg-width="size.width"
+                          :svg-height="sizeHeight(size.width)"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ===== Q & A ===== -->
+            <section class="my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
+                  Q &amp; A
+                </div>
+                <div class="d-flex flex-wrap gap-5 align-items-start">
+                  <div
+                    v-for="layerVariant in layerVariants"
+                    :key="`qa-${layerVariant.id}`"
+                    class="d-flex flex-column gap-3"
+                  >
+                    <p class="my-font-sm-600 my-color-black mb-0">{{ layerVariant.label }}</p>
+                    <div class="d-flex flex-wrap gap-4 align-items-end">
+                      <div
+                        v-for="size in qaSizeVariants"
+                        :key="`qa-${layerVariant.id}-${size.id}`"
+                        class="d-flex flex-column align-items-center gap-2"
+                      >
+                        <p class="my-font-sm-400 my-color-black mb-0">{{ size.label }}</p>
+                        <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
+                          <LogoGridSvg
+                            :show-grid="false"
+                            :id-prefix="`qa-${layerVariant.id}-${size.id}`"
+                            :layer="layerVariant.layer"
+                            :svg-width="size.width"
+                            :svg-height="sizeHeight(size.width)"
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
