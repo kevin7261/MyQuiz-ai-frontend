@@ -13,6 +13,104 @@ const colorVariants = [
   { id: 'teal', label: '青綠', colors: { background: '#ffffff', primary: '#115e59', secondary: '#2dd4bf' } },
 ];
 
+/** 02 區塊：漸層變化 */
+const gradientVariants = [
+  {
+    id: 'grad-mono',
+    label: '黑灰漸層',
+    colors: {
+      background: '#ffffff',
+      primaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '100%',
+        stops: [{ offset: '0%', color: '#525252' }, { offset: '100%', color: '#000000' }],
+      },
+      secondaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '100%',
+        stops: [{ offset: '0%', color: '#e5e5e5' }, { offset: '100%', color: '#737373' }],
+      },
+    },
+  },
+  {
+    id: 'grad-blue',
+    label: '藍色漸層',
+    colors: {
+      background: '#ffffff',
+      primaryGradient: {
+        x1: '0%', y1: '100%', x2: '100%', y2: '0%',
+        stops: [{ offset: '0%', color: '#1e3a8a' }, { offset: '100%', color: '#3b82f6' }],
+      },
+      secondaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '0%',
+        stops: [{ offset: '0%', color: '#93c5fd' }, { offset: '100%', color: '#60a5fa' }],
+      },
+    },
+  },
+  {
+    id: 'grad-green',
+    label: '綠色漸層',
+    colors: {
+      background: '#ffffff',
+      primaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '100%',
+        stops: [{ offset: '0%', color: '#14532d' }, { offset: '100%', color: '#22c55e' }],
+      },
+      secondaryGradient: {
+        x1: '0%', y1: '100%', x2: '100%', y2: '0%',
+        stops: [{ offset: '0%', color: '#bbf7d0' }, { offset: '100%', color: '#4ade80' }],
+      },
+    },
+  },
+  {
+    id: 'grad-warm',
+    label: '暖色漸層',
+    colors: {
+      background: '#ffffff',
+      primaryGradient: {
+        x1: '0%', y1: '100%', x2: '100%', y2: '0%',
+        stops: [{ offset: '0%', color: '#7c2d12' }, { offset: '100%', color: '#ea580c' }],
+      },
+      secondaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '100%',
+        stops: [{ offset: '0%', color: '#fed7aa' }, { offset: '100%', color: '#fb923c' }],
+      },
+    },
+  },
+  {
+    id: 'grad-purple',
+    label: '紫色漸層',
+    colors: {
+      background: '#ffffff',
+      primaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '100%',
+        stops: [{ offset: '0%', color: '#4c1d95' }, { offset: '100%', color: '#7c3aed' }],
+      },
+      secondaryGradient: {
+        x1: '100%', y1: '0%', x2: '0%', y2: '100%',
+        stops: [{ offset: '0%', color: '#ddd6fe' }, { offset: '100%', color: '#a78bfa' }],
+      },
+    },
+  },
+  {
+    id: 'grad-invert',
+    label: '反色漸層',
+    colors: {
+      background: '#1a1a1a',
+      primaryGradient: {
+        x1: '0%', y1: '0%', x2: '100%', y2: '0%',
+        stops: [{ offset: '0%', color: '#ffffff' }, { offset: '100%', color: '#d4d4d4' }],
+      },
+      secondaryGradient: {
+        x1: '0%', y1: '100%', x2: '100%', y2: '0%',
+        stops: [{ offset: '0%', color: '#a3a3a3' }, { offset: '100%', color: '#525252' }],
+      },
+      backgroundGradient: {
+        x1: '0%', y1: '0%', x2: '0%', y2: '100%',
+        stops: [{ offset: '0%', color: '#262626' }, { offset: '100%', color: '#0a0a0a' }],
+      },
+    },
+  },
+];
+
 /** 03 區塊：尺寸變化（寬度 px，高度依 4:3 比例） */
 const sizeVariants = [
   { id: '240', label: '240px', width: 240 },
@@ -29,6 +127,11 @@ const sizeHeight = (width) => Math.round(width * (180 / 240));
 const layerVariants = [
   { id: 'primary', label: 'Q', layer: 'primary' },
   { id: 'secondary', label: 'A', layer: 'secondary' },
+];
+
+const layerGridModes = [
+  { id: 'grid', label: '格線版', showGrid: true },
+  { id: 'bare', label: '無格線版', showGrid: false },
 ];
 
 const diamondGridWidth = 80;
@@ -108,6 +211,29 @@ const diamondGridWidth = 80;
                     </div>
                   </div>
                 </div>
+
+                <p class="my-font-sm-600 my-color-black mb-3 mt-4 pt-4 border-top border-secondary-subtle">
+                  漸層特效
+                </p>
+                <div class="d-flex flex-wrap gap-4 align-items-start">
+                  <div
+                    v-for="variant in gradientVariants"
+                    :key="variant.id"
+                    class="d-flex flex-column align-items-center gap-2"
+                  >
+                    <p class="my-font-sm-400 my-color-black mb-0">{{ variant.label }}</p>
+                    <div
+                      class="rounded-3 p-3 d-inline-flex"
+                      :style="{ background: variant.colors.background }"
+                    >
+                      <LogoGridSvg
+                        :show-grid="false"
+                        :id-prefix="`grad-${variant.id}`"
+                        :colors="variant.colors"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -149,22 +275,50 @@ const diamondGridWidth = 80;
                   class="mb-4"
                 >
                   <p class="my-font-sm-600 my-color-black mb-3">{{ layerVariant.label }}</p>
+                  <div class="d-flex flex-wrap gap-4 align-items-start mb-4">
+                    <div
+                      v-for="mode in layerGridModes"
+                      :key="`${layerVariant.id}-${mode.id}-240`"
+                      class="d-flex flex-column align-items-center gap-2"
+                    >
+                      <p class="my-font-sm-400 my-color-black mb-0">{{ mode.label }}</p>
+                      <div class="rounded-3 p-3 d-inline-flex" style="background:#ffffff">
+                        <LogoGridSvg
+                          :show-grid="mode.showGrid"
+                          merge-cell5
+                          :id-prefix="`layer-${layerVariant.id}-${mode.id}-240`"
+                          :layer="layerVariant.layer"
+                          :svg-width="240"
+                          :svg-height="sizeHeight(240)"
+                        />
+                      </div>
+                    </div>
+                  </div>
                   <div class="d-flex flex-wrap gap-4 align-items-end">
                     <div
                       v-for="size in sizeVariants"
                       :key="`${layerVariant.id}-${size.id}`"
-                      class="d-flex flex-column align-items-center gap-2"
+                      class="d-flex flex-column gap-2"
                     >
                       <p class="my-font-sm-400 my-color-black mb-0">{{ size.label }}</p>
-                      <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
-                        <LogoGridSvg
-                          show-grid
-                          merge-cell5
-                          :id-prefix="`layer-${layerVariant.id}-${size.id}`"
-                          :layer="layerVariant.layer"
-                          :svg-width="size.width"
-                          :svg-height="sizeHeight(size.width)"
-                        />
+                      <div class="d-flex flex-wrap gap-3 align-items-end">
+                        <div
+                          v-for="mode in layerGridModes"
+                          :key="`${layerVariant.id}-${size.id}-${mode.id}`"
+                          class="d-flex flex-column align-items-center gap-1"
+                        >
+                          <p class="my-font-sm-400 my-color-black mb-0">{{ mode.label }}</p>
+                          <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
+                            <LogoGridSvg
+                              :show-grid="mode.showGrid"
+                              merge-cell5
+                              :id-prefix="`layer-${layerVariant.id}-${size.id}-${mode.id}`"
+                              :layer="layerVariant.layer"
+                              :svg-width="size.width"
+                              :svg-height="sizeHeight(size.width)"
+                            />
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -172,20 +326,27 @@ const diamondGridWidth = 80;
 
                 <div class="mt-2 pt-4 border-top border-secondary-subtle">
                   <p class="my-font-sm-400 my-color-black mb-3">2×2 菱形</p>
-                  <div class="d-flex flex-wrap gap-4 align-items-start">
-                    <div
-                      v-for="layerVariant in layerVariants"
-                      :key="`diamond-${layerVariant.id}`"
-                      class="d-flex flex-column align-items-center gap-2"
-                    >
-                      <p class="my-font-sm-600 my-color-black mb-0">{{ layerVariant.label }}</p>
-                      <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
-                        <LogoDiamondGridSvg
-                          show-grid
-                          :id-prefix="`diamond-${layerVariant.id}`"
-                          :layer="layerVariant.layer"
-                          :svg-width="diamondGridWidth"
-                        />
+                  <div
+                    v-for="layerVariant in layerVariants"
+                    :key="`diamond-${layerVariant.id}`"
+                    class="mb-3"
+                  >
+                    <p class="my-font-sm-600 my-color-black mb-2">{{ layerVariant.label }}</p>
+                    <div class="d-flex flex-wrap gap-4 align-items-start">
+                      <div
+                        v-for="mode in layerGridModes"
+                        :key="`diamond-${layerVariant.id}-${mode.id}`"
+                        class="d-flex flex-column align-items-center gap-2"
+                      >
+                        <p class="my-font-sm-400 my-color-black mb-0">{{ mode.label }}</p>
+                        <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
+                          <LogoDiamondGridSvg
+                            :show-grid="mode.showGrid"
+                            :id-prefix="`diamond-${layerVariant.id}-${mode.id}`"
+                            :layer="layerVariant.layer"
+                            :svg-width="diamondGridWidth"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>

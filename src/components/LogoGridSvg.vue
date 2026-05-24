@@ -29,6 +29,20 @@ const props = defineProps({
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
 
+const primaryGradientId = computed(() => `${props.idPrefix}-grad-primary`);
+const secondaryGradientId = computed(() => `${props.idPrefix}-grad-secondary`);
+const backgroundGradientId = computed(() => `${props.idPrefix}-grad-background`);
+
+const primaryPaint = computed(() =>
+  (c.value.primaryGradient ? `url(#${primaryGradientId.value})` : c.value.primary),
+);
+const secondaryPaint = computed(() =>
+  (c.value.secondaryGradient ? `url(#${secondaryGradientId.value})` : c.value.secondary),
+);
+const backgroundPaint = computed(() =>
+  (c.value.backgroundGradient ? `url(#${backgroundGradientId.value})` : c.value.background),
+);
+
 const showPrimary   = computed(() => props.layer === 'full' || props.layer === 'primary');
 const showSecondary = computed(() => props.layer === 'full' || props.layer === 'secondary');
 
@@ -86,6 +100,51 @@ const svgStyle = computed(() => {
 <template>
   <svg :viewBox="viewBox" xmlns="http://www.w3.org/2000/svg" :style="svgStyle">
     <defs>
+      <linearGradient
+        v-if="c.primaryGradient"
+        :id="primaryGradientId"
+        :x1="c.primaryGradient.x1 ?? '0%'"
+        :y1="c.primaryGradient.y1 ?? '0%'"
+        :x2="c.primaryGradient.x2 ?? '100%'"
+        :y2="c.primaryGradient.y2 ?? '100%'"
+      >
+        <stop
+          v-for="(stop, i) in c.primaryGradient.stops"
+          :key="`p-${i}`"
+          :offset="stop.offset"
+          :stop-color="stop.color"
+        />
+      </linearGradient>
+      <linearGradient
+        v-if="c.secondaryGradient"
+        :id="secondaryGradientId"
+        :x1="c.secondaryGradient.x1 ?? '0%'"
+        :y1="c.secondaryGradient.y1 ?? '0%'"
+        :x2="c.secondaryGradient.x2 ?? '100%'"
+        :y2="c.secondaryGradient.y2 ?? '100%'"
+      >
+        <stop
+          v-for="(stop, i) in c.secondaryGradient.stops"
+          :key="`s-${i}`"
+          :offset="stop.offset"
+          :stop-color="stop.color"
+        />
+      </linearGradient>
+      <linearGradient
+        v-if="c.backgroundGradient"
+        :id="backgroundGradientId"
+        :x1="c.backgroundGradient.x1 ?? '0%'"
+        :y1="c.backgroundGradient.y1 ?? '0%'"
+        :x2="c.backgroundGradient.x2 ?? '0%'"
+        :y2="c.backgroundGradient.y2 ?? '100%'"
+      >
+        <stop
+          v-for="(stop, i) in c.backgroundGradient.stops"
+          :key="`b-${i}`"
+          :offset="stop.offset"
+          :stop-color="stop.color"
+        />
+      </linearGradient>
       <clipPath v-if="mergeCell5" :id="`${idPrefix}-clip-outside-5`">
         <path
           fill-rule="evenodd"
@@ -103,19 +162,19 @@ const svgStyle = computed(() => {
         <clipPath :id="`${idPrefix}-clip-54`"><rect x="120" y="120" width="40" height="40"/></clipPath>
       </template>
     </defs>
-    <rect x="0" y="0" width="240" height="160" :fill="c.background"/>
+    <rect x="0" y="0" width="240" height="160" :fill="backgroundPaint"/>
     <!-- 04 分層格網：格 5／6 合併，格 5 各畫 1/4 弧成圓 -->
     <template v-if="mergeCell5">
       <g :clip-path="`url(#${idPrefix}-clip-outside-5)`">
         <!-- 黑：1、2、4 -->
-        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="c.primary" stroke-width="40"/>
-        <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="c.primary" stroke-width="40"/>
-        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="c.primary" stroke-width="40"/>
+        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
         <!-- 灰：2、3、6 -->
-        <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="c.secondary" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="c.secondary" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="c.secondary" stroke-width="40"/>
-        <rect v-if="showSecondary" x="200" y="80" width="40" height="80" :fill="c.secondary"/>
+        <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <rect v-if="showSecondary" x="200" y="80" width="40" height="80" :fill="secondaryPaint"/>
       </g>
       <g :clip-path="`url(#${idPrefix}-clip-cell-5)`">
         <!-- 黑：格 5 與 1、2、4 成圓（圓心 80,80） -->
@@ -123,53 +182,53 @@ const svgStyle = computed(() => {
           v-if="showPrimary"
           d="M 140 80 A 60 60 0 0 1 80 140"
           fill="none"
-          :stroke="c.primary"
+          :stroke="primaryPaint"
           stroke-width="40"
         />
         <!-- 黑：格 5 右側直線（同灰格 6 右側） -->
-        <rect v-if="showPrimary" x="120" y="80" width="40" height="80" :fill="c.primary"/>
+        <rect v-if="showPrimary" x="120" y="80" width="40" height="80" :fill="primaryPaint"/>
         <!-- 灰：格 5 為格 6 弧線左右鏡像（對稱軸 x=160），與 2、3、6 成圓 -->
         <path
           v-if="showSecondary"
           d="M 100 80 A 60 60 0 0 0 160 140"
           fill="none"
-          :stroke="c.secondary"
+          :stroke="secondaryPaint"
           stroke-width="40"
         />
         <!-- 灰：格 5 左側直線（格 6 右側直線左右翻轉） -->
-        <rect v-if="showSecondary" x="80" y="80" width="40" height="80" :fill="c.secondary"/>
+        <rect v-if="showSecondary" x="80" y="80" width="40" height="80" :fill="secondaryPaint"/>
       </g>
       <!-- 延伸列：僅畫有內容的格，不鋪整列白底 -->
-      <rect v-if="showSecondary" x="80" y="160" width="40" height="20" :fill="c.secondary"/>
-      <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="c.primary"/>
-      <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="c.secondary"/>
+      <rect v-if="showSecondary" x="80" y="160" width="40" height="20" :fill="secondaryPaint"/>
+      <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="primaryPaint"/>
+      <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="secondaryPaint"/>
     </template>
     <g v-else>
       <!-- 格 1／2／3／4／6：弧線 -->
-      <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="c.primary" stroke-width="40"/>
-      <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="c.primary" stroke-width="40"/>
-      <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="c.secondary" stroke-width="40"/>
-      <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="c.secondary" stroke-width="40"/>
-      <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="c.primary" stroke-width="40"/>
-      <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="c.secondary" stroke-width="40"/>
+      <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+      <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+      <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+      <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+      <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+      <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
       <!-- 格 51–54 -->
       <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-51)`">
-        <path d="M 80 120 A 40 40 0 0 0 120 80 L 80 80 Z" :fill="c.secondary"/>
+        <path d="M 80 120 A 40 40 0 0 0 120 80 L 80 80 Z" :fill="secondaryPaint"/>
       </g>
       <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-52)`">
-        <path d="M 160 120 A 40 40 0 0 1 120 80 L 160 80 Z" :fill="c.primary"/>
+        <path d="M 160 120 A 40 40 0 0 1 120 80 L 160 80 Z" :fill="primaryPaint"/>
       </g>
       <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-53)`">
-        <path d="M 80 120 A 40 40 0 0 1 120 160 L 80 160 Z" :fill="c.secondary"/>
+        <path d="M 80 120 A 40 40 0 0 1 120 160 L 80 160 Z" :fill="secondaryPaint"/>
       </g>
       <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-54)`">
-        <path d="M 160 120 A 40 40 0 0 0 120 160 L 160 160 Z" :fill="c.primary"/>
+        <path d="M 160 120 A 40 40 0 0 0 120 160 L 160 160 Z" :fill="primaryPaint"/>
       </g>
-      <rect v-if="showSecondary" x="200" y="80"  width="40" height="80" :fill="c.secondary"/>
+      <rect v-if="showSecondary" x="200" y="80"  width="40" height="80" :fill="secondaryPaint"/>
       <!-- 延伸列 71／72／81 -->
-      <rect v-if="showSecondary" x="80"  y="160" width="40" height="20" :fill="c.secondary"/>
-      <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="c.primary"/>
-      <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="c.secondary"/>
+      <rect v-if="showSecondary" x="80"  y="160" width="40" height="20" :fill="secondaryPaint"/>
+      <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="primaryPaint"/>
+      <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="secondaryPaint"/>
     </g>
     <!-- 04 分層：僅畫有圖形的格 -->
     <template v-if="showGrid && useSplitLayerGrid">
