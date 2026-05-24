@@ -7,7 +7,7 @@
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
- * 出題：Modal「產生題目」→ create-llm-generate／create-llm-generate-followup；槽位內「產生題目」→ llm-generate／llm-generate-followup（提示自 Rag_Quiz 讀勿傳）。追問「先前出題」與 followup API 之 quiz_history_list：沿當前題 follow_up_exam_quiz_id 往前至 0，再加當前題卡。評分：POST /exam/tab/quiz/llm-grade；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
+ * 出題：Modal「產生題目」→ create-llm-generate／create-llm-generate-followup；槽位內「產生題目」→ llm-generate／llm-generate-followup（提示自 Rag_Quiz 讀勿傳）。追問先前出題 Modal 不含當前題；followup API 之 quiz_history_list 為祖先鏈＋followupRounds（繼續追問含剛批改輪）。評分：POST /exam/tab/quiz/llm-grade；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
@@ -1477,22 +1477,47 @@ function examQuizRowToFollowupHistoryItem(quiz) {
   return followupHistoryEntryFromQuizCard(card);
 }
 
+/** 合併追問祖先列時的去重鍵（exam_quiz_id 優先，否則題幹） */
+function examFollowupRowMergeKey(row) {
+  if (!row || typeof row !== 'object') return '';
+  const id = Number(row.exam_quiz_id ?? row.quiz_id);
+  if (Number.isFinite(id) && id >= 1) return `id:${Math.trunc(id)}`;
+  const stem = String(row.quiz_content ?? row.quiz ?? '').trim();
+  return stem ? `stem:${stem}` : '';
+}
+
+/** 合併 DB 祖先鏈與 slot.followupRounds（舊→新、去重；繼續追問快照在 GET 鏈未就緒時仍可顯示） */
+function mergeExamFollowupPredecessorRows(fromDb, localRounds) {
+  const byKey = new Map();
+  const order = [];
+  const add = (row) => {
+    const key = examFollowupRowMergeKey(row);
+    if (!key) return;
+    if (!byKey.has(key)) order.push(key);
+    byKey.set(key, row);
+  };
+  for (const row of fromDb) add(row);
+  for (const row of localRounds) add(row);
+  return order.map((k) => byKey.get(k));
+}
+
 /**
- * 本槽追問「先前出題」原始列：優先 follow_up_exam_quiz_id 鏈；無 exam_quiz_id 時 fallback slot.followupRounds。
+ * 本槽追問歷史原始列：follow_up_exam_quiz_id 祖先鏈 ＋ followupRounds 快照（舊→新）。
  * @param {number} slotIndex 1-based
  * @returns {object[]}
  */
 function examFollowupPredecessorRowsForSlot(slotIndex) {
   const card = currentState.value.cardList[slotIndex - 1];
   const exam = currentExamItem.value;
+  const slotState = getSlotFormState(slotIndex);
+  const localRounds = Array.isArray(slotState?.followupRounds) ? slotState.followupRounds : [];
+  let fromDb = [];
   const idNum = Number(card?.exam_quiz_id ?? card?.quiz_id);
   if (Number.isFinite(idNum) && idNum >= 1 && exam) {
     const quizById = buildExamQuizByIdMapForExam(exam);
-    return examFollowupPredecessorsByExamQuizId(idNum, quizById);
+    fromDb = examFollowupPredecessorsByExamQuizId(idNum, quizById);
   }
-  const slotState = getSlotFormState(slotIndex);
-  const rounds = Array.isArray(slotState?.followupRounds) ? slotState.followupRounds : [];
-  return rounds.length > 0 ? [...rounds] : [];
+  return mergeExamFollowupPredecessorRows(fromDb, localRounds);
 }
 
 /**
@@ -2178,11 +2203,7 @@ function examSlotIsFollowupMode(slotIndex) {
   return resolveExamSlotGenerateMode(slotIndex) === 'followup';
 }
 
-/**
- * 追問出題：沿 follow_up_exam_quiz_id 至 0 的祖先題 + 當前題卡問答（與 create／llm-generate-followup 之 quiz_history_list 同源）。
- */
-function examQuizFollowupHistoryListForDisplay(slotIndex) {
-  const card = currentState.value.cardList[slotIndex - 1];
+function examQuizFollowupHistoryListFromRows(rows) {
   const seen = new Set();
   const out = [];
   const push = (item) => {
@@ -2198,7 +2219,7 @@ function examQuizFollowupHistoryListForDisplay(slotIndex) {
     seen.add(key);
     out.push(normalized);
   };
-  for (const row of examFollowupPredecessorRowsForSlot(slotIndex)) {
+  for (const row of rows) {
     if (row.quiz_content != null || row.quiz != null) {
       push({
         quiz_content: row.quiz_content ?? row.quiz,
@@ -2210,8 +2231,19 @@ function examQuizFollowupHistoryListForDisplay(slotIndex) {
       push(examQuizRowToFollowupHistoryItem(row));
     }
   }
-  if (card) push(followupHistoryEntryFromQuizCard(card));
   return out;
+}
+
+/** 追問「先前出題」Modal：祖先／快照列，排除當前槽位這一題 */
+function examQuizFollowupHistoryListForDisplay(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  const currentId = Number(card?.exam_quiz_id ?? card?.quiz_id);
+  const rows = examFollowupPredecessorRowsForSlot(slotIndex).filter((row) => {
+    if (!Number.isFinite(currentId) || currentId < 1) return true;
+    const rid = Number(row.exam_quiz_id ?? row.quiz_id);
+    return !(Number.isFinite(rid) && Math.trunc(rid) === Math.trunc(currentId));
+  });
+  return examQuizFollowupHistoryListFromRows(rows);
 }
 
 /** 追問出題：本槽前一題 follow_up 錨點（當前題卡 follow_up_exam_quiz_id；首題追問則為 exam_quiz_id） */
@@ -2237,9 +2269,9 @@ function examFollowUpExamQuizIdForSlot(slotIndex) {
   return null;
 }
 
-/** 追問出題 POST llm-generate-followup 用之 quiz_history_list（本槽 followupRounds + 當前題卡） */
+/** 追問 POST llm-generate-followup：含祖先鏈與 followupRounds（繼續追問時含剛批改那一輪；不含「新題」本身） */
 function examQuizFollowupHistoryListForLlm(slotIndex) {
-  return examQuizFollowupHistoryListForDisplay(slotIndex);
+  return examQuizFollowupHistoryListFromRows(examFollowupPredecessorRowsForSlot(slotIndex));
 }
 
 /** 實際走追問 API：題型為追問且已有同題型先前題目與問答；首題（無先前題）改走一般 llm-generate */

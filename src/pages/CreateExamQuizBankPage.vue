@@ -3144,7 +3144,7 @@ function parseQuizHistoryListFromSource(source) {
   return out;
 }
 
-/** 供追問 llm-generate-followup：含儲存歷史與當前問答（重新產生時接續） */
+/** 供追問 llm-generate-followup：含儲存歷史與當前問答（重新產生／繼續追問時接續） */
 function unitQuizFollowupHistoryListForLlm(quizCardRow) {
   const seen = new Set();
   const out = [];
