@@ -249,6 +249,23 @@ function groupSig(g) {
   return [...g].map(String).sort().join('\u0001');
 }
 
+/** 資料夾組合含 2 個以上資料夾時僅能使用 RAG（合併單元） */
+export function packGroupRequiresRagType(group) {
+  return Array.isArray(group) && group.length > 1;
+}
+
+/**
+ * 與 packTasksList 群組序對齊；多資料夾群組強制為 UNIT_TYPE_RAG。
+ * @param {string[][]} groups
+ * @param {unknown} types
+ * @returns {number[]}
+ */
+export function enforcePackUnitTypesForFolderGroups(groups, types) {
+  const list = Array.isArray(groups) ? groups : [];
+  const normalized = parsePackUnitTypesFromRag(types, list.length);
+  return normalized.map((t, i) => (packGroupRequiresRagType(list[i]) ? UNIT_TYPE_RAG : t));
+}
+
 /**
  * 拖放／刪除標籤後，依群組資料夾集合對齊 unit_types（僅序位可能變動時沿用原類型）
  * @param {string[][]} oldList
@@ -264,6 +281,7 @@ export function remapPackUnitTypes(oldList, oldTypes, newList) {
   ot.length = ol.length;
   const used = new Set();
   return nl.map((g) => {
+    if (packGroupRequiresRagType(g)) return UNIT_TYPE_RAG;
     const s = groupSig(g);
     if (!s) return DEFAULT_PACK_UNIT_TYPE;
     for (let i = 0; i < ol.length; i++) {

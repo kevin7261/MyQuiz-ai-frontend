@@ -70,6 +70,8 @@ import {
   chunkSizesOverlapsStringsForBuildRagZip,
   serializePackUnitNamesForApi,
   normalizePackUnitType,
+  packGroupRequiresRagType,
+  enforcePackUnitTypesForFolderGroups,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -1215,8 +1217,17 @@ function onDesignRightSubTabClick(item) {
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
 function packUnitTypeAt(gi) {
+  const group = currentState.value.packTasksList?.[gi];
+  if (packGroupRequiresRagType(group)) return UNIT_TYPE_RAG;
   const raw = currentState.value.packUnitTypes?.[gi];
   return normalizePackUnitType(raw);
+}
+
+/** 多資料夾組合時僅 rag 可選，其餘類型按鈕 disable（仍顯示） */
+function packUnitTypeOptionDisabled(gi, unitTypeValue) {
+  const group = currentState.value.packTasksList?.[gi];
+  if (packGroupRequiresRagType(group) && Number(unitTypeValue) !== UNIT_TYPE_RAG) return true;
+  return false;
 }
 
 function isTranscriptPackUnitType(ut) {
@@ -1225,16 +1236,17 @@ function isTranscriptPackUnitType(ut) {
 
 /** 設定單元類型：數值與後端 unit_types／unit_type_list 對齊；順序 rag、文字、mp3、youtube；預設 rag */
 const PACK_UNIT_TYPE_OPTIONS = [
-  { value: UNIT_TYPE_RAG, label: 'rag' },
+  { value: UNIT_TYPE_RAG, label: 'RAG' },
   { value: UNIT_TYPE_TEXT, label: '文字' },
-  { value: UNIT_TYPE_MP3, label: 'mp3' },
-  { value: UNIT_TYPE_YOUTUBE, label: 'youtube' },
+  { value: UNIT_TYPE_MP3, label: 'MP3' },
+  { value: UNIT_TYPE_YOUTUBE, label: 'YouTube' },
 ];
 
 function onPackUnitTypePick(gi, rawVal) {
   const v = Number(rawVal);
   if (!(v === UNIT_TYPE_RAG || v === UNIT_TYPE_TEXT || v === UNIT_TYPE_MP3 || v === UNIT_TYPE_YOUTUBE)) return;
   const state = currentState.value;
+  if (packGroupRequiresRagType(state.packTasksList?.[gi]) && v !== UNIT_TYPE_RAG) return;
   const n = state.packTasksList?.length ?? 0;
   const next = parsePackUnitTypesFromRag(state.packUnitTypes, n);
   next[gi] = v;
@@ -1372,6 +1384,19 @@ watch(
     ensurePackUnitSidecarArrays();
     fillDefaultPackUnitNamesWhereEmpty();
     if (!Array.isArray(list)) return;
+    const state = currentState.value;
+    const prevTypes = parsePackUnitTypesFromRag(state.packUnitTypes, list.length);
+    const enforced = enforcePackUnitTypesForFolderGroups(list, state.packUnitTypes);
+    let typesChanged = false;
+    for (let i = 0; i < enforced.length; i++) {
+      if (enforced[i] !== prevTypes[i]) {
+        typesChanged = true;
+        if (isTranscriptPackUnitType(prevTypes[i]) && enforced[i] === UNIT_TYPE_RAG) {
+          clearPackUnitPreviewAt(i);
+        }
+      }
+    }
+    if (typesChanged) state.packUnitTypes = enforced;
     for (let gi = 0; gi < list.length; gi++) {
       const ut = packUnitTypeAt(gi);
       if (!isTranscriptPackUnitType(ut)) continue;
@@ -3000,7 +3025,10 @@ function syncRagItemToState(rag, state) {
     state.packTasks = unitListStr;
     state.packTasksList = parsePackTasksList(state.packTasks);
     const rawUt = rag.unit_types ?? rag.unit_type_list;
-    state.packUnitTypes = parsePackUnitTypesFromRag(rawUt, state.packTasksList.length);
+    state.packUnitTypes = enforcePackUnitTypesForFolderGroups(
+      state.packTasksList,
+      parsePackUnitTypesFromRag(rawUt, state.packTasksList.length),
+    );
   }
   if (rag.rag_metadata != null) {
     state.ragMetadata = typeof rag.rag_metadata === 'string' ? rag.rag_metadata : JSON.stringify(rag.rag_metadata, null, 2);
@@ -3876,9 +3904,9 @@ async function confirmPack() {
   state.packBuildRepackFilename = '';
   state.packBuildRagFilename = '';
   try {
-    const unitTypesNormalized = parsePackUnitTypesFromRag(
-      state.packUnitTypes,
-      state.packTasksList?.length ?? 0
+    const unitTypesNormalized = enforcePackUnitTypesForFolderGroups(
+      state.packTasksList,
+      parsePackUnitTypesFromRag(state.packUnitTypes, state.packTasksList?.length ?? 0),
     );
     const transcriptions = transcriptionsForBuildRagZip(
       unitTypesNormalized,
@@ -5555,7 +5583,11 @@ async function confirmAnswer(item) {
                               ? 'my-button-gray-3'
                               : 'my-button-transparent-borderless'
                           "
-                          :disabled="packGroupsEditBlocked || activePackUnitGroup.length === 0"
+                          :disabled="
+                            packGroupsEditBlocked
+                              || activePackUnitGroup.length === 0
+                              || packUnitTypeOptionDisabled(activePackUnitGi, opt.value)
+                          "
                           @click="onPackUnitTypePick(activePackUnitGi, opt.value)"
                         >
                           {{ opt.label }}
