@@ -3493,20 +3493,22 @@ onActivated(() => {
               class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-auto px-3 py-3"
               aria-label="題目清單"
             >
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
-                title="新增題目"
-                aria-label="新增題目"
-                :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
-                :aria-busy="examAddQuestionSubmitting"
-                @click="openExamAddQuestionModal"
-              >
-                <i class="fa-solid fa-plus" aria-hidden="true" />
-                新增題目
-              </button>
               <div class="my-design-right-step-block py-2">
                 <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">題目</div>
+                <div class="px-3 pb-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                    title="新增題目"
+                    aria-label="新增題目"
+                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                    :aria-busy="examAddQuestionSubmitting"
+                    @click="openExamAddQuestionModal"
+                  >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    新增題目
+                  </button>
+                </div>
                 <div
                   v-for="item in designRightQuizSubTabItems"
                   :key="item.key"

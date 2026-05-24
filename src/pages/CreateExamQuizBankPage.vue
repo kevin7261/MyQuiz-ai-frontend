@@ -432,9 +432,9 @@ const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.v
 const hasBuiltRagSummary = computed(
   () => hasRagListOrMetadata.value || currentState.value.packResponseJson != null
 );
-/** 右側欄：單元建置完成後顯示（上傳檔名＋單元列表） */
+/** 右側欄：已上傳檔案後顯示（上傳檔名＋單元列表；建置前「設定單元」與建置後「設定單元題型」共用） */
 const showDesignRightView = computed(
-  () => !!activeTabId.value && hasUploadedFileMetadata.value && hasBuiltRagSummary.value,
+  () => !!activeTabId.value && hasUploadedFileMetadata.value,
 );
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
@@ -6435,6 +6435,23 @@ async function confirmAnswer(item) {
               <!-- 區塊 2：單元 -->
               <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block py-2">
                 <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">單元</div>
+                <div v-if="!hasBuiltRagSummary" class="px-3 pb-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100 my-pack-drop-target"
+                    :disabled="packGroupsEditBlocked"
+                    title="新增單元"
+                    aria-label="新增單元"
+                    @dragover.prevent="onDragOver($event)"
+                    @dragenter.prevent="onDragEnter($event)"
+                    @dragleave="onDragLeave($event)"
+                    @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
+                    @click="onAddPackUnitClick"
+                  >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    新增單元
+                  </button>
+                </div>
                 <template v-if="designRightUnitSubTabItems.length">
                   <div
                     v-for="item in designRightUnitSubTabItems"
