@@ -6,7 +6,7 @@
  *
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
- * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>` 與逐字稿 Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）
+ * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>`（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe（不標 YouTube 字樣）；mp3／YouTube 可開「詳細資訊」Modal（僅逐字稿）
  * 出題：Modal「產生題目」→ create-llm-generate／create-llm-generate-followup；槽位內「產生題目」→ llm-generate／llm-generate-followup（提示自 Rag_Quiz 讀勿傳）。追問先前出題 Modal 不含當前題；followup API 之 quiz_history_list 為祖先鏈＋followupRounds（繼續追問含剛批改輪）。評分：POST /exam/tab/quiz/llm-grade；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
@@ -531,6 +531,15 @@ function examQuizTypeDisplayLabelForDropdownOption(opt) {
   return examQuizTypeDisplayLabelFromParts(opt.quiz_name, opt.follow_up);
 }
 
+function examQuizNameLabelForDropdownOption(opt) {
+  if (!opt || typeof opt !== 'object') return '—';
+  return String(opt.quiz_name ?? '').trim() || '—';
+}
+
+function examQuizDropdownOptionIsFollowUp(opt) {
+  return !!opt?.follow_up;
+}
+
 /**
  * 目前選定單元在試卷題庫中的 quiz_name 下拉選項。
  * @param {object | null | undefined} unitItem - examUnitTabItems 其中一筆
@@ -768,18 +777,7 @@ function examSlotYoutubeEmbedUrl(slotIndex) {
   return youtubeEmbedUrlFromInput(raw);
 }
 
-/** MP3／YouTube 單元：逐字稿改以 Modal 顯示（槽位 1-based） */
-const examUnitTranscriptModalSlotIndex = ref(null);
-
-function openExamUnitTranscriptModal(slotIndex) {
-  examUnitTranscriptModalSlotIndex.value = slotIndex;
-}
-
-function closeExamUnitTranscriptModal() {
-  examUnitTranscriptModalSlotIndex.value = null;
-}
-
-/** 詳細資訊 Modal（unit_type=3/4）：槽位 1-based */
+/** 詳細資訊 Modal（unit_type=3/4，僅逐字稿）：槽位 1-based */
 const examUnitDetailModalSlotIndex = ref(null);
 
 function openExamUnitDetailModal(slotIndex) {
@@ -789,24 +787,6 @@ function openExamUnitDetailModal(slotIndex) {
 function closeExamUnitDetailModal() {
   examUnitDetailModalSlotIndex.value = null;
 }
-
-const examUnitDetailModalSection = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null) return null;
-  return examSlotUnitTranscriptSection(Number(idx));
-});
-
-const examUnitDetailModalMp3Props = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null) return null;
-  return examSlotMp3PlayerProps(Number(idx));
-});
-
-const examUnitDetailModalYoutubeEmbedUrl = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null) return '';
-  return examSlotYoutubeEmbedUrl(Number(idx));
-});
 
 const examUnitDetailModalMdHtml = computed(() => {
   const idx = examUnitDetailModalSlotIndex.value;
@@ -859,12 +839,6 @@ const examQuizHistoryModalQuizTypeLabel = computed(() => {
   const idx = examQuizHistoryModalSlotIndex.value;
   if (idx == null) return '—';
   return examSlotQuizTypeLabelForHistoryModal(idx);
-});
-
-const examUnitTranscriptModalMdHtml = computed(() => {
-  const idx = examUnitTranscriptModalSlotIndex.value;
-  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
-  return examSlotUnitTranscriptMdHtml(Number(idx));
 });
 
 /**
@@ -1080,8 +1054,11 @@ watch(
 /** 「產生題目」「新增題目」：試卷題庫清單載入中則暫停（create 僅需 exam_tab_id，不依賴 rag_unit_id） */
 const generateQuizBlocked = computed(() => forExamLoading.value);
 
-/** 右側欄：有測驗分頁時顯示題目清單與「新增題目」（對齊 exam_design） */
-const showDesignRightView = computed(() => !!activeTabId.value);
+/** 右側欄：有題目時顯示題目清單與「新增題目」 */
+const showDesignRightView = computed(() => {
+  if (!activeTabId.value) return false;
+  return (Number(currentState.value.quizSlotsCount) || 0) > 0;
+});
 
 /** 題目 Carousel：一次只顯示一題，由右側清單切換 */
 const activeExamSlotIndex = ref(0);
@@ -1174,8 +1151,8 @@ watch(activeExamSlotGi, () => {
   examUnitContentCollapsed.value = false;
 });
 
-/** 文字單元已內嵌逐字稿；mp3／YouTube 才顯示「逐字稿」開 Modal */
-function examSlotTranscriptModalButtonVisible(slotIndex) {
+/** mp3／YouTube 單元才顯示「詳細資訊」按鈕 */
+function examSlotDetailModalButtonVisible(slotIndex) {
   const sec = examSlotUnitTranscriptSection(slotIndex);
   if (!sec) return false;
   return sec.unitType === UNIT_TYPE_MP3 || sec.unitType === UNIT_TYPE_YOUTUBE;
@@ -3029,46 +3006,11 @@ onActivated(() => {
       :unit-option-label="(u) => String(u.label ?? '').trim() || '—'"
       :quiz-options-for-unit="examAddQuestionModalQuizOptions"
       :quiz-pick-select-value="examQuizPickSelectValue"
-      :quiz-option-label="examQuizTypeDisplayLabelForDropdownOption"
+      :quiz-option-label="examQuizNameLabelForDropdownOption"
+      :quiz-option-follow-up="examQuizDropdownOptionIsFollowUp"
       @confirm="onExamAddQuestionModalConfirm"
     />
     <Teleport to="body">
-      <div
-        v-if="examUnitTranscriptModalSlotIndex != null"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="exam-unit-transcript-modal-title"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5 id="exam-unit-transcript-modal-title" class="modal-title my-color-black">逐字稿</h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeExamUnitTranscriptModal"
-              />
-            </div>
-            <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
-              <div
-                v-if="examUnitTranscriptModalMdHtml"
-                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                v-html="examUnitTranscriptModalMdHtml"
-              />
-              <span
-                v-else
-                class="my-font-md-400 my-color-black"
-              >—</span>
-            </div>
-          </div>
-        </div>
-      </div>
       <QuizHistoryModal
         v-model="examQuizHistoryModalOpen"
         :unit-label="examQuizHistoryModalUnitLabel"
@@ -3077,7 +3019,7 @@ onActivated(() => {
         :history-list="examQuizHistoryModalList"
         title-id="exam-quiz-history-modal-title"
       />
-      <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube）-->
+      <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube；僅逐字稿）-->
       <div
         v-if="examUnitDetailModalSlotIndex != null"
         class="modal fade show d-block my-modal-backdrop"
@@ -3105,47 +3047,15 @@ onActivated(() => {
               />
             </div>
             <div class="modal-body p-0 min-w-0" style="max-height: 70vh; overflow: auto;">
-              <div class="row g-3 w-100 min-w-0">
-                <!-- MP3 播放器 -->
-                <div
-                  v-if="examUnitDetailModalMp3Props"
-                  class="col-12 min-w-0"
-                >
-                  <RagTabUnitMp3Player
-                    :rag-tab-id="examUnitDetailModalMp3Props.ragTabId"
-                    :rag-unit-id="examUnitDetailModalMp3Props.ragUnitId"
-                  />
-                </div>
-                <!-- YouTube iframe -->
-                <div
-                  v-if="examUnitDetailModalSection && examUnitDetailModalSection.unitType === UNIT_TYPE_YOUTUBE && examUnitDetailModalYoutubeEmbedUrl"
-                  class="col-12 min-w-0"
-                >
-                  <div class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted">
-                    <iframe
-                      class="border-0"
-                      title="YouTube 影片"
-                      :src="examUnitDetailModalYoutubeEmbedUrl"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                      allowfullscreen
-                    />
-                  </div>
-                </div>
-                <!-- 逐字稿 -->
-                <div
-                  v-if="examUnitDetailModalMdHtml && examUnitDetailModalSection && (examUnitDetailModalSection.unitType === UNIT_TYPE_MP3 || examUnitDetailModalSection.unitType === UNIT_TYPE_YOUTUBE)"
-                  class="col-12 min-w-0"
-                >
-                  <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div class="my-font-sm-400 my-color-gray-1 mb-2">逐字稿</div>
-                    <div
-                      class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                      v-html="examUnitDetailModalMdHtml"
-                    />
-                  </div>
-                </div>
-              </div>
+              <div
+                v-if="examUnitDetailModalMdHtml"
+                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                v-html="examUnitDetailModalMdHtml"
+              />
+              <span
+                v-else
+                class="my-font-md-400 my-color-black"
+              >—</span>
             </div>
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
               <button
@@ -3273,12 +3183,18 @@ onActivated(() => {
               v-if="activeTabId && !(Number(currentState.quizSlotsCount) || 0)"
               class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
             >
-              <p
-                class="my-font-lg-400 my-color-gray-1 mb-0 text-center text-break lh-base"
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                title="新增題目"
+                aria-label="新增題目"
+                :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                :aria-busy="examAddQuestionSubmitting"
+                @click="openExamAddQuestionModal"
               >
-                目前沒有題目<br>
-                請按右側新增題目按鈕新增
-              </p>
+                <i class="fa-solid fa-plus" aria-hidden="true" />
+                新增題目
+              </button>
             </div>
             <div
               v-else
@@ -3326,7 +3242,7 @@ onActivated(() => {
                               >追問</span>
                             </div>
                             <button
-                              v-if="examSlotTranscriptModalButtonVisible(activeExamSlotIndex1)"
+                              v-if="examSlotDetailModalButtonVisible(activeExamSlotIndex1)"
                               type="button"
                               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1"
                               aria-label="詳細資訊"
@@ -3403,16 +3319,6 @@ onActivated(() => {
                                   v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1)?.unitType !== UNIT_TYPE_MP3"
                                   class="d-flex justify-content-center align-items-center flex-wrap gap-2 w-100 min-w-0 py-2"
                                 >
-                                  <button
-                                    v-if="examSlotTranscriptModalButtonVisible(activeExamSlotIndex1)"
-                                    type="button"
-                                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
-                                    title="逐字稿"
-                                    aria-label="逐字稿"
-                                    @click="openExamUnitTranscriptModal(activeExamSlotIndex1)"
-                                  >
-                                    逐字稿
-                                  </button>
                                   <button
                                     type="button"
                                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"

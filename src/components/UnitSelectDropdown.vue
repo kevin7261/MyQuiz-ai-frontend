@@ -23,6 +23,8 @@ const props = defineProps({
   optionValue: { type: Function, default: null },
   /** 選項顯示文字；未傳時使用 rag_name */
   optionLabel: { type: Function, default: null },
+  /** 選項是否顯示「追問」tag；未傳時不顯示 */
+  optionFollowUp: { type: Function, default: null },
   /** disabled 時觸發鈕 title（例如「請先選擇單元」）；未設則用顯示文字 */
   hintWhenDisabled: { type: String, default: '' },
   /** true 時不顯示「清空／清空至 placeholder」選項（僅列出 options，適用必選之單元切換） */
@@ -85,12 +87,26 @@ function optLabel(o) {
   return '—';
 }
 
-const buttonLabel = computed(() => {
+function optFollowUp(o) {
+  if (typeof props.optionFollowUp !== 'function') return false;
+  return !!props.optionFollowUp(o);
+}
+
+const selectedOption = computed(() => {
   const v = String(props.modelValue || '').trim();
-  if (!v) return props.placeholder;
-  const opt = props.options.find((o) => optValue(o) === v);
+  if (!v) return null;
+  return props.options.find((o) => optValue(o) === v) ?? null;
+});
+
+const buttonLabel = computed(() => {
+  const opt = selectedOption.value;
   if (opt) return optLabel(opt);
   return props.placeholder;
+});
+
+const buttonFollowUp = computed(() => {
+  const opt = selectedOption.value;
+  return opt ? optFollowUp(opt) : false;
 });
 
 const buttonTitle = computed(() => {
@@ -137,7 +153,13 @@ function select(val) {
       :title="buttonTitle"
       v-bind="dropdownToggleBind"
     >
-      <span class="text-truncate flex-grow-1 pe-2">{{ buttonLabel }}</span>
+      <span class="d-flex align-items-center min-w-0 flex-grow-1 pe-2">
+        <span class="text-truncate">{{ buttonLabel }}</span>
+        <span
+          v-if="buttonFollowUp"
+          class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2 flex-shrink-0"
+        >追問</span>
+      </span>
       <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
     </button>
     <ul
@@ -162,7 +184,13 @@ function select(val) {
           :class="{ active: optValue(opt) === modelValue }"
           @click="select(optValue(opt))"
         >
-          {{ optLabel(opt) }}
+          <span class="d-inline-flex align-items-center flex-wrap gap-1">
+            <span>{{ optLabel(opt) }}</span>
+            <span
+              v-if="optFollowUp(opt)"
+              class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
+            >追問</span>
+          </span>
         </button>
       </li>
     </ul>

@@ -13,6 +13,7 @@
  *   quizOptionsForUnit Function(unitSelectId) → 題型選項
  *   quizPickSelectValue Function 題型選項 value
  *   quizOptionLabel  Function 題型顯示文字
+ *   quizOptionFollowUp Function 題型是否顯示「追問」tag（可選）
  *
  * Emits:
  *   update:modelValue
@@ -32,6 +33,7 @@ const props = defineProps({
   quizOptionsForUnit: { type: Function, required: true },
   quizPickSelectValue: { type: Function, required: true },
   quizOptionLabel: { type: Function, required: true },
+  quizOptionFollowUp: { type: Function, default: null },
 });
 
 const emit = defineEmits(['update:modelValue', 'confirm']);
@@ -141,6 +143,7 @@ function onConfirm() {
                     :options="quizOptions"
                     :option-value="quizPickSelectValue"
                     :option-label="quizOptionLabel"
+                    :option-follow-up="quizOptionFollowUp"
                     placeholder="— 請選擇題型 —"
                     menu-id="exam-add-question-quiz"
                     :disabled="submitting || blocked || !String(localUnitId ?? '').trim() || quizOptions.length === 0"
