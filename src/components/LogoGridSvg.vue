@@ -46,6 +46,13 @@ const backgroundPaint = computed(() =>
 const showPrimary   = computed(() => props.layer === 'full' || props.layer === 'primary');
 const showSecondary = computed(() => props.layer === 'full' || props.layer === 'secondary');
 
+/**
+ * 格 5 中央白菱形（疊加於色塊之上）
+ * 四邊為向內凹的 1/4 圓弧（與原 51–54 內緣弧相同，sweep=0）
+ */
+const CENTER_DIAMOND_PATH =
+  'M 120 80 A 40 40 0 0 0 160 120 A 40 40 0 0 0 120 160 A 40 40 0 0 0 80 120 A 40 40 0 0 0 120 80 Z';
+
 /** 04 分層：僅有圖形的格線與重新編號 */
 const PRIMARY_SPLIT_GRID = [
   { x: 0, y: 0, w: 80, h: 80, label: '1', fontSize: 20 },
@@ -74,7 +81,6 @@ const splitLayerGridCells = computed(() => {
   }));
 });
 
-// splitLayerGridCells 在條件不符時已回傳 []，直接用長度判斷即可
 const useSplitLayerGrid = computed(() => splitLayerGridCells.value.length > 0);
 
 const viewBox = computed(() => {
@@ -145,63 +151,48 @@ const svgStyle = computed(() => {
           :stop-color="stop.color"
         />
       </linearGradient>
-      <clipPath v-if="mergeCell5" :id="`${idPrefix}-clip-outside-5`">
-        <path
-          fill-rule="evenodd"
-          d="M 0 0 H 240 V 160 H 0 Z M 80 80 H 160 V 160 H 80 Z"
-        />
-      </clipPath>
-      <clipPath v-if="mergeCell5" :id="`${idPrefix}-clip-cell-5`">
-        <rect x="80" y="80" width="80" height="80"/>
-      </clipPath>
-      <!-- 格 51–54 的 clipPath 只在非 mergeCell5 模式下使用 -->
-      <template v-if="!mergeCell5">
-        <clipPath :id="`${idPrefix}-clip-51`"><rect x="80"  y="80"  width="40" height="40"/></clipPath>
-        <clipPath :id="`${idPrefix}-clip-52`"><rect x="120" y="80"  width="40" height="40"/></clipPath>
-        <clipPath :id="`${idPrefix}-clip-53`"><rect x="80"  y="120" width="40" height="40"/></clipPath>
-        <clipPath :id="`${idPrefix}-clip-54`"><rect x="120" y="120" width="40" height="40"/></clipPath>
+      <template v-if="mergeCell5">
+        <clipPath :id="`${idPrefix}-clip-outside-5`">
+          <path fill-rule="evenodd" d="M 0 0 H 240 V 160 H 0 Z M 80 80 H 160 V 160 H 80 Z"/>
+        </clipPath>
+        <clipPath :id="`${idPrefix}-clip-cell-5`">
+          <rect x="80" y="80" width="80" height="80"/>
+        </clipPath>
       </template>
     </defs>
     <rect x="0" y="0" width="240" height="160" :fill="backgroundPaint"/>
-    <!-- 04 分層格網：格 5／6 合併，格 5 各畫 1/4 弧成圓 -->
+    <!-- mergeCell5 模式：格 5 各層畫 1/4 弧成圓 -->
     <template v-if="mergeCell5">
       <g :clip-path="`url(#${idPrefix}-clip-outside-5)`">
-        <!-- 黑：1、2、4 -->
-        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-        <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-        <!-- 灰：2、3、6 -->
-        <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-        <rect v-if="showSecondary" x="200" y="80" width="40" height="80" :fill="secondaryPaint"/>
+        <!-- 黑：弧 1、2、4 -->
+        <g v-if="showPrimary">
+          <path d="M 20 80 A 60 60 0 0 1 80 20"   fill="none" :stroke="primaryPaint" stroke-width="40"/>
+          <path d="M 80 20 A 60 60 0 0 1 140 80"   fill="none" :stroke="primaryPaint" stroke-width="40"/>
+          <path d="M 20 80 A 60 60 0 0 0 80 140"   fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        </g>
+        <!-- 灰：弧 2、3、6 -->
+        <g v-if="showSecondary">
+          <path d="M 100 80 A 60 60 0 0 1 160 20"  fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+          <path d="M 160 20 A 60 60 0 0 1 220 80"  fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+          <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        </g>
       </g>
       <g :clip-path="`url(#${idPrefix}-clip-cell-5)`">
-        <!-- 黑：格 5 與 1、2、4 成圓（圓心 80,80） -->
-        <path
-          v-if="showPrimary"
-          d="M 140 80 A 60 60 0 0 1 80 140"
-          fill="none"
-          :stroke="primaryPaint"
-          stroke-width="40"
-        />
-        <!-- 黑：格 5 右側直線（同灰格 6 右側） -->
-        <rect v-if="showPrimary" x="120" y="80" width="40" height="80" :fill="primaryPaint"/>
-        <!-- 灰：格 5 為格 6 弧線左右鏡像（對稱軸 x=160），與 2、3、6 成圓 -->
-        <path
-          v-if="showSecondary"
-          d="M 100 80 A 60 60 0 0 0 160 140"
-          fill="none"
-          :stroke="secondaryPaint"
-          stroke-width="40"
-        />
-        <!-- 灰：格 5 左側直線（格 6 右側直線左右翻轉） -->
-        <rect v-if="showSecondary" x="80" y="80" width="40" height="80" :fill="secondaryPaint"/>
+        <!-- 黑：格 5 弧（與 1、2、4 成圓，圓心 80,80）＋右側直線 -->
+        <g v-if="showPrimary">
+          <path d="M 140 80 A 60 60 0 0 1 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+          <rect x="120" y="80" width="40" height="80" :fill="primaryPaint"/>
+        </g>
+        <!-- 灰：格 5 弧（與 2、3、6 成圓，對稱軸 x=160）＋左側直線 -->
+        <g v-if="showSecondary">
+          <path d="M 100 80 A 60 60 0 0 0 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+          <rect x="80" y="80" width="40" height="80" :fill="secondaryPaint"/>
+        </g>
       </g>
-      <!-- 延伸列：僅畫有內容的格，不鋪整列白底 -->
+      <!-- 延伸列 71／72；62＋81 灰方塊 -->
       <rect v-if="showSecondary" x="80" y="160" width="40" height="20" :fill="secondaryPaint"/>
       <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="primaryPaint"/>
-      <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="secondaryPaint"/>
+      <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
     </template>
     <g v-else>
       <!-- 格 1／2／3／4／6：弧線 -->
@@ -211,37 +202,38 @@ const svgStyle = computed(() => {
       <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
       <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
       <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-      <!-- 格 51–54 -->
-      <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-51)`">
-        <path d="M 80 120 A 40 40 0 0 0 120 80 L 80 80 Z" :fill="secondaryPaint"/>
-      </g>
-      <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-52)`">
-        <path d="M 160 120 A 40 40 0 0 1 120 80 L 160 80 Z" :fill="primaryPaint"/>
-      </g>
-      <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-53)`">
-        <path d="M 80 120 A 40 40 0 0 1 120 160 L 80 160 Z" :fill="secondaryPaint"/>
-      </g>
-      <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-54)`">
-        <path d="M 160 120 A 40 40 0 0 0 120 160 L 160 160 Z" :fill="primaryPaint"/>
-      </g>
-      <rect v-if="showSecondary" x="200" y="80"  width="40" height="80" :fill="secondaryPaint"/>
-      <!-- 延伸列 71／72／81 -->
-      <rect v-if="showSecondary" x="80"  y="160" width="40" height="20" :fill="secondaryPaint"/>
-      <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="primaryPaint"/>
-      <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="secondaryPaint"/>
+      <!-- 51＋53＋71 灰方塊；52＋54＋72 黑方塊；中央白菱形疊加 -->
+      <rect
+        v-if="showSecondary"
+        x="80"
+        y="80"
+        width="40"
+        height="100"
+        :fill="secondaryPaint"
+      />
+      <rect
+        v-if="showPrimary"
+        x="120"
+        y="80"
+        width="40"
+        height="100"
+        :fill="primaryPaint"
+      />
+      <path
+        v-if="showPrimary || showSecondary"
+        :d="CENTER_DIAMOND_PATH"
+        :fill="backgroundPaint"
+      />
+      <!-- 62＋81 灰方塊 -->
+      <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
     </g>
-    <!-- 04 分層：僅畫有圖形的格 -->
+    <!-- 格線 -->
     <template v-if="showGrid && useSplitLayerGrid">
       <rect
         v-for="cell in splitLayerGridCells"
         :key="`grid-${cell.label}`"
-        :x="cell.x"
-        :y="cell.y"
-        :width="cell.w"
-        :height="cell.h"
-        fill="none"
-        stroke="#b0b0b0"
-        stroke-width="1"
+        :x="cell.x" :y="cell.y" :width="cell.w" :height="cell.h"
+        fill="none" stroke="#b0b0b0" stroke-width="1"
       />
     </template>
     <template v-else-if="showGrid">
@@ -257,40 +249,37 @@ const svgStyle = computed(() => {
       <line v-if="!mergeCell5" x1="200" y1="80" x2="200" y2="160" stroke="#b0b0b0" stroke-width="1"/>
       <line x1="120" y1="160" x2="120" y2="180" stroke="#b0b0b0" stroke-width="1"/>
     </template>
-    <g v-if="showGrid" pointer-events="none">
+    <!-- 格號標籤：共用屬性提升至 <g> -->
+    <g v-if="showGrid" pointer-events="none" text-anchor="middle" dominant-baseline="central" fill="#0000ff">
       <template v-if="useSplitLayerGrid">
         <text
           v-for="cell in splitLayerGridCells"
           :key="`label-${cell.label}`"
-          :x="cell.cx"
-          :y="cell.cy"
-          text-anchor="middle"
-          dominant-baseline="central"
+          :x="cell.cx" :y="cell.cy"
           :font-size="cell.fontSize"
-          fill="#0000ff"
         >{{ cell.label }}</text>
       </template>
       <template v-else>
-        <text x="40"  y="40"  text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">1</text>
-        <text x="120" y="40"  text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">2</text>
-        <text x="200" y="40"  text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">3</text>
-        <text x="40"  y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">4</text>
-        <!-- cell 5 & 6：mergeCell5 時各為一個大格，否則各分為兩個子格 -->
+        <text x="40"  y="40"  font-size="20">1</text>
+        <text x="120" y="40"  font-size="20">2</text>
+        <text x="200" y="40"  font-size="20">3</text>
+        <text x="40"  y="120" font-size="20">4</text>
+        <!-- 格 5、6：mergeCell5 時各為整格，否則各分四個子格 -->
         <template v-if="mergeCell5">
-          <text x="120" y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">5</text>
-          <text x="200" y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">6</text>
+          <text x="120" y="120" font-size="20">5</text>
+          <text x="200" y="120" font-size="20">6</text>
         </template>
         <template v-else>
-          <text x="100" y="100" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">51</text>
-          <text x="140" y="100" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">52</text>
-          <text x="100" y="140" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">53</text>
-          <text x="140" y="140" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">54</text>
-          <text x="180" y="120" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">61</text>
-          <text x="220" y="120" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">62</text>
+          <text x="100" y="100" font-size="13">51</text>
+          <text x="140" y="100" font-size="13">52</text>
+          <text x="100" y="140" font-size="13">53</text>
+          <text x="140" y="140" font-size="13">54</text>
+          <text x="180" y="120" font-size="13">61</text>
+          <text x="220" y="120" font-size="13">62</text>
         </template>
-        <text x="100" y="170" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#0000ff">71</text>
-        <text x="140" y="170" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#0000ff">72</text>
-        <text x="220" y="170" text-anchor="middle" dominant-baseline="central" font-size="10" fill="#0000ff">81</text>
+        <text x="100" y="170" font-size="10">71</text>
+        <text x="140" y="170" font-size="10">72</text>
+        <text x="220" y="170" font-size="10">81</text>
       </template>
     </g>
   </svg>
