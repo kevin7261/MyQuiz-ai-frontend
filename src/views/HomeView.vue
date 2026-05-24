@@ -31,6 +31,7 @@ const PATH_TO_VIEW = {
   profile: 'profile',
   'create-exam-bank': 'createExamQuizBank',
   design: 'designPage',
+  logo: 'logoPage',
   'manage-users': 'userManagement',
   settings: 'systemSettings',
   logs: 'logList',

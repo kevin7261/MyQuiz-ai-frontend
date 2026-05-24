@@ -13,6 +13,7 @@
   import ProfilePage from '../pages/ProfilePage.vue';
   import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
   import DesignPage from '../pages/DesignPage.vue';
+  import LogoPage from '../pages/LogoPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
   import LogListPage from '../pages/LogListPage.vue';
@@ -25,6 +26,7 @@
     profile: markRaw(ProfilePage),
     createExamQuizBank: markRaw(CreateExamQuizBankPage),
     designPage: markRaw(DesignPage),
+    logoPage: markRaw(LogoPage),
     userManagement: markRaw(UserManagementPage),
     systemSettings: markRaw(SystemSettingsPage),
     logList: markRaw(LogListPage),
@@ -37,7 +39,7 @@
 
   export default {
     name: 'RightView',
-    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, DesignPage, UserManagementPage, SystemSettingsPage, LogListPage },
+    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, DesignPage, LogoPage, UserManagementPage, SystemSettingsPage, LogListPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },

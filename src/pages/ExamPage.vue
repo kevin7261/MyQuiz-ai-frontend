@@ -48,10 +48,10 @@ import TabRenameModal from '../components/TabRenameModal.vue';
 import ExamAddQuestionModal from '../components/ExamAddQuestionModal.vue';
 import {
   apiUpdateExamTabName,
-  apiExamTabQuizCreate,
   apiExamTabQuizLlmGenerate,
   apiExamTabQuizCreateLlmGenerate,
   apiExamTabQuizLlmGenerateFollowup,
+  apiExamTabQuizCreateLlmGenerateFollowup,
 } from '../services/examApi.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { submitGrade } from '../composables/useQuizGrading.js';
@@ -2078,6 +2078,20 @@ function examQuizFollowupHistoryListForDisplay(slotIndex) {
     }
     push(followupHistoryEntryFromQuizCard(c));
   }
+  // 單槽追問：前一槽無資料時，改從 followupRounds（歷史鏈）與當前題卡補充
+  if (out.length === 0) {
+    const slotState = getSlotFormState(slotIndex);
+    const rounds = Array.isArray(slotState?.followupRounds) ? slotState.followupRounds : [];
+    for (const round of rounds) {
+      push({
+        quiz_content: round.quiz_content,
+        answer_content: round.answer_content,
+        quiz_answer_reference: round.quiz_answer_reference,
+        answer_critique: round.answer_critique,
+      });
+    }
+    if (card) push(followupHistoryEntryFromQuizCard(card));
+  }
   return out;
 }
 
@@ -2099,6 +2113,11 @@ function examFollowUpExamQuizIdForSlot(slotIndex) {
       continue;
     }
     const id = Number(c.exam_quiz_id ?? c.quiz_id);
+    if (Number.isFinite(id) && id >= 1) lastId = Math.trunc(id);
+  }
+  // 單槽追問：前一槽無結果時，以當前題卡自身作為 follow_up_exam_quiz_id
+  if (lastId == null) {
+    const id = Number(card?.exam_quiz_id ?? card?.quiz_id);
     if (Number.isFinite(id) && id >= 1) lastId = Math.trunc(id);
   }
   return lastId;
@@ -2472,14 +2491,6 @@ async function generateQuiz(slotIndex, options = {}) {
     || !(Number.isFinite(draftEq) && draftEq >= 1);
 
   const followupMode = examSlotIsFollowupMode(slotIndex);
-  const useFollowupGenerate = examSlotUseFollowupLlmGenerate(slotIndex);
-  if (followupMode && !useFollowupGenerate) {
-    const followUpExamQuizId = examFollowUpExamQuizIdForSlot(slotIndex);
-    if (followUpExamQuizId != null) {
-      slotState.error = '追問出題須先有題目與作答內容';
-      return;
-    }
-  }
 
   // 追問模式：將當前已批改卡片快照進 followupRounds（/tabs 相容格式），再產生下一題
   if (followupMode && existingCard && String(existingCard.gradingResult ?? '').trim()) {
@@ -2498,6 +2509,56 @@ async function generateQuiz(slotIndex, options = {}) {
     });
   }
 
+  // 追問 API 參數：直接從當前題卡或多槽 helper 取得，不依賴 ragUnitId 迴圈
+  let followupApiExamQuizId = null;
+  let followupApiHistoryList = [];
+  if (followupMode) {
+    // follow_up_exam_quiz_id（優先順序）：
+    //   1. 多槽 helper（同單元同題型前一槽）
+    //   2. 當前題卡自身（單槽追問場景，已有題目後繼續出題）
+    //   3. 前任意一槽的最近題目（新增追問題型時，跨題型追問前一題）
+    followupApiExamQuizId = examFollowUpExamQuizIdForSlot(slotIndex);
+    if (followupApiExamQuizId == null && existingCard) {
+      const cid = Number(existingCard.exam_quiz_id ?? existingCard.quiz_id);
+      if (Number.isFinite(cid) && cid >= 1) followupApiExamQuizId = Math.trunc(cid);
+    }
+    if (followupApiExamQuizId == null) {
+      const cards = currentState.value.cardList;
+      for (let i = slotIndex - 2; i >= 0; i--) {
+        const c = cards[i];
+        if (!c) continue;
+        const cid = Number(c.exam_quiz_id ?? c.quiz_id);
+        if (Number.isFinite(cid) && cid >= 1) { followupApiExamQuizId = Math.trunc(cid); break; }
+      }
+    }
+    // quiz_history_list：先用多槽 helper，無結果時從 followupRounds + 當前題卡補充
+    followupApiHistoryList = examQuizFollowupHistoryListForLlm(slotIndex);
+    if (followupApiHistoryList.length === 0) {
+      const seen = new Set();
+      const pushHist = (raw) => {
+        const n = normalizeFollowupHistoryItem(raw);
+        if (!n) return;
+        const k = [n.quiz_content, n.answer_content, n.quiz_answer_reference, n.answer_critique].join('\0');
+        if (!seen.has(k)) { seen.add(k); followupApiHistoryList.push(n); }
+      };
+      for (const r of (Array.isArray(slotState.followupRounds) ? slotState.followupRounds : [])) {
+        pushHist({ quiz_content: r.quiz_content, answer_content: r.answer_content, quiz_answer_reference: r.quiz_answer_reference, answer_critique: r.answer_critique });
+      }
+      if (existingCard) pushHist(followupHistoryEntryFromQuizCard(existingCard) ?? {});
+    }
+  }
+  // 有有效 follow_up_exam_quiz_id 才走追問 API
+  const useFollowupGenerate = followupMode && followupApiExamQuizId != null;
+
+  // 追問模式但找不到前置題目 ID → 阻止呼叫錯誤 API，給出明確錯誤
+  if (followupMode && !useFollowupGenerate && createAndGenerate) {
+    const hasPrevCards = currentState.value.cardList.slice(0, slotIndex - 1).some(Boolean);
+    slotState.error = hasPrevCards
+      ? '無法取得前置題目的 exam_quiz_id，請確認前一題已正確產生後再追問。'
+      : '追問題型需要先有前置題目，請先新增一題後再使用追問題型。';
+    return;
+  }
+
   slotState.loading = true;
   slotState.error = '';
   slotState.responseJson = null;
@@ -2507,29 +2568,34 @@ async function generateQuiz(slotIndex, options = {}) {
       ? slotState.quiz_history_list
       : [];
 
-    // 追問模式：一律走 llm-generate-followup（無 exam_quiz_id 時先 create 取得）
+    // 追問模式：新題走 create-llm-generate-followup；重新產生走 llm-generate-followup
     let data;
     if (useFollowupGenerate) {
-      let examQuizIdForGenerate = createAndGenerate ? null : draftEq;
-      if (!(Number.isFinite(examQuizIdForGenerate) && examQuizIdForGenerate >= 1)) {
-        const created = await apiExamTabQuizCreate({ exam_tab_id: examTabStr }, personId);
-        examQuizIdForGenerate = Number(created.exam_quiz_id ?? created.quiz_id);
-        if (!Number.isFinite(examQuizIdForGenerate) || examQuizIdForGenerate < 1) {
-          throw new Error('建立 Exam_Quiz 後無法取得 exam_quiz_id');
-        }
-        slotState.draftExamQuizId = examQuizIdForGenerate;
+      if (createAndGenerate) {
+        data = await apiExamTabQuizCreateLlmGenerateFollowup(
+          {
+            exam_tab_id: examTabStr,
+            rag_tab_id: ragTabIdForLlm,
+            rag_unit_id: ragUnitIdForLlm,
+            rag_quiz_id: ragQuizIdForLlm,
+            follow_up_exam_quiz_id: followupApiExamQuizId,
+            quiz_history_list: followupApiHistoryList,
+          },
+          personId,
+        );
+      } else {
+        data = await apiExamTabQuizLlmGenerateFollowup(
+          {
+            exam_quiz_id: draftEq,
+            rag_tab_id: ragTabIdForLlm,
+            rag_unit_id: ragUnitIdForLlm,
+            rag_quiz_id: ragQuizIdForLlm,
+            follow_up_exam_quiz_id: followupApiExamQuizId,
+            quiz_history_list: followupApiHistoryList,
+          },
+          personId,
+        );
       }
-      data = await apiExamTabQuizLlmGenerateFollowup(
-        {
-          exam_quiz_id: examQuizIdForGenerate,
-          rag_tab_id: ragTabIdForLlm,
-          rag_unit_id: ragUnitIdForLlm,
-          rag_quiz_id: ragQuizIdForLlm,
-          follow_up_exam_quiz_id: examFollowUpExamQuizIdForSlot(slotIndex),
-          quiz_history_list: examQuizFollowupHistoryListForLlm(slotIndex),
-        },
-        personId,
-      );
     } else if (createAndGenerate) {
       data = await apiExamTabQuizCreateLlmGenerate(
         {

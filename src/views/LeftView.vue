@@ -103,6 +103,9 @@
           <li v-if="canSeeNavLink(userType, 'design')">
             <router-link class="dropdown-item" to="/design" active-class="active">UI 元件參考</router-link>
           </li>
+          <li v-if="canSeeNavLink(userType, 'logo')">
+            <router-link class="dropdown-item" to="/logo" active-class="active">Logo 繪製</router-link>
+          </li>
           <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
             <router-link class="dropdown-item" to="/student-answer-analysis" active-class="active"
               >學生作答分析</router-link
