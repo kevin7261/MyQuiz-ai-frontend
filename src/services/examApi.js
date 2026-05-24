@@ -186,10 +186,8 @@ export async function apiExamTabQuizCreateLlmGenerateFollowup(body, personId) {
   if (!pid) throw new Error('person_id 為必填');
   const examTabId = body?.exam_tab_id != null ? String(body.exam_tab_id).trim() : '';
   if (!examTabId) throw new Error('缺少 exam_tab_id');
-  const fu = Number(body?.follow_up_exam_quiz_id);
-  if (!Number.isFinite(fu) || fu < 1) {
-    throw new Error('追問出題須提供有效的 follow_up_exam_quiz_id');
-  }
+  const fuRaw = Number(body?.follow_up_exam_quiz_id);
+  const followUpExamQuizId = Number.isFinite(fuRaw) && fuRaw >= 1 ? Math.trunc(fuRaw) : null;
   const ru = body?.rag_unit_id != null && body.rag_unit_id !== '' ? Number(body.rag_unit_id) : NaN;
   const ragUnitId = Number.isFinite(ru) && ru > 0 ? Math.trunc(ru) : 0;
   const rq = body?.rag_quiz_id != null && body.rag_quiz_id !== '' ? Number(body.rag_quiz_id) : NaN;
@@ -221,7 +219,7 @@ export async function apiExamTabQuizCreateLlmGenerateFollowup(body, personId) {
     rag_tab_id: ragTabId,
     rag_unit_id: ragUnitId,
     rag_quiz_id: ragQuizId,
-    follow_up_exam_quiz_id: Math.trunc(fu),
+    ...(followUpExamQuizId != null ? { follow_up_exam_quiz_id: followUpExamQuizId } : {}),
     quiz_history_list: history,
   };
   const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE_FOLLOWUP}`, {

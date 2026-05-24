@@ -2547,17 +2547,8 @@ async function generateQuiz(slotIndex, options = {}) {
       if (existingCard) pushHist(followupHistoryEntryFromQuizCard(existingCard) ?? {});
     }
   }
-  // 有有效 follow_up_exam_quiz_id 才走追問 API
-  const useFollowupGenerate = followupMode && followupApiExamQuizId != null;
-
-  // 追問模式但找不到前置題目 ID → 阻止呼叫錯誤 API，給出明確錯誤
-  if (followupMode && !useFollowupGenerate && createAndGenerate) {
-    const hasPrevCards = currentState.value.cardList.slice(0, slotIndex - 1).some(Boolean);
-    slotState.error = hasPrevCards
-      ? '無法取得前置題目的 exam_quiz_id，請確認前一題已正確產生後再追問。'
-      : '追問題型需要先有前置題目，請先新增一題後再使用追問題型。';
-    return;
-  }
+  // 追問模式一律走 followup API（follow_up_exam_quiz_id 可為 null，由後端決定是否必填）
+  const useFollowupGenerate = followupMode;
 
   slotState.loading = true;
   slotState.error = '';
