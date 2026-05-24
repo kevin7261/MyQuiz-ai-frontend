@@ -162,7 +162,8 @@ const qaSizeVariants = [
                       <p class="my-font-sm-400 my-color-black mb-0">{{ size.label }}</p>
                       <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
                         <LogoGridSvg
-                          :show-grid="false"
+                          show-grid
+                          merge-cell5
                           :id-prefix="`layer-${layerVariant.id}-${size.id}`"
                           :layer="layerVariant.layer"
                           :svg-width="size.width"
