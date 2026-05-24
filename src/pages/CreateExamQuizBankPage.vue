@@ -6074,7 +6074,7 @@ async function confirmAnswer(item) {
                     class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                   >
                     <div
-                      class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1"
+                      class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 align-self-start p-1 my-quiz-generate-mode-segment"
                       role="group"
                       aria-label="出題模式"
                     >
@@ -6083,7 +6083,7 @@ async function confirmAnswer(item) {
                         class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
                         :class="
                           !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                            ? 'my-button-gray-3'
+                            ? 'my-button-white'
                             : 'my-button-transparent-borderless'
                         "
                         :disabled="
@@ -6102,7 +6102,7 @@ async function confirmAnswer(item) {
                         class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
                         :class="
                           isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                            ? 'my-button-gray-3'
+                            ? 'my-button-white'
                             : 'my-button-transparent-borderless'
                         "
                         :disabled="
@@ -6411,6 +6411,18 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
+/* 出題模式：gray-3 軌＋選中白底（與原白軌＋gray-3 選中對調） */
+.my-quiz-generate-mode-segment :deep(> .btn.my-button-white) {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+  border-color: transparent;
+  box-shadow: none;
+}
+.my-quiz-generate-mode-segment :deep(> .btn.my-button-white:hover),
+.my-quiz-generate-mode-segment :deep(> .btn.my-button-white:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  color: var(--my-color-black);
+}
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
 :deep(button.btn.rounded-pill.px-3),
 :deep(button.btn.rounded-2.px-3) {
