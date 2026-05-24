@@ -2083,6 +2083,39 @@ const bankQuizHistoryModalQuizTypeLabel = computed(() => {
   return card ? quizTypeTabLabel(card) : '—';
 });
 
+/** 來源內容：純預覽 + 編輯 Modal */
+const transcriptEditModalOpen = ref(false);
+const transcriptEditModalGi = ref(0);
+const transcriptEditModalDraft = ref('');
+
+const transcriptEditModalDisabled = computed(
+  () =>
+    packGroupsEditBlocked.value
+    || !packUnitTranscriptLoadedAt(transcriptEditModalGi.value)
+    || packUnitTranscriptBusy(transcriptEditModalGi.value),
+);
+
+function openTranscriptEditModal(gi) {
+  if (
+    packGroupsEditBlocked.value
+    || !packUnitTranscriptLoadedAt(gi)
+    || packUnitTranscriptBusy(gi)
+  ) return;
+  transcriptEditModalGi.value = gi;
+  transcriptEditModalDraft.value = packUnitTranscriptTextAt(gi);
+  transcriptEditModalOpen.value = true;
+}
+
+function closeTranscriptEditModal() {
+  transcriptEditModalOpen.value = false;
+  transcriptEditModalDraft.value = '';
+}
+
+function applyTranscriptEditModal() {
+  setPackUnitMarkdownAt(transcriptEditModalGi.value, transcriptEditModalDraft.value);
+  closeTranscriptEditModal();
+}
+
 /** 出題／批改規則：列表區黑底白字預覽，按鈕開 Modal 編輯 */
 const bankPromptEditModalOpen = ref(false);
 const bankPromptEditModalKind = ref(/** @type {'quiz'|'grading'|''} */ (''));
@@ -5055,6 +5088,64 @@ async function confirmAnswer(item) {
     </Teleport>
     <Teleport to="body">
       <div
+        v-if="transcriptEditModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="transcript-edit-modal-title"
+        @click.self="closeTranscriptEditModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="transcript-edit-modal-title"
+                class="modal-title my-color-black"
+              >編輯來源內容</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeTranscriptEditModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <EnglishExamMarkdownEditor
+                v-model="transcriptEditModalDraft"
+                :textarea-id="`transcript-edit-md-${transcriptEditModalGi}`"
+                :disabled="transcriptEditModalDisabled"
+              />
+            </div>
+            <div
+              class="modal-footer border-top-0 p-0 d-flex justify-content-end align-items-center flex-nowrap gap-2 w-100"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                aria-label="取消"
+                @click="closeTranscriptEditModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                :disabled="transcriptEditModalDisabled"
+                @click="applyTranscriptEditModal"
+              >
+                確定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
         v-if="newBankUploadModalOpen"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
@@ -5646,8 +5737,19 @@ async function confirmAnswer(item) {
                     class="col-12 min-w-0"
                   >
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-sm-400 my-color-gray-1 mb-0 mt-4">
-                        來源內容
+                      <div class="d-flex align-items-center justify-content-between mb-0 mt-4">
+                        <div class="my-font-sm-400 my-color-gray-1">
+                          來源內容
+                        </div>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                          :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(activePackUnitGi) || packUnitTranscriptBusy(activePackUnitGi)"
+                          aria-label="編輯來源內容"
+                          @click="openTranscriptEditModal(activePackUnitGi)"
+                        >
+                          編輯
+                        </button>
                       </div>
                       <div class="d-flex flex-column gap-2 w-100 min-w-0 mt-1">
                         <audio
@@ -5672,16 +5774,14 @@ async function confirmAnswer(item) {
                           />
                         </div>
                         <div
-                          class="my-pack-unit-md-editor min-w-0"
+                          class="my-pack-unit-md-preview min-w-0"
                           role="region"
-                          aria-label="逐字稿 Markdown"
+                          aria-label="逐字稿預覽"
                         >
                           <EnglishExamMarkdownEditor
                             :model-value="packUnitTranscriptTextAt(activePackUnitGi)"
-                            :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(activePackUnitGi) || packUnitTranscriptBusy(activePackUnitGi)"
-                            :preview-only="false"
+                            :preview-only="true"
                             :textarea-id="'pack-unit-transcript-md-' + activePackUnitGi"
-                            @update:model-value="(v) => setPackUnitMarkdownAt(activePackUnitGi, v)"
                           />
                         </div>
                       </div>
