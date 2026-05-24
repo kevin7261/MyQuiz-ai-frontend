@@ -130,20 +130,22 @@ export const API_RAG_TAB_QUIZ_DELETE = '/rag/tab/quiz/delete';
 export const API_RAG_UNIT_NAME = '/rag/tab/tab-name';
 /** 建 RAG ZIP：POST /rag/tab/build-rag-zip；body 順序：rag_tab_id、person_id、unit_list、unit_names、unit_types、transcriptions、rag_chunk_*、build_faiss（可含 course_id）；query：person_id、course_id、repack_only；NDJSON 串流 */
 export const API_BUILD_RAG_ZIP = '/rag/tab/build-rag-zip';
-/** RAG 文字單元（unit_type 2）：GET /rag/transcript/text；query：`rag_tab_id`、`folder_name`、`person_id`。讀 ZIP 內該資料夾**一個** .md／.txt／.doc／.docx */
-export const API_RAG_TRANSCRIPT_TEXT = '/rag/transcript/text';
+/** RAG 文字單元（unit_type 2）：GET /rag/unit/text；query：`rag_tab_id`、`folder_name`、`person_id`；JSON 含 transcription */
+export const API_RAG_UNIT_TEXT = '/rag/unit/text';
 /** RAG 音訊單元逐字稿：GET /rag/transcript/audio；query：`rag_tab_id`、`folder_name`、`person_id`（ZIP 內該資料夾之音訊轉寫） */
 export const API_RAG_TRANSCRIPT_AUDIO = '/rag/transcript/audio';
 /** RAG YouTube 單元逐字稿：GET /rag/transcript/youtube；query：同上；選填 `youtube_url`（與播放器解析網址一致時可帶） */
 export const API_RAG_TRANSCRIPT_YOUTUBE = '/rag/transcript/youtube';
-/** RAG 音訊單元原始 MP3（ZIP 內 folder）：GET /rag/unit/mp3-file；query：rag_tab_id、folder_name、person_id；後端 OpenAPI 名稱 Rag Unit Audio File */
+/** RAG 音訊單元（ZIP folder）：GET /rag/unit/mp3-file；query：rag_tab_id、folder_name、person_id；JSON 含 audio_base64、transcription */
 export const API_RAG_UNIT_MP3_FILE = '/rag/unit/mp3-file';
-/** RAG YouTube 單元 URL：GET /rag/unit/youtube-url；query：rag_tab_id、folder_name、person_id */
+/** RAG YouTube 單元 URL（ZIP folder）：GET /rag/unit/youtube-url；query：rag_tab_id、folder_name、person_id；JSON 含 youtube_url、transcription */
 export const API_RAG_UNIT_YOUTUBE_URL = '/rag/unit/youtube-url';
 /** 列出指定 tab 下所有未刪除 Rag_Unit（含關聯 quizzes，quizzes 含 follow_up）：GET /rag/tab/units；query: rag_tab_id、person_id（必填）；依 created_at 舊→新 */
 export const API_RAG_TAB_UNITS = '/rag/tab/units';
-/** 音訊單元原始 MP3：GET /rag/tab/unit/mp3-file；query：rag_tab_id、rag_unit_id（不需 person_id）；僅 Rag_Unit.unit_type=3 時回傳音訊本體 */
+/** 音訊單元：GET /rag/tab/unit/mp3-file；query：rag_tab_id、rag_unit_id（不需 person_id）；JSON：audio_base64、media_type、filename、transcription */
 export const API_RAG_TAB_UNIT_MP3_FILE = '/rag/tab/unit/mp3-file';
+/** YouTube 單元：GET /rag/tab/unit/youtube-url；query：rag_tab_id、rag_unit_id（不需 person_id）；JSON：youtube_url、transcription */
+export const API_RAG_TAB_UNIT_YOUTUBE_URL = '/rag/tab/unit/youtube-url';
 /**
  * 依 rag_tab_id／rag_unit_id 建立空白 Rag_Quiz（不呼叫 LLM）；rag_quiz_id 由後端於回應中帶出。
  * POST /rag/tab/unit/quiz/create；query person_id；body: { rag_tab_id, rag_unit_id }
@@ -167,6 +169,8 @@ export const API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP_DB = '/rag/tab/unit/qui
 export const API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME = '/rag/tab/unit/quiz/quiz-name';
 /** Rag_Quiz.for_exam：POST /rag/tab/unit/quiz/for-exam — query person_id；body 僅 `rag_quiz_id`、`for_exam`（true＝測驗用、false＝取消） */
 export const API_RAG_TAB_UNIT_QUIZ_FOR_EXAM = '/rag/tab/unit/quiz/for-exam';
+/** 更新 Rag_Quiz.follow_up：POST /rag/tab/unit/quiz/followup — query person_id、course_id（必填）；body `rag_quiz_id`、選填 `rag_tab_id`／`rag_unit_id`、`followup`（true＝追問、false＝一般） */
+export const API_RAG_TAB_UNIT_QUIZ_FOLLOWUP = '/rag/tab/unit/quiz/followup';
 /** 設為使用中 RAG：PATCH /rag/applied/{rag_tab_id}，Header X-Person-Id；該 rag_tab_id applied=true，同 person 其餘 applied=false */
 export const API_RAG_APPLIED = '/rag/applied';
 /** 試題用 RAG（單筆）：GET /rag/tab/for-exam（for_exam=true 且 deleted=false，0 或 1 筆），無 parameters。測驗頁請用 GET /exam/rag-for-exams（{@link API_RAG_FOR_EXAMS}）。 */

@@ -33,6 +33,46 @@ function parseJson(text) {
 }
 
 /**
+ * 字串型歷史去重：trim、過濾空字串、Set 去重
+ * @param {unknown[]} [list]
+ * @returns {string[]}
+ */
+function deduplicateStringHistory(list) {
+  if (!Array.isArray(list)) return [];
+  return [
+    ...new Set(
+      list
+        .map((s) => String(s ?? '').trim())
+        .filter((s) => s !== ''),
+    ),
+  ];
+}
+
+/**
+ * 物件型追問歷史去重：以 normalizeFollowupHistoryItem 正規化後，依四個欄位 key 去重
+ * @param {unknown[]} [list]
+ * @returns {object[]}
+ */
+function deduplicateFollowupHistory(list) {
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  return list.reduce((acc, item) => {
+    const normalized = normalizeFollowupHistoryItem(item);
+    if (!normalized) return acc;
+    const key = [
+      normalized.quiz_content,
+      normalized.answer_content,
+      normalized.quiz_answer_reference,
+      normalized.answer_critique,
+    ].join('\0');
+    if (seen.has(key)) return acc;
+    seen.add(key);
+    acc.push(normalized);
+    return acc;
+  }, []);
+}
+
+/**
  * 更新測驗分頁名稱：PUT /exam/tab/tab-name（以 exam_id 比對，僅 deleted=false）
  * @param {string | number} examId - Exam 主鍵
  * @param {string} tabName
@@ -142,15 +182,7 @@ export async function apiExamTabQuizCreateLlmGenerate(body, personId) {
   }
   const ragTabId = String(body?.rag_tab_id ?? '').trim();
   if (!ragTabId) throw new Error('create-llm-generate 須提供 rag_tab_id');
-  const history = Array.isArray(body?.quiz_history_list)
-    ? [
-        ...new Set(
-          body.quiz_history_list
-            .map((s) => String(s ?? '').trim())
-            .filter((s) => s !== ''),
-        ),
-      ]
-    : [];
+  const history = deduplicateStringHistory(body?.quiz_history_list);
   const payload = {
     exam_tab_id: examTabId,
     rag_tab_id: ragTabId,
@@ -204,23 +236,7 @@ export async function apiExamTabQuizCreateLlmGenerateFollowup(body, personId) {
   }
   const ragTabId = String(body?.rag_tab_id ?? '').trim();
   if (!ragTabId) throw new Error('create-llm-generate-followup 須提供 rag_tab_id');
-  const seen = new Set();
-  const history = Array.isArray(body?.quiz_history_list)
-    ? body.quiz_history_list.reduce((acc, item) => {
-        const normalized = normalizeFollowupHistoryItem(item);
-        if (!normalized) return acc;
-        const key = [
-          normalized.quiz_content,
-          normalized.answer_content,
-          normalized.quiz_answer_reference,
-          normalized.answer_critique,
-        ].join('\0');
-        if (seen.has(key)) return acc;
-        seen.add(key);
-        acc.push(normalized);
-        return acc;
-      }, [])
-    : [];
+  const history = deduplicateFollowupHistory(body?.quiz_history_list);
   const payload = {
     exam_tab_id: examTabId,
     rag_tab_id: ragTabId,
@@ -269,15 +285,7 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
   }
   const ragTabId = String(body?.rag_tab_id ?? '').trim();
   if (!ragTabId) throw new Error('llm-generate 須提供 rag_tab_id');
-  const history = Array.isArray(body?.quiz_history_list)
-    ? [
-        ...new Set(
-          body.quiz_history_list
-            .map((s) => String(s ?? '').trim())
-            .filter((s) => s !== ''),
-        ),
-      ]
-    : [];
+  const history = deduplicateStringHistory(body?.quiz_history_list);
   const payload = {
     exam_quiz_id: Math.trunc(eid),
     rag_tab_id: ragTabId,
@@ -328,23 +336,7 @@ export async function apiExamTabQuizLlmGenerateFollowup(body, personId) {
   }
   const ragTabId = String(body?.rag_tab_id ?? '').trim();
   if (!ragTabId) throw new Error('llm-generate-followup 須提供 rag_tab_id');
-  const seen = new Set();
-  const history = Array.isArray(body?.quiz_history_list)
-    ? body.quiz_history_list.reduce((acc, item) => {
-        const normalized = normalizeFollowupHistoryItem(item);
-        if (!normalized) return acc;
-        const key = [
-          normalized.quiz_content,
-          normalized.answer_content,
-          normalized.quiz_answer_reference,
-          normalized.answer_critique,
-        ].join('\0');
-        if (seen.has(key)) return acc;
-        seen.add(key);
-        acc.push(normalized);
-        return acc;
-      }, [])
-    : [];
+  const history = deduplicateFollowupHistory(body?.quiz_history_list);
   const payload = {
     exam_quiz_id: Math.trunc(eid),
     rag_tab_id: ragTabId,

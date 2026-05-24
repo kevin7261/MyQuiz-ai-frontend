@@ -8,7 +8,7 @@
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
  * - 建立並上傳（按 + 開 Modal）：POST /rag/tab/create-upload-zip（multipart: file、rag_tab_id、person_id、tab_name、local；query person_id、course_id）；成功後顯示設定單元
  * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；course_id、unit_list、unit_types、transcriptions〔與逗號分段同序〕、rag_chunk_sizes／rag_chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
- * - 設定單元：GET `/rag/transcript/text`、`/rag/transcript/audio`、`/rag/transcript/youtube`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url` 期間全螢幕 LoadingOverlay（來源預覽／文字逐字稿讀取為「檔案讀取中…」，語音／影片逐字稿為「分析逐字稿中…」）；主按鈕文案固定為「載入檔案文字／載入語音文字／載入影片文字」。
+ * - 設定單元：按「載入檔案／語音／影片文字」分別 GET `/rag/unit/text`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url`；回應 `transcription` 寫入 Markdown 逐字稿區（mp3／YouTube 另設播放器預覽）；期間全螢幕 LoadingOverlay「檔案讀取中…」
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：GET /rag/tabs 每筆 Rag.for_exam，或其 units／quizzes 任一有 Rag_Quiz.for_exam，或本機題卡 rag_quiz_for_exam，皆於分頁列顯示綠點並禁止刪除該題庫分頁（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）與已儲存批改規則之 POST /rag/tab/unit/quiz/llm-grade-db；GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
@@ -27,12 +27,10 @@ import {
   apiDeleteRag,
   apiUpdateRagTabName,
   apiBuildRagZip,
-  apiRagTranscriptText,
-  apiRagTranscriptAudio,
-  apiRagTranscriptYoutube,
+  apiRagUnitText,
   apiRagUnitMp3FileByFolder,
   apiRagUnitYoutubeUrlByFolder,
-  transcriptResponseMarkdown,
+  ragUnitTranscriptionFromResponse,
   apiGetRagTabUnits,
   apiCreateRagUnitQuiz,
   apiRagUnitQuizLlmGenerate,
@@ -43,6 +41,7 @@ import {
   followupHistoryEntryFromQuizCard,
   normalizeFollowupHistoryItem,
   apiMarkRagQuizForExam,
+  apiSetRagQuizFollowup,
   apiGenerateQuiz,
   apiUpdateRagQuizName,
   apiDeleteRagQuiz,
@@ -743,7 +742,7 @@ const activeUnitQuizLoadingOverlayKind = computed(() => {
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
-/** 設定單元：逐字稿分析中（載入檔案／語音／影片文字）或檔案讀取（/rag/transcript/text、/rag/unit/mp3-file、youtube-url）期間，禁「開始建立單元」等 */
+/** 設定單元：逐字稿載入中（文字 GET /rag/unit/text）或檔案讀取（mp3-file／youtube-url 含 transcription）期間，禁「開始建立單元」等 */
 const hasPackUnitTranscriptLoading = computed(() => {
   const st = currentState.value;
   const t = Array.isArray(st?.packUnitTranscriptLoading) && st.packUnitTranscriptLoading.some(Boolean);
@@ -751,7 +750,7 @@ const hasPackUnitTranscriptLoading = computed(() => {
   return t || sf;
 });
 
-/** 設定單元：GET `/rag/transcript/text`（文字逐字稿）或 mp3／YouTube 來源預覽 fetch 期間（packUnitSourceFileLoading） */
+/** 設定單元：GET `/rag/unit/text`（文字逐字稿）或 mp3／YouTube 來源預覽 fetch 期間（packUnitSourceFileLoading） */
 const hasPackUnitSourceFileLoading = computed(
   () =>
     Array.isArray(currentState.value?.packUnitSourceFileLoading)
@@ -1224,7 +1223,7 @@ function isTranscriptPackUnitType(ut) {
   return ut === UNIT_TYPE_TEXT || ut === UNIT_TYPE_MP3 || ut === UNIT_TYPE_YOUTUBE;
 }
 
-/** 設定單元 unit_type 2／3／4：逐字稿區主按鈕文案（對應 GET transcript text／audio／youtube） */
+/** 設定單元 unit_type 2／3／4：逐字稿區主按鈕文案（文字→unit/text；mp3／YouTube→mp3-file／youtube-url 含 transcription） */
 function packUnitLoadTranscriptButtonLabel(gi) {
   const ut = packUnitTypeAt(gi);
   if (ut === UNIT_TYPE_TEXT) return '載入檔案文字';
@@ -1465,7 +1464,10 @@ function clearPackUnitPreviewAt(gi) {
 }
 
 function packUnitTranscriptBusy(gi) {
-  return !!(currentState.value.packUnitTranscriptLoading && currentState.value.packUnitTranscriptLoading[gi]);
+  const st = currentState.value;
+  const tl = !!(st.packUnitTranscriptLoading && st.packUnitTranscriptLoading[gi]);
+  const sf = !!(st.packUnitSourceFileLoading && st.packUnitSourceFileLoading[gi]);
+  return tl || sf;
 }
 
 function packUnitTranscriptLoadedAt(gi) {
@@ -1506,42 +1508,16 @@ const startPackUnitBuildDisabled = computed(() => {
   );
 });
 
-/**
- * 準備載入逐字稿：確認 folder／rag_tab_id／personId；成功後設 packUnitTranscriptLoading（全螢幕 LoadingOverlay「分析逐字稿中…」）。
- * 失敗已寫入 err[gi] 並回傳 null。
- */
-function preparePackUnitPreviewCall(gi, group) {
-  const s = currentState.value;
-  ensurePackUnitSidecarArrays();
-  const folder = firstFolderNameInGroup(group);
-  const err = [...s.packUnitTranscriptError];
-  const load = [...s.packUnitTranscriptLoading];
-  if (!folder) {
-    err[gi] = '請先在上方拖入一個資料夾';
-    s.packUnitTranscriptError = err;
-    return null;
-  }
-  const rag_tab_id = ragTabIdForTranscript();
-  if (!rag_tab_id) {
-    err[gi] = '請先上傳教材 ZIP';
-    s.packUnitTranscriptError = err;
-    return null;
-  }
-  const personId = getPersonId(authStore);
-  if (!personId) {
-    err[gi] = '請先登入';
-    s.packUnitTranscriptError = err;
-    return null;
-  }
-  err[gi] = '';
-  s.packUnitTranscriptError = err;
-  load[gi] = true;
-  s.packUnitTranscriptLoading = load;
-  return { folder, rag_tab_id, personId };
+function applyPackUnitTranscriptionFromApi(gi, transcription) {
+  const md = String(transcription ?? '').trim();
+  if (!md) return false;
+  setPackUnitMarkdownAt(gi, md);
+  setPackUnitTranscriptLoadedAt(gi, true);
+  return true;
 }
 
 /**
- * 載入 mp3／YouTube 來源預覽：GET `/rag/unit/mp3-file`、`/rag/unit/youtube-url`（query 含 person_id；期間區塊內「檔案讀取中」）
+ * 載入 mp3／YouTube 來源預覽：GET `/rag/unit/mp3-file`、`/rag/unit/youtube-url`（query 含 person_id；回應 transcription 寫入逐字稿區）
  */
 function preparePackUnitMediaPreviewCall(gi, group) {
   const folder = firstFolderNameInGroup(group);
@@ -1557,13 +1533,14 @@ async function refreshPackUnitMediaAssets(gi, ut, ctx) {
   try {
     try {
       if (ut === UNIT_TYPE_MP3) {
-        const blob = await apiRagUnitMp3FileByFolder({
+        const payload = await apiRagUnitMp3FileByFolder({
           rag_tab_id: ctx.rag_tab_id,
           folder_name: ctx.folder,
           personId: ctx.personId,
         });
-        if (!(blob instanceof Blob) || blob.size <= 0) throw new Error('empty audio');
-        setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(blob));
+        if (!(payload.blob instanceof Blob) || payload.blob.size <= 0) throw new Error('empty audio');
+        setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(payload.blob));
+        applyPackUnitTranscriptionFromApi(gi, payload.transcription);
         return true;
       }
       if (ut === UNIT_TYPE_YOUTUBE) {
@@ -1575,6 +1552,7 @@ async function refreshPackUnitMediaAssets(gi, ut, ctx) {
         const url = youtubeUrlFromUnitUrlResponse(ytData);
         if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
         setPackUnitYoutubeUrlAt(gi, url);
+        applyPackUnitTranscriptionFromApi(gi, ragUnitTranscriptionFromResponse(ytData));
         return true;
       }
     } catch {
@@ -1611,13 +1589,6 @@ async function loadPackUnitMediaPreviewForType(gi, group) {
     err[gi] = mediaMsg;
   }
   s.packUnitTranscriptError = err;
-}
-
-function markPackUnitPreviewDone(gi) {
-  const s = currentState.value;
-  const lo = [...s.packUnitTranscriptLoading];
-  lo[gi] = false;
-  s.packUnitTranscriptLoading = lo;
 }
 
 const PACK_UNIT_TRANSCRIPT_ERROR_FALLBACK =
@@ -1662,63 +1633,75 @@ function packUnitYoutubeEmbedUrl(gi) {
 }
 
 /**
- * 主按鈕依 unit_type：文字「載入檔案文字」→ GET `/rag/transcript/text`；mp3「載入語音文字」→ `/rag/transcript/audio`；YouTube「載入影片文字」→ `/rag/transcript/youtube`（有嵌入網址時附 `youtube_url`）。
- * 播放器預覽仍見 `loadPackUnitMediaPreviewForType`。
+ * 主按鈕依 unit_type 呼叫 GET `/rag/unit/text`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url`；
+ * 回應之 transcription 寫入 Markdown 逐字稿區（mp3／YouTube 另設定播放器預覽）。
+ * 自動預覽仍見 `loadPackUnitMediaPreviewForType`。
  */
 async function loadPackUnitPreviewForType(gi, group) {
   const ut = packUnitTypeAt(gi);
   if (!isTranscriptPackUnitType(ut)) return;
-  const ctx = preparePackUnitPreviewCall(gi, group);
-  if (!ctx) return;
+
+  const ctx = preparePackUnitMediaPreviewCall(gi, group);
+  if (!ctx) {
+    const s = currentState.value;
+    ensurePackUnitSidecarArrays();
+    const err = [...s.packUnitTranscriptError];
+    const folder = firstFolderNameInGroup(group);
+    if (!folder) err[gi] = '請先在上方拖入一個資料夾';
+    else if (!ragTabIdForTranscript()) err[gi] = '請先上傳教材 ZIP';
+    else if (!getPersonId(authStore)) err[gi] = '請先登入';
+    s.packUnitTranscriptError = err;
+    return;
+  }
+
+  ensurePackUnitSidecarArrays();
+  setPackUnitSourceFileLoadingAt(gi, true);
+  const errClear = [...currentState.value.packUnitTranscriptError];
+  errClear[gi] = '';
+  currentState.value.packUnitTranscriptError = errClear;
   try {
-    let data;
+    let md = '';
     if (ut === UNIT_TYPE_TEXT) {
-      setPackUnitSourceFileLoadingAt(gi, true);
-      try {
-        data = await apiRagTranscriptText({
-          rag_tab_id: ctx.rag_tab_id,
-          folder_name: ctx.folder,
-          personId: ctx.personId,
-        });
-      } finally {
-        setPackUnitSourceFileLoadingAt(gi, false);
-      }
+      const data = await apiRagUnitText({
+        rag_tab_id: ctx.rag_tab_id,
+        folder_name: ctx.folder,
+        personId: ctx.personId,
+      });
+      md = ragUnitTranscriptionFromResponse(data);
     } else if (ut === UNIT_TYPE_MP3) {
-      data = await apiRagTranscriptAudio({
+      const payload = await apiRagUnitMp3FileByFolder({
         rag_tab_id: ctx.rag_tab_id,
         folder_name: ctx.folder,
         personId: ctx.personId,
       });
+      if (!(payload.blob instanceof Blob) || payload.blob.size <= 0) throw new Error('empty audio');
+      setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(payload.blob));
+      md = String(payload.transcription ?? '').trim();
     } else if (ut === UNIT_TYPE_YOUTUBE) {
-      const pageUrl =
-        String(currentState.value.packUnitYoutubeUrls?.[gi] ?? '').trim() || '';
-      data = await apiRagTranscriptYoutube({
+      const ytData = await apiRagUnitYoutubeUrlByFolder({
         rag_tab_id: ctx.rag_tab_id,
         folder_name: ctx.folder,
         personId: ctx.personId,
-        ...(pageUrl ? { youtubeUrl: pageUrl } : {}),
       });
+      const url = youtubeUrlFromUnitUrlResponse(ytData);
+      if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
+      setPackUnitYoutubeUrlAt(gi, url);
+      md = ragUnitTranscriptionFromResponse(ytData);
     } else {
       throw new Error('不支援此單元類型的逐字稿載入');
     }
-    const md = transcriptResponseMarkdown(data);
     if (!String(md ?? '').trim()) throw new Error('empty transcript');
     setPackUnitMarkdownAt(gi, md);
     setPackUnitTranscriptLoadedAt(gi, true);
-    const mediaCtx = preparePackUnitMediaPreviewCall(gi, group);
-    if (mediaCtx) {
-      await refreshPackUnitMediaAssets(gi, ut, mediaCtx);
-    }
-    const s = currentState.value;
-    const err = [...s.packUnitTranscriptError];
-    err[gi] = '';
-    s.packUnitTranscriptError = err;
+    const errOk = [...currentState.value.packUnitTranscriptError];
+    errOk[gi] = '';
+    currentState.value.packUnitTranscriptError = errOk;
   } catch (e) {
     setPackUnitMarkdownAt(gi, '');
     setPackUnitTranscriptLoadedAt(gi, false);
     packUnitPreviewTranscriptError(gi, e);
   } finally {
-    markPackUnitPreviewDone(gi);
+    setPackUnitSourceFileLoadingAt(gi, false);
   }
 }
 
@@ -2594,6 +2577,48 @@ function setUnitQuizGenerateMode(slotIndex, mode, card = null) {
   getSlotFormState(slotIndex).quizGenerateMode = resolved;
   if (card && typeof card === 'object') {
     card.quizGenerateMode = resolved;
+    card.follow_up = resolved === 'followup';
+  }
+}
+
+/** 切換 Rag_Quiz.follow_up；無 rag_quiz_id 時僅更新本機狀態 */
+async function onSetUnitQuizGenerateMode(slotIndex, mode, card = null) {
+  if (!card || typeof card !== 'object') return;
+  const resolved = mode === 'followup' ? 'followup' : 'normal';
+  if (resolveUnitQuizGenerateMode(slotIndex, card) === resolved) return;
+
+  const rqid = positiveRagQuizIdFromQuizRow(card);
+  if (rqid == null || rqid < 1) {
+    setUnitQuizGenerateMode(slotIndex, resolved, card);
+    return;
+  }
+
+  const personId = getPersonId(authStore);
+  if (!personId) {
+    alert('請先登入');
+    return;
+  }
+
+  const meta = getRagQuizUnitMeta(slotIndex);
+  const rag = currentRagItem.value;
+  const followup = resolved === 'followup';
+  card.ragQuizFollowupLoading = true;
+  card.ragQuizFollowupError = '';
+  try {
+    await apiSetRagQuizFollowup(
+      {
+        rag_quiz_id: rqid,
+        rag_tab_id: String(card.rag_tab_id ?? meta.rag_tab_id ?? rag?.rag_tab_id ?? '').trim(),
+        rag_unit_id: Number(card.rag_unit_id ?? meta.rag_unit_id),
+        followup,
+      },
+      personId
+    );
+    setUnitQuizGenerateMode(slotIndex, resolved, card);
+  } catch (err) {
+    card.ragQuizFollowupError = err?.message || String(err);
+  } finally {
+    card.ragQuizFollowupLoading = false;
   }
 }
 
@@ -3371,6 +3396,8 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     rag_quiz_for_exam: fe,
     ragQuizForExamLoading: false,
     ragQuizForExamError: '',
+    ragQuizFollowupLoading: false,
+    ragQuizFollowupError: '',
     answer_id,
     gradingPrompt,
     quizName: quizNameResolved,
@@ -4081,6 +4108,8 @@ function createLocalDraftUnitQuizCard() {
     rag_quiz_for_exam: false,
     ragQuizForExamLoading: false,
     ragQuizForExamError: '',
+    ragQuizFollowupLoading: false,
+    ragQuizFollowupError: '',
     answer_id: null,
     gradingPrompt: '',
     quizName: DEFAULT_UNIT_QUIZ_DISPLAY_NAME,
@@ -4589,6 +4618,8 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       rag_quiz_for_exam: false,
       ragQuizForExamLoading: false,
       ragQuizForExamError: '',
+      ragQuizFollowupLoading: false,
+      ragQuizFollowupError: '',
     }
     : {
       rag_tab_id: '',
@@ -4596,6 +4627,8 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       rag_quiz_for_exam: false,
       ragQuizForExamLoading: false,
       ragQuizForExamError: '',
+      ragQuizFollowupLoading: false,
+      ragQuizFollowupError: '',
     };
   const card = {
     id: nextCardId(),
@@ -4683,6 +4716,8 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
       card.rag_quiz_for_exam = prev.rag_quiz_for_exam ?? card.rag_quiz_for_exam;
       card.ragQuizForExamLoading = false;
       card.ragQuizForExamError = '';
+      card.ragQuizFollowupLoading = false;
+      card.ragQuizFollowupError = '';
       card.quizGenerateMode =
         prev.quizGenerateMode
         ?? (ragQuizApiRowIsFollowUp(generateQuizResponseJson)
@@ -6038,6 +6073,50 @@ async function confirmAnswer(item) {
                   <div
                     class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                   >
+                    <div
+                      class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1"
+                      role="group"
+                      aria-label="出題模式"
+                    >
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        :class="
+                          !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                            ? 'my-button-gray-3'
+                            : 'my-button-transparent-borderless'
+                        "
+                        :disabled="
+                          !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                          || isRagQuizMarkedForExam(activeUnitQuizCard)
+                          || activeUnitQuizCard.ragQuizFollowupLoading
+                        "
+                        :aria-busy="activeUnitQuizCard.ragQuizFollowupLoading"
+                        :aria-pressed="!isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
+                        @click="onSetUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
+                      >
+                        一般
+                      </button>
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        :class="
+                          isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                            ? 'my-button-gray-3'
+                            : 'my-button-transparent-borderless'
+                        "
+                        :disabled="
+                          !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                          || isRagQuizMarkedForExam(activeUnitQuizCard)
+                          || activeUnitQuizCard.ragQuizFollowupLoading
+                        "
+                        :aria-busy="activeUnitQuizCard.ragQuizFollowupLoading"
+                        :aria-pressed="isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
+                        @click="onSetUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
+                      >
+                        追問
+                      </button>
+                    </div>
                     <button
                       type="button"
                       role="switch"
@@ -6058,6 +6137,14 @@ async function confirmAnswer(item) {
                       </span>
                       <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
                     </button>
+                  </div>
+                  <div
+                    v-if="String(activeUnitQuizCard.ragQuizFollowupError ?? '').trim()"
+                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
+                    style="max-width: 42rem"
+                    role="alert"
+                  >
+                    {{ activeUnitQuizCard.ragQuizFollowupError }}
                   </div>
                   <div
                     v-if="String(activeUnitQuizCard.ragQuizForExamError ?? '').trim()"
@@ -6089,33 +6176,6 @@ async function confirmAnswer(item) {
                             出題規則
                           </h3>
                           <div class="d-flex align-items-center gap-3 flex-shrink-0">
-                            <button
-                              type="button"
-                              role="switch"
-                              class="my-quiz-generate-mode-switch my-quiz-generate-mode-switch--followup d-inline-flex align-items-center gap-2 flex-shrink-0"
-                              :class="{
-                                'my-quiz-generate-mode-switch--on': isUnitQuizFollowupMode(
-                                  activeUnitSlotIndex,
-                                  activeUnitQuizCard
-                                ),
-                              }"
-                              :aria-checked="isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
-                              :disabled="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || isRagQuizMarkedForExam(activeUnitQuizCard)"
-                              @click="
-                                setUnitQuizGenerateMode(
-                                  activeUnitSlotIndex,
-                                  isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                    ? 'normal'
-                                    : 'followup',
-                                  activeUnitQuizCard
-                                )
-                              "
-                            >
-                              <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
-                                <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
-                              </span>
-                              <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">追問</span>
-                            </button>
                             <button
                               type="button"
                               class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"

@@ -12,13 +12,14 @@ import {
   API_RAG_DELETE,
   API_RAG_UNIT_NAME,
   API_BUILD_RAG_ZIP,
-  API_RAG_TRANSCRIPT_TEXT,
+  API_RAG_UNIT_TEXT,
   API_RAG_TRANSCRIPT_AUDIO,
   API_RAG_TRANSCRIPT_YOUTUBE,
   API_RAG_UNIT_MP3_FILE,
   API_RAG_UNIT_YOUTUBE_URL,
   API_RAG_TAB_UNITS,
   API_RAG_TAB_UNIT_MP3_FILE,
+  API_RAG_TAB_UNIT_YOUTUBE_URL,
   API_RAG_TAB_UNIT_QUIZ_CREATE,
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE,
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_DB,
@@ -26,6 +27,7 @@ import {
   API_RAG_TAB_UNIT_QUIZ_LLM_GENERATE_FOLLOWUP_DB,
   API_RAG_TAB_UNIT_QUIZ_QUIZ_NAME,
   API_RAG_TAB_UNIT_QUIZ_FOR_EXAM,
+  API_RAG_TAB_UNIT_QUIZ_FOLLOWUP,
   API_RAG_TAB_QUIZ_DELETE,
   API_GENERATE_QUIZ,
   isFrontendLocalHost,
@@ -104,6 +106,17 @@ export function transcriptResponseMarkdown(data) {
 }
 
 /**
+ * GET /rag/unit/text、/rag/unit/mp3-file、/rag/unit/youtube-url 等回傳之 transcription 欄位
+ * @param {unknown} data
+ * @returns {string}
+ */
+export function ragUnitTranscriptionFromResponse(data) {
+  if (!data || typeof data !== 'object') return '';
+  const t = data.transcription;
+  return t != null ? String(t) : '';
+}
+
+/**
  * 共用：建立 `/rag/transcript/*`／`/rag/unit/*` 等 GET URL（預設含 `rag_tab_id`、`folder_name`、`person_id`；YouTube 逐字稿可選 `youtube_url`）
  * @param {string} path - API 路徑
  * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null, youtubeUrl?: string | null, youtube_url?: string | null }} params
@@ -125,19 +138,80 @@ function buildTranscriptUrl(path, params) {
   return mergeApiQuery(u.toString(), { personId: params.personId });
 }
 
+/**
+ * Base64 音訊解碼為 Blob（供 GET /rag/tab/unit/mp3-file 等 JSON 回應）
+ * @param {string} base64
+ * @param {string} [mediaType]
+ * @returns {Blob}
+ */
+function base64ToBlob(base64, mediaType) {
+  const raw = String(base64 ?? '').trim();
+  if (!raw) return new Blob([], { type: mediaType || 'application/octet-stream' });
+  const binary = atob(raw);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mediaType || 'application/octet-stream' });
+}
+
+/**
+ * 解析 mp3-file JSON 回應（audio_base64、media_type、filename、transcription）
+ * @param {unknown} data
+ * @returns {{ blob: Blob | null, transcription: string, filename: string, mediaType: string }}
+ */
+export function parseRagUnitMp3FilePayload(data) {
+  if (!data || typeof data !== 'object') {
+    return { blob: null, transcription: '', filename: '', mediaType: 'audio/mpeg' };
+  }
+  const b64 = data.audio_base64 ?? data.audioBase64;
+  const mediaType = String(data.media_type ?? data.mediaType ?? 'audio/mpeg').trim() || 'audio/mpeg';
+  const blob =
+    b64 != null && String(b64).trim() !== ''
+      ? base64ToBlob(String(b64).trim(), mediaType)
+      : null;
+  return {
+    blob,
+    transcription: ragUnitTranscriptionFromResponse(data),
+    filename: String(data.filename ?? '').trim(),
+    mediaType,
+  };
+}
+
+/**
+ * 組出 GET /rag/tab/unit/* 含 rag_tab_id、rag_unit_id 的 URL（不需 person_id）
+ * @param {string} path
+ * @param {{ rag_tab_id: string, rag_unit_id: number }} params
+ * @returns {string}
+ */
+function buildRagTabUnitQueryUrl(path, params) {
+  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
+  const rag_unit_id = Number(params.rag_unit_id);
+  if (!rag_tab_id) return '';
+  if (!Number.isFinite(rag_unit_id) || rag_unit_id < 1) return '';
+  const base = String(API_BASE).replace(/\/$/, '');
+  let u;
+  try {
+    u = new URL(`${base}${path}`);
+  } catch {
+    return '';
+  }
+  u.searchParams.set('rag_tab_id', rag_tab_id);
+  u.searchParams.set('rag_unit_id', String(rag_unit_id));
+  return mergeApiQuery(u.toString(), { omitPersonIdQuery: true });
+}
+
 // ─── 逐字稿（Transcript）API ─────────────────────────────────────────────────
 
 /**
- * GET /rag/transcript/text
+ * GET /rag/unit/text — JSON 含 transcription
  * @param {{ rag_tab_id: string, folder_name: string, personId?: string | null }} params
  * @returns {Promise<object>}
  */
-export async function apiRagTranscriptText(params) {
+export async function apiRagUnitText(params) {
   const rag_tab_id = String(params.rag_tab_id ?? '').trim();
   const folder_name = String(params.folder_name ?? '').trim();
   if (!rag_tab_id) throw new Error('缺少 rag_tab_id');
   if (!folder_name) throw new Error('缺少 folder_name');
-  const url = buildTranscriptUrl(API_RAG_TRANSCRIPT_TEXT, { rag_tab_id, folder_name, personId: params.personId });
+  const url = buildTranscriptUrl(API_RAG_UNIT_TEXT, { rag_tab_id, folder_name, personId: params.personId });
   const res = await loggedFetch(url, { method: 'GET' }, { personId: params.personId });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
@@ -180,10 +254,10 @@ export async function apiRagTranscriptYoutube(params) {
 }
 
 /**
- * GET /rag/unit/mp3-file — ZIP 內 folder_name 資料夾取恰好一個音訊檔，回傳音訊本體（unit_type=3 mp3 單元；後端 OpenAPI Rag Unit Audio File）
- * Query：`rag_tab_id`、`folder_name`、`person_id`（與 {@link apiRagTranscriptText} 等一致）。
+ * GET /rag/unit/mp3-file — ZIP 內 folder_name 資料夾取音訊；JSON 時含 audio_base64、transcription，否則回傳音訊 Blob。
+ * Query：`rag_tab_id`、`folder_name`、`person_id`（與 {@link apiRagUnitText} 等一致）。
  * @param {{ rag_tab_id: string, folder_name: string, personId: string | null | undefined }} params
- * @returns {Promise<Blob>}
+ * @returns {Promise<{ blob: Blob | null, transcription: string, filename: string, mediaType: string }>}
  */
 export async function apiRagUnitMp3FileByFolder(params) {
   const rag_tab_id = String(params.rag_tab_id ?? '').trim();
@@ -198,11 +272,22 @@ export async function apiRagUnitMp3FileByFolder(params) {
     const text = await res.text();
     throw new Error(parseFetchError(res, text));
   }
-  return res.blob();
+  const contentType = String(res.headers.get('content-type') ?? '').toLowerCase();
+  if (contentType.includes('application/json')) {
+    const text = await res.text();
+    return parseRagUnitMp3FilePayload(parseJson(text));
+  }
+  const blob = await res.blob();
+  return {
+    blob: blob instanceof Blob && blob.size > 0 ? blob : null,
+    transcription: '',
+    filename: '',
+    mediaType: blob?.type || contentType || 'audio/mpeg',
+  };
 }
 
 /**
- * GET /rag/unit/youtube-url — ZIP 內 folder_name 資料夾 .md/.txt/.doc/.docx 解析 YouTube 網址（unit_type=4）；前端僅接受回應內完整 URL 欄位，不接受僅 video_id
+ * GET /rag/unit/youtube-url — ZIP 內 folder_name 資料夾解析 YouTube 網址與逐字稿（unit_type=4）
  * Query：`rag_tab_id`、`folder_name`、`person_id`。
  * @param {{ rag_tab_id: string, folder_name: string, personId: string | null | undefined }} params
  * @returns {Promise<object>}
@@ -224,43 +309,64 @@ export async function apiRagUnitYoutubeUrlByFolder(params) {
 // ─── RAG Tab 管理（CRUD） ─────────────────────────────────────────────────────
 
 /**
- * GET /rag/tab/unit/mp3-file — 音訊單元（Rag_Unit.unit_type=3）原始音訊。
+ * GET /rag/tab/unit/mp3-file — 音訊單元（Rag_Unit.unit_type=3）。
  * 組出含 query（rag_tab_id、rag_unit_id）的完整 URL（後端不需 person_id）。
  * @param {{ rag_tab_id: string, rag_unit_id: number }} params
  * @returns {string} 參數不全或 rag_unit_id 非正整數時回傳空字串
  */
 export function buildRagTabUnitMp3FileUrl(params) {
-  const rag_tab_id = String(params.rag_tab_id ?? '').trim();
-  const rag_unit_id = Number(params.rag_unit_id);
-  if (!rag_tab_id) return '';
-  if (!Number.isFinite(rag_unit_id) || rag_unit_id < 1) return '';
-  const base = String(API_BASE).replace(/\/$/, '');
-  let u;
-  try {
-    u = new URL(`${base}${API_RAG_TAB_UNIT_MP3_FILE}`);
-  } catch {
-    return '';
-  }
-  u.searchParams.set('rag_tab_id', rag_tab_id);
-  u.searchParams.set('rag_unit_id', String(rag_unit_id));
-  return mergeApiQuery(u.toString(), { omitPersonIdQuery: true });
+  return buildRagTabUnitQueryUrl(API_RAG_TAB_UNIT_MP3_FILE, params);
 }
 
 /**
- * GET /rag/tab/unit/mp3-file — 與 {@link buildRagTabUnitMp3FileUrl} 相同端點，以 fetch 取 Blob。
+ * GET /rag/tab/unit/youtube-url — YouTube 單元（Rag_Unit.unit_type=4）。
+ * @param {{ rag_tab_id: string, rag_unit_id: number }} params
+ * @returns {string}
+ */
+export function buildRagTabUnitYoutubeUrl(params) {
+  return buildRagTabUnitQueryUrl(API_RAG_TAB_UNIT_YOUTUBE_URL, params);
+}
+
+/**
+ * GET /rag/tab/unit/mp3-file — JSON：audio_base64、media_type、filename、transcription。
+ * @param {{ rag_tab_id: string, rag_unit_id: number }} params
+ * @returns {Promise<{ blob: Blob | null, transcription: string, filename: string, mediaType: string }>}
+ */
+export async function apiRagTabUnitMp3File(params) {
+  const url = buildRagTabUnitMp3FileUrl(params);
+  if (!url) throw new Error('缺少 rag_tab_id 或 rag_unit_id');
+  const res = await loggedFetch(url, { method: 'GET' }, { omitPersonIdQuery: true });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseRagUnitMp3FilePayload(parseJson(text));
+}
+
+/**
+ * GET /rag/tab/unit/youtube-url — JSON：youtube_url、transcription。
+ * @param {{ rag_tab_id: string, rag_unit_id: number }} params
+ * @returns {Promise<object>}
+ */
+export async function apiRagTabUnitYoutubeUrl(params) {
+  const url = buildRagTabUnitYoutubeUrl(params);
+  if (!url) throw new Error('缺少 rag_tab_id 或 rag_unit_id');
+  const res = await loggedFetch(url, { method: 'GET' }, { omitPersonIdQuery: true });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  return parseJson(text);
+}
+
+/**
+ * GET /rag/tab/unit/mp3-file — 與 {@link apiRagTabUnitMp3File} 相同端點，僅回傳音訊 Blob。
  * 供 `<audio>` 使用 `URL.createObjectURL`：正式站跨網域時比 `:src` 直連更容易通過（{@link loggedFetch} 須 `omitPersonIdQuery`，避免自動附帶 query person_id）。
  * @param {{ rag_tab_id: string, rag_unit_id: number }} params
  * @returns {Promise<Blob>}
  */
 export async function apiRagTabUnitMp3FileBlob(params) {
-  const url = buildRagTabUnitMp3FileUrl(params);
-  if (!url) throw new Error('缺少 rag_tab_id 或 rag_unit_id');
-  const res = await loggedFetch(url, { method: 'GET' }, { omitPersonIdQuery: true });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(parseFetchError(res, text));
+  const payload = await apiRagTabUnitMp3File(params);
+  if (!(payload.blob instanceof Blob) || payload.blob.size <= 0) {
+    throw new Error('音訊檔為空');
   }
-  return res.blob();
+  return payload.blob;
 }
 
 /**
@@ -954,6 +1060,41 @@ export async function apiMarkRagQuizForExam(body, personId) {
   if (Number.isFinite(ragUnitId) && ragUnitId > 0) payload.rag_unit_id = Math.trunc(ragUnitId);
   payload.for_exam = !!body?.for_exam;
   const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_FOR_EXAM}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  }, { personId: pid });
+  const text = await res.text();
+  if (!res.ok) throw new Error(parseFetchError(res, text));
+  if (!text || !text.trim()) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * 更新 Rag_Quiz.follow_up：POST /rag/tab/unit/quiz/followup — query person_id、course_id（必填）。
+ * Body：`rag_quiz_id`、選填 `rag_tab_id`／`rag_unit_id`、`followup`（true＝追問、false＝一般）；以 rag_quiz_id 定位列。
+ *
+ * @param {{ rag_quiz_id: number, rag_tab_id?: string, rag_unit_id?: number, followup: boolean }} body
+ * @param {string | number} personId
+ */
+export async function apiSetRagQuizFollowup(body, personId) {
+  const pid = String(personId ?? '').trim();
+  if (!pid) throw new Error('person_id 為必填');
+  const rqid = Number(body?.rag_quiz_id);
+  if (!Number.isFinite(rqid) || rqid < 1) throw new Error('無效的 rag_quiz_id');
+  const payload = {
+    rag_quiz_id: Math.trunc(rqid),
+    followup: !!body?.followup,
+  };
+  const ragTabId = body?.rag_tab_id != null ? String(body.rag_tab_id).trim() : '';
+  if (ragTabId) payload.rag_tab_id = ragTabId;
+  const ragUnitId = Number(body?.rag_unit_id);
+  if (Number.isFinite(ragUnitId) && ragUnitId > 0) payload.rag_unit_id = Math.trunc(ragUnitId);
+  const res = await loggedFetch(`${API_BASE}${API_RAG_TAB_UNIT_QUIZ_FOLLOWUP}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

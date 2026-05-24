@@ -27,6 +27,8 @@ import {
   isFrontendLocalHost,
 } from '../constants/api.js';
 import {
+  generateTabId,
+  deriveRagNameFromTabId,
   parseRagMetadataObject,
   getRagUnitListString,
   normalizeExamListResponse,
@@ -78,34 +80,6 @@ const pageTitle = computed(() => '測驗');
 const quizBankNoun = computed(() => '試卷');
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
-
-/** test_tab_id 規則：與 RAG 頁一致 → {person_id}_yymmddhhmmss；無 person_id 時 fallback 為 UUID */
-function generateTabId(personId) {
-  if (personId != null && String(personId).trim() !== '') {
-    const d = new Date();
-    const yy = String(d.getFullYear()).slice(-2);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    const hh = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    const ss = String(d.getSeconds()).padStart(2, '0');
-    return `${String(personId).trim()}_${yy}${mm}${dd}${hh}${min}${ss}`;
-  }
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  const hex = () => Math.floor(Math.random() * 16).toString(16);
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) =>
-    (c === 'x' ? hex() : (parseInt(hex(), 16) & 0x3) | 0x8).toString(16)
-  );
-}
-
-/** 從 test_tab_id 取得 test_name：與 RAG 頁一致，底線後的部份（時間），無底線則用整段 */
-function deriveNameFromTabId(tabId) {
-  if (!tabId || typeof tabId !== 'string') return '';
-  const idx = String(tabId).indexOf('_');
-  return idx >= 0 ? String(tabId).slice(idx + 1) : String(tabId);
-}
 
 /** API 若回傳「找不到資料」（404/Not Found），在空畫面視為無資料而非錯誤。 */
 function isNotFoundLike(status, message) {
@@ -804,6 +778,41 @@ function openExamUnitTranscriptModal(slotIndex) {
 function closeExamUnitTranscriptModal() {
   examUnitTranscriptModalSlotIndex.value = null;
 }
+
+/** 詳細資訊 Modal（unit_type=3/4）：槽位 1-based */
+const examUnitDetailModalSlotIndex = ref(null);
+
+function openExamUnitDetailModal(slotIndex) {
+  examUnitDetailModalSlotIndex.value = slotIndex;
+}
+
+function closeExamUnitDetailModal() {
+  examUnitDetailModalSlotIndex.value = null;
+}
+
+const examUnitDetailModalSection = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null) return null;
+  return examSlotUnitTranscriptSection(Number(idx));
+});
+
+const examUnitDetailModalMp3Props = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null) return null;
+  return examSlotMp3PlayerProps(Number(idx));
+});
+
+const examUnitDetailModalYoutubeEmbedUrl = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null) return '';
+  return examSlotYoutubeEmbedUrl(Number(idx));
+});
+
+const examUnitDetailModalMdHtml = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
+  return examSlotUnitTranscriptMdHtml(Number(idx));
+});
 
 /** 先前出題 Modal：槽位 1-based */
 const examQuizHistoryModalSlotIndex = ref(null);
@@ -1841,7 +1850,7 @@ function getExamTabLabel(exam) {
   const tabId = exam.exam_tab_id ?? exam.test_tab_id ?? exam.id ?? '';
   const raw = exam.tab_name ?? exam.exam_name ?? exam.test_name;
   const name = raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
-  const fromTabId = deriveNameFromTabId(tabId);
+  const fromTabId = deriveRagNameFromTabId(tabId);
   const created = exam.created_at ?? '';
   return name || fromTabId || tabId || created || '測驗';
 }
@@ -2842,7 +2851,7 @@ async function generateQuiz(slotIndex, options = {}) {
 }
 
 
-// ─── 題目評分（讚 / 差）與作答評改 ───────────────────────────────────────────
+// ─── 題目卡片輔助（Design 版式） ────────────────────────────────────────────
 
 /**
  * 測驗頁「開始批改」：答案非空且（未批改過，或答案／規則相對上次批改有異動）。
@@ -3068,6 +3077,88 @@ onActivated(() => {
         :history-list="examQuizHistoryModalList"
         title-id="exam-quiz-history-modal-title"
       />
+      <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube）-->
+      <div
+        v-if="examUnitDetailModalSlotIndex != null"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="exam-unit-detail-modal-title"
+        @click.self="closeExamUnitDetailModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="exam-unit-detail-modal-title"
+                class="modal-title my-color-black text-break"
+              >詳細資訊</h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeExamUnitDetailModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0" style="max-height: 70vh; overflow: auto;">
+              <div class="row g-3 w-100 min-w-0">
+                <!-- MP3 播放器 -->
+                <div
+                  v-if="examUnitDetailModalMp3Props"
+                  class="col-12 min-w-0"
+                >
+                  <RagTabUnitMp3Player
+                    :rag-tab-id="examUnitDetailModalMp3Props.ragTabId"
+                    :rag-unit-id="examUnitDetailModalMp3Props.ragUnitId"
+                  />
+                </div>
+                <!-- YouTube iframe -->
+                <div
+                  v-if="examUnitDetailModalSection && examUnitDetailModalSection.unitType === UNIT_TYPE_YOUTUBE && examUnitDetailModalYoutubeEmbedUrl"
+                  class="col-12 min-w-0"
+                >
+                  <div class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted">
+                    <iframe
+                      class="border-0"
+                      title="YouTube 影片"
+                      :src="examUnitDetailModalYoutubeEmbedUrl"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      allowfullscreen
+                    />
+                  </div>
+                </div>
+                <!-- 逐字稿 -->
+                <div
+                  v-if="examUnitDetailModalMdHtml && examUnitDetailModalSection && (examUnitDetailModalSection.unitType === UNIT_TYPE_MP3 || examUnitDetailModalSection.unitType === UNIT_TYPE_YOUTUBE)"
+                  class="col-12 min-w-0"
+                >
+                  <div class="my-design-pack-unit-section w-100 min-w-0">
+                    <div class="my-font-sm-400 my-color-gray-1 mb-2">逐字稿</div>
+                    <div
+                      class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                      v-html="examUnitDetailModalMdHtml"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                @click="closeExamUnitDetailModal"
+              >
+                關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </Teleport>
     <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
@@ -3234,6 +3325,15 @@ onActivated(() => {
                                 class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
                               >追問</span>
                             </div>
+                            <button
+                              v-if="examSlotTranscriptModalButtonVisible(activeExamSlotIndex1)"
+                              type="button"
+                              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1"
+                              aria-label="詳細資訊"
+                              @click="openExamUnitDetailModal(activeExamSlotIndex1)"
+                            >
+                              詳細資訊
+                            </button>
                           </div>
                           <div class="my-pack-unit-settings-body w-100 min-w-0">
                             <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">

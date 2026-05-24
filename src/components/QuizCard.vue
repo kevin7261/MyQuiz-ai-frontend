@@ -47,6 +47,8 @@ const props = defineProps({
   hideGradingResult: { type: Boolean, default: false },
   /** 建立測驗題庫（單元題）：顯示「開始批改」（POST llm-grade-db，使用後端已存批改規則）；僅與顯示「批改規則」編輯區時併用 */
   showRagGradeDbButton: { type: Boolean, default: false },
+  /** true 時在本卡「批改結果」下方顯示內嵌 for-exam 工具列（需父層未設 hideRagQuizForExamToolbar） */
+  showRagQuizForExamAction: { type: Boolean, default: false },
   /** true 時不在本卡「批改結果」下方顯示 for-exam 鈕（改由父層例如題型區塊下方置中顯示） */
   hideRagQuizForExamToolbar: { type: Boolean, default: false },
   /** true 時答案區唯讀、不顯示「開始批改」（仍顯示批改結果區；與 hideGradingPrompt 併用於分析頁） */
