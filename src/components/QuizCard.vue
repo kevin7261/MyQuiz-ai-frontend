@@ -1274,7 +1274,7 @@ const quizAnswerFieldDisabled = computed(
                     <button
                       v-if="showExamDesignGradingRulePill"
                       type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1 ms-auto"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1 ms-auto"
                       title="批改規則"
                       aria-label="批改規則"
                       @click="openPromptModal('grading')"
@@ -1483,7 +1483,7 @@ const quizAnswerFieldDisabled = computed(
         <button
           v-if="hideGradingPrompt && !hideExamRulePills"
           type="button"
-          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
           @click="openPromptModal('grading')"
         >
           批改規則
