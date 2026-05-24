@@ -218,6 +218,7 @@ export const API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE = '/exam/tab/quiz/create-llm-
 export const API_EXAM_TAB_QUIZ_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/llm-generate-followup';
 /**
  * POST /exam/tab/quiz/create-llm-generate-followup — 先 create 再 llm-generate-followup；body 不需 exam_quiz_id；其餘同 followup。
+ * 回傳 { exams: Exam[], count }（與 GET /exam/tabs 相同；quizzes[] 可含 follow_up_quiz 巢狀鏈）。
  */
 export const API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/create-llm-generate-followup';
 /** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */

@@ -1,8 +1,28 @@
 <script setup>
-/**
- * LogoPage — Logo 展示頁
- * 各種 Logo 的 SVG 稿件，直接在頁面上陳列。
- */
+import LogoGridSvg from '../components/LogoGridSvg.vue';
+
+/** 02 區塊：色彩變化 */
+const colorVariants = [
+  { id: 'original', label: '原色', colors: { background: '#ffffff', primary: '#000000', secondary: '#888888' } },
+  { id: 'invert', label: '反色', colors: { background: '#1a1a1a', primary: '#ffffff', secondary: '#888888' } },
+  { id: 'blue', label: '藍色', colors: { background: '#ffffff', primary: '#1e3a8a', secondary: '#60a5fa' } },
+  { id: 'green', label: '綠色', colors: { background: '#ffffff', primary: '#14532d', secondary: '#4ade80' } },
+  { id: 'warm', label: '暖色', colors: { background: '#ffffff', primary: '#7c2d12', secondary: '#fb923c' } },
+  { id: 'purple', label: '紫色', colors: { background: '#ffffff', primary: '#4c1d95', secondary: '#a78bfa' } },
+  { id: 'teal', label: '青綠', colors: { background: '#ffffff', primary: '#115e59', secondary: '#2dd4bf' } },
+];
+
+/** 03 區塊：尺寸變化（寬度 px，高度依 4:3 比例） */
+const sizeVariants = [
+  { id: '240', label: '240px', width: 240 },
+  { id: '160', label: '160px', width: 160 },
+  { id: '120', label: '120px', width: 120 },
+  { id: '80', label: '80px', width: 80 },
+  { id: '48', label: '48px', width: 48 },
+  { id: '32', label: '32px', width: 32 },
+];
+
+const sizeHeight = (width) => Math.round(width * (180 / 240));
 </script>
 
 <template>
@@ -21,10 +41,89 @@
         <div class="row justify-content-center">
           <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
 
-            <!-- ===== 待加入 Logo ===== -->
+            <!-- ===== 01 · 3×2 方格格網 ===== -->
+            <!--
+              格網規格：3 欄 × 2 列，每格正方形 80×80 px
+              53／54／62 下方延伸列高 20 px（主格 1/4）
+              無間距、無圓角，格線以 line 繪製
+              SVG 尺寸：240 × 180 px
+            -->
             <section class="my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5 text-center">
-                <p class="my-font-md-400 my-color-black mb-0">尚未加入任何 Logo，請叫我畫！</p>
+              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
+                  01 · 3×2 方格格網
+                </div>
+                <div class="d-flex flex-wrap gap-4 align-items-start">
+
+                  <div class="d-flex flex-column align-items-center gap-2">
+                    <p class="my-font-sm-400 my-color-black mb-0">格線版</p>
+                    <div class="rounded-3 p-3 d-inline-flex" style="background:#ffffff">
+                      <LogoGridSvg show-grid id-prefix="grid" />
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-column align-items-center gap-2">
+                    <p class="my-font-sm-400 my-color-black mb-0">無格線版</p>
+                    <div class="rounded-3 p-3 d-inline-flex" style="background:#ffffff">
+                      <LogoGridSvg :show-grid="false" id-prefix="bare" />
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </section>
+
+            <!-- ===== 02 · 各種變化 ===== -->
+            <section class="my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
+                  02 · 各種變化
+                </div>
+                <div class="d-flex flex-wrap gap-4 align-items-start">
+                  <div
+                    v-for="variant in colorVariants"
+                    :key="variant.id"
+                    class="d-flex flex-column align-items-center gap-2"
+                  >
+                    <p class="my-font-sm-400 my-color-black mb-0">{{ variant.label }}</p>
+                    <div
+                      class="rounded-3 p-3 d-inline-flex"
+                      :style="{ background: variant.colors.background }"
+                    >
+                      <LogoGridSvg
+                        :show-grid="false"
+                        :id-prefix="`var-${variant.id}`"
+                        :colors="variant.colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ===== 03 · 各種大小 ===== -->
+            <section class="my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
+                  03 · 各種大小
+                </div>
+                <div class="d-flex flex-wrap gap-4 align-items-end">
+                  <div
+                    v-for="size in sizeVariants"
+                    :key="size.id"
+                    class="d-flex flex-column align-items-center gap-2"
+                  >
+                    <p class="my-font-sm-400 my-color-black mb-0">{{ size.label }}</p>
+                    <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
+                      <LogoGridSvg
+                        :show-grid="false"
+                        :id-prefix="`size-${size.id}`"
+                        :svg-width="size.width"
+                        :svg-height="sizeHeight(size.width)"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </section>
 

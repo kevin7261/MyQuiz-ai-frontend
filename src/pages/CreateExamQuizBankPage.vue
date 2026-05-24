@@ -6195,7 +6195,7 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：答案 -->
+                <!-- 子區塊：答案 + 批改（合併） -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer"
@@ -6206,21 +6206,13 @@ async function confirmAnswer(item) {
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
                         design-sub-block="answer"
-                      @confirm-answer="confirmGradeMerged"
-                      @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
-                      @open-grading-prompt-edit="openBankGradingPromptEditModal"
-                      @open-quiz-history="openBankQuizHistoryModal"
+                        @confirm-answer="confirmGradeMerged"
+                        @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
+                        @open-grading-prompt-edit="openBankGradingPromptEditModal"
+                        @open-quiz-history="openBankQuizHistoryModal"
                       />
                     </div>
-                  </div>
-                </div>
-                <!-- 子區塊：批改 -->
-                <div
-                  v-if="activeUnitQuizHasGeneratedBody"
-                  class="my-design-quiz-sub-block-outer"
-                >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
-                    <div class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top">
+                    <div class="w-100 min-w-0">
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout

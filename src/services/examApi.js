@@ -179,15 +179,22 @@ export async function apiExamTabQuizCreateLlmGenerate(body, personId) {
  *   quiz_history_list?: { quiz_content: string, answer_content: string, quiz_answer_reference?: string, answer_critique?: string }[],
  * }} body
  * @param {string | number} personId
- * @returns {Promise<object>}
+ * @returns {Promise<object>} 新版回傳 { exams: Exam[], count }（與 GET /exam/tabs 每筆相同；quizzes[] 可含 follow_up_quiz 鏈）；舊版為單筆 Exam_Quiz 扁平物件
  */
 export async function apiExamTabQuizCreateLlmGenerateFollowup(body, personId) {
   const pid = String(personId ?? '').trim();
   if (!pid) throw new Error('person_id 為必填');
   const examTabId = body?.exam_tab_id != null ? String(body.exam_tab_id).trim() : '';
   if (!examTabId) throw new Error('缺少 exam_tab_id');
+  const hasFollowUpId =
+    body?.follow_up_exam_quiz_id != null && body.follow_up_exam_quiz_id !== '';
   const fuRaw = Number(body?.follow_up_exam_quiz_id);
-  const followUpExamQuizId = Number.isFinite(fuRaw) && fuRaw >= 1 ? Math.trunc(fuRaw) : null;
+  const followUpExamQuizId =
+  body?.follow_up_exam_quiz_id === 0 || body?.follow_up_exam_quiz_id === '0'
+    ? 0
+    : hasFollowUpId && Number.isFinite(fuRaw) && fuRaw >= 0
+      ? Math.trunc(fuRaw)
+      : 0;
   const ru = body?.rag_unit_id != null && body.rag_unit_id !== '' ? Number(body.rag_unit_id) : NaN;
   const ragUnitId = Number.isFinite(ru) && ru > 0 ? Math.trunc(ru) : 0;
   const rq = body?.rag_quiz_id != null && body.rag_quiz_id !== '' ? Number(body.rag_quiz_id) : NaN;
@@ -219,7 +226,7 @@ export async function apiExamTabQuizCreateLlmGenerateFollowup(body, personId) {
     rag_tab_id: ragTabId,
     rag_unit_id: ragUnitId,
     rag_quiz_id: ragQuizId,
-    ...(followUpExamQuizId != null ? { follow_up_exam_quiz_id: followUpExamQuizId } : {}),
+    follow_up_exam_quiz_id: followUpExamQuizId,
     quiz_history_list: history,
   };
   const res = await loggedFetch(`${API_BASE}${API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE_FOLLOWUP}`, {
@@ -301,7 +308,7 @@ export async function apiExamTabQuizLlmGenerate(body, personId) {
  *   quiz_history_list?: { quiz_content: string, answer_content: string, quiz_answer_reference?: string, answer_critique?: string }[],
  * }} body
  * @param {string | number} personId
- * @returns {Promise<object>}
+ * @returns {Promise<object>} 新版回傳 { exams: Exam[], count }；舊版為單筆 Exam_Quiz 扁平物件
  */
 export async function apiExamTabQuizLlmGenerateFollowup(body, personId) {
   const pid = String(personId ?? '').trim();

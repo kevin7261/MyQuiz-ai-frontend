@@ -666,6 +666,48 @@ export function mergeQuizzesWithTopLevelAnswers(item) {
 }
 
 /**
+ * 自頂層 Exam_Quiz 沿 follow_up_quiz 串成陣列（舊→新）。
+ * @param {object | null | undefined} quiz
+ * @returns {object[]}
+ */
+export function examQuizChainFromRoot(quiz) {
+  const chain = [];
+  let current = quiz;
+  while (current && typeof current === 'object') {
+    chain.push(current);
+    current = current.follow_up_quiz;
+  }
+  return chain;
+}
+
+/**
+ * 在 mergeQuizzesWithTopLevelAnswers 結果中，找出含 targetExamQuizId 的頂層 quiz（含 follow_up_quiz 鏈內節點）。
+ * @param {object[]} quizzes
+ * @param {number | string | null | undefined} targetExamQuizId
+ * @returns {object | null}
+ */
+export function findExamQuizRootInList(quizzes, targetExamQuizId) {
+  const tid = Number(targetExamQuizId);
+  if (!Array.isArray(quizzes) || !Number.isFinite(tid) || tid < 1) return null;
+  for (const root of quizzes) {
+    for (const node of examQuizChainFromRoot(root)) {
+      if (Number(node.exam_quiz_id) === tid) return root;
+    }
+  }
+  return null;
+}
+
+/**
+ * POST /exam/tab/quiz/*-llm-generate* 是否為 { exams, count } 包裝（對齊 GET /exam/tabs）。
+ * @param {unknown} data
+ * @returns {boolean}
+ */
+export function isExamListWrapperResponse(data) {
+  if (data == null || typeof data !== 'object' || Array.isArray(data)) return false;
+  return normalizeExamListResponse(data).length > 0;
+}
+
+/**
  * 尚無已存作答時，舊版曾以參考答案預填「答案」欄；目前題卡改為獨立「參考答案」區與空白作答欄，此函式多數路徑已不再使用。
  * @param {unknown} referenceAnswer
  * @returns {string}
