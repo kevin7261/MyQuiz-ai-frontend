@@ -29,9 +29,8 @@ const props = defineProps({
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
 
-const showPrimary = computed(() => props.layer === 'full' || props.layer === 'primary');
+const showPrimary   = computed(() => props.layer === 'full' || props.layer === 'primary');
 const showSecondary = computed(() => props.layer === 'full' || props.layer === 'secondary');
-const showCells5154 = computed(() => !props.mergeCell5);
 
 /** 04 分層：僅有圖形的格線與重新編號 */
 const PRIMARY_SPLIT_GRID = [
@@ -61,20 +60,31 @@ const splitLayerGridCells = computed(() => {
   }));
 });
 
-const useSplitLayerGrid = computed(
-  () => props.mergeCell5 && props.layer !== 'full' && splitLayerGridCells.value.length > 0,
-);
+// splitLayerGridCells 在條件不符時已回傳 []，直接用長度判斷即可
+const useSplitLayerGrid = computed(() => splitLayerGridCells.value.length > 0);
 
-const svgStyle = computed(() => ({
-  width: `${props.svgWidth}px`,
-  height: `${props.svgHeight}px`,
-  display: 'block',
-  flexShrink: 0,
-}));
+const viewBox = computed(() => {
+  if (useSplitLayerGrid.value) {
+    return props.layer === 'primary' ? '0 0 160 180' : '80 0 160 180';
+  }
+  return '0 0 240 180';
+});
+
+const svgStyle = computed(() => {
+  const height = useSplitLayerGrid.value
+    ? Math.round(props.svgWidth * (180 / 160))
+    : props.svgHeight;
+  return {
+    width: `${props.svgWidth}px`,
+    height: `${height}px`,
+    display: 'block',
+    flexShrink: 0,
+  };
+});
 </script>
 
 <template>
-  <svg viewBox="0 0 240 180" xmlns="http://www.w3.org/2000/svg" :style="svgStyle">
+  <svg :viewBox="viewBox" xmlns="http://www.w3.org/2000/svg" :style="svgStyle">
     <defs>
       <clipPath v-if="mergeCell5" :id="`${idPrefix}-clip-outside-5`">
         <path
@@ -85,10 +95,13 @@ const svgStyle = computed(() => ({
       <clipPath v-if="mergeCell5" :id="`${idPrefix}-clip-cell-5`">
         <rect x="80" y="80" width="80" height="80"/>
       </clipPath>
-      <clipPath :id="`${idPrefix}-clip-51`"><rect x="80"  y="80"  width="40" height="40"/></clipPath>
-      <clipPath :id="`${idPrefix}-clip-52`"><rect x="120" y="80"  width="40" height="40"/></clipPath>
-      <clipPath :id="`${idPrefix}-clip-53`"><rect x="80"  y="120" width="40" height="40"/></clipPath>
-      <clipPath :id="`${idPrefix}-clip-54`"><rect x="120" y="120" width="40" height="40"/></clipPath>
+      <!-- 格 51–54 的 clipPath 只在非 mergeCell5 模式下使用 -->
+      <template v-if="!mergeCell5">
+        <clipPath :id="`${idPrefix}-clip-51`"><rect x="80"  y="80"  width="40" height="40"/></clipPath>
+        <clipPath :id="`${idPrefix}-clip-52`"><rect x="120" y="80"  width="40" height="40"/></clipPath>
+        <clipPath :id="`${idPrefix}-clip-53`"><rect x="80"  y="120" width="40" height="40"/></clipPath>
+        <clipPath :id="`${idPrefix}-clip-54`"><rect x="120" y="120" width="40" height="40"/></clipPath>
+      </template>
     </defs>
     <rect x="0" y="0" width="240" height="160" :fill="c.background"/>
     <!-- 04 分層格網：格 5／6 合併，格 5 各畫 1/4 弧成圓 -->
@@ -126,8 +139,7 @@ const svgStyle = computed(() => ({
         <!-- 灰：格 5 左側直線（格 6 右側直線左右翻轉） -->
         <rect v-if="showSecondary" x="80" y="80" width="40" height="80" :fill="c.secondary"/>
       </g>
-      <!-- 延伸列底（不受格 5 裁切影響） -->
-      <rect x="0" y="160" width="240" height="20" :fill="c.background"/>
+      <!-- 延伸列：僅畫有內容的格，不鋪整列白底 -->
       <rect v-if="showSecondary" x="80" y="160" width="40" height="20" :fill="c.secondary"/>
       <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="c.primary"/>
       <rect v-if="showSecondary" x="200" y="160" width="40" height="20" :fill="c.secondary"/>
@@ -140,17 +152,17 @@ const svgStyle = computed(() => ({
       <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="c.secondary" stroke-width="40"/>
       <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="c.primary" stroke-width="40"/>
       <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="c.secondary" stroke-width="40"/>
-      <!-- 51–54 -->
-      <g v-if="showCells5154 && showSecondary" :clip-path="`url(#${idPrefix}-clip-51)`">
+      <!-- 格 51–54 -->
+      <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-51)`">
         <path d="M 80 120 A 40 40 0 0 0 120 80 L 80 80 Z" :fill="c.secondary"/>
       </g>
-      <g v-if="showCells5154 && showPrimary" :clip-path="`url(#${idPrefix}-clip-52)`">
+      <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-52)`">
         <path d="M 160 120 A 40 40 0 0 1 120 80 L 160 80 Z" :fill="c.primary"/>
       </g>
-      <g v-if="showCells5154 && showSecondary" :clip-path="`url(#${idPrefix}-clip-53)`">
+      <g v-if="showSecondary" :clip-path="`url(#${idPrefix}-clip-53)`">
         <path d="M 80 120 A 40 40 0 0 1 120 160 L 80 160 Z" :fill="c.secondary"/>
       </g>
-      <g v-if="showCells5154 && showPrimary" :clip-path="`url(#${idPrefix}-clip-54)`">
+      <g v-if="showPrimary" :clip-path="`url(#${idPrefix}-clip-54)`">
         <path d="M 160 120 A 40 40 0 0 0 120 160 L 160 160 Z" :fill="c.primary"/>
       </g>
       <rect v-if="showSecondary" x="200" y="80"  width="40" height="80" :fill="c.secondary"/>
@@ -204,19 +216,16 @@ const svgStyle = computed(() => ({
         <text x="120" y="40"  text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">2</text>
         <text x="200" y="40"  text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">3</text>
         <text x="40"  y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">4</text>
+        <!-- cell 5 & 6：mergeCell5 時各為一個大格，否則各分為兩個子格 -->
         <template v-if="mergeCell5">
           <text x="120" y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">5</text>
+          <text x="200" y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">6</text>
         </template>
         <template v-else>
           <text x="100" y="100" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">51</text>
           <text x="140" y="100" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">52</text>
           <text x="100" y="140" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">53</text>
           <text x="140" y="140" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">54</text>
-        </template>
-        <template v-if="mergeCell5">
-          <text x="200" y="120" text-anchor="middle" dominant-baseline="central" font-size="20" fill="#0000ff">6</text>
-        </template>
-        <template v-else>
           <text x="180" y="120" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">61</text>
           <text x="220" y="120" text-anchor="middle" dominant-baseline="central" font-size="13" fill="#0000ff">62</text>
         </template>
