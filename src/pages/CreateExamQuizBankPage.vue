@@ -5794,7 +5794,7 @@ async function confirmAnswer(item) {
                         </div>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1"
                           title="加入資料夾"
                           aria-label="加入資料夾"
                           :disabled="packGroupsEditBlocked || !secondFoldersFull.length"
@@ -6040,26 +6040,6 @@ async function confirmAnswer(item) {
                 </div>
               </div>
             </div>
-          </div>
-
-          <div v-if="packUnitCarouselCountEffective > 0" class="d-flex justify-content-center">
-            <button
-              type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-4 py-2 my-font-md-400 my-button-white"
-              :disabled="startPackUnitBuildDisabled"
-              :aria-busy="currentState.packLoading"
-              aria-label="開始建立單元"
-              @click="confirmPack"
-            >
-              開始建立單元
-            </button>
-          </div>
-          <div
-            v-if="currentState.packError"
-            class="my-alert-danger-soft my-font-sm-400 py-2 text-break"
-            style="white-space: pre-wrap"
-          >
-            {{ currentState.packError }}
           </div>
             </div>
             </div>
@@ -6678,21 +6658,32 @@ async function confirmAnswer(item) {
               </div>
 
               <!-- 區塊 2：單元 -->
-              <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block py-2">
+              <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block" :class="hasBuiltRagSummary ? 'py-2' : 'pb-2'">
                 <div class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 px-3 py-2 min-w-0">
                   <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">單元</div>
                   <div
                     v-if="!hasBuiltRagSummary"
-                    class="dropdown flex-shrink-0"
+                    class="d-flex align-items-center flex-shrink-0"
                   >
                     <button
                       type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 dropdown-toggle my-dropdown-caret"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                      aria-label="單元功能選單"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      title="新增單元"
+                      aria-label="新增單元"
                       :disabled="packGroupsEditBlocked"
+                      @click="onAddPackUnitClick"
                     >
+                      <i class="fa-solid fa-plus" aria-hidden="true" />
+                    </button>
+                    <div class="dropdown flex-shrink-0">
+                      <button
+                        type="button"
+                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 dropdown-toggle my-dropdown-caret"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        aria-label="單元功能選單"
+                        :disabled="packGroupsEditBlocked"
+                      >
                       <i class="fa-solid fa-bars" aria-hidden="true" />
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
@@ -6727,6 +6718,7 @@ async function confirmAnswer(item) {
                         </button>
                       </li>
                     </ul>
+                    </div>
                   </div>
                 </div>
                 <template v-if="designRightUnitSubTabItems.length">
@@ -6746,18 +6738,27 @@ async function confirmAnswer(item) {
                     </button>
                   </div>
                 </template>
-                <div v-if="!hasBuiltRagSummary" class="px-3 pb-2 pt-2">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
-                    :disabled="packGroupsEditBlocked"
-                    title="新增單元"
-                    aria-label="新增單元"
-                    @click="onAddPackUnitClick"
-                  >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增單元
-                  </button>
+              </div>
+              <div
+                v-if="!hasBuiltRagSummary && hasUploadedFileMetadata && packUnitCarouselCountEffective > 0"
+                class="my-design-right-pack-build-action w-100 min-w-0 pb-2"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 w-100"
+                  :disabled="startPackUnitBuildDisabled"
+                  :aria-busy="currentState.packLoading"
+                  aria-label="開始建立單元"
+                  @click="confirmPack"
+                >
+                  開始建立單元
+                </button>
+                <div
+                  v-if="currentState.packError"
+                  class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0 text-break"
+                  style="white-space: pre-wrap"
+                >
+                  {{ currentState.packError }}
                 </div>
               </div>
             </nav>
@@ -6848,6 +6849,9 @@ async function confirmAnswer(item) {
   gap: 0;
   background-color: var(--my-color-gray-3);
   border-radius: 0.75rem;
+}
+.my-design-right-pack-build-action {
+  box-sizing: border-box;
 }
 .my-design-right-step-heading {
   line-height: 1.35;
