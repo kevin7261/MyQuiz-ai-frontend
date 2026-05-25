@@ -1057,8 +1057,12 @@ const packUnitListItemsForNav = computed(() =>
   hasBuiltRagSummary.value ? readonlyPackUnitListItems.value : packUnitListItems.value,
 );
 
-/** 設定單元區塊標題（對齊「設定單元題型」小標樣式） */
-const packUnitSectionHeadingTitle = computed(() => '設定單元');
+/** 建置前 left「設定單元」區塊標題：目前單元名稱 */
+const activePackUnitDisplayLabel = computed(() => {
+  const gi = activePackUnitGi.value;
+  const group = ragListDisplayGroups.value[gi];
+  return resolvePackUnitNavLabel(group, gi, currentState.value.packUnitNames);
+});
 
 /** 建置完成後 left「設定單元」區塊標題：目前單元名稱（非「設定單元 (n/total)」） */
 const builtPackUnitSectionHeadingTitle = computed(() => {
@@ -1299,35 +1303,18 @@ function setPackUnitNameAt(gi, val) {
   state.packUnitNames = arr;
 }
 
-const activePackUnitNameDraft = ref('');
-let packUnitNameDraftSyncing = false;
-
-function syncActivePackUnitNameDraft() {
-  packUnitNameDraftSyncing = true;
-  const gi = activePackUnitGi.value;
-  const group = ragListDisplayGroups.value[gi];
-  activePackUnitNameDraft.value = resolvePackUnitNavLabel(
-    group,
-    gi,
+function openRenamePackUnitTab(gi) {
+  if (packGroupsEditBlocked.value) return;
+  const i = Number(gi);
+  if (!Number.isFinite(i) || i < 0) return;
+  renamePackUnitDraftIndex.value = i;
+  renamePackUnitInitialName.value = resolvePackUnitNavLabel(
+    ragListDisplayGroups.value[i],
+    i,
     currentState.value.packUnitNames,
   );
-  packUnitNameDraftSyncing = false;
-}
-
-watch(activePackUnitNameDraft, (val) => {
-  if (packUnitNameDraftSyncing) return;
-  setPackUnitNameAt(activePackUnitGi.value, val);
-});
-
-watch(
-  [activePackUnitGi, () => currentState.value.packUnitNames, () => currentState.value.packTasksList, ragListDisplayGroups],
-  syncActivePackUnitNameDraft,
-  { deep: true, flush: 'post', immediate: true },
-);
-
-function packUnitNamePlaceholder(gi) {
-  const group = ragListDisplayGroups.value[gi];
-  return resolvePackUnitNavLabel(group, gi, []);
+  renamePackUnitError.value = '';
+  renamePackUnitModalOpen.value = true;
 }
 
 function onRenamePackUnitSave(name) {
@@ -5415,7 +5402,7 @@ async function confirmAnswer(item) {
       <div class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout">
         <div
           class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
-          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-10' : 'col-12'"
+          :class="showDesignRightView ? 'col-8 col-xl-8 col-xxl-9' : 'col-12'"
         >
           <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
       <div
@@ -5444,7 +5431,7 @@ async function confirmAnswer(item) {
           <div
             :class="
               showDesignRightView
-                ? 'col-12 col-lg-12 col-xl-10 col-xxl-8'
+                ? 'col-12 col-xl-10 col-xxl-8'
                 : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
             "
           >
@@ -5456,21 +5443,6 @@ async function confirmAnswer(item) {
           <!-- 設定單元（建置前可編輯；標題／面板樣式對齊建置後「設定單元題型」） -->
           <section class="text-start my-page-block-spacing">
             <div class="my-design-pack-unit-blocks w-100 min-w-0">
-            <div
-              id="design-pack-unit-section-label"
-              class="my-font-sm-400 my-color-gray-1 mb-2"
-            >
-              {{ packUnitSectionHeadingTitle }}
-            </div>
-            <div
-              class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-3"
-              role="heading"
-              aria-level="2"
-            >
-              <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
-                <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0">{{ designRightUploadFileLabel || '—' }}</span>
-              </div>
-            </div>
             <div class="my-pack-unit-settings-body">
           <!-- 課程：可拖曳至設定單元 -->
           <div class="my-pack-unit-field">
@@ -5505,8 +5477,36 @@ async function confirmAnswer(item) {
           </div>
           <!-- 單元：Carousel 一次只顯示一個出題單元；切換由右側單元 list 負責 -->
           <div class="my-pack-unit-settings-carousel">
+            <template v-if="packUnitCarouselCountEffective > 0">
+              <div
+                :key="'pack-unit-heading-' + activePackUnitGi"
+                class="w-100 min-w-0"
+              >
+                <div
+                  id="design-pack-unit-section-label"
+                  class="my-font-sm-400 my-color-gray-1 mb-2"
+                >
+                  設定單元
+                </div>
+                <div
+                  class="d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
+                  role="heading"
+                  aria-level="2"
+                >
+                  <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0">{{ activePackUnitDisplayLabel }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 flex-shrink-0"
+                    title="重新命名單元"
+                    aria-label="重新命名單元"
+                    :disabled="packGroupsEditBlocked"
+                    @click="openRenamePackUnitTab(activePackUnitGi)"
+                  >
+                    <i class="fa-solid fa-pen" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
             <div
-              v-if="packUnitCarouselCountEffective > 0"
               :key="'rg-' + activePackUnitGi"
               class="my-pack-unit-attrs-panel rounded-4 my-bgcolor-gray-3 p-3 w-100 min-w-0 d-flex flex-column gap-4"
               role="group"
@@ -5553,22 +5553,7 @@ async function confirmAnswer(item) {
                   </div>
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <label
-                        class="my-font-sm-400 my-color-gray-1 mb-0"
-                        :for="'rag-pack-unit-name-' + activePackUnitGi"
-                      >單元名稱</label>
-                      <input
-                        :id="'rag-pack-unit-name-' + activePackUnitGi"
-                        :key="'rag-pack-unit-name-' + activePackUnitGi"
-                        v-model="activePackUnitNameDraft"
-                        type="text"
-                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
-                        :disabled="packGroupsEditBlocked"
-                        :placeholder="packUnitNamePlaceholder(activePackUnitGi)"
-                        :aria-label="`設定單元 ${activePackUnitGi + 1} 單元名稱`"
-                        autocomplete="off"
-                      >
-                      <div class="my-font-sm-400 my-color-gray-1 mb-0 mt-4">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-0">
                         類型
                       </div>
                       <div
@@ -5719,6 +5704,7 @@ async function confirmAnswer(item) {
                 </button>
               </div>
             </div>
+            </template>
           </div>
 
           <div class="d-flex justify-content-center">
@@ -6333,7 +6319,7 @@ async function confirmAnswer(item) {
         </div>
         <div
           v-if="showDesignRightView"
-          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
+          class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
@@ -6692,6 +6678,7 @@ async function confirmAnswer(item) {
 .my-pack-unit-settings-carousel {
   display: flex;
   flex-direction: column;
+  gap: 1rem;
   width: 100%;
   min-width: 0;
 }

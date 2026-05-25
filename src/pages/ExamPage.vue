@@ -3176,7 +3176,7 @@ onActivated(() => {
       >
         <div
           class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
-          :class="showDesignRightView ? 'col-8 col-lg-9 col-xl-9 col-xxl-10' : 'col-12'"
+          :class="showDesignRightView ? 'col-8 col-xl-8 col-xxl-9' : 'col-12'"
         >
           <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
             <div
@@ -3204,7 +3204,7 @@ onActivated(() => {
                 <div
                   :class="
                     showDesignRightView
-                      ? 'col-12 col-lg-12 col-xl-10 col-xxl-8'
+                      ? 'col-12 col-xl-10 col-xxl-8'
                       : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
                   "
                 >
@@ -3482,7 +3482,7 @@ onActivated(() => {
         </div>
         <div
           v-if="showDesignRightView"
-          class="col-4 col-lg-3 col-xl-3 col-xxl-2 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
+          class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
