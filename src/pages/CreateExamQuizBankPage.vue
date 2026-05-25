@@ -160,6 +160,9 @@ const deletePackUnitModalOpen = ref(false);
 const deletePackUnitDraftIndex = ref(null);
 /** 刪除全部設定單元確認 Modal */
 const deleteAllPackUnitsModalOpen = ref(false);
+/** 刪除題型確認 Modal */
+const deleteUnitQuizModalOpen = ref(false);
+const deleteUnitQuizDraftIndex = ref(null);
 /** 題型 sub-tab 軟刪（PUT /rag/tab/quiz/delete/{rag_quiz_id}） */
 const deleteUnitQuizLoading = ref(false);
 /** 正在送出批改的題卡 id（全螢幕 LoadingOverlay「批改中...」；結果區待回傳） */
@@ -2493,7 +2496,6 @@ function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
 
   currentState.value.activeUnitQuizTypeIndex = qi;
   scrollActivePackUnitTabIntoView();
-  scrollActiveUnitQuizTypeTabIntoView();
 }
 
 function onDesignRightSubTabClick(item) {
@@ -2571,75 +2573,6 @@ watch(
     currentState.value.activeUnitQuizTypeIndex = 0;
   }
 );
-
-const canGoPrevUnitQuizType = computed(() => activeUnitQuizTypeIdxResolved.value > 0);
-
-const canGoNextUnitQuizType = computed(
-  () => activeUnitQuizTypeIdxResolved.value < activeUnitQuizCards.value.length - 1,
-);
-
-const unitQuizTypeTabsNavEl = ref(null);
-
-function scrollActiveUnitQuizTypeTabIntoView() {
-  nextTick(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        const scroller = unitQuizTypeTabsNavEl.value;
-        if (!scroller) return;
-        const qi = activeUnitQuizTypeIdxResolved.value;
-        const tabEl = scroller.querySelector(`[data-unit-quiz-type-tab-index="${qi}"]`);
-        const item =
-          tabEl?.closest('li')
-          ?? scroller.querySelector('.nav-link.active')?.closest('li');
-        if (!item) return;
-
-        const pad = 8;
-        const scrollerRect = scroller.getBoundingClientRect();
-        const itemRect = item.getBoundingClientRect();
-
-        if (itemRect.left < scrollerRect.left + pad) {
-          scroller.scrollTo({
-            left: scroller.scrollLeft + itemRect.left - scrollerRect.left - pad,
-            behavior: 'smooth',
-          });
-        } else if (itemRect.right > scrollerRect.right - pad) {
-          scroller.scrollTo({
-            left: scroller.scrollLeft + itemRect.right - scrollerRect.right + pad,
-            behavior: 'smooth',
-          });
-        }
-      });
-    });
-  });
-}
-
-watch(activeUnitQuizTypeIdxResolved, scrollActiveUnitQuizTypeTabIntoView, { flush: 'post' });
-watch(
-  () => activeUnitQuizCards.value.length,
-  scrollActiveUnitQuizTypeTabIntoView,
-  { flush: 'post' },
-);
-
-function goPrevUnitQuizType() {
-  if (!canGoPrevUnitQuizType.value) return;
-  currentState.value.activeUnitQuizTypeIndex = activeUnitQuizTypeIdxResolved.value - 1;
-  scrollActiveUnitQuizTypeTabIntoView();
-}
-
-function goNextUnitQuizType() {
-  if (!canGoNextUnitQuizType.value) return;
-  currentState.value.activeUnitQuizTypeIndex = activeUnitQuizTypeIdxResolved.value + 1;
-  scrollActiveUnitQuizTypeTabIntoView();
-}
-
-function selectUnitQuizType(qi) {
-  const cards = activeUnitQuizCards.value;
-  if (!Array.isArray(cards) || cards.length === 0) return;
-  const i = Number(qi);
-  if (!Number.isFinite(i) || i < 0 || i >= cards.length) return;
-  currentState.value.activeUnitQuizTypeIndex = i;
-  scrollActiveUnitQuizTypeTabIntoView();
-}
 
 /** quiz_content（card.quiz）為空與否：出題規則欄皆為編輯器；空白列顯示「產生題目」等仍用此判斷（不依賴 showGenerateForm／草稿對齊；多筆各自綁 quizUserPromptText） */
 function quizRowQuizEmpty(card) {
@@ -4022,7 +3955,46 @@ async function onRenameUnitQuizSave(name) {
   }
 }
 
-async function onDeleteUnitQuizTab(qi) {
+function openDeleteUnitQuizModal(qi) {
+  const slotIndex = activeUnitSlotIndex.value;
+  const stackRaw = currentState.value.unitSlotQuizCards?.[slotIndex - 1];
+  const cards = Array.isArray(stackRaw) ? stackRaw : [];
+  const i = Number(qi);
+  if (!Number.isFinite(i) || i < 0 || i >= cards.length) return;
+  const row = cards[i];
+  const rqid = positiveRagQuizIdFromQuizRow(row);
+  if (rqid == null) {
+    alert('此題型尚未建立於伺服器，無法刪除。');
+    return;
+  }
+  deleteUnitQuizDraftIndex.value = i;
+  deleteUnitQuizModalOpen.value = true;
+}
+
+function closeDeleteUnitQuizModal() {
+  deleteUnitQuizModalOpen.value = false;
+  deleteUnitQuizDraftIndex.value = null;
+}
+
+const deleteUnitQuizConfirmMessage = computed(() => {
+  const qi = deleteUnitQuizDraftIndex.value;
+  if (qi == null || !Number.isFinite(qi) || qi < 0) return '確定要刪除此題型嗎？';
+  const slotIndex = activeUnitSlotIndex.value;
+  const stackRaw = currentState.value.unitSlotQuizCards?.[slotIndex - 1];
+  const cards = Array.isArray(stackRaw) ? stackRaw : [];
+  const row = cards[qi];
+  if (!row) return '確定要刪除此題型嗎？';
+  const label = quizTypeTabLabel(row);
+  const isExam = row.rag_quiz_for_exam === true || row.rag_quiz_for_exam === 1;
+  if (isExam) return `「${label}」已標為測驗用。確定刪除此題型嗎？`;
+  return label ? `確定要刪除題型「${label}」嗎？` : '確定要刪除此題型嗎？';
+});
+
+async function confirmDeleteUnitQuiz() {
+  const qi = deleteUnitQuizDraftIndex.value;
+  closeDeleteUnitQuizModal();
+  if (qi == null || !Number.isFinite(qi) || qi < 0) return;
+
   const slotIndex = activeUnitSlotIndex.value;
   const state = currentState.value;
   const stackRaw = state.unitSlotQuizCards?.[slotIndex - 1];
@@ -4030,21 +4002,12 @@ async function onDeleteUnitQuizTab(qi) {
   const row = cards[qi];
   if (!row) return;
   const rqid = positiveRagQuizIdFromQuizRow(row);
-  if (rqid == null) {
-    alert('此題型尚未建立於伺服器，無法刪除。');
-    return;
-  }
+  if (rqid == null) return;
   const personId = getPersonId(authStore);
   if (!personId) {
     alert('請先登入');
     return;
   }
-  const label = quizTypeTabLabel(row);
-  const isExam = row.rag_quiz_for_exam === true || row.rag_quiz_for_exam === 1;
-  const msg = isExam
-    ? `「${label}」已標為測驗用。確定刪除此題型嗎？`
-    : `確定要刪除題型「${label}」嗎？`;
-  if (!confirm(msg)) return;
   deleteUnitQuizLoading.value = true;
   try {
     await apiDeleteRagQuiz(rqid, personId);
@@ -5609,6 +5572,60 @@ async function confirmAnswer(item) {
     </Teleport>
     <Teleport to="body">
       <div
+        v-if="deleteUnitQuizModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-unit-quiz-modal-title"
+        @click.self="closeDeleteUnitQuizModal"
+      >
+        <div class="modal-dialog modal-dialog-centered" @click.stop>
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="delete-unit-quiz-modal-title"
+                class="modal-title my-color-black"
+              >
+                刪除題型
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeDeleteUnitQuizModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <p class="my-font-md-400 my-color-black mb-0 text-break">
+                {{ deleteUnitQuizConfirmMessage }}
+              </p>
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                :disabled="deleteUnitQuizLoading"
+                @click="closeDeleteUnitQuizModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+                :disabled="deleteUnitQuizLoading"
+                :aria-busy="deleteUnitQuizLoading"
+                @click="confirmDeleteUnitQuiz"
+              >
+                刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
         v-if="packBuildSuccessModalOpen"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
@@ -6001,18 +6018,18 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
               </div>
-              <div class="d-flex justify-content-start">
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-pack-unit-delete-btn px-4 py-2"
-                  title="刪除此單元"
-                  aria-label="刪除此單元"
-                  :disabled="packGroupsEditBlocked"
-                  @click="openDeletePackUnitModal(activePackUnitGi)"
-                >
-                  刪除此單元
-                </button>
-              </div>
+            </div>
+            <div class="d-flex justify-content-start">
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-pack-unit-delete-btn px-4 py-2"
+                title="刪除此單元"
+                aria-label="刪除此單元"
+                :disabled="packGroupsEditBlocked"
+                @click="openDeletePackUnitModal(activePackUnitGi)"
+              >
+                刪除此單元
+              </button>
             </div>
             </template>
             <div
@@ -6253,136 +6270,6 @@ async function confirmAnswer(item) {
                   新增題型
                 </button>
               </div>
-              <div
-                v-else
-                class="w-100 min-w-0"
-              >
-                <div class="w-100 min-w-0 d-flex justify-content-center">
-                  <div class="my-pack-unit-tabs-nav">
-                    <button
-                      type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
-                      :disabled="!canGoPrevUnitQuizType"
-                      aria-label="向前切換題型"
-                      @click="goPrevUnitQuizType"
-                    >
-                      <i class="fa-solid fa-chevron-left" aria-hidden="true" />
-                    </button>
-                    <div
-                      ref="unitQuizTypeTabsNavEl"
-                      class="my-pack-unit-tabs-host my-rag-tabs-bar my-bgcolor-gray-4"
-                    >
-                      <ul
-                        class="nav nav-tabs flex-nowrap my-pack-unit-tabs mb-0"
-                        role="tablist"
-                        aria-label="題型列表"
-                      >
-                    <li
-                      v-for="(qRow, qi) in activeUnitQuizCards"
-                      :key="String(qRow.rag_quiz_id ?? qRow.id ?? qi)"
-                      class="nav-item flex-shrink-0"
-                        >
-                          <div
-                            role="tab"
-                            class="nav-link d-flex align-items-center gap-1 text-nowrap"
-                            :class="{ active: activeUnitQuizTypeIdxResolved === qi }"
-                            :aria-selected="activeUnitQuizTypeIdxResolved === qi"
-                            :tabindex="activeUnitQuizTypeIdxResolved === qi ? 0 : -1"
-                            :data-unit-quiz-type-tab-index="qi"
-                            :title="quizTypeTabLabel(qRow)"
-                          >
-                            <span
-                              class="flex-grow-1 text-start pe-2 min-w-0 text-truncate"
-                              style="cursor: pointer"
-                              @click="selectUnitQuizType(qi)"
-                            >{{ quizTypeTabLabel(qRow) }}</span>
-                        <button
-                          v-if="activeUnitQuizTypeIdxResolved === qi && positiveRagQuizIdFromQuizRow(qRow) != null"
-                          type="button"
-                          class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 pe-2"
-                          title="重新命名題型"
-                          :disabled="
-                            getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                            || renameUnitQuizSaving
-                            || deleteUnitQuizLoading
-                            || deleteRagLoading
-                            || renameRagTabSaving
-                          "
-                          @click.stop="openRenameUnitQuizTab(qi)"
-                        >
-                          <i class="fa-solid fa-pen" aria-hidden="true" />
-                        </button>
-                        <!-- 綠點／× 同槽；測驗用時綠點固定顯示，不依是否選中該題型列 -->
-                        <span
-                          v-if="
-                            isRagQuizMarkedForExam(qRow)
-                            || (
-                              activeUnitQuizTypeIdxResolved === qi
-                              && positiveRagQuizIdFromQuizRow(qRow) != null
-                            )
-                          "
-                          class="d-inline-flex justify-content-center align-items-center flex-shrink-0 my-tab-nav-action-btn"
-                        >
-                          <span
-                            v-if="isRagQuizMarkedForExam(qRow)"
-                            class="d-inline-flex justify-content-center align-items-center"
-                            title="測驗用題型"
-                            role="img"
-                            aria-label="測驗用題型"
-                          >
-                            <span
-                              class="rounded-circle d-inline-block my-bgcolor-green"
-                              style="width: 0.5rem; height: 0.5rem"
-                            />
-                          </span>
-                          <button
-                            v-else
-                            type="button"
-                            class="btn btn-link text-decoration-none my-color-gray-4 p-0 border-0 lh-1 align-middle"
-                            title="刪除此題型"
-                            :disabled="
-                              getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                              || renameUnitQuizSaving
-                              || deleteUnitQuizLoading
-                              || deleteRagLoading
-                              || renameRagTabSaving
-                            "
-                            @click.stop="onDeleteUnitQuizTab(qi)"
-                          >
-                            <i class="fa-solid fa-xmark" aria-hidden="true" />
-                          </button>
-                        </span>
-                      </div>
-                    </li>
-                      </ul>
-                    </div>
-                    <button
-                      type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
-                      :disabled="!canGoNextUnitQuizType"
-                      aria-label="向後切換題型"
-                      @click="goNextUnitQuizType"
-                    >
-                      <i class="fa-solid fa-chevron-right" aria-hidden="true" />
-                    </button>
-                    <button
-                      type="button"
-                      title="新增題型"
-                      aria-label="新增題型"
-                      :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
-                      :disabled="
-                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                        || renameUnitQuizSaving
-                        || deleteUnitQuizLoading
-                      "
-                      @click="createBlankUnitQuiz(activeUnitSlotIndex)"
-                    >
-                      <i class="fa-solid fa-plus" aria-hidden="true" />
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
               <div
                 v-if="getSlotFormState(activeUnitSlotIndex).unitQuizCreateError"
@@ -6401,6 +6288,30 @@ async function confirmAnswer(item) {
                 class="w-100 min-w-0 text-start d-flex flex-column gap-3"
               >
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
+                  <div
+                    class="d-inline-flex align-items-center gap-2 flex-nowrap min-w-0 max-w-100 mb-3"
+                    role="heading"
+                    aria-level="3"
+                  >
+                    <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0 min-w-0">{{ quizTypeTabLabel(activeUnitQuizCard) }}</span>
+                    <button
+                      v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
+                      type="button"
+                      class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 flex-shrink-0"
+                      title="重新命名題型"
+                      aria-label="重新命名題型"
+                      :disabled="
+                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || renameUnitQuizSaving
+                        || deleteUnitQuizLoading
+                        || deleteRagLoading
+                        || renameRagTabSaving
+                      "
+                      @click="openRenameUnitQuizTab(activeUnitQuizTypeIdxResolved)"
+                    >
+                      <i class="fa-solid fa-pen" aria-hidden="true" />
+                    </button>
+                  </div>
                   <div
                     class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                   >
@@ -6616,6 +6527,31 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
+                <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
+                  <div
+                    class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
+                  >
+                    <button
+                      v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-pack-unit-delete-btn px-4 py-2"
+                      title="刪除此題型"
+                      aria-label="刪除此題型"
+                      :disabled="
+                        isRagQuizMarkedForExam(activeUnitQuizCard)
+                        || getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                        || renameUnitQuizSaving
+                        || deleteUnitQuizLoading
+                        || deleteRagLoading
+                        || renameRagTabSaving
+                      "
+                      :aria-busy="deleteUnitQuizLoading"
+                      @click="openDeleteUnitQuizModal(activeUnitQuizTypeIdxResolved)"
+                    >
+                      刪除此題型
+                    </button>
+                  </div>
+                </div>
               </div>
             </template>
             <template v-else-if="!hasUnitSubTabs">
@@ -6715,7 +6651,7 @@ async function confirmAnswer(item) {
               <!-- 區塊 2：單元 -->
               <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block" :class="hasBuiltRagSummary ? 'py-2' : 'pb-2'">
                 <div class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 px-3 py-2 min-w-0">
-                  <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">單元</div>
+                  <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">{{ hasBuiltRagSummary ? '單元 / 題型' : '單元' }}</div>
                   <div
                     v-if="!hasBuiltRagSummary"
                     class="d-flex align-items-center flex-shrink-0"
@@ -7042,7 +6978,7 @@ async function confirmAnswer(item) {
   color: var(--my-color-black);
 }
 .my-design-right-unit-quiz-list {
-  padding-left: 0.75rem;
+  padding-left: 0;
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
   align-self: center;
@@ -7050,6 +6986,7 @@ async function confirmAnswer(item) {
 }
 .my-design-right-unit-quiz-link {
   font-size: var(--my-font-size-sm);
+  padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 0.75rem);
 }
 .my-pack-empty-start-layout {
   justify-content: center;
