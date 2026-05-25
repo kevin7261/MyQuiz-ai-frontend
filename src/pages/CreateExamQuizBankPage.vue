@@ -1247,25 +1247,6 @@ watch(
   { deep: true, flush: 'post' },
 );
 
-/** 右側欄：設定單元子分頁（建置完成後） */
-const designRightUnitSubTabItems = computed(() => {
-  if (!hasUploadedFileMetadata.value) return [];
-  const items = packUnitListItemsForNav.value;
-  return items.map((item) => ({
-    key: `pack-unit-${item.index}-${item.label}`,
-    label: String(item.label ?? '').trim() || `單元 ${Number(item.index) + 1}`,
-    unitTypeLabel: packUnitTypeDisplayLabel(packUnitTypeAt(item.index)),
-    index: item.index,
-    kind: 'pack-unit',
-    active: item.index === activePackUnitGi.value,
-  }));
-});
-
-function onDesignRightSubTabClick(item) {
-  if (!item) return;
-  if (item.kind === 'pack-unit') selectPackUnit(item.index);
-}
-
 // ─── Pack 任務：單元類型與 Chunk 設定 ─────────────────────────────────────────
 
 function packUnitTypeAt(gi) {
@@ -2456,6 +2437,80 @@ const activeUnitQuizTypeIdxResolved = computed(() => {
   if (!Number.isFinite(i) || i < 0 || i >= cards.length) return 0;
   return i;
 });
+
+function unitQuizCardsAtUnitIndex(unitIndex) {
+  const stacks = currentState.value.unitSlotQuizCards;
+  const i = Number(unitIndex);
+  if (!Array.isArray(stacks) || !Number.isFinite(i) || i < 0 || i >= stacks.length) return [];
+  const row = stacks[i];
+  return Array.isArray(row) ? row : [];
+}
+
+/** 右側欄：設定單元子分頁；建置完成後各單元下嵌套「設定單元題型」之題型列 */
+const designRightUnitSubTabItems = computed(() => {
+  if (!hasUploadedFileMetadata.value) return [];
+  const items = packUnitListItemsForNav.value;
+  const activeUnitIdx = activePackUnitGi.value;
+  const activeQuizIdx = activeUnitQuizTypeIdxResolved.value;
+  const showQuizItems = hasBuiltRagSummary.value && (currentState.value.unitTabOrder ?? []).length > 0;
+
+  return items.map((item) => {
+    const unitIndex = item.index;
+    const stack = showQuizItems ? unitQuizCardsAtUnitIndex(unitIndex) : [];
+    const quizItems = stack.map((qRow, qi) => ({
+      key: `pack-unit-${unitIndex}-quiz-${qRow.rag_quiz_id ?? qRow.id ?? qi}`,
+      label: quizTypeTabLabel(qRow),
+      unitIndex,
+      quizIndex: qi,
+      kind: 'unit-quiz',
+      active: unitIndex === activeUnitIdx && qi === activeQuizIdx,
+      forExam: isRagQuizMarkedForExam(qRow),
+      followup: isUnitQuizFollowupMode(unitIndex + 1, qRow),
+    }));
+    return {
+      key: `pack-unit-${item.index}-${item.label}`,
+      label: String(item.label ?? '').trim() || `單元 ${Number(item.index) + 1}`,
+      unitTypeLabel: packUnitTypeDisplayLabel(packUnitTypeAt(item.index)),
+      index: item.index,
+      kind: 'pack-unit',
+      active: unitIndex === activeUnitIdx && quizItems.length === 0,
+      quizItems,
+    };
+  });
+});
+
+function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
+  const n = packUnitCarouselCountEffective.value;
+  const ui = Number(unitIndex);
+  const qi = Number(quizIndex);
+  if (!Number.isFinite(ui) || ui < 0 || ui >= n) return;
+
+  activePackUnitIndex.value = ui;
+  syncActiveUnitTabFromPackUnitCarousel();
+
+  const cards = unitQuizCardsAtUnitIndex(ui);
+  if (!Array.isArray(cards) || !Number.isFinite(qi) || qi < 0 || qi >= cards.length) return;
+
+  currentState.value.activeUnitQuizTypeIndex = qi;
+  scrollActivePackUnitTabIntoView();
+  scrollActiveUnitQuizTypeTabIntoView();
+}
+
+function onDesignRightSubTabClick(item) {
+  if (!item) return;
+  if (item.kind === 'pack-unit') selectPackUnit(item.index);
+  if (item.kind === 'unit-quiz') selectUnitQuizTypeForUnit(item.unitIndex, item.quizIndex);
+}
+
+async function onDesignRightAddUnitQuiz(unitIndex) {
+  const ui = Number(unitIndex);
+  const slotIndex = ui + 1;
+  if (!Number.isFinite(ui) || ui < 0 || slotIndex < 1) return;
+
+  activePackUnitIndex.value = ui;
+  syncActiveUnitTabFromPackUnitCarousel();
+  await createBlankUnitQuiz(slotIndex);
+}
 
 const activeUnitQuizCard = computed(() => {
   const cards = activeUnitQuizCards.value;
@@ -6727,15 +6782,60 @@ async function confirmAnswer(item) {
                     :key="item.key"
                     class="nav-item"
                   >
-                    <button
-                      type="button"
-                      class="nav-link w-100 text-start text-break"
-                      :class="{ active: item.active }"
-                      :aria-current="item.active ? 'page' : undefined"
-                      @click="onDesignRightSubTabClick(item)"
+                    <div class="d-flex align-items-stretch min-w-0 my-design-right-unit-row">
+                      <button
+                        type="button"
+                        class="nav-link flex-grow-1 min-w-0 text-start text-break"
+                        :class="{ active: item.active }"
+                        :aria-current="item.active ? 'page' : undefined"
+                        @click="onDesignRightSubTabClick(item)"
+                      >
+                        {{ item.label }}<span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">{{ item.unitTypeLabel }}</span>
+                      </button>
+                      <button
+                        v-if="hasBuiltRagSummary && hasUnitSubTabs"
+                        type="button"
+                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 my-design-right-unit-add-quiz-btn"
+                        title="新增題型"
+                        aria-label="新增題型"
+                        :aria-busy="getSlotFormState(item.index + 1).unitQuizCreateLoading"
+                        :disabled="
+                          getSlotFormState(item.index + 1).unitQuizCreateLoading
+                          || renameUnitQuizSaving
+                          || deleteUnitQuizLoading
+                        "
+                        @click.stop="onDesignRightAddUnitQuiz(item.index)"
+                      >
+                        <i class="fa-solid fa-plus" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <div
+                      v-if="item.quizItems.length"
+                      class="my-design-right-unit-quiz-list"
                     >
-                      {{ item.label }}<span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">{{ item.unitTypeLabel }}</span>
-                    </button>
+                      <div
+                        v-for="qItem in item.quizItems"
+                        :key="qItem.key"
+                        class="nav-item"
+                      >
+                        <button
+                          type="button"
+                          class="nav-link w-100 text-start text-break my-design-right-unit-quiz-link"
+                          :class="{ active: qItem.active }"
+                          :aria-current="qItem.active ? 'page' : undefined"
+                          @click="onDesignRightSubTabClick(qItem)"
+                        >
+                          {{ qItem.label }}<span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">追問</span><span
+                            v-if="qItem.forExam"
+                            class="rounded-circle d-inline-block my-bgcolor-green flex-shrink-0 ms-2"
+                            style="width: 0.5rem; height: 0.5rem"
+                            title="測驗用題型"
+                            role="img"
+                            aria-label="測驗用題型"
+                          />
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </template>
               </div>
@@ -6940,6 +7040,16 @@ async function confirmAnswer(item) {
 .my-design-right-nav .nav-link.active:focus-visible {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
+}
+.my-design-right-unit-quiz-list {
+  padding-left: 0.75rem;
+}
+.my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
+  align-self: center;
+  margin-right: 0.5rem;
+}
+.my-design-right-unit-quiz-link {
+  font-size: var(--my-font-size-sm);
 }
 .my-pack-empty-start-layout {
   justify-content: center;
