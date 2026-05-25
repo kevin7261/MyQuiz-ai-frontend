@@ -13,7 +13,7 @@
  * - 撰寫 CSS 時：同一規則內最後先 padding 再 margin；Vue／HTML 的 `class` 字串：`p-*`／`m-*` 等間距類別整串置末、之後不得再接其它 class（先 p 後 m）
  */
 :root {
-  --my-font-family-primary: "Roboto", "Noto Sans TC", sans-serif;
+  --my-font-family-primary: "Google Sans Flex", "Noto Sans TC", sans-serif;
   --my-font-family-courier: "Courier New", Courier, monospace;
 
   /* 全站 body 字距（em 隨字級縮放）；common body */

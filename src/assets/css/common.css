@@ -11,7 +11,7 @@
  * 屬性順序：同一規則內其它屬性在前，最後先 padding 再 margin。HTML／Vue 的 `class` 字串：`p-*`／`px-*`／`py-*` 等內距與 `m-*`／`mx-*` 等外距類別必須整串置末，且其後不得再出現任何 class（先 p 後 m；陣列 :class 時將 py／mb 等獨立為末段字串）；含 .btn 時 `.btn` 置首，次 `.rounded-pill`／`.rounded-circle` 等，再 `d-flex`／`d-inline-flex` → `justify-content-*` → `align-items-*`（無 .btn 時此 flex 組合可置字串最前）
  */
 @import "./variables.css";
-@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;600&family=Roboto:wght@400;600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@100..900&family=Noto+Sans+TC:wght@400;600&display=swap");
 
 *,
 *::before,

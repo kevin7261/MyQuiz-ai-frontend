@@ -3495,20 +3495,6 @@ onActivated(() => {
             >
               <div class="my-design-right-step-block py-2">
                 <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">題目</div>
-                <div class="px-3 pb-2">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
-                    title="新增題目"
-                    aria-label="新增題目"
-                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
-                    :aria-busy="examAddQuestionSubmitting"
-                    @click="openExamAddQuestionModal"
-                  >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增題目
-                  </button>
-                </div>
                 <div
                   v-for="item in designRightQuizSubTabItems"
                   :key="item.key"
@@ -3522,6 +3508,20 @@ onActivated(() => {
                     @click="onDesignRightQuizClick(item)"
                   >
                     {{ item.label }}<span v-if="item.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">追問</span>
+                  </button>
+                </div>
+                <div class="px-3 pb-2 pt-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                    title="新增題目"
+                    aria-label="新增題目"
+                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                    :aria-busy="examAddQuestionSubmitting"
+                    @click="openExamAddQuestionModal"
+                  >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    新增題目
                   </button>
                 </div>
               </div>

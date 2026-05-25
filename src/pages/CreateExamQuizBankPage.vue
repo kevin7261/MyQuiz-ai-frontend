@@ -921,6 +921,24 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
+function firstFolderNameInGroup(group) {
+  if (!Array.isArray(group) || group.length === 0) return '';
+  return String(group[0] ?? '').trim();
+}
+
+function resolvePackUnitNavLabel(group, index, names) {
+  const raw = names?.[index];
+  if (raw != null && String(raw).length > 0) {
+    return String(raw);
+  }
+  const folder = firstFolderNameInGroup(group);
+  if (folder) return folder;
+  if (Array.isArray(group) && group.length > 1) {
+    return group.map((t) => String(t ?? '').trim()).filter(Boolean).join('+');
+  }
+  return `單元 ${Number(index) + 1}`;
+}
+
 /** 設定單元 Carousel：一次只顯示一個出題單元，以向前／向後切換 */
 const activePackUnitIndex = ref(0);
 
@@ -1006,28 +1024,15 @@ function selectPackUnit(index) {
   scrollActivePackUnitTabIntoView();
 }
 
-/** 左側單元列表：顯示名稱（單元名稱 → 第一個資料夾 → 多資料夾以 + 連接 → 單元 N） */
+/** 左側單元列表：顯示名稱（自訂單元名稱 → 第一個資料夾 → 多資料夾以 + 連接 → 單元 N） */
 const packUnitListItems = computed(() => {
   const groups = ragListDisplayGroups.value;
-  const state = currentState.value;
-  return groups.map((group, index) => {
-    const customName = String(state.packUnitNames?.[index] ?? '').trim();
-    let label = customName;
-    if (!label) {
-      const folder = firstFolderNameInGroup(group);
-      if (folder) {
-        label = folder;
-      } else if (Array.isArray(group) && group.length > 1) {
-        label = group.map((t) => String(t ?? '').trim()).filter(Boolean).join('+');
-      } else {
-        label = `單元 ${index + 1}`;
-      }
-    }
-    return {
-      index,
-      label,
-    };
-  });
+  const rawNames = currentState.value.packUnitNames;
+  const names = Array.isArray(rawNames) ? rawNames.map((n) => String(n ?? '')) : [];
+  return groups.map((group, index) => ({
+    index,
+    label: resolvePackUnitNavLabel(group, index, names),
+  }));
 });
 
 watch(packUnitCarouselCountEffective, (n) => {
@@ -1199,8 +1204,9 @@ watch(
 /** 右側欄：設定單元子分頁（建置完成後） */
 const designRightUnitSubTabItems = computed(() => {
   if (!hasUploadedFileMetadata.value) return [];
-  return packUnitListItemsForNav.value.map((item) => ({
-    key: `pack-unit-${item.index}`,
+  const items = packUnitListItemsForNav.value;
+  return items.map((item) => ({
+    key: `pack-unit-${item.index}-${item.label}`,
     label: String(item.label ?? '').trim() || `單元 ${Number(item.index) + 1}`,
     unitTypeLabel: packUnitTypeDisplayLabel(packUnitTypeAt(item.index)),
     index: item.index,
@@ -1279,12 +1285,73 @@ function onPackChunkOverlapInput(gi, ev) {
   state.packChunkOverlaps = arr;
 }
 
-function getPackUnitNameForEdit(gi) {
+function packUnitNavGroupCount() {
+  return ragListDisplayGroups.value.length;
+}
+
+/** 對齊 packTasksList／packUnitNames 與畫面單元 list 筆數（初始載入僅有 phantom [[]] 時也能改名） */
+function ensurePackUnitSlotsAligned() {
   const state = currentState.value;
-  const custom = String(state.packUnitNames?.[gi] ?? '').trim();
-  if (custom) return custom;
-  const item = packUnitListItems.value.find((x) => x.index === gi);
-  return item?.label ?? '';
+  const n = packUnitNavGroupCount();
+  if (n <= 0) return;
+  if (!Array.isArray(state.packTasksList)) state.packTasksList = [];
+  while (state.packTasksList.length < n) {
+    state.packTasksList.push([]);
+  }
+  ensurePackUnitSidecarArrays();
+}
+
+function setPackUnitNameAt(gi, val) {
+  ensurePackUnitSlotsAligned();
+  const state = currentState.value;
+  const n = packUnitNavGroupCount();
+  if (gi < 0 || gi >= n) return;
+  const arr = Array.isArray(state.packUnitNames)
+    ? state.packUnitNames.map((name) => String(name ?? ''))
+    : Array.from({ length: n }, () => '');
+  while (arr.length < n) arr.push('');
+  if (arr.length > n) arr.length = n;
+  arr[gi] = String(val ?? '');
+  state.packUnitNames = arr;
+}
+
+const activePackUnitNameDraft = ref('');
+let packUnitNameDraftSyncing = false;
+
+function syncActivePackUnitNameDraft() {
+  packUnitNameDraftSyncing = true;
+  const gi = activePackUnitGi.value;
+  const group = ragListDisplayGroups.value[gi];
+  activePackUnitNameDraft.value = resolvePackUnitNavLabel(
+    group,
+    gi,
+    currentState.value.packUnitNames,
+  );
+  packUnitNameDraftSyncing = false;
+}
+
+watch(activePackUnitNameDraft, (val) => {
+  if (packUnitNameDraftSyncing) return;
+  setPackUnitNameAt(activePackUnitGi.value, val);
+});
+
+watch(
+  [activePackUnitGi, () => currentState.value.packUnitNames, () => currentState.value.packTasksList, ragListDisplayGroups],
+  syncActivePackUnitNameDraft,
+  { deep: true, flush: 'post', immediate: true },
+);
+
+function packUnitNamePlaceholder(gi) {
+  const group = ragListDisplayGroups.value[gi];
+  return resolvePackUnitNavLabel(group, gi, []);
+}
+
+function getPackUnitNameForEdit(gi) {
+  return resolvePackUnitNavLabel(
+    ragListDisplayGroups.value[gi],
+    gi,
+    currentState.value.packUnitNames,
+  );
 }
 
 function openRenamePackUnitTab(gi) {
@@ -1307,10 +1374,7 @@ function onRenamePackUnitSave(name) {
     renamePackUnitError.value = '找不到此單元，請重新整理頁面後再試';
     return;
   }
-  ensurePackUnitSidecarArrays();
-  const arr = [...(currentState.value.packUnitNames || [])];
-  arr[gi] = String(name).trim();
-  currentState.value.packUnitNames = arr;
+  setPackUnitNameAt(gi, String(name).trim());
   renamePackUnitModalOpen.value = false;
 }
 
@@ -1330,12 +1394,18 @@ function onDeletePackUnitTab(gi) {
 
 function ensurePackUnitSidecarArrays() {
   const s = currentState.value;
-  const n = s.packTasksList?.length ?? 0;
+  const n = Math.max(s.packTasksList?.length ?? 0, packUnitNavGroupCount());
   const stretch = (key, emptyVal) => {
-    let a = Array.isArray(s[key]) ? [...s[key]] : [];
-    if (a.length > n) a = a.slice(0, n);
-    while (a.length < n) a.push(emptyVal);
-    s[key] = a;
+    let a = Array.isArray(s[key]) ? s[key] : [];
+    if (a.length > n) {
+      s[key] = a.slice(0, n);
+      return;
+    }
+    if (a.length < n) {
+      a = [...a];
+      while (a.length < n) a.push(emptyVal);
+      s[key] = a;
+    }
   };
   stretch('packUnitMarkdownTexts', '');
   stretch('packUnitYoutubeUrls', '');
@@ -1353,22 +1423,17 @@ function ragTabIdForTranscript() {
   return String(currentState.value.zipTabId ?? activeTabId.value ?? '').trim();
 }
 
-function firstFolderNameInGroup(group) {
-  if (!Array.isArray(group) || group.length === 0) return '';
-  return String(group[0] ?? '').trim();
-}
-
 /** 單元名稱未填時，預設為該列資料夾組合的第一個資料夾名稱 */
 function fillDefaultPackUnitNamesWhereEmpty() {
+  ensurePackUnitSlotsAligned();
   const state = currentState.value;
-  const list = state.packTasksList;
-  if (!Array.isArray(list) || list.length === 0) return;
-  ensurePackUnitSidecarArrays();
+  const groups = ragListDisplayGroups.value;
+  if (!groups.length) return;
   const names = [...(state.packUnitNames || [])];
   let changed = false;
-  for (let i = 0; i < list.length; i++) {
+  for (let i = 0; i < groups.length; i++) {
     if (String(names[i] ?? '').trim() !== '') continue;
-    const def = firstFolderNameInGroup(list[i]);
+    const def = firstFolderNameInGroup(groups[i]);
     if (!def) continue;
     names[i] = def;
     changed = true;
@@ -1381,7 +1446,7 @@ function fillDefaultPackUnitNamesWhereEmpty() {
 watch(
   () => currentState.value.packTasksList,
   (list, prevList) => {
-    ensurePackUnitSidecarArrays();
+    ensurePackUnitSlotsAligned();
     fillDefaultPackUnitNamesWhereEmpty();
     if (!Array.isArray(list)) return;
     const state = currentState.value;
@@ -3665,6 +3730,13 @@ function applyUploadMetadataToTabState(state, tabId, meta, rawResponse) {
     if (meta.filename != null) state.zipFileName = String(meta.filename);
     state.zipSecondFolders = Array.isArray(meta.second_folders) ? meta.second_folders : [];
   }
+  if (
+    Array.isArray(state.zipSecondFolders)
+    && state.zipSecondFolders.length > 0
+    && !(Array.isArray(state.packTasksList) && state.packTasksList.length > 0)
+  ) {
+    state.packTasksList = [[]];
+  }
   state.uploadedZipFile = null;
   state.zipError = '';
 }
@@ -5414,10 +5486,7 @@ async function confirmAnswer(item) {
       <template v-if="showCreateBankMainForm">
       <!-- 建立 RAG：要有 file_metadata 且尚未建置；建置前 left 顯示可編輯設定單元（上傳檔名改由 right view） -->
       <template v-if="fileMetadataToShow != null && !hasBuiltRagSummary">
-        <div
-          class="w-100"
-          :class="{ 'pe-none my-color-gray-4': !hasRagMetadata && packGroupsEditBlocked }"
-        >
+        <div class="w-100">
           <!-- 設定單元（建置前可編輯；標題／面板樣式對齊建置後「設定單元題型」） -->
           <section class="text-start my-page-block-spacing">
             <div class="my-design-pack-unit-blocks w-100 min-w-0">
@@ -5493,7 +5562,7 @@ async function confirmAnswer(item) {
                 >
                   <li
                     v-for="item in packUnitListItemsForNav"
-                    :key="'pack-unit-tab-' + item.index"
+                    :key="'pack-unit-tab-' + item.index + '-' + item.label"
                     class="nav-item flex-shrink-0"
                   >
                     <div
@@ -5656,6 +5725,21 @@ async function confirmAnswer(item) {
                   </div>
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
+                      <label
+                        class="my-font-sm-400 my-color-gray-1 mb-0 mt-4"
+                        :for="'rag-pack-unit-name-' + activePackUnitGi"
+                      >單元名稱</label>
+                      <input
+                        :id="'rag-pack-unit-name-' + activePackUnitGi"
+                        :key="'rag-pack-unit-name-' + activePackUnitGi"
+                        v-model="activePackUnitNameDraft"
+                        type="text"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 mt-1"
+                        :disabled="packGroupsEditBlocked"
+                        :placeholder="packUnitNamePlaceholder(activePackUnitGi)"
+                        :aria-label="`設定單元 ${activePackUnitGi + 1} 單元名稱`"
+                        autocomplete="off"
+                      >
                       <div class="my-font-sm-400 my-color-gray-1 mb-0 mt-4">
                         類型
                       </div>
@@ -6434,23 +6518,55 @@ async function confirmAnswer(item) {
 
               <!-- 區塊 2：單元 -->
               <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block py-2">
-                <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">單元</div>
-                <div v-if="!hasBuiltRagSummary" class="px-3 pb-2">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100 my-pack-drop-target"
-                    :disabled="packGroupsEditBlocked"
-                    title="新增單元"
-                    aria-label="新增單元"
-                    @dragover.prevent="onDragOver($event)"
-                    @dragenter.prevent="onDragEnter($event)"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
-                    @click="onAddPackUnitClick"
+                <div class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 px-3 py-2 min-w-0">
+                  <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">單元</div>
+                  <div
+                    v-if="!hasBuiltRagSummary"
+                    class="dropdown flex-shrink-0"
                   >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增單元
-                  </button>
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 dropdown-toggle my-dropdown-caret"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      aria-label="單元功能選單"
+                      :disabled="packGroupsEditBlocked"
+                    >
+                      <i class="fa-solid fa-bars" aria-hidden="true" />
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <button
+                          type="button"
+                          class="dropdown-item my-font-md-400"
+                          :disabled="!(currentState.packTasksList || []).length"
+                          title="清空所有設定單元（含空位）"
+                          @click="clearAllRagListGroups"
+                        >
+                          刪除全部
+                        </button>
+                      </li>
+                      <li v-if="secondFoldersFull.length">
+                        <button
+                          type="button"
+                          class="dropdown-item my-font-md-400"
+                          @click="addAllSecondFoldersAsGroups"
+                        >
+                          每個資料夾獨立單元
+                        </button>
+                      </li>
+                      <li v-if="secondFoldersFull.length">
+                        <button
+                          type="button"
+                          class="dropdown-item my-font-md-400"
+                          title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                          @click="setAllSecondFoldersAsSingleGroup"
+                        >
+                          每個資料夾合併單元
+                        </button>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
                 <template v-if="designRightUnitSubTabItems.length">
                   <div
@@ -6469,6 +6585,23 @@ async function confirmAnswer(item) {
                     </button>
                   </div>
                 </template>
+                <div v-if="!hasBuiltRagSummary" class="px-3 pb-2 pt-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100 my-pack-drop-target"
+                    :disabled="packGroupsEditBlocked"
+                    title="新增單元"
+                    aria-label="新增單元"
+                    @dragover.prevent="onDragOver($event)"
+                    @dragenter.prevent="onDragEnter($event)"
+                    @dragleave="onDragLeave($event)"
+                    @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
+                    @click="onAddPackUnitClick"
+                  >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    新增單元
+                  </button>
+                </div>
               </div>
             </nav>
           </aside>
@@ -6562,6 +6695,12 @@ async function confirmAnswer(item) {
 .my-design-right-step-heading {
   line-height: 1.35;
   white-space: nowrap;
+}
+.my-design-right-step-block-head {
+  min-width: 0;
+}
+.my-design-right-step-block-head .my-design-right-step-heading {
+  min-width: 0;
 }
 /* 稿頁設定單元屬性：row/col 排版，欄位間距由 .row.g-3 負責 */
 .my-design-pack-unit-blocks {
