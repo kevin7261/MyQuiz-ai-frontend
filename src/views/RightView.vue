@@ -12,6 +12,7 @@
   import StudentAnswerAnalysisPage from '../pages/StudentAnswerAnalysisPage.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
   import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
+  import CreateExamQuizBankPage2 from '../pages/CreateExamQuizBankPage2.vue';
   import DesignPage from '../pages/DesignPage.vue';
   import LogoPage from '../pages/LogoPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
@@ -25,6 +26,7 @@
     studentAnswerAnalysis: markRaw(StudentAnswerAnalysisPage),
     profile: markRaw(ProfilePage),
     createExamQuizBank: markRaw(CreateExamQuizBankPage),
+    createExamQuizBank2: markRaw(CreateExamQuizBankPage2),
     designPage: markRaw(DesignPage),
     logoPage: markRaw(LogoPage),
     userManagement: markRaw(UserManagementPage),
@@ -35,11 +37,12 @@
   const VIEWS_WITH_WORK_TAB_ID = new Set([
     'work',
     'createExamQuizBank',
+    'createExamQuizBank2',
   ]);
 
   export default {
     name: 'RightView',
-    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, DesignPage, LogoPage, UserManagementPage, SystemSettingsPage, LogListPage },
+    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, CreateExamQuizBankPage2, DesignPage, LogoPage, UserManagementPage, SystemSettingsPage, LogListPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },

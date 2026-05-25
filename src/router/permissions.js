@@ -37,6 +37,7 @@ export const STUDENT_ALLOWED_VIEWS = new Set([
   'work',
   'student-weakness-analysis',
   'create-exam-bank',
+  'create-exam-bank_2',
   'profile',
 ]);
 
