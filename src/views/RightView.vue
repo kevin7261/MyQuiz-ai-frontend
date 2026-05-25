@@ -8,6 +8,7 @@
   */
   import { markRaw } from 'vue';
   import ExamPage from '../pages/ExamPage.vue';
+  import ExamPage2 from '../pages/ExamPage2.vue';
   import AnswerWeaknessAnalysisPage from '../pages/AnswerWeaknessAnalysisPage.vue';
   import StudentAnswerAnalysisPage from '../pages/StudentAnswerAnalysisPage.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
@@ -22,6 +23,7 @@
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
     work: markRaw(ExamPage),
+    work2: markRaw(ExamPage2),
     studentWeaknessAnalysis: markRaw(AnswerWeaknessAnalysisPage),
     studentAnswerAnalysis: markRaw(StudentAnswerAnalysisPage),
     profile: markRaw(ProfilePage),
@@ -36,13 +38,14 @@
 
   const VIEWS_WITH_WORK_TAB_ID = new Set([
     'work',
+    'work2',
     'createExamQuizBank',
     'createExamQuizBank2',
   ]);
 
   export default {
     name: 'RightView',
-    components: { ExamPage, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, CreateExamQuizBankPage2, DesignPage, LogoPage, UserManagementPage, SystemSettingsPage, LogListPage },
+    components: { ExamPage, ExamPage2, AnswerWeaknessAnalysisPage, StudentAnswerAnalysisPage, ProfilePage, CreateExamQuizBankPage, CreateExamQuizBankPage2, DesignPage, LogoPage, UserManagementPage, SystemSettingsPage, LogListPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },

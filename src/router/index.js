@@ -58,6 +58,12 @@ const routes = [
     component: HomeView,
     meta: { title: '測驗 - MyQuiz.ai' },
   },
+  {
+    path: '/exam_2',
+    name: 'Exam2',
+    component: HomeView,
+    meta: { title: '測驗 - MyQuiz.ai' },
+  },
   // 舊網址相容（書籤）：/main/... → 新路徑
   {
     path: '/main',

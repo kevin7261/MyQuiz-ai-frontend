@@ -19,6 +19,7 @@ import { deriveRagName, generateTabId } from '../utils/rag.js';
 import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
+import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 
 defineProps({
   tabId: { type: String, required: true },
@@ -52,6 +53,9 @@ const renameRagTabSaving = ref(false);
 const renameRagTabError = ref('');
 
 const deleteRagLoading = ref(false);
+const deleteBankModalOpen = ref(false);
+const deleteBankModalMessage = ref('');
+const deleteBankError = ref('');
 
 const newBankUploadConfirmDisabled = computed(
   () => createRagLoading.value || !newBankUploadFile.value,
@@ -217,7 +221,7 @@ async function onRenameRagTabSave(name) {
   }
 }
 
-async function deleteSelectedBank() {
+function openDeleteBankModal() {
   if (deleteRagLoading.value) return;
   const rag = findRagByTabId(selectedBankTabId.value);
   if (!rag) return;
@@ -233,10 +237,22 @@ async function deleteSelectedBank() {
     return;
   }
   const label = deriveRagName(rag) || selectedBankLabel.value || String(fileId);
-  if (!confirm(`確定要刪除「${label}」嗎？`)) return;
+  deleteBankError.value = '';
+  deleteBankModalMessage.value = `確定要刪除「${label}」嗎？`;
+  deleteBankModalOpen.value = true;
+}
+
+async function confirmDeleteBank() {
+  if (deleteRagLoading.value) return;
+  const rag = findRagByTabId(selectedBankTabId.value);
+  if (!rag) return;
+  const fileId = rag.rag_tab_id ?? rag.id ?? rag;
+  if (fileId == null || String(fileId).trim() === '') return;
+  deleteBankError.value = '';
   deleteRagLoading.value = true;
   try {
     await apiDeleteRag(fileId);
+    deleteBankModalOpen.value = false;
     await fetchRagList();
     const remaining = gridItems.value;
     if (remaining.length === 0) {
@@ -246,7 +262,7 @@ async function deleteSelectedBank() {
     const next = remaining[0];
     switchBankDetail(next.tabId, next.label);
   } catch (err) {
-    alert(`刪除失敗：${err.message || String(err)}`);
+    deleteBankError.value = err.message || String(err) || '刪除失敗';
   } finally {
     deleteRagLoading.value = false;
   }
@@ -550,7 +566,7 @@ watch(viewMode, (mode) => {
             aria-label="刪除此題庫"
             :disabled="detailHeaderActionsDisabled"
             :aria-busy="deleteRagLoading"
-            @click="deleteSelectedBank"
+            @click="openDeleteBankModal"
           >
             刪除此題庫
           </button>
@@ -674,6 +690,15 @@ watch(viewMode, (mode) => {
     :error="renameRagTabError"
     title="修改名稱"
     @save="onRenameRagTabSave"
+  />
+
+  <ConfirmDeleteModal
+    v-model="deleteBankModalOpen"
+    title="刪除此題庫"
+    :message="deleteBankModalMessage"
+    :deleting="deleteRagLoading"
+    :error="deleteBankError"
+    @confirm="confirmDeleteBank"
   />
 </template>
 

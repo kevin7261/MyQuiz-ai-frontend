@@ -61,7 +61,7 @@ router.beforeEach((to, _from, next) => {
   }
 
   const requiresAuth =
-    to.name === 'Exam' || to.name === 'Main' || to.path === '/main' || to.path.startsWith('/main/');
+    to.name === 'Exam' || to.name === 'Exam2' || to.name === 'Main' || to.path === '/main' || to.path.startsWith('/main/');
 
   if (requiresAuth && !authStore.user) {
     next('/login');

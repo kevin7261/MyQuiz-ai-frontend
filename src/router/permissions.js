@@ -35,6 +35,7 @@ export function userTypeLabel(userType) {
 /** 學生可進入的 view 參數（/:view）以及測驗對應的內部鍵 work */
 export const STUDENT_ALLOWED_VIEWS = new Set([
   'work',
+  'work2',
   'student-weakness-analysis',
   'create-exam-bank',
   'create-exam-bank_2',
@@ -47,6 +48,7 @@ export const STUDENT_ALLOWED_VIEWS = new Set([
  */
 export function routeViewKey(to) {
   if (to.name === 'Exam') return 'work';
+  if (to.name === 'Exam2') return 'work2';
   if (to.name === 'Main' && to.params.view) return String(to.params.view);
   return null;
 }
