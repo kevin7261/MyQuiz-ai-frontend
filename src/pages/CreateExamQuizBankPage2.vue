@@ -906,15 +906,10 @@ watch(viewMode, (mode) => {
 }
 
 .create-exam-bank-2-bank-switch-menu {
-  display: block;
   min-width: 10rem;
   max-height: min(60vh, 24rem);
   overflow-x: hidden;
   overflow-y: auto;
-}
-
-.create-exam-bank-2-bank-switch-menu.show {
-  display: block !important;
 }
 
 .create-exam-bank-2-bank-switch-menu > li {

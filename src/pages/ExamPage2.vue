@@ -757,15 +757,10 @@ watch(
 }
 
 .exam-2-exam-switch-menu {
-  display: block;
   min-width: 10rem;
   max-height: min(60vh, 24rem);
   overflow-x: hidden;
   overflow-y: auto;
-}
-
-.exam-2-exam-switch-menu.show {
-  display: block !important;
 }
 
 .exam-2-exam-switch-menu > li {
