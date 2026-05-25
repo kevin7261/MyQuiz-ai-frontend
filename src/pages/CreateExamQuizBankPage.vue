@@ -155,6 +155,11 @@ const renamePackUnitModalOpen = ref(false);
 const renamePackUnitDraftIndex = ref(null);
 const renamePackUnitInitialName = ref('');
 const renamePackUnitError = ref('');
+/** 刪除設定單元確認 Modal */
+const deletePackUnitModalOpen = ref(false);
+const deletePackUnitDraftIndex = ref(null);
+/** 刪除全部設定單元確認 Modal */
+const deleteAllPackUnitsModalOpen = ref(false);
 /** 題型 sub-tab 軟刪（PUT /rag/tab/quiz/delete/{rag_quiz_id}） */
 const deleteUnitQuizLoading = ref(false);
 /** 正在送出批改的題卡 id（全螢幕 LoadingOverlay「批改中...」；結果區待回傳） */
@@ -432,10 +437,12 @@ const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.v
 const hasBuiltRagSummary = computed(
   () => hasRagListOrMetadata.value || currentState.value.packResponseJson != null
 );
-/** 右側欄：已上傳檔案後顯示（上傳檔名＋單元列表；建置前「設定單元」與建置後「設定單元題型」共用） */
-const showDesignRightView = computed(
-  () => !!activeTabId.value && hasUploadedFileMetadata.value,
-);
+/** 右側欄：已上傳且至少有一個設定單元（建置後則有後端資料） */
+const showDesignRightView = computed(() => {
+  if (!activeTabId.value || !hasUploadedFileMetadata.value) return false;
+  if (hasBuiltRagSummary.value) return true;
+  return packUnitCarouselCountEffective.value > 0;
+});
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
 const ragListReadonlyGroups = computed(() => {
@@ -904,15 +911,24 @@ const designRightUploadFileLabel = computed(() => {
   return String(currentState.value.zipFileName ?? '').trim();
 });
 
+/** 建置前尚無設定單元時，主區提示文案 */
+const packUnitEmptyStartHint = computed(() => {
+  const name = String(designRightUploadFileLabel.value || uploadedZipDisplayName.value || '').trim();
+  if (name && name !== '（已上傳）') return `${name} 已上傳，開始建立單元`;
+  return '教材已上傳，開始建立單元';
+});
+
+/** 建置前尚無設定單元：主區空白引導（置中版面） */
+const isPackEmptyStartView = computed(
+  () => hasUploadedFileMetadata.value
+    && !hasBuiltRagSummary.value
+    && packUnitCarouselCountEffective.value === 0,
+);
+
 const {
   secondFoldersFull,
   ragListDisplayGroups,
-  onDragStartTag,
-  onDragEndTag,
-  onDragOver,
-  onDragEnter,
-  onDragLeave,
-  onDropRagList,
+  setPackUnitFolderGroup,
   removeFromRagList,
   removeRagListGroup,
   addRagListGroup,
@@ -920,6 +936,48 @@ const {
   addAllSecondFoldersAsGroups,
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
+
+const packFolderPickModalOpen = ref(false);
+const packFolderPickGroupIdx = ref(null);
+const packFolderPickDraft = ref([]);
+
+function openPackFolderPickModal(gi) {
+  if (packGroupsEditBlocked.value) return;
+  const i = Number(gi);
+  if (!Number.isFinite(i) || i < 0) return;
+  packFolderPickGroupIdx.value = i;
+  packFolderPickDraft.value = [...(ragListDisplayGroups.value[i] ?? [])];
+  packFolderPickModalOpen.value = true;
+}
+
+function closePackFolderPickModal() {
+  packFolderPickModalOpen.value = false;
+  packFolderPickGroupIdx.value = null;
+  packFolderPickDraft.value = [];
+}
+
+function isPackFolderPickDraftSelected(folderName) {
+  return packFolderPickDraft.value.includes(folderName);
+}
+
+function togglePackFolderPickDraft(folderName) {
+  if (packGroupsEditBlocked.value) return;
+  const name = String(folderName ?? '').trim();
+  if (!name) return;
+  const draft = [...packFolderPickDraft.value];
+  const idx = draft.indexOf(name);
+  if (idx >= 0) draft.splice(idx, 1);
+  else draft.push(name);
+  packFolderPickDraft.value = draft;
+}
+
+function confirmPackFolderPick() {
+  if (packGroupsEditBlocked.value) return;
+  const gi = packFolderPickGroupIdx.value;
+  if (gi == null || !Number.isFinite(gi) || gi < 0) return;
+  setPackUnitFolderGroup(gi, packFolderPickDraft.value);
+  closePackFolderPickModal();
+}
 
 function firstFolderNameInGroup(group) {
   if (!Array.isArray(group) || group.length === 0) return '';
@@ -1277,7 +1335,7 @@ function packUnitNavGroupCount() {
   return ragListDisplayGroups.value.length;
 }
 
-/** 對齊 packTasksList／packUnitNames 與畫面單元 list 筆數（初始載入僅有 phantom [[]] 時也能改名） */
+/** 對齊 packTasksList／packUnitNames 與畫面單元 list 筆數 */
 function ensurePackUnitSlotsAligned() {
   const state = currentState.value;
   const n = packUnitNavGroupCount();
@@ -1331,7 +1389,7 @@ function onRenamePackUnitSave(name) {
   renamePackUnitModalOpen.value = false;
 }
 
-function onDeletePackUnitTab(gi) {
+function deletePackUnitAt(gi) {
   if (packGroupsEditBlocked.value) return;
   const i = Number(gi);
   if (!Number.isFinite(i) || i < 0) return;
@@ -1343,6 +1401,57 @@ function onDeletePackUnitTab(gi) {
     activePackUnitIndex.value = n - 1;
   }
   scrollActivePackUnitTabIntoView();
+}
+
+function packUnitLabelAt(gi) {
+  const i = Number(gi);
+  if (!Number.isFinite(i) || i < 0) return '';
+  const group = ragListDisplayGroups.value[i];
+  return resolvePackUnitNavLabel(group, i, currentState.value.packUnitNames);
+}
+
+function openDeletePackUnitModal(gi) {
+  if (packGroupsEditBlocked.value) return;
+  const i = Number(gi);
+  if (!Number.isFinite(i) || i < 0) return;
+  deletePackUnitDraftIndex.value = i;
+  deletePackUnitModalOpen.value = true;
+}
+
+function closeDeletePackUnitModal() {
+  deletePackUnitModalOpen.value = false;
+  deletePackUnitDraftIndex.value = null;
+}
+
+function confirmDeletePackUnit() {
+  const i = deletePackUnitDraftIndex.value;
+  closeDeletePackUnitModal();
+  if (i == null || !Number.isFinite(i) || i < 0) return;
+  deletePackUnitAt(i);
+}
+
+const deletePackUnitConfirmMessage = computed(() => {
+  const i = deletePackUnitDraftIndex.value;
+  if (i == null || !Number.isFinite(i) || i < 0) return '確定要刪除此單元嗎？';
+  const label = packUnitLabelAt(i);
+  return label ? `確定要刪除「${label}」嗎？` : '確定要刪除此單元嗎？';
+});
+
+function openDeleteAllPackUnitsModal() {
+  if (packGroupsEditBlocked.value) return;
+  if (!(currentState.value.packTasksList || []).length) return;
+  deleteAllPackUnitsModalOpen.value = true;
+}
+
+function closeDeleteAllPackUnitsModal() {
+  deleteAllPackUnitsModalOpen.value = false;
+}
+
+function confirmDeleteAllPackUnits() {
+  closeDeleteAllPackUnitsModal();
+  if (packGroupsEditBlocked.value) return;
+  clearAllRagListGroups();
+  activePackUnitIndex.value = 0;
 }
 
 function ensurePackUnitSidecarArrays() {
@@ -1621,7 +1730,7 @@ async function loadPackUnitPreviewForType(gi, group) {
     ensurePackUnitSidecarArrays();
     const err = [...s.packUnitTranscriptError];
     const folder = firstFolderNameInGroup(group);
-    if (!folder) err[gi] = '請先在上方拖入一個資料夾';
+    if (!folder) err[gi] = '請先加入一個資料夾';
     else if (!ragTabIdForTranscript()) err[gi] = '請先上傳教材 ZIP';
     else if (!getPersonId(authStore)) err[gi] = '請先登入';
     s.packUnitTranscriptError = err;
@@ -3683,13 +3792,6 @@ function applyUploadMetadataToTabState(state, tabId, meta, rawResponse) {
     if (meta.filename != null) state.zipFileName = String(meta.filename);
     state.zipSecondFolders = Array.isArray(meta.second_folders) ? meta.second_folders : [];
   }
-  if (
-    Array.isArray(state.zipSecondFolders)
-    && state.zipSecondFolders.length > 0
-    && !(Array.isArray(state.packTasksList) && state.packTasksList.length > 0)
-  ) {
-    state.packTasksList = [[]];
-  }
   state.uploadedZipFile = null;
   state.zipError = '';
 }
@@ -4935,6 +5037,87 @@ async function confirmAnswer(item) {
     />
     <Teleport to="body">
       <div
+        v-if="packFolderPickModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pack-folder-pick-modal-title"
+        @click.self="closePackFolderPickModal"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="pack-folder-pick-modal-title"
+                class="modal-title my-color-black"
+              >
+                選擇資料夾
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closePackFolderPickModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <p
+                v-if="!secondFoldersFull.length"
+                class="my-font-md-400 my-color-gray-1 mb-0"
+              >
+                ZIP 內尚無可選資料夾
+              </p>
+              <div
+                v-else
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 my-font-md-400 d-flex flex-wrap align-items-center gap-1"
+                style="min-height: 2.5rem; height: auto;"
+                role="group"
+                aria-label="選擇資料夾"
+              >
+                <div class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0">
+                  <button
+                    v-for="(name, i) in secondFoldersFull"
+                    :key="'pack-folder-pick-' + i"
+                    type="button"
+                    class="badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1 my-pack-folder-pick-chip"
+                    :class="{ 'my-pack-folder-pick-chip--selected': isPackFolderPickDraftSelected(name) }"
+                    :aria-pressed="isPackFolderPickDraftSelected(name)"
+                    :disabled="packGroupsEditBlocked"
+                    @click="togglePackFolderPickDraft(name)"
+                  >
+                    {{ name }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                :disabled="packGroupsEditBlocked"
+                @click="closePackFolderPickModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-3 py-2"
+                :disabled="packGroupsEditBlocked"
+                @click="confirmPackFolderPick"
+              >
+                確定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
         v-if="packUnitDetailModalOpen && activeReadonlyPackUnitRow"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
@@ -5269,6 +5452,108 @@ async function confirmAnswer(item) {
     </Teleport>
     <Teleport to="body">
       <div
+        v-if="deletePackUnitModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-pack-unit-modal-title"
+        @click.self="closeDeletePackUnitModal"
+      >
+        <div class="modal-dialog modal-dialog-centered" @click.stop>
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="delete-pack-unit-modal-title"
+                class="modal-title my-color-black"
+              >
+                刪除單元
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeDeletePackUnitModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <p class="my-font-md-400 my-color-black mb-0 text-break">
+                {{ deletePackUnitConfirmMessage }}
+              </p>
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                @click="closeDeletePackUnitModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+                @click="confirmDeletePackUnit"
+              >
+                刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="deleteAllPackUnitsModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="delete-all-pack-units-modal-title"
+        @click.self="closeDeleteAllPackUnitsModal"
+      >
+        <div class="modal-dialog modal-dialog-centered" @click.stop>
+          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="delete-all-pack-units-modal-title"
+                class="modal-title my-color-black"
+              >
+                刪除全部
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeDeleteAllPackUnitsModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <p class="my-font-md-400 my-color-black mb-0 text-break">
+                確定要刪除全部設定單元嗎？
+              </p>
+            </div>
+            <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                @click="closeDeleteAllPackUnitsModal"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+                @click="confirmDeleteAllPackUnits"
+              >
+                刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
         v-if="packBuildSuccessModalOpen"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
@@ -5426,6 +5711,7 @@ async function confirmAnswer(item) {
       <div
         v-else
         class="container-fluid px-3 px-md-4 py-4 d-flex flex-column flex-grow-1 min-h-0"
+        :class="{ 'my-pack-empty-start-layout': isPackEmptyStartView }"
       >
         <div class="row justify-content-center">
           <div
@@ -5444,37 +5730,6 @@ async function confirmAnswer(item) {
           <section class="text-start my-page-block-spacing">
             <div class="my-design-pack-unit-blocks w-100 min-w-0">
             <div class="my-pack-unit-settings-body">
-          <!-- 課程：可拖曳至設定單元 -->
-          <div class="my-pack-unit-field">
-            <div
-              class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative p-2"
-              style="min-height: 2.5rem;"
-              role="group"
-              aria-label="資料夾"
-            >
-              <div class="d-flex flex-column gap-1 flex-grow-1 w-100 min-w-0">
-                <span class="my-font-sm-400 my-color-black">請將資料夾拖曳到各單元的資料夾組合中</span>
-                <div
-                  v-if="secondFoldersFull.length"
-                  class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0"
-                >
-                  <div
-                    v-for="(name, i) in secondFoldersFull"
-                    :key="'sf-' + i"
-                    class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                    style="cursor: grab;"
-                    draggable="true"
-                    role="button"
-                    tabindex="0"
-                    @dragstart="onDragStartTag($event, name, false, -1, -1)"
-                    @dragend="onDragEndTag"
-                  >
-                    {{ name }}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
           <!-- 單元：Carousel 一次只顯示一個出題單元；切換由右側單元 list 負責 -->
           <div class="my-pack-unit-settings-carousel">
             <template v-if="packUnitCarouselCountEffective > 0">
@@ -5515,28 +5770,18 @@ async function confirmAnswer(item) {
               <div class="row gx-2 gy-4 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
-                    <div
-                      class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative my-pack-drop-target p-2"
-                      style="min-height: 2.5rem;"
-                      role="group"
-                      aria-label="資料夾組合"
-                      @dragover.prevent="onDragOver($event)"
-                      @dragenter.prevent="onDragEnter($event)"
-                      @dragleave="onDragLeave($event)"
-                      @drop.prevent="onDropRagList($event, activePackUnitGi)"
-                    >
-                      <div class="d-flex flex-column gap-1 flex-grow-1 w-100 min-w-0">
-                        <span class="my-font-sm-400 my-color-black">資料夾組合</span>
-                        <div class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-0">資料夾組合</div>
+                      <div
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-2 py-2 my-font-md-400 mt-1 d-flex align-items-center gap-2 my-pack-folder-combo-field"
+                        style="min-height: 2.5rem; height: auto;"
+                        role="group"
+                        aria-label="資料夾組合"
+                      >
+                        <div class="d-flex flex-wrap align-items-center gap-1 flex-grow-1 min-w-0">
                           <div
                             v-for="(tag, ti) in activePackUnitGroup"
                             :key="'t-' + activePackUnitGi + '-' + ti"
                             class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                            style="cursor: grab;"
-                            draggable="true"
-                            role="button"
-                            @dragstart="onDragStartTag($event, tag, true, activePackUnitGi, ti)"
-                            @dragend="onDragEndTag"
                           >
                             {{ tag }}
                             <span
@@ -5545,10 +5790,20 @@ async function confirmAnswer(item) {
                               @click.stop="removeFromRagList(activePackUnitGi, ti)"
                             >×</span>
                           </div>
-                          <span v-if="!activePackUnitGroup.length" class="my-color-gray-4 my-font-sm-400">拖入此處</span>
+                          <span v-if="!activePackUnitGroup.length" class="my-color-gray-4 my-font-sm-400">尚未選擇資料夾</span>
                         </div>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                          title="加入資料夾"
+                          aria-label="加入資料夾"
+                          :disabled="packGroupsEditBlocked || !secondFoldersFull.length"
+                          @click="openPackFolderPickModal(activePackUnitGi)"
+                        >
+                          <i class="fa-solid fa-plus" aria-hidden="true" />
+                          加入資料夾
+                        </button>
                       </div>
-                    </div>
                     </div>
                   </div>
                   <div class="col-12 min-w-0">
@@ -5698,16 +5953,96 @@ async function confirmAnswer(item) {
                   title="刪除此單元"
                   aria-label="刪除此單元"
                   :disabled="packGroupsEditBlocked"
-                  @click="onDeletePackUnitTab(activePackUnitGi)"
+                  @click="openDeletePackUnitModal(activePackUnitGi)"
                 >
                   刪除此單元
                 </button>
               </div>
             </div>
             </template>
+            <div
+              v-else
+              class="my-pack-empty-start-panel d-flex flex-column align-items-center text-center gap-4 w-100 min-w-0"
+            >
+              <p class="my-font-lg-400 my-color-gray-1 mb-0">
+                {{ packUnitEmptyStartHint }}
+              </p>
+              <div
+                v-if="secondFoldersFull.length"
+                class="d-flex flex-wrap justify-content-center align-items-center gap-1 w-100 min-w-0"
+                role="list"
+                aria-label="ZIP 內資料夾"
+              >
+                <span
+                  v-for="(name, i) in secondFoldersFull"
+                  :key="'pack-empty-folder-' + i"
+                  class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center rounded px-2 py-1"
+                  role="listitem"
+                >
+                  {{ name }}
+                </span>
+              </div>
+              <p
+                v-else
+                class="my-font-md-400 my-color-gray-1 mb-0"
+              >
+                ZIP 內尚無可選資料夾
+              </p>
+              <div class="d-flex flex-wrap justify-content-center align-items-stretch gap-2 w-100 min-w-0 my-pack-empty-actions-row">
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-3"
+                  :disabled="packGroupsEditBlocked"
+                  title="新增單元"
+                  aria-label="新增單元"
+                  @click="onAddPackUnitClick"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  新增單元
+                </button>
+                <div
+                  v-if="secondFoldersFull.length"
+                  class="dropdown flex-shrink-0 d-flex"
+                >
+                  <button
+                    type="button"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-gray-3 my-pack-empty-quick-menu-btn dropdown-toggle my-dropdown-caret lh-1"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    aria-label="單元快捷選單"
+                    :disabled="packGroupsEditBlocked"
+                  >
+                    <i class="fa-solid fa-bars" aria-hidden="true" />
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <button
+                        type="button"
+                        class="dropdown-item my-font-md-400"
+                        :disabled="packGroupsEditBlocked"
+                        @click="addAllSecondFoldersAsGroups"
+                      >
+                        每個資料夾獨立單元
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        type="button"
+                        class="dropdown-item my-font-md-400"
+                        :disabled="packGroupsEditBlocked"
+                        title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                        @click="setAllSecondFoldersAsSingleGroup"
+                      >
+                        每個資料夾合併單元
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div class="d-flex justify-content-center">
+          <div v-if="packUnitCarouselCountEffective > 0" class="d-flex justify-content-center">
             <button
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-4 py-2 my-font-md-400 my-button-white"
@@ -6367,7 +6702,7 @@ async function confirmAnswer(item) {
                           class="dropdown-item my-font-md-400"
                           :disabled="!(currentState.packTasksList || []).length"
                           title="清空所有設定單元（含空位）"
-                          @click="clearAllRagListGroups"
+                          @click="openDeleteAllPackUnitsModal"
                         >
                           刪除全部
                         </button>
@@ -6414,14 +6749,10 @@ async function confirmAnswer(item) {
                 <div v-if="!hasBuiltRagSummary" class="px-3 pb-2 pt-2">
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100 my-pack-drop-target"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
                     :disabled="packGroupsEditBlocked"
                     title="新增單元"
                     aria-label="新增單元"
-                    @dragover.prevent="onDragOver($event)"
-                    @dragenter.prevent="onDragEnter($event)"
-                    @dragleave="onDragLeave($event)"
-                    @drop.prevent="onDropRagList($event, (currentState.packTasksList || []).length)"
                     @click="onAddPackUnitClick"
                   >
                     <i class="fa-solid fa-plus" aria-hidden="true" />
@@ -6605,6 +6936,49 @@ async function confirmAnswer(item) {
 .my-design-right-nav .nav-link.active:focus-visible {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
+}
+.my-pack-empty-start-layout {
+  justify-content: center;
+  min-height: 100%;
+}
+.my-pack-empty-start-layout .my-page-block-spacing {
+  margin-bottom: 0;
+}
+.my-pack-empty-start-layout > .row {
+  width: 100%;
+}
+.my-pack-empty-start-panel {
+  width: 100%;
+}
+.my-pack-empty-actions-row .my-pack-empty-quick-menu-btn {
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+  align-self: stretch;
+  aspect-ratio: 1;
+  padding: 0;
+  box-sizing: border-box;
+}
+.my-pack-folder-combo-field {
+  cursor: default;
+}
+.my-pack-folder-pick-chip {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-gray-1);
+  border: 1px solid var(--my-color-gray-2);
+}
+.my-pack-folder-pick-chip:hover:not(:disabled) {
+  color: var(--my-color-black);
+  border-color: var(--my-color-gray-1);
+}
+.my-pack-folder-pick-chip--selected,
+.my-pack-folder-pick-chip--selected:hover:not(:disabled),
+.my-pack-folder-pick-chip--selected:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-blue) 14%, var(--my-color-white));
+  color: var(--my-color-black);
+  border-color: var(--my-color-blue);
+  font-weight: var(--my-font-weight-semibold);
 }
 .my-pack-folder-field-input {
   box-sizing: border-box;

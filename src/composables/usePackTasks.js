@@ -31,9 +31,7 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
 
   const ragListDisplayGroups = computed(() => {
     const list = currentState.value.packTasksList ?? [];
-    if (list.length > 0) return list;
-    if (secondFoldersFull.value.length > 0) return [[]];
-    return [];
+    return Array.isArray(list) ? list : [];
   });
 
   function onDragStartTag(e, folderName, fromRagList, groupIdx, tagIdx) {
@@ -79,6 +77,89 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     if (el) el.classList.remove('my-pack-drop-active');
   }
 
+  function addFolderToRagListGroup(targetGroupIdx, folderName) {
+    if (packAndGenerateDisabled.value) return;
+    const name = String(folderName || '').trim();
+    if (!name) return;
+
+    const state = currentState.value;
+    const prevList = JSON.parse(JSON.stringify(state.packTasksList || []));
+    const prevTypes = [...(state.packUnitTypes || [])];
+    const prevChunkSizes = [...(state.packChunkSizes || [])];
+    const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
+    const prevUnitNames = [...(state.packUnitNames || [])];
+    const prevMd = [...(state.packUnitMarkdownTexts || [])];
+    const prevYu = [...(state.packUnitYoutubeUrls || [])];
+    const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const prevSf = [...(state.packUnitSourceFileLoading || [])];
+    const prevErr = [...(state.packUnitTranscriptError || [])];
+    const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+    const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
+    let list = [...(state.packTasksList || [])];
+
+    if (targetGroupIdx >= list.length) {
+      for (let i = list.length; i <= targetGroupIdx; i++) list.push([]);
+    }
+    const target = list[targetGroupIdx];
+    const arr = Array.isArray(target) ? [...target] : [];
+    if (!arr.includes(name)) arr.push(name);
+    list[targetGroupIdx] = arr;
+    list = list.filter((g) => g != null && (Array.isArray(g) ? g.length > 0 : g));
+    state.packTasksList = list;
+    state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, list);
+    state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, list, DEFAULT_PACK_CHUNK_SIZE);
+    state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, list, DEFAULT_PACK_CHUNK_OVERLAP);
+    state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, list, '');
+    state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, list, '');
+    state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, list, '');
+    state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, list, '');
+    state.packUnitSourceFileLoading = remapPackParallelBools(prevList, prevSf, list);
+    state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, list, '');
+    state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, list);
+    state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, list);
+  }
+
+  function setPackUnitFolderGroup(targetGroupIdx, folderNames) {
+    if (packAndGenerateDisabled.value) return;
+    const names = (Array.isArray(folderNames) ? folderNames : [])
+      .map((n) => String(n ?? '').trim())
+      .filter(Boolean);
+    const unique = [...new Set(names)];
+
+    const state = currentState.value;
+    const prevList = JSON.parse(JSON.stringify(state.packTasksList || []));
+    const prevTypes = [...(state.packUnitTypes || [])];
+    const prevChunkSizes = [...(state.packChunkSizes || [])];
+    const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
+    const prevUnitNames = [...(state.packUnitNames || [])];
+    const prevMd = [...(state.packUnitMarkdownTexts || [])];
+    const prevYu = [...(state.packUnitYoutubeUrls || [])];
+    const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
+    const prevSf = [...(state.packUnitSourceFileLoading || [])];
+    const prevErr = [...(state.packUnitTranscriptError || [])];
+    const prevLoad = [...(state.packUnitTranscriptLoading || [])];
+    const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
+    let list = [...(state.packTasksList || [])];
+
+    if (targetGroupIdx >= list.length) {
+      for (let i = list.length; i <= targetGroupIdx; i++) list.push([]);
+    }
+    list[targetGroupIdx] = unique.length ? [...unique] : [];
+    list = list.filter((g) => g != null && (Array.isArray(g) ? g.length > 0 : g));
+    state.packTasksList = list;
+    state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, list);
+    state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, list, DEFAULT_PACK_CHUNK_SIZE);
+    state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, list, DEFAULT_PACK_CHUNK_OVERLAP);
+    state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, list, '');
+    state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, list, '');
+    state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, list, '');
+    state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, list, '');
+    state.packUnitSourceFileLoading = remapPackParallelBools(prevList, prevSf, list);
+    state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, list, '');
+    state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, list);
+    state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, list);
+  }
+
   function onDropRagList(e, targetGroupIdx) {
     e.preventDefault();
     e.stopPropagation();
@@ -102,49 +183,18 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     const groupIdx = payload?.groupIdx ?? -1;
     const tagIdx = payload?.tagIdx ?? -1;
 
-    const state = currentState.value;
-    const prevList = JSON.parse(JSON.stringify(state.packTasksList || []));
-    const prevTypes = [...(state.packUnitTypes || [])];
-    const prevChunkSizes = [...(state.packChunkSizes || [])];
-    const prevChunkOverlaps = [...(state.packChunkOverlaps || [])];
-    const prevUnitNames = [...(state.packUnitNames || [])];
-    const prevMd = [...(state.packUnitMarkdownTexts || [])];
-    const prevYu = [...(state.packUnitYoutubeUrls || [])];
-    const prevMp3 = [...(state.packUnitMp3PreviewUrls || [])];
-    const prevSf = [...(state.packUnitSourceFileLoading || [])];
-    const prevErr = [...(state.packUnitTranscriptError || [])];
-    const prevLoad = [...(state.packUnitTranscriptLoading || [])];
-    const prevLoaded = [...(state.packUnitTranscriptLoaded || [])];
-    let list = [...(state.packTasksList || [])];
-
     if (fromRagList && groupIdx >= 0) {
+      const state = currentState.value;
+      const list = [...(state.packTasksList || [])];
       const g = list[groupIdx];
       if (Array.isArray(g)) {
         const next = g.filter((_, i) => i !== tagIdx);
         list[groupIdx] = next.length ? next : null;
+        state.packTasksList = list.filter((x) => x != null && (Array.isArray(x) ? x.length > 0 : x));
       }
     }
 
-    if (targetGroupIdx >= list.length) {
-      for (let i = list.length; i <= targetGroupIdx; i++) list.push([]);
-    }
-    const target = list[targetGroupIdx];
-    const arr = Array.isArray(target) ? [...target] : [];
-    if (!arr.includes(folderName)) arr.push(folderName);
-    list[targetGroupIdx] = arr;
-    list = list.filter((g) => g != null && (Array.isArray(g) ? g.length > 0 : g));
-    state.packTasksList = list;
-    state.packUnitTypes = remapPackUnitTypes(prevList, prevTypes, list);
-    state.packChunkSizes = remapPackParallelNumbers(prevList, prevChunkSizes, list, DEFAULT_PACK_CHUNK_SIZE);
-    state.packChunkOverlaps = remapPackParallelNumbers(prevList, prevChunkOverlaps, list, DEFAULT_PACK_CHUNK_OVERLAP);
-    state.packUnitNames = remapPackParallelStrings(prevList, prevUnitNames, list, '');
-    state.packUnitMarkdownTexts = remapPackParallelStrings(prevList, prevMd, list, '');
-    state.packUnitYoutubeUrls = remapPackParallelStrings(prevList, prevYu, list, '');
-    state.packUnitMp3PreviewUrls = remapPackParallelStrings(prevList, prevMp3, list, '');
-    state.packUnitSourceFileLoading = remapPackParallelBools(prevList, prevSf, list);
-    state.packUnitTranscriptError = remapPackParallelStrings(prevList, prevErr, list, '');
-    state.packUnitTranscriptLoading = remapPackParallelBools(prevList, prevLoad, list);
-    state.packUnitTranscriptLoaded = remapPackParallelBools(prevList, prevLoaded, list);
+    addFolderToRagListGroup(targetGroupIdx, folderName);
   }
 
   function removeFromRagList(groupIdx, tagIdx) {
@@ -370,6 +420,8 @@ export function usePackTasks(currentState, fileMetadataToShow, packAndGenerateDi
     onDragEnter,
     onDragLeave,
     onDropRagList,
+    addFolderToRagListGroup,
+    setPackUnitFolderGroup,
     removeFromRagList,
     removeRagListGroup,
     addRagListGroup,
