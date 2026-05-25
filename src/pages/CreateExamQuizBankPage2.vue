@@ -77,11 +77,6 @@ const showGridLoadingOverlay = computed(
   () => viewMode.value === 'grid' && ragListLoading.value && gridItems.value.length === 0,
 );
 
-const selectedBankIsExam = computed(() => {
-  const rag = findRagByTabId(selectedBankTabId.value);
-  return rag ? ragRowIsExamBank(rag) : false;
-});
-
 const detailHeaderActionsDisabled = computed(
   () => deleteRagLoading.value || renameRagTabSaving.value,
 );
@@ -522,25 +517,33 @@ watch(viewMode, (mode) => {
           >
             <i class="fa-solid fa-pen" aria-hidden="true" />
           </button>
+        </div>
+        <div class="create-exam-bank-2-detail-bar__end">
           <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch">
             <button
               type="button"
-              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 dropdown-toggle my-dropdown-caret"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-4 py-3 lh-1 dropdown-toggle my-dropdown-caret"
               data-bs-toggle="dropdown"
+              data-bs-display="static"
               aria-expanded="false"
-              aria-label="切換題庫"
+              aria-label="題庫選單"
               :disabled="detailHeaderActionsDisabled"
             >
-              <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret" aria-hidden="true" />
+              <i class="fa-solid fa-bars" aria-hidden="true" />
             </button>
             <ul class="dropdown-menu dropdown-menu-end create-exam-bank-2-bank-switch-menu">
-              <li v-if="gridItems.length === 0">
-                <span class="dropdown-item my-font-md-400 my-color-gray-1 disabled">尚無題庫</span>
-              </li>
-              <li v-for="item in gridItems" :key="item.tabId">
+              <li class="create-exam-bank-2-bank-switch-menu__scroll">
+                <span
+                  v-if="gridItems.length === 0"
+                  class="dropdown-item my-font-md-400 my-color-gray-1 disabled px-4 py-3"
+                >
+                  尚無題庫
+                </span>
                 <button
+                  v-for="item in gridItems"
+                  :key="item.tabId"
                   type="button"
-                  class="dropdown-item my-font-md-400 d-flex align-items-center gap-2"
+                  class="dropdown-item my-font-md-400 d-flex align-items-center gap-2 w-100 px-4 py-3"
                   :class="{ active: item.tabId === selectedBankTabId }"
                   @click="switchBankDetail(item.tabId, item.label)"
                 >
@@ -554,22 +557,20 @@ watch(viewMode, (mode) => {
                   <span class="text-truncate">{{ item.label }}</span>
                 </button>
               </li>
+              <li class="create-exam-bank-2-bank-switch-menu__footer">
+                <hr class="dropdown-divider my-0" />
+                <button
+                  type="button"
+                  class="dropdown-item my-font-md-400 my-color-red w-100 px-4 py-3"
+                  :disabled="detailHeaderActionsDisabled"
+                  :aria-busy="deleteRagLoading"
+                  @click="openDeleteBankModal"
+                >
+                  刪除此題庫
+                </button>
+              </li>
             </ul>
           </div>
-        </div>
-        <div class="create-exam-bank-2-detail-bar__end">
-          <button
-            v-if="!selectedBankIsExam"
-            type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-pack-unit-delete-btn px-4 py-2"
-            title="刪除此題庫"
-            aria-label="刪除此題庫"
-            :disabled="detailHeaderActionsDisabled"
-            :aria-busy="deleteRagLoading"
-            @click="openDeleteBankModal"
-          >
-            刪除此題庫
-          </button>
         </div>
       </header>
 
@@ -810,6 +811,17 @@ watch(viewMode, (mode) => {
   align-items: center;
   gap: 0.75rem;
   border-color: var(--my-color-gray-2, #e5e5e5) !important;
+  overflow: visible;
+  position: relative;
+  z-index: 30;
+}
+
+.create-exam-bank-2.create-exam-bank-2--detail {
+  overflow: visible;
+}
+
+.create-exam-bank-2-embedded {
+  overflow: hidden;
 }
 
 .create-exam-bank-2-detail-bar__start {
@@ -828,27 +840,29 @@ watch(viewMode, (mode) => {
 }
 
 .create-exam-bank-2-bank-switch-menu {
+  display: flex;
+  flex-direction: column;
   min-width: 12rem;
   max-width: min(90vw, 20rem);
   max-height: min(60vh, 24rem);
+  overflow: hidden;
+  padding: 0;
+}
+
+.create-exam-bank-2-bank-switch-menu__scroll {
   overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
-.create-exam-bank-2-detail-bar .my-pack-unit-delete-btn {
-  color: var(--my-color-red);
-  background-color: var(--my-color-white);
-  border: none;
-  text-decoration: none;
-}
-
-.create-exam-bank-2-detail-bar .my-pack-unit-delete-btn:hover,
-.create-exam-bank-2-detail-bar .my-pack-unit-delete-btn:active:not(:disabled) {
-  color: var(--my-color-red-hover);
-  background-color: color-mix(in srgb, var(--my-color-red) 8%, var(--my-color-white));
-}
-
-.create-exam-bank-2-detail-bar .my-pack-unit-delete-btn:disabled {
-  opacity: 0.55;
+.create-exam-bank-2-bank-switch-menu__footer {
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
 }
 
 /* 嵌入原頁：隱藏「建立測驗題庫」標題列與分頁列 */
