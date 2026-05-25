@@ -6,6 +6,7 @@
  * 不修改 CreateExamQuizBankPage.vue。
  */
 import { ref, computed, watch, onActivated } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { useRagList } from '../composables/useRagList.js';
 import {
@@ -32,6 +33,8 @@ const UPLOAD_MAX_FILE_BYTES = 50 * 1000 * 1000;
 const QUIZ_BANK_NOUN = '測驗題庫';
 
 const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
 const viewMode = ref('grid');
 const selectedBankTabId = ref('');
 const selectedBankLabel = ref('');
@@ -138,6 +141,23 @@ function ragRowIsExamBank(rag) {
   return false;
 }
 
+function applyRouteRagId() {
+  const ragId = String(route.params.rag_id ?? '').trim();
+  if (!ragId) {
+    viewMode.value = 'grid';
+    selectedBankTabId.value = '';
+    selectedBankLabel.value = '';
+    return;
+  }
+  const item = gridItems.value.find((i) => i.tabId === ragId);
+  const rag = findRagByTabId(ragId);
+  const label = item?.label ?? ((rag ? deriveRagName(rag) : '') || ragId);
+  persistCreateBankTabSelection(ragId);
+  selectedBankTabId.value = ragId;
+  selectedBankLabel.value = label;
+  viewMode.value = 'detail';
+}
+
 function openBankDetail(tabId, label) {
   const id = String(tabId ?? '').trim();
   if (!id) return;
@@ -145,6 +165,9 @@ function openBankDetail(tabId, label) {
   selectedBankTabId.value = id;
   selectedBankLabel.value = label || id;
   viewMode.value = 'detail';
+  if (String(route.params.rag_id ?? '') !== id) {
+    router.push(`/create-exam-bank_2/${encodeURIComponent(id)}`);
+  }
 }
 
 function switchBankDetail(tabId, label) {
@@ -153,6 +176,9 @@ function switchBankDetail(tabId, label) {
   persistCreateBankTabSelection(id);
   selectedBankTabId.value = id;
   selectedBankLabel.value = label || id;
+  if (String(route.params.rag_id ?? '') !== id) {
+    router.push(`/create-exam-bank_2/${encodeURIComponent(id)}`);
+  }
 }
 
 function backToGrid() {
@@ -160,6 +186,9 @@ function backToGrid() {
   selectedBankTabId.value = '';
   selectedBankLabel.value = '';
   fetchRagList();
+  if (route.params.rag_id) {
+    router.push('/create-exam-bank_2');
+  }
 }
 
 function findRagByTabId(tabId) {
@@ -398,9 +427,35 @@ async function confirmNewBankUpload() {
   }
 }
 
-onActivated(() => {
+onActivated(async () => {
+  const ragId = String(route.params.rag_id ?? '').trim();
+  if (ragId) {
+    await fetchRagList();
+    applyRouteRagId();
+    return;
+  }
   if (viewMode.value === 'grid') {
     fetchRagList();
+  }
+});
+
+watch(
+  () => route.params.rag_id,
+  async (ragId) => {
+    if (String(ragId ?? '').trim()) {
+      if (ragList.value.length === 0 && !ragListLoading.value) {
+        await fetchRagList();
+      }
+      applyRouteRagId();
+      return;
+    }
+    applyRouteRagId();
+  },
+);
+
+watch(ragList, () => {
+  if (route.params.rag_id) {
+    applyRouteRagId();
   }
 });
 
@@ -522,7 +577,7 @@ watch(viewMode, (mode) => {
           <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-4 py-3 lh-1 dropdown-toggle my-dropdown-caret"
+              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless create-exam-bank-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
               data-bs-toggle="dropdown"
               data-bs-display="static"
               aria-expanded="false"
@@ -532,36 +587,35 @@ watch(viewMode, (mode) => {
               <i class="fa-solid fa-bars" aria-hidden="true" />
             </button>
             <ul class="dropdown-menu dropdown-menu-end create-exam-bank-2-bank-switch-menu">
-              <li class="create-exam-bank-2-bank-switch-menu__scroll">
-                <span
-                  v-if="gridItems.length === 0"
-                  class="dropdown-item my-font-md-400 my-color-gray-1 disabled px-4 py-3"
-                >
-                  尚無題庫
-                </span>
+              <li v-if="gridItems.length === 0">
+                <span class="dropdown-item disabled">尚無題庫</span>
+              </li>
+              <li v-for="item in gridItems" :key="item.tabId">
                 <button
-                  v-for="item in gridItems"
-                  :key="item.tabId"
                   type="button"
-                  class="dropdown-item my-font-md-400 d-flex align-items-center gap-2 w-100 px-4 py-3"
+                  class="dropdown-item"
                   :class="{ active: item.tabId === selectedBankTabId }"
                   @click="switchBankDetail(item.tabId, item.label)"
                 >
-                  <span
-                    v-if="item.isExam"
-                    class="rounded-circle d-inline-block flex-shrink-0 my-bgcolor-green"
-                    style="width: 0.5rem; height: 0.5rem"
-                    title="試卷用題庫"
-                    aria-label="試卷用題庫"
-                  />
-                  <span class="text-truncate">{{ item.label }}</span>
+                  <span class="d-flex align-items-center gap-2">
+                    <span
+                      v-if="item.isExam"
+                      class="rounded-circle d-inline-block flex-shrink-0 my-bgcolor-green"
+                      style="width: 0.5rem; height: 0.5rem"
+                      title="試卷用題庫"
+                      aria-label="試卷用題庫"
+                    />
+                    <span class="text-truncate">{{ item.label }}</span>
+                  </span>
                 </button>
               </li>
-              <li class="create-exam-bank-2-bank-switch-menu__footer">
-                <hr class="dropdown-divider my-0" />
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
                 <button
                   type="button"
-                  class="dropdown-item my-font-md-400 my-color-red w-100 px-4 py-3"
+                  class="dropdown-item my-color-red"
                   :disabled="detailHeaderActionsDisabled"
                   :aria-busy="deleteRagLoading"
                   @click="openDeleteBankModal"
@@ -839,30 +893,17 @@ watch(viewMode, (mode) => {
   min-width: 0;
 }
 
+.create-exam-bank-2-detail-bar__menu-btn {
+  width: 2.375rem;
+  height: 2.375rem;
+  min-width: 2.375rem;
+  min-height: 2.375rem;
+  padding: 0;
+}
+
 .create-exam-bank-2-bank-switch-menu {
-  display: flex;
-  flex-direction: column;
-  min-width: 12rem;
-  max-width: min(90vw, 20rem);
   max-height: min(60vh, 24rem);
-  overflow: hidden;
-  padding: 0;
-}
-
-.create-exam-bank-2-bank-switch-menu__scroll {
   overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.create-exam-bank-2-bank-switch-menu__footer {
-  flex-shrink: 0;
-  padding: 0;
-  margin: 0;
-  list-style: none;
 }
 
 /* 嵌入原頁：隱藏「建立測驗題庫」標題列與分頁列 */

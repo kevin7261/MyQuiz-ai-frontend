@@ -6,6 +6,7 @@
  * 不修改 ExamPage.vue。
  */
 import { ref, computed, watch, onActivated } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_BASE,
@@ -31,6 +32,8 @@ const EXAM_TAB_UI_STORAGE_PREFIX = 'myquiz:examTabUI:v1:';
 const EXAM_NOUN = '測驗';
 
 const authStore = useAuthStore();
+const router = useRouter();
+const route = useRoute();
 const viewMode = ref('grid');
 const selectedExamTabId = ref('');
 const selectedExamLabel = ref('');
@@ -199,6 +202,23 @@ function findExamByTabId(tabId) {
   return examList.value.find((e) => getExamTabId(e) === id) ?? null;
 }
 
+function applyRouteExamId() {
+  const examId = String(route.params.exam_id ?? '').trim();
+  if (!examId) {
+    viewMode.value = 'grid';
+    selectedExamTabId.value = '';
+    selectedExamLabel.value = '';
+    return;
+  }
+  const item = gridItems.value.find((i) => i.tabId === examId);
+  const exam = findExamByTabId(examId);
+  const label = item?.label ?? ((exam ? getExamTabLabel(exam) : '') || examId);
+  persistExamTabSelection(examId);
+  selectedExamTabId.value = examId;
+  selectedExamLabel.value = label;
+  viewMode.value = 'detail';
+}
+
 function openExamDetail(tabId, label) {
   const id = String(tabId ?? '').trim();
   if (!id) return;
@@ -206,6 +226,9 @@ function openExamDetail(tabId, label) {
   selectedExamTabId.value = id;
   selectedExamLabel.value = label || id;
   viewMode.value = 'detail';
+  if (String(route.params.exam_id ?? '') !== id) {
+    router.push(`/exam_2/${encodeURIComponent(id)}`);
+  }
 }
 
 function switchExamDetail(tabId, label) {
@@ -214,6 +237,9 @@ function switchExamDetail(tabId, label) {
   persistExamTabSelection(id);
   selectedExamTabId.value = id;
   selectedExamLabel.value = label || id;
+  if (String(route.params.exam_id ?? '') !== id) {
+    router.push(`/exam_2/${encodeURIComponent(id)}`);
+  }
 }
 
 function backToGrid() {
@@ -221,6 +247,9 @@ function backToGrid() {
   selectedExamTabId.value = '';
   selectedExamLabel.value = '';
   fetchExamList();
+  if (route.params.exam_id) {
+    router.push('/exam_2');
+  }
 }
 
 function openRenameSelectedExam() {
@@ -359,9 +388,35 @@ async function confirmDeleteExam() {
   }
 }
 
-onActivated(() => {
+onActivated(async () => {
+  const examId = String(route.params.exam_id ?? '').trim();
+  if (examId) {
+    await fetchExamList();
+    applyRouteExamId();
+    return;
+  }
   if (viewMode.value === 'grid') {
     fetchExamList();
+  }
+});
+
+watch(
+  () => route.params.exam_id,
+  async (examId) => {
+    if (String(examId ?? '').trim()) {
+      if (examList.value.length === 0 && !examListLoading.value) {
+        await fetchExamList();
+      }
+      applyRouteExamId();
+      return;
+    }
+    applyRouteExamId();
+  },
+);
+
+watch(examList, () => {
+  if (route.params.exam_id) {
+    applyRouteExamId();
   }
 });
 
@@ -490,7 +545,7 @@ watch(
           <div class="dropdown flex-shrink-0 exam-2-exam-switch">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 px-4 py-3 lh-1 dropdown-toggle my-dropdown-caret"
+              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless exam-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
               data-bs-toggle="dropdown"
               data-bs-display="static"
               aria-expanded="false"
@@ -500,29 +555,26 @@ watch(
               <i class="fa-solid fa-bars" aria-hidden="true" />
             </button>
             <ul class="dropdown-menu dropdown-menu-end exam-2-exam-switch-menu">
-              <li class="exam-2-exam-switch-menu__scroll">
-                <span
-                  v-if="gridItems.length === 0"
-                  class="dropdown-item my-font-md-400 my-color-gray-1 disabled px-4 py-3"
-                >
-                  尚無測驗
-                </span>
+              <li v-if="gridItems.length === 0">
+                <span class="dropdown-item disabled">尚無測驗</span>
+              </li>
+              <li v-for="item in gridItems" :key="item.tabId">
                 <button
-                  v-for="item in gridItems"
-                  :key="item.tabId"
                   type="button"
-                  class="dropdown-item my-font-md-400 d-flex align-items-center gap-2 w-100 px-4 py-3"
+                  class="dropdown-item"
                   :class="{ active: item.tabId === selectedExamTabId }"
                   @click="switchExamDetail(item.tabId, item.label)"
                 >
-                  <span class="text-truncate">{{ item.label }}</span>
+                  {{ item.label }}
                 </button>
               </li>
-              <li class="exam-2-exam-switch-menu__footer">
-                <hr class="dropdown-divider my-0" />
+              <li>
+                <hr class="dropdown-divider" />
+              </li>
+              <li>
                 <button
                   type="button"
-                  class="dropdown-item my-font-md-400 my-color-red w-100 px-4 py-3"
+                  class="dropdown-item my-color-red"
                   :disabled="detailHeaderActionsDisabled"
                   :aria-busy="deleteExamLoading"
                   @click="openDeleteExamModal"
@@ -690,30 +742,17 @@ watch(
   min-width: 0;
 }
 
+.exam-2-detail-bar__menu-btn {
+  width: 2.375rem;
+  height: 2.375rem;
+  min-width: 2.375rem;
+  min-height: 2.375rem;
+  padding: 0;
+}
+
 .exam-2-exam-switch-menu {
-  display: flex;
-  flex-direction: column;
-  min-width: 12rem;
-  max-width: min(90vw, 20rem);
   max-height: min(60vh, 24rem);
-  overflow: hidden;
-  padding: 0;
-}
-
-.exam-2-exam-switch-menu__scroll {
   overflow-y: auto;
-  flex: 1 1 auto;
-  min-height: 0;
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.exam-2-exam-switch-menu__footer {
-  flex-shrink: 0;
-  padding: 0;
-  margin: 0;
-  list-style: none;
 }
 
 .exam-2-embedded :deep(> header) {

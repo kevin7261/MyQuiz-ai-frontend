@@ -55,7 +55,10 @@ const PATH_TO_VIEW = {
       /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
-        if (route.path === '/exam_2') return 'work2';
+        if (route.path === '/exam_2' || route.name === 'Exam2Detail') return 'work2';
+        if (route.path === '/create-exam-bank_2' || route.name === 'CreateExamBank2Detail') {
+          return 'createExamQuizBank2';
+        }
         return PATH_TO_VIEW[route.params.view] || 'work';
       });
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
@@ -99,7 +102,11 @@ const PATH_TO_VIEW = {
           return;
         }
         if (type === 'work2') {
-          if (route.path !== '/exam_2') router.push('/exam_2');
+          if (!route.path.startsWith('/exam_2')) router.push('/exam_2');
+          return;
+        }
+        if (type === 'createExamQuizBank2') {
+          if (!route.path.startsWith('/create-exam-bank_2')) router.push('/create-exam-bank_2');
           return;
         }
         const path = VIEW_TO_PATH[type] ?? 'work';
