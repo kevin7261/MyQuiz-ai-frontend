@@ -21,7 +21,6 @@ import { deriveRagNameFromTabId, generateTabId, normalizeExamListResponse } from
 import { loggedFetch } from '../utils/loggedFetch.js';
 import ExamPage from './ExamPage.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
-import TabRenameModal from '../components/TabRenameModal.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 
 defineProps({
@@ -45,11 +44,8 @@ const examListError = ref('');
 const createExamLoading = ref(false);
 const createExamError = ref('');
 
-const renameExamModalOpen = ref(false);
-const renameExamDraftExamId = ref(null);
-const renameExamInitialName = ref('');
-const renameExamSaving = ref(false);
-const renameExamError = ref('');
+const renameTitleSaving = ref(false);
+const examTitleBeforeEdit = ref('');
 
 const deleteExamLoading = ref(false);
 const deleteExamError = ref('');
@@ -72,7 +68,7 @@ const showGridLoadingOverlay = computed(
 );
 
 const detailHeaderActionsDisabled = computed(
-  () => deleteExamLoading.value || renameExamSaving.value || createExamLoading.value,
+  () => deleteExamLoading.value || renameTitleSaving.value || createExamLoading.value,
 );
 
 function isNotFoundLike(status, message) {
@@ -112,13 +108,6 @@ function getExamTabLabel(exam) {
   const fromTabId = deriveRagNameFromTabId(String(tabId));
   const created = exam.created_at ?? '';
   return name || fromTabId || String(tabId) || created || EXAM_NOUN;
-}
-
-function getExamTabNameForEdit(exam) {
-  if (!exam || typeof exam !== 'object') return '';
-  const t = exam.tab_name ?? exam.exam_name ?? exam.test_name;
-  if (t != null && String(t).trim() !== '') return String(t).trim();
-  return '';
 }
 
 function examSubtitle(exam) {
@@ -252,45 +241,41 @@ function backToGrid() {
   }
 }
 
-function openRenameSelectedExam() {
-  if (renameExamSaving.value) return;
-  const exam = findExamByTabId(selectedExamTabId.value);
-  const eid = exam?.exam_id ?? exam?.test_id;
-  renameExamDraftExamId.value =
-    eid != null && String(eid).trim() !== '' ? Number(eid) : null;
-  renameExamInitialName.value =
-    getExamTabNameForEdit(exam) || getExamTabLabel(exam) || selectedExamLabel.value;
-  renameExamError.value = '';
-  renameExamModalOpen.value = true;
+function onExamTitleFocus() {
+  examTitleBeforeEdit.value = selectedExamLabel.value;
 }
 
-async function onRenameExamSave(name) {
+async function onExamTitleBlur() {
+  if (renameTitleSaving.value) return;
+  const name = String(selectedExamLabel.value ?? '').trim();
   if (!name) {
-    renameExamError.value = '請輸入名稱';
+    selectedExamLabel.value = examTitleBeforeEdit.value;
     return;
   }
-  const eid = renameExamDraftExamId.value;
-  if (eid == null || !Number.isFinite(eid) || eid < 1) {
-    renameExamError.value = '找不到此測驗，請重新整理頁面後再試';
+  selectedExamLabel.value = name;
+  if (name === String(examTitleBeforeEdit.value ?? '').trim()) return;
+  const exam = findExamByTabId(selectedExamTabId.value);
+  const eid = exam?.exam_id ?? exam?.test_id;
+  if (eid == null || !Number.isFinite(Number(eid)) || Number(eid) < 1) {
+    selectedExamLabel.value = examTitleBeforeEdit.value;
+    alert('找不到此試卷，請重新整理頁面後再試');
     return;
   }
-  renameExamSaving.value = true;
-  renameExamError.value = '';
+  renameTitleSaving.value = true;
   try {
-    await apiUpdateExamTabName(eid, name);
-    const exam = findExamByTabId(selectedExamTabId.value);
+    await apiUpdateExamTabName(Number(eid), name);
     if (exam) {
       exam.tab_name = name;
       exam.exam_name = name;
       exam.test_name = name;
     }
-    selectedExamLabel.value = name;
-    renameExamModalOpen.value = false;
+    examTitleBeforeEdit.value = name;
     await fetchExamList({ silent: true });
   } catch (err) {
-    renameExamError.value = err.message || '更新失敗';
+    selectedExamLabel.value = examTitleBeforeEdit.value;
+    alert(err.message || '更新失敗');
   } finally {
-    renameExamSaving.value = false;
+    renameTitleSaving.value = false;
   }
 }
 
@@ -526,20 +511,20 @@ watch(
             返回主頁
           </button>
         </div>
-        <div class="exam-2-detail-bar__center d-flex align-items-center justify-content-center gap-1 min-w-0">
-          <p class="my-font-lg-400 my-color-black text-truncate mb-0 text-center">
-            {{ selectedExamLabel }}
-          </p>
-          <button
-            type="button"
-            class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 p-0 flex-shrink-0"
-            title="重新命名分頁"
-            aria-label="重新命名分頁"
+        <div class="exam-2-detail-bar__center min-w-0">
+          <input
+            v-model="selectedExamLabel"
+            type="text"
+            class="exam-2-detail-bar__title my-font-lg-400 my-color-black text-truncate mb-0 text-center w-100 px-3 py-2 rounded-2"
+            maxlength="200"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="試卷名稱"
             :disabled="detailHeaderActionsDisabled"
-            @click="openRenameSelectedExam"
-          >
-            <i class="fa-solid fa-pen" aria-hidden="true" />
-          </button>
+            @focus="onExamTitleFocus"
+            @blur="onExamTitleBlur"
+            @keydown.enter.prevent="$event.target.blur()"
+          />
         </div>
         <div class="exam-2-detail-bar__end">
           <div class="dropdown flex-shrink-0 exam-2-exam-switch">
@@ -547,7 +532,6 @@ watch(
               type="button"
               class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless exam-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
               data-bs-toggle="dropdown"
-              data-bs-display="static"
               aria-expanded="false"
               aria-label="試卷選單"
               :disabled="detailHeaderActionsDisabled"
@@ -594,15 +578,6 @@ watch(
       />
     </template>
   </div>
-
-  <TabRenameModal
-    v-model="renameExamModalOpen"
-    :initial-name="renameExamInitialName"
-    :saving="renameExamSaving"
-    :error="renameExamError"
-    title="修改名稱"
-    @save="onRenameExamSave"
-  />
 
   <ConfirmDeleteModal
     v-model="deleteExamModalOpen"
@@ -737,6 +712,37 @@ watch(
   max-width: 100%;
 }
 
+.exam-2-detail-bar__title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+
+.exam-2-detail-bar__title:hover:not(:disabled),
+.exam-2-detail-bar__title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-3, #f5f5f5);
+}
+
+.exam-2-detail-bar__title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.exam-2-detail-bar__title:disabled {
+  opacity: 1;
+  color: var(--my-color-black, #000);
+  background: transparent;
+}
+
 .exam-2-detail-bar__end {
   justify-self: end;
   min-width: 0;
@@ -751,8 +757,25 @@ watch(
 }
 
 .exam-2-exam-switch-menu {
+  display: block;
+  min-width: 10rem;
   max-height: min(60vh, 24rem);
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.exam-2-exam-switch-menu.show {
+  display: block !important;
+}
+
+.exam-2-exam-switch-menu > li {
+  display: block;
+  width: 100%;
+}
+
+.exam-2-exam-switch-menu .dropdown-item {
+  width: 100%;
+  white-space: nowrap;
 }
 
 .exam-2-embedded :deep(> header) {

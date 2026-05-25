@@ -6628,13 +6628,13 @@ async function confirmAnswer(item) {
           class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
         >
           <aside
-            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
+            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-hidden"
             aria-label="設計輔助面板"
           >
             <!-- 建立流程：上傳檔案、設定單元 + 子項目垂直列表 -->
             <nav
               v-if="showDesignRightNav"
-              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-auto px-3 py-3"
+              class="my-design-right-nav nav nav-pills flex-column flex-nowrap flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-y-auto overflow-x-hidden px-3 py-3 min-h-0"
               aria-label="建立流程"
             >
               <!-- 區塊 1：上傳檔案 -->
@@ -6845,6 +6845,14 @@ async function confirmAnswer(item) {
 .my-design-tab-right-view {
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+.my-design-right-nav {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .my-design-tab-left-view-scroll {
   scrollbar-width: none;
@@ -6882,6 +6890,9 @@ async function confirmAnswer(item) {
 .my-design-right-step-block {
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
   gap: 0;
   background-color: var(--my-color-gray-3);
   border-radius: 0.75rem;
@@ -6970,6 +6981,26 @@ async function confirmAnswer(item) {
   background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
+.my-design-right-unit-row {
+  width: 100%;
+  transition: background-color 0.15s ease;
+}
+.my-design-right-unit-row:has(> .nav-link.active) {
+  background-color: var(--my-color-white);
+}
+.my-design-right-unit-row:not(:has(> .nav-link.active)):hover,
+.my-design-right-unit-row:not(:has(> .nav-link.active)):focus-within {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-unit-row .nav-link,
+.my-design-right-unit-row .nav-link:not(.active):hover,
+.my-design-right-unit-row .nav-link:not(.active):focus-visible,
+.my-design-right-unit-row .nav-link.active,
+.my-design-right-unit-row .nav-link.active:hover,
+.my-design-right-unit-row .nav-link.active:focus,
+.my-design-right-unit-row .nav-link.active:focus-visible {
+  background-color: transparent;
+}
 .my-design-right-nav .nav-link.active,
 .my-design-right-nav .nav-link.active:hover,
 .my-design-right-nav .nav-link.active:focus,
@@ -6982,7 +7013,16 @@ async function confirmAnswer(item) {
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
   align-self: center;
-  margin-right: 0.5rem;
+  margin-right: 0;
+  background: transparent;
+}
+.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
+.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled) {
+  background: transparent;
+  color: var(--my-color-black);
+}
+.my-design-right-unit-quiz-list .nav-item {
+  width: 100%;
 }
 .my-design-right-unit-quiz-link {
   font-size: var(--my-font-size-sm);

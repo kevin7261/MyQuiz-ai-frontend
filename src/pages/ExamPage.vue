@@ -3485,12 +3485,12 @@ onActivated(() => {
           class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
         >
           <aside
-            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-auto"
+            class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-hidden"
             aria-label="題目清單"
           >
             <nav
               v-if="activeTabId"
-              class="my-design-right-nav nav nav-pills flex-column flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-auto px-3 py-3"
+              class="my-design-right-nav nav nav-pills flex-column flex-nowrap flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-y-auto overflow-x-hidden px-3 py-3 min-h-0"
               aria-label="題目清單"
             >
               <div class="my-design-right-step-block py-2">
@@ -3558,6 +3558,14 @@ onActivated(() => {
 .my-design-tab-right-view {
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
+}
+.my-design-right-nav {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .my-design-tab-left-view-scroll {
   scrollbar-width: none;
@@ -3595,6 +3603,9 @@ onActivated(() => {
 .my-design-right-step-block {
   display: flex;
   flex-direction: column;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
   gap: 0;
   background-color: var(--my-color-gray-3);
   border-radius: 0.75rem;

@@ -19,7 +19,6 @@ import {
 import { deriveRagName, generateTabId } from '../utils/rag.js';
 import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
-import TabRenameModal from '../components/TabRenameModal.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 
 defineProps({
@@ -49,11 +48,8 @@ const newBankUploadError = ref('');
 const newBankUploadZipDragOver = ref(false);
 const newBankUploadFileInputRef = ref(null);
 
-const renameRagTabModalOpen = ref(false);
-const renameRagTabDraftRagId = ref(null);
-const renameRagTabInitialName = ref('');
-const renameRagTabSaving = ref(false);
-const renameRagTabError = ref('');
+const renameTitleSaving = ref(false);
+const bankTitleBeforeEdit = ref('');
 
 const deleteRagLoading = ref(false);
 const deleteBankModalOpen = ref(false);
@@ -81,7 +77,7 @@ const showGridLoadingOverlay = computed(
 );
 
 const detailHeaderActionsDisabled = computed(
-  () => deleteRagLoading.value || renameRagTabSaving.value,
+  () => deleteRagLoading.value || renameTitleSaving.value,
 );
 
 function createBankTabUiStorageKey(personId) {
@@ -197,51 +193,38 @@ function findRagByTabId(tabId) {
   return ragList.value.find((r) => String(r.rag_tab_id ?? r.id ?? r) === id) ?? null;
 }
 
-function getRagTabNameForEdit(rag) {
-  if (!rag || typeof rag !== 'object') return '';
-  const t = rag.tab_name;
-  if (t != null && String(t).trim() !== '') return String(t).trim();
-  const r = rag.rag_name;
-  if (r != null && String(r).trim() !== '') return String(r).trim();
-  return '';
+function onBankTitleFocus() {
+  bankTitleBeforeEdit.value = selectedBankLabel.value;
 }
 
-function openRenameSelectedBank() {
-  if (renameRagTabSaving.value) return;
+async function onBankTitleBlur() {
+  if (renameTitleSaving.value) return;
+  const name = String(selectedBankLabel.value ?? '').trim();
+  if (!name) {
+    selectedBankLabel.value = bankTitleBeforeEdit.value;
+    return;
+  }
+  selectedBankLabel.value = name;
+  if (name === String(bankTitleBeforeEdit.value ?? '').trim()) return;
   const rag = findRagByTabId(selectedBankTabId.value);
   const rid = rag?.rag_id;
-  renameRagTabDraftRagId.value =
-    rid != null && String(rid).trim() !== '' ? Number(rid) : null;
-  renameRagTabInitialName.value =
-    getRagTabNameForEdit(rag) || deriveRagName(rag) || selectedBankLabel.value;
-  renameRagTabError.value = '';
-  renameRagTabModalOpen.value = true;
-}
-
-async function onRenameRagTabSave(name) {
-  if (!name) {
-    renameRagTabError.value = '請輸入名稱';
+  if (rid == null || !Number.isFinite(Number(rid)) || Number(rid) < 1) {
+    selectedBankLabel.value = bankTitleBeforeEdit.value;
+    alert(`找不到此${QUIZ_BANK_NOUN}，請重新整理頁面後再試`);
     return;
   }
-  const rid = renameRagTabDraftRagId.value;
-  if (rid == null || !Number.isFinite(rid) || rid < 1) {
-    renameRagTabError.value = `找不到此${QUIZ_BANK_NOUN}，請重新整理頁面後再試`;
-    return;
-  }
-  renameRagTabSaving.value = true;
-  renameRagTabError.value = '';
+  renameTitleSaving.value = true;
   try {
-    await apiUpdateRagTabName(rid, name);
-    const rag = findRagByTabId(selectedBankTabId.value);
+    await apiUpdateRagTabName(Number(rid), name);
     if (rag) {
       rag.tab_name = name;
     }
-    selectedBankLabel.value = name;
-    renameRagTabModalOpen.value = false;
+    bankTitleBeforeEdit.value = name;
   } catch (err) {
-    renameRagTabError.value = err.message || '更新失敗';
+    selectedBankLabel.value = bankTitleBeforeEdit.value;
+    alert(err.message || '更新失敗');
   } finally {
-    renameRagTabSaving.value = false;
+    renameTitleSaving.value = false;
   }
 }
 
@@ -558,20 +541,20 @@ watch(viewMode, (mode) => {
             返回主頁
           </button>
         </div>
-        <div class="create-exam-bank-2-detail-bar__center d-flex align-items-center justify-content-center gap-1 min-w-0">
-          <p class="my-font-lg-400 my-color-black text-truncate mb-0 text-center">
-            {{ selectedBankLabel }}
-          </p>
-          <button
-            type="button"
-            class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 p-0 flex-shrink-0"
-            title="重新命名分頁"
-            aria-label="重新命名分頁"
+        <div class="create-exam-bank-2-detail-bar__center min-w-0">
+          <input
+            v-model="selectedBankLabel"
+            type="text"
+            class="create-exam-bank-2-detail-bar__title my-font-lg-400 my-color-black text-truncate mb-0 text-center w-100 px-3 py-2 rounded-2"
+            maxlength="200"
+            autocomplete="off"
+            spellcheck="false"
+            aria-label="題庫名稱"
             :disabled="detailHeaderActionsDisabled"
-            @click="openRenameSelectedBank"
-          >
-            <i class="fa-solid fa-pen" aria-hidden="true" />
-          </button>
+            @focus="onBankTitleFocus"
+            @blur="onBankTitleBlur"
+            @keydown.enter.prevent="$event.target.blur()"
+          />
         </div>
         <div class="create-exam-bank-2-detail-bar__end">
           <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch">
@@ -579,7 +562,6 @@ watch(viewMode, (mode) => {
               type="button"
               class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless create-exam-bank-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
               data-bs-toggle="dropdown"
-              data-bs-display="static"
               aria-expanded="false"
               aria-label="題庫選單"
               :disabled="detailHeaderActionsDisabled"
@@ -738,15 +720,6 @@ watch(viewMode, (mode) => {
     </div>
   </Teleport>
 
-  <TabRenameModal
-    v-model="renameRagTabModalOpen"
-    :initial-name="renameRagTabInitialName"
-    :saving="renameRagTabSaving"
-    :error="renameRagTabError"
-    title="修改名稱"
-    @save="onRenameRagTabSave"
-  />
-
   <ConfirmDeleteModal
     v-model="deleteBankModalOpen"
     title="刪除此題庫"
@@ -888,6 +861,37 @@ watch(viewMode, (mode) => {
   max-width: 100%;
 }
 
+.create-exam-bank-2-detail-bar__title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+
+.create-exam-bank-2-detail-bar__title:hover:not(:disabled),
+.create-exam-bank-2-detail-bar__title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-3, #f5f5f5);
+}
+
+.create-exam-bank-2-detail-bar__title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.create-exam-bank-2-detail-bar__title:disabled {
+  opacity: 1;
+  color: var(--my-color-black, #000);
+  background: transparent;
+}
+
 .create-exam-bank-2-detail-bar__end {
   justify-self: end;
   min-width: 0;
@@ -902,8 +906,25 @@ watch(viewMode, (mode) => {
 }
 
 .create-exam-bank-2-bank-switch-menu {
+  display: block;
+  min-width: 10rem;
   max-height: min(60vh, 24rem);
+  overflow-x: hidden;
   overflow-y: auto;
+}
+
+.create-exam-bank-2-bank-switch-menu.show {
+  display: block !important;
+}
+
+.create-exam-bank-2-bank-switch-menu > li {
+  display: block;
+  width: 100%;
+}
+
+.create-exam-bank-2-bank-switch-menu .dropdown-item {
+  width: 100%;
+  white-space: nowrap;
 }
 
 /* 嵌入原頁：隱藏「建立測驗題庫」標題列與分頁列 */
