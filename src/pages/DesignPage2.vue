@@ -507,8 +507,8 @@ function toggleLoading() {
                       <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-wrap" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-actions { display:flex; justify-content:flex-end; padding:0 1.25rem 0.75rem; }</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-table-actions { display: flex; justify-content: flex-end; padding: 0 1.25rem 0.75rem; }" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-actions { display:flex; justify-content:flex-end; padding-bottom:0.75rem; margin-inline:-1rem; } @media (min-width:768px) { margin-inline:-1.5rem; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-table-actions { display: flex; justify-content: flex-end; padding-bottom: 0.75rem; margin-inline: -1rem; } @media (min-width: 768px) { .bank-table-actions { margin-inline: -1.5rem; } }" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
                       <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-header { display:flex; align-items:center; padding:0 1.25rem 0.5rem; }</code>
@@ -1146,7 +1146,14 @@ function toggleLoading() {
 .dp2-bank-table-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 0 1.25rem 0.75rem;
+  padding-bottom: 0.75rem;
+  margin-inline: -1rem;
+}
+
+@media (min-width: 768px) {
+  .dp2-bank-table-actions {
+    margin-inline: -1.5rem;
+  }
 }
 
 .dp2-bank-table-header {

@@ -781,7 +781,14 @@ watch(viewMode, (mode) => {
 .bank-table-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 0 1.25rem 0.75rem;
+  padding-bottom: 0.75rem;
+  margin-inline: -1rem;
+}
+
+@media (min-width: 768px) {
+  .bank-table-actions {
+    margin-inline: -1.5rem;
+  }
 }
 
 .bank-table-header {
