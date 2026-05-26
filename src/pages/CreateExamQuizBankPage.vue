@@ -16,6 +16,7 @@
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_RESPONSE_QUIZ_CONTENT,
@@ -98,8 +99,13 @@ const props = defineProps({
   tabId: { type: String, required: true },
   /** true 時右側單元／題型清單改顯示於左欄（create-exam-bank_3） */
   designSidePanelOnLeft: { type: Boolean, default: false },
+  /** create-exam-bank_3：路由前綴；有值時切換題型會同步 /:exam_id/:exam_quiz_id */
+  routeDetailBase: { type: String, default: '' },
+  /** create-exam-bank_3：URL 之 exam_quiz_id（對應 rag_quiz_id；0 或未指定則不強制選取） */
+  routeExamQuizId: { type: String, default: '' },
 });
 
+const router = useRouter();
 const slots = useSlots();
 
 const pageTitle = computed(() => '建立測驗題庫');
@@ -2449,11 +2455,37 @@ function isRagQuizRowDeleted(row) {
   return at != null && String(at).trim() !== '';
 }
 
+function unitStackRowMatchesRagUnitId(row, ragUnitId) {
+  if (!Number.isFinite(ragUnitId) || ragUnitId <= 0 || !Array.isArray(row)) return false;
+  for (const c of row) {
+    if (isRagQuizRowDeleted(c)) continue;
+    const ru = Number(c?.rag_unit_id);
+    if (Number.isFinite(ru) && ru === ragUnitId) return true;
+  }
+  return false;
+}
+
+/** unitTabOrder 與 unitSlotQuizCards 索引不一致時，以 rag_unit_id 對齊題型堆疊 */
+function unitStackIndexForPackUnitIndex(unitIndex) {
+  const i = Number(unitIndex);
+  if (!Number.isFinite(i) || i < 0) return -1;
+  const stacks = currentState.value.unitSlotQuizCards;
+  if (!Array.isArray(stacks) || stacks.length === 0) return -1;
+  const tabs = currentState.value.unitTabOrder ?? [];
+  const wantRu =
+    tabs[i]?.ragUnitDbId != null ? Number(tabs[i].ragUnitDbId) : 0;
+  if (wantRu > 0) {
+    const byRu = stacks.findIndex((row) => unitStackRowMatchesRagUnitId(row, wantRu));
+    if (byRu >= 0) return byRu;
+  }
+  return i < stacks.length ? i : -1;
+}
+
 function unitQuizCardsAtUnitIndex(unitIndex) {
   const stacks = currentState.value.unitSlotQuizCards;
-  const i = Number(unitIndex);
-  if (!Array.isArray(stacks) || !Number.isFinite(i) || i < 0 || i >= stacks.length) return [];
-  const row = stacks[i];
+  const stackIdx = unitStackIndexForPackUnitIndex(unitIndex);
+  if (!Array.isArray(stacks) || stackIdx < 0 || stackIdx >= stacks.length) return [];
+  const row = stacks[stackIdx];
   if (!Array.isArray(row)) return [];
   return row.filter((qRow) => !isRagQuizRowDeleted(qRow));
 }
@@ -2490,7 +2522,7 @@ const designRightUnitSubTabItems = computed(() => {
       kind: 'pack-unit',
       active: unitIndex === activeUnitIdx && quizItems.length === 0,
       quizItems,
-      quizQuestionCount: unitQuizStackQuestionCount(stack, unitIndex),
+      quizQuestionCount: unitQuizStackQuestionCount(stack),
     };
   });
 });
@@ -2520,6 +2552,40 @@ watch(activeTabId, () => {
   designRightUnitExpandedKeys.value = [];
 });
 
+function syncDetailRouteExamQuizId(card) {
+  const base = String(props.routeDetailBase ?? '').trim();
+  const tab = String(activeTabId.value ?? '').trim();
+  if (!base || !tab) return;
+  const rqid = card ? positiveRagQuizIdFromQuizRow(card) : null;
+  const segment = rqid != null && rqid >= 1 ? String(rqid) : '0';
+  const path = `${base}/${encodeURIComponent(tab)}/${encodeURIComponent(segment)}`;
+  if (router.currentRoute.value.path !== path) {
+    router.replace(path);
+  }
+}
+
+function applyRouteExamQuizIdSelection() {
+  const tabId = String(activeTabId.value ?? '').trim();
+  const rqid = Number(String(props.routeExamQuizId ?? '').trim());
+  if (!tabId || !Number.isFinite(rqid) || rqid < 1) return;
+  const stacks = getTabState(tabId).unitSlotQuizCards;
+  if (!Array.isArray(stacks)) return;
+  for (let ui = 0; ui < stacks.length; ui++) {
+    const row = stacks[ui];
+    if (!Array.isArray(row)) continue;
+    for (let qi = 0; qi < row.length; qi++) {
+      const card = row[qi];
+      if (isRagQuizRowDeleted(card)) continue;
+      if (positiveRagQuizIdFromQuizRow(card) === rqid) {
+        restoreBankTabUiDepth += 1;
+        selectUnitQuizTypeForUnit(ui, qi);
+        restoreBankTabUiDepth = Math.max(0, restoreBankTabUiDepth - 1);
+        return;
+      }
+    }
+  }
+}
+
 function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
   const n = packUnitCarouselCountEffective.value;
   const ui = Number(unitIndex);
@@ -2535,7 +2601,23 @@ function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
   currentState.value.activeUnitQuizTypeIndex = qi;
   ensureDesignRightUnitExpanded(ui);
   scrollActivePackUnitTabIntoView();
+  if (!isRestoringBankTabUi()) {
+    syncDetailRouteExamQuizId(cards[qi]);
+  }
 }
+
+watch(
+  () => [
+    props.routeExamQuizId,
+    activeTabId.value,
+    currentState.value.unitSlotQuizCards,
+  ],
+  () => {
+    if (isRestoringBankTabUi() || !String(props.routeDetailBase ?? '').trim()) return;
+    nextTick(() => applyRouteExamQuizIdSelection());
+  },
+  { deep: true },
+);
 
 function onDesignRightSubTabClick(item) {
   if (!item) return;
@@ -3401,13 +3483,20 @@ function unitQuizHistoryListForLlm(quizCardRow) {
   return out;
 }
 
+/** 側欄題目數：僅依題卡 follow_up／quizGenerateMode，不沿用單元 slot 出題模式（避免同單元多題型誤判） */
+function isQuizCardFollowupModeForCount(quizCardRow) {
+  if (!quizCardRow || typeof quizCardRow !== 'object') return false;
+  if (quizCardRow.quizGenerateMode === 'followup') return true;
+  if (quizCardRow.quizGenerateMode === 'normal') return false;
+  return ragQuizApiRowIsFollowUp(quizCardRow);
+}
+
 /** 右側欄：單一題型已產出之題目筆數（不含 deleted；追問整串只計 1 題） */
-function unitQuizGeneratedQuestionCount(quizCardRow, slotIndex) {
+function unitQuizGeneratedQuestionCount(quizCardRow) {
   if (!quizCardRow || typeof quizCardRow !== 'object' || isRagQuizRowDeleted(quizCardRow)) {
     return 0;
   }
-  const slot = Number(slotIndex);
-  if (isUnitQuizFollowupMode(slot, quizCardRow)) {
+  if (isQuizCardFollowupModeForCount(quizCardRow)) {
     const hasCurrent = String(quizCardRow.quiz ?? '').trim().length > 0;
     const hasHistory = unitQuizFollowupHistoryListForDisplay(quizCardRow).length > 0;
     return hasCurrent || hasHistory ? 1 : 0;
@@ -3416,12 +3505,11 @@ function unitQuizGeneratedQuestionCount(quizCardRow, slotIndex) {
 }
 
 /** 右側欄：單元內各題型題目筆數加總 */
-function unitQuizStackQuestionCount(stack, unitIndex) {
+function unitQuizStackQuestionCount(stack) {
   if (!Array.isArray(stack)) return 0;
-  const slotIndex = Number(unitIndex) + 1;
   return stack
     .filter((row) => !isRagQuizRowDeleted(row))
-    .reduce((sum, row) => sum + unitQuizGeneratedQuestionCount(row, slotIndex), 0);
+    .reduce((sum, row) => sum + unitQuizGeneratedQuestionCount(row), 0);
 }
 
 /** 將舊題幹併入歷史（重新產生前） */

@@ -7,7 +7,7 @@
  * - /exam → 測驗/工作區（HomeView，內部 currentView 為 work）
  * - /exam_2、/exam_2/:exam_id → 測驗九宮格版（work2）
  * - /create-exam-bank_2、/create-exam-bank_2/:rag_id → 建立測驗題庫九宮格版
- * - /create-exam-bank_3、/create-exam-bank_3/:rag_id → 建立測驗題庫九宮格版（同 _2）
+ * - /create-exam-bank_3、/create-exam-bank_3/:exam_id/:exam_quiz_id → 建立測驗題庫九宮格版（_3 詳情含題型深連結）
  * - /:view → 主區塊各功能（student-weakness-analysis、profile、create-exam-bank、design、design_2、manage-users 等），由 HomeView 依 view 渲染
  * - /main、/main/:view → 舊網址相容，重導向至 /exam 或 /:view
  *
@@ -95,10 +95,17 @@ const routes = [
     meta: { title: '建立測驗題庫 - MyQuiz.ai' },
   },
   {
-    path: '/create-exam-bank_3/:rag_id',
+    path: '/create-exam-bank_3/:exam_id/:exam_quiz_id',
     name: 'CreateExamBank3Detail',
     component: HomeView,
     meta: { title: '建立測驗題庫 - MyQuiz.ai' },
+  },
+  {
+    path: '/create-exam-bank_3/:rag_id',
+    redirect: (to) => ({
+      path: `/create-exam-bank_3/${encodeURIComponent(String(to.params.rag_id ?? ''))}/0`,
+      query: to.query,
+    }),
   },
   // 舊網址相容（書籤）：/main/... → 新路徑
   {

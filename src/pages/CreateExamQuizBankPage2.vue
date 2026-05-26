@@ -29,6 +29,8 @@ const props = defineProps({
   routeBase: { type: String, default: '/create-exam-bank_2' },
   /** true 時嵌入頁右側清單改顯示於左側（create-exam-bank_3） */
   sidePanelOnLeft: { type: Boolean, default: false },
+  /** true 時詳情路由為 /:exam_id/:exam_quiz_id（_3）；false 時為 /:rag_id（_2） */
+  useExamDetailRoute: { type: Boolean, default: false },
 });
 
 const UPLOAD_ALLOWED_EXTENSIONS = ['.zip'];
@@ -141,32 +143,55 @@ function ragRowIsExamBank(rag) {
   return false;
 }
 
-function applyRouteRagId() {
-  const ragId = String(route.params.rag_id ?? '').trim();
-  if (!ragId) {
+const routeBankIdFromParams = computed(() => {
+  if (props.useExamDetailRoute) {
+    return String(route.params.exam_id ?? '').trim();
+  }
+  return String(route.params.rag_id ?? '').trim();
+});
+
+const routeExamQuizIdFromParams = computed(() => {
+  if (!props.useExamDetailRoute) return '';
+  return String(route.params.exam_quiz_id ?? '').trim();
+});
+
+function bankDetailPath(bankTabId, examQuizId = '0') {
+  const id = String(bankTabId ?? '').trim();
+  if (!id) return props.routeBase;
+  if (props.useExamDetailRoute) {
+    const qid = String(examQuizId ?? '0').trim() || '0';
+    return `${props.routeBase}/${encodeURIComponent(id)}/${encodeURIComponent(qid)}`;
+  }
+  return `${props.routeBase}/${encodeURIComponent(id)}`;
+}
+
+function applyRouteBankId() {
+  const bankId = routeBankIdFromParams.value;
+  if (!bankId) {
     viewMode.value = 'grid';
     selectedBankTabId.value = '';
     selectedBankLabel.value = '';
     return;
   }
-  const item = gridItems.value.find((i) => i.tabId === ragId);
-  const rag = findRagByTabId(ragId);
-  const label = item?.label ?? ((rag ? deriveRagName(rag) : '') || ragId);
-  persistCreateBankTabSelection(ragId);
-  selectedBankTabId.value = ragId;
+  const item = gridItems.value.find((i) => i.tabId === bankId);
+  const rag = findRagByTabId(bankId);
+  const label = item?.label ?? ((rag ? deriveRagName(rag) : '') || bankId);
+  persistCreateBankTabSelection(bankId);
+  selectedBankTabId.value = bankId;
   selectedBankLabel.value = label;
   viewMode.value = 'detail';
 }
 
-function openBankDetail(tabId, label) {
+function openBankDetail(tabId, label, examQuizId = '0') {
   const id = String(tabId ?? '').trim();
   if (!id) return;
   persistCreateBankTabSelection(id);
   selectedBankTabId.value = id;
   selectedBankLabel.value = label || id;
   viewMode.value = 'detail';
-  if (String(route.params.rag_id ?? '') !== id) {
-    router.push(`${props.routeBase}/${encodeURIComponent(id)}`);
+  const target = bankDetailPath(id, examQuizId);
+  if (route.path !== target) {
+    router.push(target);
   }
 }
 
@@ -176,8 +201,10 @@ function switchBankDetail(tabId, label) {
   persistCreateBankTabSelection(id);
   selectedBankTabId.value = id;
   selectedBankLabel.value = label || id;
-  if (String(route.params.rag_id ?? '') !== id) {
-    router.push(`${props.routeBase}/${encodeURIComponent(id)}`);
+  const qid = props.useExamDetailRoute ? routeExamQuizIdFromParams.value || '0' : '';
+  const target = bankDetailPath(id, qid);
+  if (route.path !== target) {
+    router.push(target);
   }
 }
 
@@ -186,7 +213,7 @@ function backToGrid() {
   selectedBankTabId.value = '';
   selectedBankLabel.value = '';
   fetchRagList();
-  if (route.params.rag_id) {
+  if (routeBankIdFromParams.value) {
     router.push(props.routeBase);
   }
 }
@@ -415,10 +442,10 @@ async function confirmNewBankUpload() {
 }
 
 onActivated(async () => {
-  const ragId = String(route.params.rag_id ?? '').trim();
-  if (ragId) {
+  const bankId = routeBankIdFromParams.value;
+  if (bankId) {
     await fetchRagList();
-    applyRouteRagId();
+    applyRouteBankId();
     return;
   }
   if (viewMode.value === 'grid') {
@@ -427,22 +454,27 @@ onActivated(async () => {
 });
 
 watch(
-  () => route.params.rag_id,
-  async (ragId) => {
-    if (String(ragId ?? '').trim()) {
+  () => (props.useExamDetailRoute
+    ? [route.params.exam_id, route.params.exam_quiz_id]
+    : route.params.rag_id),
+  async (params) => {
+    const bankId = props.useExamDetailRoute
+      ? String(params?.[0] ?? '').trim()
+      : String(params ?? '').trim();
+    if (bankId) {
       if (ragList.value.length === 0 && !ragListLoading.value) {
         await fetchRagList();
       }
-      applyRouteRagId();
+      applyRouteBankId();
       return;
     }
-    applyRouteRagId();
+    applyRouteBankId();
   },
 );
 
 watch(ragList, () => {
-  if (route.params.rag_id) {
-    applyRouteRagId();
+  if (routeBankIdFromParams.value) {
+    applyRouteBankId();
   }
 });
 
@@ -585,6 +617,8 @@ watch(viewMode, (mode) => {
         :key="selectedBankTabId"
         :tab-id="tabId"
         :design-side-panel-on-left="sidePanelOnLeft"
+        :route-detail-base="useExamDetailRoute ? routeBase : ''"
+        :route-exam-quiz-id="routeExamQuizIdFromParams"
         class="create-exam-bank-2-embedded flex-grow-1 min-h-0"
       >
         <template v-if="sidePanelOnLeft" #side-panel-header>
