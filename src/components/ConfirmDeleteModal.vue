@@ -59,7 +59,7 @@ function onConfirm() {
           <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2"
               :disabled="deleting"
               @click="close"
             >
@@ -67,7 +67,7 @@ function onConfirm() {
             </button>
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2"
               :disabled="deleting"
               :aria-busy="deleting"
               @click="onConfirm"

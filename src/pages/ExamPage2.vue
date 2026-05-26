@@ -474,7 +474,7 @@ watch(
         >
           <button
             type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3"
+            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3"
             :disabled="createExamLoading"
             :aria-busy="createExamLoading"
             @click="addNewExam"
@@ -490,7 +490,7 @@ watch(
           <div class="bank-table-actions">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
               :disabled="createExamLoading"
               :aria-busy="createExamLoading"
               @click="addNewExam"
@@ -504,7 +504,7 @@ watch(
           <div class="bank-table-header">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless ps-0 pe-2 py-1"
+              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1"
               :aria-label="sortOrder === 'asc' ? '升冪排序，點擊改為降冪' : '降冪排序，點擊改為升冪'"
               @click="toggleSort"
             >
@@ -542,7 +542,7 @@ watch(
         <div class="exam-2-detail-bar__start">
           <button
             type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 py-1 flex-shrink-0"
+            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0"
             aria-label="返回主頁"
             :disabled="detailHeaderActionsDisabled"
             @click="backToGrid"
@@ -804,5 +804,12 @@ watch(
 
 .exam-2-embedded :deep(.my-rag-tabs-bar) {
   display: none !important;
+}
+
+/* 嵌入原頁：子元件 pill 若仍為 px-3，與九宮格版一致改為 px-4 */
+.exam-2-embedded :deep(button.btn.rounded-pill.px-3),
+.exam-2-embedded :deep(button.btn.rounded-2.px-3) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 </style>

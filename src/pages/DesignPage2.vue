@@ -398,7 +398,7 @@ function toggleLoading() {
                   </p>
                   <header class="design-page-2-detail-bar flex-shrink-0 px-2 py-3 my-bgcolor-gray-4 border-bottom rounded-top">
                     <div class="design-page-2-detail-bar__start">
-                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-3 py-1">
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-1">
                         <i class="fa-solid fa-arrow-left" aria-hidden="true" />
                         返回主頁
                       </button>
@@ -454,7 +454,7 @@ function toggleLoading() {
 
                       <!-- 新增按鈕列（靠右） -->
                       <div class="dp2-bank-table-actions">
-                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2" disabled>
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
                           新增試卷
                         </button>
@@ -463,7 +463,7 @@ function toggleLoading() {
                       <!-- 表頭：dot spacer ＋ 名稱排序 -->
                       <div class="dp2-bank-table-header">
                         <span class="dp2-bank-table-header__dot-spacer" aria-hidden="true" />
-                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless ps-0 pe-2 py-1" disabled>
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1">
                           名稱
                           <i class="fa-solid fa-chevron-up" aria-hidden="true" />
                         </button>
@@ -472,7 +472,7 @@ function toggleLoading() {
                       <!-- 列表 -->
                       <ul class="dp2-bank-list">
                         <li>
-                          <button type="button" class="dp2-bank-list-row" disabled>
+                          <button type="button" class="dp2-bank-list-row">
                             <span class="dp2-bank-list-row__dot-col" />
                             <span class="dp2-bank-list-row__label my-font-md-400 my-color-black">範例試卷 A</span>
                             <span class="dp2-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
@@ -480,7 +480,7 @@ function toggleLoading() {
                           </button>
                         </li>
                         <li>
-                          <button type="button" class="dp2-bank-list-row" disabled>
+                          <button type="button" class="dp2-bank-list-row">
                             <span class="dp2-bank-list-row__dot-col" aria-label="試卷用題庫">
                               <span class="rounded-circle d-inline-block my-bgcolor-green dp2-bank-list-row__exam-dot" />
                             </span>
@@ -490,7 +490,7 @@ function toggleLoading() {
                           </button>
                         </li>
                         <li>
-                          <button type="button" class="dp2-bank-list-row" disabled>
+                          <button type="button" class="dp2-bank-list-row">
                             <span class="dp2-bank-list-row__dot-col" />
                             <span class="dp2-bank-list-row__label my-font-md-400 my-color-black">未命名試卷</span>
                             <i class="fa-solid fa-chevron-right dp2-bank-list-row__chevron" aria-hidden="true" />
@@ -593,66 +593,166 @@ function toggleLoading() {
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">按鈕</div>
                   <div class="d-flex flex-column gap-4">
 
+                    <!-- 小：my-font-sm-400 -->
                     <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">返回主頁（sm · pill · transparent-borderless · fa-arrow-left）</p>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-3 py-1">
-                          <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-                          返回主頁
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-3 py-1</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-3 py-1" :on-light-bg="false" />
+                      <div class="my-color-gray-4 my-font-sm-400 mb-2">小（my-font-sm-400）</div>
+                      <div class="d-flex flex-column gap-3">
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">表頭排序</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 align-self-start">
+                              名稱
+                              <i class="fa-solid fa-chevron-up" aria-hidden="true" />
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1" :on-light-bg="false" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">返回主頁</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0 align-self-start">
+                              <i class="fa-solid fa-arrow-left" aria-hidden="true" />
+                              返回主頁
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0" :on-light-bg="false" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
+                    <!-- 中：my-font-md-400 -->
                     <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">取消（md · pill · transparent-borderless）</p>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2">
-                          取消
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2" :on-light-bg="false" />
+                      <div class="my-color-gray-4 my-font-sm-400 mb-2">中（my-font-md-400）</div>
+                      <div class="d-flex flex-column gap-3">
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">列表新增</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 align-self-start">
+                              <i class="fa-solid fa-plus" aria-hidden="true" />
+                              新增試卷
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2" :on-light-bg="false" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">上傳取消</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2 align-self-start">
+                              取消
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2" :on-light-bg="false" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">刪除確認取消</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2 align-self-start">
+                              取消
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2" :on-light-bg="false" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">確定上傳</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2 align-self-start">
+                              確定上傳
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2" :on-light-bg="false" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">刪除確認</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2 align-self-start">
+                              刪除
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2" :on-light-bg="false" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
+                    <!-- 大：my-font-lg-400 -->
                     <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">確定上傳（md · pill · my-button-white）</p>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2">
-                          確定上傳
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2" :on-light-bg="false" />
+                      <div class="my-color-gray-4 my-font-sm-400 mb-2">大（my-font-lg-400）</div>
+                      <div class="d-flex flex-column gap-3">
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">空清單新增</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3 align-self-start">
+                              <i class="fa-solid fa-plus" aria-hidden="true" />
+                              新增試卷
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3" :on-light-bg="false" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
+                    <!-- 圓形／列表列／關閉 -->
                     <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">圓形選單（rounded-circle · transparent-borderless · w/h 2.375rem · fa-bars）</p>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button type="button" class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless design-page-2-menu-btn lh-1" aria-label="選單">
-                          <i class="fa-solid fa-bars" aria-hidden="true" />
-                        </button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless lh-1</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless lh-1" :on-light-bg="false" />
+                      <div class="my-color-gray-4 my-font-sm-400 mb-2">圓形／列表列／關閉</div>
+                      <div class="d-flex flex-column gap-3">
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">頂列選單</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless design-page-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret align-self-start" aria-label="選單">
+                              <i class="fa-solid fa-bars" aria-hidden="true" />
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-circle … *-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless exam-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret" :on-light-bg="false" />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">Modal 關閉（Bootstrap btn-close · modal-header 右側）</p>
-                      <div class="d-flex flex-column flex-md-row align-items-stretch align-items-md-center gap-2 gap-md-3 w-100">
-                        <button type="button" class="btn-close flex-shrink-0" aria-label="關閉" disabled></button>
-                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 flex-grow-1">
-                          <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn-close</code>
-                          <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="btn-close" :on-light-bg="false" />
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">列表列</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100" style="max-width: 28rem;">
+                            <button type="button" class="dp2-bank-list-row w-100">
+                              <span class="dp2-bank-list-row__label my-font-md-400 my-color-black">範例試卷</span>
+                              <span class="dp2-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
+                              <i class="fa-solid fa-chevron-right dp2-bank-list-row__chevron" aria-hidden="true" />
+                            </button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="bank-list-row" :on-light-bg="false" />
+                            </div>
+                          </div>
+                        </div>
+                        <div>
+                          <p class="my-font-sm-400 my-color-black mb-2">Modal 關閉</p>
+                          <div class="design-page-2-btn-spec d-flex flex-column gap-2 w-100">
+                            <button type="button" class="btn-close flex-shrink-0 align-self-start" aria-label="關閉"></button>
+                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn-close</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn-close" :on-light-bg="false" />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -803,7 +903,7 @@ function toggleLoading() {
                     <div class="modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4">
                       <div class="modal-header border-bottom-0 p-0">
                         <h5 class="modal-title my-color-black mb-0">上傳檔案（靜態預覽）</h5>
-                        <button type="button" class="btn-close" aria-label="關閉" disabled></button>
+                        <button type="button" class="btn-close" aria-label="關閉"></button>
                       </div>
                       <div class="modal-body min-w-0 d-flex flex-column gap-4 p-0">
                         <div>
@@ -1193,6 +1293,23 @@ function toggleLoading() {
 .design-page-2-detail-bar__end { justify-self: end; min-width: 0; }
 .design-page-2-detail-bar__menu-btn,
 .design-page-2-menu-btn { width: 2.375rem; height: 2.375rem; min-width: 2.375rem; min-height: 2.375rem; padding: 0; }
+
+/* 按鈕 tab：黑框 class 列，複製鈕固定右上 */
+.design-page-2-btn-spec .my-design-swatch-row {
+  position: relative;
+  align-items: flex-start;
+  padding-right: calc(1rem + 32px + 0.25rem);
+}
+.design-page-2-btn-spec .my-design-swatch-row > code {
+  min-width: 0;
+  width: 100%;
+}
+.design-page-2-btn-spec .my-design-swatch-row :deep(.my-design-page-copy-btn) {
+  position: absolute;
+  top: 0.5rem;
+  right: 1rem;
+  margin: 0;
+}
 
 /* 下拉選單 */
 .design-page-2-switch-menu { min-width: 10rem; max-height: min(60vh, 24rem); overflow-x: hidden; overflow-y: auto; }
