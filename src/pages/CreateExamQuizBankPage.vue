@@ -2484,10 +2484,11 @@ const designRightUnitSubTabItems = computed(() => {
       forExam: isRagQuizMarkedForExam(qRow),
       followup: isUnitQuizFollowupMode(unitIndex + 1, qRow),
     }));
+    const unitTab = (currentState.value.unitTabOrder ?? [])[unitIndex];
     return {
       key: `pack-unit-${item.index}-${item.label}`,
       label: String(item.label ?? '').trim() || `單元 ${Number(item.index) + 1}`,
-      unitTypeLabel: packUnitTypeDisplayLabel(packUnitTypeAt(item.index)),
+      unitTypeLabel: packUnitTypeDisplayLabel(unitTab?.unitType ?? packUnitTypeAt(unitIndex)),
       index: item.index,
       kind: 'pack-unit',
       active: unitIndex === activeUnitIdx && quizItems.length === 0,
@@ -6863,8 +6864,7 @@ async function confirmAnswer(item) {
                         </span>
                         <span class="my-design-right-unit-row-label flex-grow-1 min-w-0 text-start text-break">
                           {{ item.label }}<span
-                            v-if="!hasBuiltRagSummary || !hasUnitSubTabs"
-                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2"
+                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2 flex-shrink-0"
                           >{{ item.unitTypeLabel }}</span>
                         </span>
                       </div>
