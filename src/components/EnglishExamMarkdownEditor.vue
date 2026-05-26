@@ -38,6 +38,8 @@ const props = defineProps({
   previewDesignDarkEmbedded: { type: Boolean, default: false },
   /** 對應外層 <label for="…">，維持無障礙關聯 */
   textareaId: { type: String, default: 'english-bank-paste-text' },
+  /** 編輯模式：EasyMDE／CodeMirror 使用 Google Sans Code（出題／批改規則 Modal） */
+  promptCodeFont: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue']);
@@ -283,7 +285,10 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="english-exam-md-editor-root min-w-0">
+  <div
+    class="english-exam-md-editor-root min-w-0"
+    :class="{ 'english-exam-md-editor-root--prompt-code-font': promptCodeFont }"
+  >
     <!-- 唯讀讀入／已建置：只顯示預覽 -->
     <template v-if="previewOnly">
       <div
@@ -407,6 +412,11 @@ onBeforeUnmount(() => {
   -webkit-overflow-scrolling: touch;
   scrollbar-gutter: stable;
 }
+.english-exam-md-editor-root--prompt-code-font :deep(.CodeMirror),
+.english-exam-md-editor-root--prompt-code-font :deep(.CodeMirror pre),
+.english-exam-md-editor-root--prompt-code-font :deep(.CodeMirror-line) {
+  font-family: var(--my-font-family-code);
+}
 
 /* 唯讀預覽：高度隨內容伸縮，不設 max-height（出題／批改規則等長文一次看完） */
 .english-exam-md-preview-panel--surface {
@@ -461,6 +471,25 @@ onBeforeUnmount(() => {
   color: var(--my-color-white);
   text-decoration: none;
   outline: none;
+}
+
+/* 出題／批改規則黑底預覽：Google Sans Code（與 Design 稿頁 prompt 區一致） */
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body,
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-empty,
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-more-btn {
+  font-family: var(--my-font-family-code);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h1),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h2),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h3),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(p),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(li),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(td),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(th),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(pre),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(code),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(blockquote) {
+  font-family: inherit;
 }
 
 /* Design 頁黑底示範列：唯讀 Markdown 內嵌元素字色／區塊對比 */

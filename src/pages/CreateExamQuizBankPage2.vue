@@ -21,6 +21,7 @@ import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
+import { persistCreateBankRagTabSelection } from '../utils/createBankTabUiStorage.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -30,7 +31,6 @@ const props = defineProps({
   sidePanelOnLeft: { type: Boolean, default: false },
 });
 
-const CREATE_BANK_TAB_UI_STORAGE_PREFIX = 'myquiz:createBankTabUI:v1:';
 const UPLOAD_ALLOWED_EXTENSIONS = ['.zip'];
 const UPLOAD_ACCEPT_ATTR = UPLOAD_ALLOWED_EXTENSIONS.join(',');
 const UPLOAD_MAX_FILE_BYTES = 50 * 1000 * 1000;
@@ -100,26 +100,10 @@ const detailHeaderActionsDisabled = computed(
   () => deleteRagLoading.value || renameTitleSaving.value,
 );
 
-function createBankTabUiStorageKey(personId) {
-  const p = String(personId ?? '').trim();
-  return `${CREATE_BANK_TAB_UI_STORAGE_PREFIX}${p || 'anon'}`;
-}
-
 function persistCreateBankTabSelection(ragTabId) {
   const personId = getPersonId(authStore);
   if (!personId || !ragTabId) return;
-  try {
-    sessionStorage.setItem(
-      createBankTabUiStorageKey(personId),
-      JSON.stringify({
-        rag_tab_id: String(ragTabId),
-        unit_tab_id: '',
-        quiz_type_index: 0,
-      }),
-    );
-  } catch {
-    /* ignore quota / private mode */
-  }
+  persistCreateBankRagTabSelection(personId, ragTabId);
 }
 
 function ragSubtitle(rag) {
@@ -854,7 +838,7 @@ watch(viewMode, (mode) => {
 
 .create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
 }
 
 .create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar {
@@ -863,15 +847,19 @@ watch(viewMode, (mode) => {
 }
 
 .create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-track {
-  background: var(--my-scrollbar-track);
+  background: var(--my-color-white);
   border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 
 .create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb {
   background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+
+.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-corner {
+  background: var(--my-color-white);
 }
 
 .create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb:hover {

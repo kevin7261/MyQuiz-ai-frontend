@@ -107,7 +107,7 @@
 .my-right-view-scroll--visible {
   overflow: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
 }
 
 .my-right-view-scroll--visible::-webkit-scrollbar {
@@ -116,15 +116,19 @@
 }
 
 .my-right-view-scroll--visible::-webkit-scrollbar-track {
-  background: var(--my-scrollbar-track);
+  background: var(--my-color-white);
   border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 
 .my-right-view-scroll--visible::-webkit-scrollbar-thumb {
   background-color: var(--my-scrollbar-thumb);
   background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
   border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+
+.my-right-view-scroll--visible::-webkit-scrollbar-corner {
+  background: var(--my-color-white);
 }
 
 .my-right-view-scroll--visible::-webkit-scrollbar-thumb:hover {

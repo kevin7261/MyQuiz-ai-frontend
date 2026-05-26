@@ -991,6 +991,27 @@ code {
 .my-design--side-panel-left .my-rag-unit-type-text-scroll {
   background-color: var(--my-color-white) !important;
 }
+/* create-exam-bank_3：白底區捲軸軌道（track） */
+.my-design--side-panel-left .my-design-tab-left-view-scroll.my-design-tab-left-view-scroll--show-scrollbar,
+.my-design-tab-left-view--white-canvas.my-design-tab-left-view-scroll--show-scrollbar,
+.my-design--side-panel-left .my-rag-unit-type-text-scroll {
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
+}
+.my-design--side-panel-left .my-design-tab-left-view-scroll.my-design-tab-left-view-scroll--show-scrollbar::-webkit-scrollbar-track,
+.my-design-tab-left-view--white-canvas.my-design-tab-left-view-scroll--show-scrollbar::-webkit-scrollbar-track,
+.my-design--side-panel-left .my-rag-unit-type-text-scroll::-webkit-scrollbar-track {
+  background: var(--my-color-white);
+}
+.my-design--side-panel-left .my-design-tab-left-view-scroll.my-design-tab-left-view-scroll--show-scrollbar::-webkit-scrollbar-corner,
+.my-design-tab-left-view--white-canvas.my-design-tab-left-view-scroll--show-scrollbar::-webkit-scrollbar-corner,
+.my-design--side-panel-left .my-rag-unit-type-text-scroll::-webkit-scrollbar-corner {
+  background: var(--my-color-white);
+}
+.my-design--side-panel-left .my-design-tab-left-view-scroll.my-design-tab-left-view-scroll--show-scrollbar::-webkit-scrollbar-thumb,
+.my-design-tab-left-view--white-canvas.my-design-tab-left-view-scroll--show-scrollbar::-webkit-scrollbar-thumb,
+.my-design--side-panel-left .my-rag-unit-type-text-scroll::-webkit-scrollbar-thumb {
+  border-color: var(--my-color-white);
+}
 .my-design-tab-left-view-scroll {
   min-height: 0;
   scrollbar-width: thin;
@@ -1219,7 +1240,7 @@ code {
 .english-exam-md-preview-panel--design-dark .english-exam-md-preview-body,
 .english-exam-md-preview-panel--design-dark .english-exam-md-preview-empty,
 .english-exam-md-preview-panel--design-dark .english-exam-md-preview-more-btn {
-  font-family: var(--my-font-family-code);
+  font-family: var(--my-font-family-code) !important;
 }
 
 /* Design 08 下拉等：class 示範列淺灰底深字（勿再疊 my-bgcolor-black） */

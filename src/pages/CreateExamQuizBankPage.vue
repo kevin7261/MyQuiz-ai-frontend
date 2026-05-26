@@ -89,6 +89,10 @@ import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
+import {
+  readCreateBankTabUiPersisted,
+  writeCreateBankTabUiPersisted,
+} from '../utils/createBankTabUiStorage.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -144,12 +148,9 @@ const renameRagTabDraftRagId = ref(null);
 const renameRagTabInitialName = ref('');
 const renameRagTabSaving = ref(false);
 const renameRagTabError = ref('');
-/** 題型 sub-tab 更名（PUT /rag/tab/unit/quiz/quiz-name） */
-const renameUnitQuizModalOpen = ref(false);
-const renameUnitQuizDraftRagQuizId = ref(null);
-const renameUnitQuizInitialName = ref('');
+/** 題型名稱 inline 編輯（PUT /rag/tab/unit/quiz/quiz-name；對齊題庫名稱 blur 儲存） */
 const renameUnitQuizSaving = ref(false);
-const renameUnitQuizError = ref('');
+const unitQuizTitleBeforeEdit = ref('');
 /** POST build-rag-zip 成功後：Bootstrap Modal「單元建立完成」 */
 const packBuildSuccessModalOpen = ref(false);
 /** 建置完成後：唯讀單元屬性 Modal */
@@ -180,48 +181,22 @@ const ragTabExamHintByTabId = ref({});
 const { getTabState, currentState, isNewTabId, tabStateMap } = useRagTabState(activeTabId, newTabIds, ragList, authStore);
 
 /** 重新整理後還原主 tab／單元子分頁／題型子分頁（sessionStorage，依使用者分鍵） */
-const CREATE_BANK_TAB_UI_STORAGE_PREFIX = 'myquiz:createBankTabUI:v1:';
+let restoreBankTabUiDepth = 0;
 
-function createBankTabUiStorageKey(personId) {
-  const p = String(personId ?? '').trim();
-  return `${CREATE_BANK_TAB_UI_STORAGE_PREFIX}${p || 'anon'}`;
+function isRestoringBankTabUi() {
+  return restoreBankTabUiDepth > 0;
 }
 
-function readCreateBankTabUiPersisted(personId) {
-  try {
-    const raw = sessionStorage.getItem(createBankTabUiStorageKey(personId));
-    if (!raw) return null;
-    const o = JSON.parse(raw);
-    if (!o || typeof o !== 'object') return null;
-    return {
-      rag_tab_id: o.rag_tab_id != null ? String(o.rag_tab_id) : '',
-      unit_tab_id: o.unit_tab_id != null ? String(o.unit_tab_id) : '',
-      quiz_type_index: Number(o.quiz_type_index) || 0,
-      rag_unit_id:
-        o.rag_unit_id != null && String(o.rag_unit_id).trim() !== ''
-          ? Number(o.rag_unit_id)
-          : 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeCreateBankTabUiPersisted(personId, payload) {
-  try {
-    sessionStorage.setItem(
-      createBankTabUiStorageKey(personId),
-      JSON.stringify({
-        v: 1,
-        rag_tab_id: payload.rag_tab_id,
-        unit_tab_id: payload.unit_tab_id,
-        quiz_type_index: payload.quiz_type_index,
-        rag_unit_id: payload.rag_unit_id,
-      })
-    );
-  } catch {
-    /* private mode / quota */
-  }
+function willRestoreBankTabUiForTab(tabId) {
+  const personId = getPersonId(authStore);
+  const id = String(tabId ?? '').trim();
+  if (!personId || !id) return false;
+  const persisted = readCreateBankTabUiPersisted(personId);
+  if (!persisted || String(persisted.rag_tab_id) !== id) return false;
+  return (
+    !!String(persisted.unit_tab_id ?? '').trim()
+    || Number(persisted.rag_unit_id) > 0
+  );
 }
 
 /** 題型「先前出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
@@ -337,6 +312,7 @@ function persistCreateBankTabUiSelection() {
     unit_tab_id: activeUid,
     quiz_type_index: Number(state.activeUnitQuizTypeIndex ?? 0) || 0,
     rag_unit_id: Number.isFinite(ru) ? ru : 0,
+    design_right_unit_expanded: [...designRightUnitExpandedKeys.value],
   });
 }
 
@@ -372,6 +348,8 @@ function applyPersistedUnitSubTabsIfActive(tabId) {
   if (!personId) return;
   const persisted = readCreateBankTabUiPersisted(personId);
   if (!persisted || String(persisted.rag_tab_id) !== id) return;
+
+  restoreBankTabUiDepth += 1;
   const state = getTabState(id);
   const tabs = state.unitTabOrder ?? [];
   const resolvedUnit = resolvePersistedUnitTabId(tabs, persisted);
@@ -379,8 +357,15 @@ function applyPersistedUnitSubTabsIfActive(tabId) {
     state.activeUnitTabId = resolvedUnit;
   }
   const qiPersist = Number(persisted.quiz_type_index);
-  nextTick(() => {
-    if (String(activeTabId.value ?? '').trim() !== id) return;
+  const expandedPersist = Array.isArray(persisted.design_right_unit_expanded)
+    ? persisted.design_right_unit_expanded.map(String)
+    : [];
+
+  const finishRestore = () => {
+    if (String(activeTabId.value ?? '').trim() !== id) {
+      restoreBankTabUiDepth = Math.max(0, restoreBankTabUiDepth - 1);
+      return;
+    }
     const s = getTabState(id);
     const tabsNow = s.unitTabOrder ?? [];
     const activeId = String(s.activeUnitTabId ?? '');
@@ -393,7 +378,15 @@ function applyPersistedUnitSubTabsIfActive(tabId) {
     if (!Number.isFinite(qi) || qi < 0 || qi >= cards.length) qi = 0;
     s.activeUnitQuizTypeIndex = qi;
     syncPackUnitIndexFromActiveUnitTab();
-  });
+    if (expandedPersist.length > 0) {
+      designRightUnitExpandedKeys.value = expandedPersist;
+    } else if (slotIdx >= 0) {
+      ensureDesignRightUnitExpanded(slotIdx);
+    }
+    restoreBankTabUiDepth = Math.max(0, restoreBankTabUiDepth - 1);
+  };
+
+  nextTick(finishRestore);
 }
 
 const zipFileInputAccept = UPLOAD_ACCEPT_ATTR;
@@ -1205,8 +1198,11 @@ watch(activeTabId, () => {
 });
 
 watch(hasBuiltRagSummary, (built) => {
+  if (!built) return;
+  const tab = String(activeTabId.value ?? '').trim();
+  if (willRestoreBankTabUiForTab(tab) || isRestoringBankTabUi()) return;
   activePackUnitIndex.value = 0;
-  if (built) syncActiveUnitTabFromPackUnitCarousel();
+  syncActiveUnitTabFromPackUnitCarousel();
 });
 
 watch(activePackUnitGi, () => {
@@ -1254,6 +1250,7 @@ watch(activePackUnitGi, syncActiveUnitTabFromPackUnitCarousel, { flush: 'post' }
 watch(
   () => (hasBuiltRagSummary.value ? currentState.value.unitTabOrder : null),
   () => {
+    if (isRestoringBankTabUi()) return;
     syncActiveUnitTabFromPackUnitCarousel();
   },
   { deep: true, flush: 'post' },
@@ -2622,7 +2619,9 @@ watch(activeUnitQuizCards, () => {
 
 watch(
   () => currentState.value.activeUnitTabId,
-  () => {
+  (newId, oldId) => {
+    if (isRestoringBankTabUi()) return;
+    if (String(newId ?? '') === String(oldId ?? '')) return;
     currentState.value.activeUnitQuizTypeIndex = 0;
   }
 );
@@ -3673,11 +3672,12 @@ watch(
     activeTabId,
     () => currentState.value.activeUnitTabId,
     () => currentState.value.activeUnitQuizTypeIndex,
+    designRightUnitExpandedKeys,
   ],
   () => {
     persistCreateBankTabUiSelection();
   },
-  { flush: 'post' }
+  { flush: 'post', deep: true }
 );
 
 async function refreshUnitSubTabsFromApi(tabId) {
@@ -3984,50 +3984,65 @@ async function onRenameRagTabSave(name) {
   }
 }
 
-function openRenameUnitQuizTab(qi) {
-  const cards = activeUnitQuizCards.value;
-  const row = Array.isArray(cards) ? cards[qi] : null;
-  const rqid = row ? positiveRagQuizIdFromQuizRow(row) : null;
-  if (rqid == null) return;
-  renameUnitQuizDraftRagQuizId.value = rqid;
-  renameUnitQuizInitialName.value = String(row?.quizName ?? '').trim();
-  renameUnitQuizError.value = '';
-  renameUnitQuizModalOpen.value = true;
+const unitQuizTitleInputDisabled = computed(
+  () =>
+    !activeUnitQuizCard.value
+    || positiveRagQuizIdFromQuizRow(activeUnitQuizCard.value) == null
+    || !!getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading
+    || renameUnitQuizSaving.value
+    || deleteUnitQuizLoading.value
+    || deleteRagLoading.value
+    || renameRagTabSaving.value,
+);
+
+function onUnitQuizTitleInput(e) {
+  const card = activeUnitQuizCard.value;
+  if (!card) return;
+  card.quizName = e.target.value;
 }
 
-async function onRenameUnitQuizSave(name) {
-  if (!name || !String(name).trim()) {
-    renameUnitQuizError.value = '請輸入名稱';
+function onUnitQuizTitleFocus() {
+  const card = activeUnitQuizCard.value;
+  unitQuizTitleBeforeEdit.value = String(card?.quizName ?? '').trim();
+}
+
+async function onUnitQuizTitleBlur() {
+  if (renameUnitQuizSaving.value) return;
+  const card = activeUnitQuizCard.value;
+  if (!card) return;
+  const name = String(card.quizName ?? '').trim();
+  if (!name) {
+    card.quizName = unitQuizTitleBeforeEdit.value || DEFAULT_UNIT_QUIZ_DISPLAY_NAME;
     return;
   }
-  const rqid = renameUnitQuizDraftRagQuizId.value;
+  card.quizName = name;
+  if (name === String(unitQuizTitleBeforeEdit.value ?? '').trim()) return;
+
+  const rqid = positiveRagQuizIdFromQuizRow(card);
   if (rqid == null || !Number.isFinite(rqid) || rqid < 1) {
-    renameUnitQuizError.value = '找不到此題型，請重新整理頁面後再試';
+    card.quizName = unitQuizTitleBeforeEdit.value;
+    alert('找不到此題型，請重新整理頁面後再試');
     return;
   }
   const personId = getPersonId(authStore);
   if (!personId) {
-    renameUnitQuizError.value = '請先登入';
+    card.quizName = unitQuizTitleBeforeEdit.value;
+    alert('請先登入');
     return;
   }
   renameUnitQuizSaving.value = true;
-  renameUnitQuizError.value = '';
   try {
     const data = await apiUpdateRagQuizName(
-      { rag_quiz_id: rqid, quiz_name: String(name).trim() },
-      personId
+      { rag_quiz_id: rqid, quiz_name: name },
+      personId,
     );
     const resolved = String(data?.quiz_name ?? name).trim();
-    const si = activeUnitSlotIndex.value;
-    const stack = currentState.value.unitSlotQuizCards?.[si - 1];
-    if (Array.isArray(stack)) {
-      const hit = stack.find((c) => positiveRagQuizIdFromQuizRow(c) === rqid);
-      if (hit && resolved) hit.quizName = resolved;
-    }
+    if (resolved) card.quizName = resolved;
+    unitQuizTitleBeforeEdit.value = resolved || name;
     await fetchRagList({ silent: true });
-    renameUnitQuizModalOpen.value = false;
   } catch (err) {
-    renameUnitQuizError.value = err.message || '更新失敗';
+    card.quizName = unitQuizTitleBeforeEdit.value;
+    alert(err.message || '更新失敗');
   } finally {
     renameUnitQuizSaving.value = false;
   }
@@ -5122,14 +5137,6 @@ async function confirmAnswer(item) {
       @save="onRenameRagTabSave"
     />
     <TabRenameModal
-      v-model="renameUnitQuizModalOpen"
-      :initial-name="renameUnitQuizInitialName"
-      :saving="renameUnitQuizSaving"
-      :error="renameUnitQuizError"
-      title="修改題型"
-      @save="onRenameUnitQuizSave"
-    />
-    <TabRenameModal
       v-model="renamePackUnitModalOpen"
       :initial-name="renamePackUnitInitialName"
       :saving="false"
@@ -5368,6 +5375,7 @@ async function confirmAnswer(item) {
                 v-model="bankPromptEditModalDraft"
                 :textarea-id="`bank-prompt-edit-${bankPromptEditModalKind}-${activeUnitSlotIndex}`"
                 :disabled="bankPromptEditModalSavingDisabled"
+                prompt-code-font
               />
             </div>
             <div
@@ -6398,28 +6406,33 @@ async function confirmAnswer(item) {
               >
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                   <div
+                    v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
+                    class="w-100 min-w-0 mb-3"
+                    role="heading"
+                    aria-level="3"
+                  >
+                    <input
+                      :value="String(activeUnitQuizCard.quizName ?? '')"
+                      type="text"
+                      class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start w-100 px-0 py-2 rounded-2"
+                      maxlength="200"
+                      autocomplete="off"
+                      spellcheck="false"
+                      aria-label="題型名稱"
+                      :disabled="unitQuizTitleInputDisabled"
+                      @input="onUnitQuizTitleInput"
+                      @focus="onUnitQuizTitleFocus"
+                      @blur="onUnitQuizTitleBlur"
+                      @keydown.enter.prevent="$event.target.blur()"
+                    />
+                  </div>
+                  <div
+                    v-else
                     class="d-inline-flex align-items-center gap-2 flex-nowrap min-w-0 max-w-100 mb-3"
                     role="heading"
                     aria-level="3"
                   >
                     <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0 min-w-0">{{ quizTypeTabLabel(activeUnitQuizCard) }}</span>
-                    <button
-                      v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
-                      type="button"
-                      class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 flex-shrink-0"
-                      title="重新命名題型"
-                      aria-label="重新命名題型"
-                      :disabled="
-                        getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                        || renameUnitQuizSaving
-                        || deleteUnitQuizLoading
-                        || deleteRagLoading
-                        || renameRagTabSaving
-                      "
-                      @click="openRenameUnitQuizTab(activeUnitQuizTypeIdxResolved)"
-                    >
-                      <i class="fa-solid fa-pen" aria-hidden="true" />
-                    </button>
                   </div>
                   <div
                     class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
@@ -7562,6 +7575,34 @@ async function confirmAnswer(item) {
 .my-design-pack-unit-section > .my-font-sm-400.my-color-gray-1.mb-2 {
   white-space: nowrap;
 }
+/* 題型名稱：inline 編輯（對齊 create-exam-bank-2-detail-bar__title） */
+.my-design-unit-quiz-type-title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+.my-design-unit-quiz-type-title:hover:not(:disabled),
+.my-design-unit-quiz-type-title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-3, #f5f5f5);
+}
+.my-design-unit-quiz-type-title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+.my-design-unit-quiz-type-title:disabled {
+  opacity: 1;
+  color: var(--my-color-black, #000);
+  background: transparent;
+}
 /* 黑底區右上編輯：白 icon、小圓鈕（對齊 sm 標題列） */
 .my-design-quiz-question-prompt-block__edit-btn,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn) {
@@ -7611,6 +7652,11 @@ async function confirmAnswer(item) {
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
   color: var(--my-color-white);
+  font-family: var(--my-font-family-code);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-more-btn),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-more-btn) {
+  font-family: var(--my-font-family-code);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
@@ -7631,6 +7677,7 @@ async function confirmAnswer(item) {
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th) {
   color: var(--my-color-white);
+  font-family: inherit;
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body a) {
