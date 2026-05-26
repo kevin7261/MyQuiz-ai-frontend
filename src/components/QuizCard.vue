@@ -1,7 +1,8 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
 import QuizHistoryModal from './QuizHistoryModal.vue';
+import QuizHistoryPanel from './QuizHistoryPanel.vue';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 /**
@@ -75,10 +76,17 @@ const props = defineProps({
   examQuizHistoryOpenAllowed: { type: Boolean, default: true },
   /** 稿頁：批改規則改按鈕開 Modal 編輯（由父層提供 Modal；本卡僅 emit open-grading-prompt-edit） */
   gradingPromptInModal: { type: Boolean, default: false },
-  /** 稿頁：提示／參考答案按鈕置於「答案」標題列右側，以 Modal 顯示；不顯示作答字數 */
+  /** 稿頁：「答案」標題列改為 答案／提示／參考答案 tab 內嵌（不開 Modal） */
   hintReferenceInModal: { type: Boolean, default: false },
   /** 稿頁：「先前出題」置於「題目」標題列右側 */
   showBankQuizHistoryButton: { type: Boolean, default: false },
+  /** 稿頁：題目／先前出題改為 tab 內嵌（不用 Modal） */
+  quizHistoryInline: { type: Boolean, default: false },
+  /** 內嵌 tab 時之歷史列表（一般：string[]；追問：object[]） */
+  bankQuizHistoryList: { type: Array, default: undefined },
+  bankQuizHistoryIsFollowup: { type: Boolean, default: false },
+  bankQuizHistoryUnitLabel: { type: String, default: '' },
+  bankQuizHistoryQuizTypeLabel: { type: String, default: '' },
   /**
    * 僅 create-exam-bank_design：題卡尚無批改結果時，黑底區顯示之示範文字（不計入 hasGrade／confirmed）。
    */
@@ -247,6 +255,8 @@ const hasReferenceAnswerText = computed(
 const referenceAnswerMarkdownHtml = computed(() =>
   renderMarkdownToSafeHtml(props.card?.referenceAnswer),
 );
+
+const hintMarkdownHtml = computed(() => renderMarkdownToSafeHtml(props.card?.hint));
 
 /** designUi：題幹正下方工具列左側是否有「出題規則／顯示提示／顯示參考答案」任一（與測驗頁同一列、gap-1 緊貼題目區） */
 const stemToolbarLeftPills = computed(
@@ -463,6 +473,78 @@ const showBankQuizHistoryInStemHeader = computed(
     (!isDesignSubBlockFragment.value || props.designSubBlock === 'question'),
 );
 
+/** 題目區 tab：題目／先前出題（內嵌，取代 Modal pill） */
+const showBankQuizHistoryTabs = computed(
+  () => showBankQuizHistoryInStemHeader.value && props.quizHistoryInline,
+);
+
+const questionStemTab = ref('current');
+
+watch(
+  () => props.card?.id,
+  () => {
+    questionStemTab.value = 'current';
+  },
+);
+
+const showQuestionStemBody = computed(
+  () => !showBankQuizHistoryTabs.value || questionStemTab.value === 'current',
+);
+
+const showQuestionHistoryBody = computed(
+  () => showBankQuizHistoryTabs.value && questionStemTab.value === 'history',
+);
+
+const bankQuizHistoryListResolved = computed(() => {
+  if (!Array.isArray(props.bankQuizHistoryList)) return [];
+  return props.bankQuizHistoryList;
+});
+
+/** 答案區 tab：答案／提示／參考答案（內嵌，取代 Modal pill） */
+const showAnswerHintRefTabs = computed(
+  () =>
+    props.hintReferenceInModal
+    && useDesignFieldLabelInset.value
+    && showDesignSubBlockAnswer.value
+    && (hasHintText.value || hasReferenceAnswerText.value),
+);
+
+const answerSectionTab = ref(/** @type {'answer'|'hint'|'reference'} */ ('answer'));
+
+watch(
+  () => props.card?.id,
+  () => {
+    answerSectionTab.value = 'answer';
+  },
+);
+
+watch(answerSectionTab, (tab) => {
+  if (tab === 'hint' && !hasHintText.value) answerSectionTab.value = 'answer';
+  if (tab === 'reference' && !hasReferenceAnswerText.value) {
+    answerSectionTab.value = 'answer';
+  }
+});
+
+const showAnswerSectionBody = computed(
+  () => !showAnswerHintRefTabs.value || answerSectionTab.value === 'answer',
+);
+
+const showAnswerHintBody = computed(
+  () => showAnswerHintRefTabs.value && answerSectionTab.value === 'hint',
+);
+
+const showAnswerReferenceBody = computed(
+  () => showAnswerHintRefTabs.value && answerSectionTab.value === 'reference',
+);
+
+/** 批改結果區：單一 tab「批改結果」（與題目／答案 tab 版式一致） */
+const showGradingResultInsetTabs = computed(
+  () =>
+    props.gradingPromptInModal
+    && useDesignFieldLabelInset.value
+    && showDesignSubBlockGrading.value,
+);
+
 /** 建立測驗題庫頁在 card 上帶入 baseline；未帶入時維持原僅檢查非空即可送出 */
 function cardHasGradeBaselines(card) {
   if (!card || typeof card !== 'object') return false;
@@ -648,7 +730,7 @@ const quizAnswerFieldDisabled = computed(
         :title-id="`quiz-card-history-modal-title-${card.id}`"
       />
     </Teleport>
-    <Teleport v-if="showDesignSubBlockHintModals" to="body">
+    <Teleport v-if="showDesignSubBlockHintModals && !hintReferenceInModal" to="body">
       <div
         v-if="hintRefModalKind"
         class="modal fade show d-block my-modal-backdrop"
@@ -736,13 +818,49 @@ const quizAnswerFieldDisabled = computed(
           >
             <header class="my-design-quiz-field-inset__head">
               <div
-                class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                class="d-flex justify-content-between gap-2 px-3"
+                :class="
+                  showBankQuizHistoryTabs
+                    ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
+                    : 'align-items-center py-2'
+                "
               >
-                <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                <div
+                  v-if="showBankQuizHistoryTabs"
+                  class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+                  role="tablist"
+                  aria-label="題目與先前出題"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'current' }"
+                    :aria-selected="questionStemTab === 'current'"
+                    @click="questionStemTab = 'current'"
+                  >
+                    題目
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'history' }"
+                    :aria-selected="questionStemTab === 'history'"
+                    @click="questionStemTab = 'history'"
+                  >
+                    先前出題
+                  </button>
+                </div>
+                <h3
+                  v-else
+                  class="my-design-quiz-field-inset-label my-font-sm-400 mb-0"
+                >
                   題目
                 </h3>
                 <div
                   class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
+                  :class="{ 'pb-2': showBankQuizHistoryTabs }"
                 >
                   <button
                     v-if="showExamDesignQuizRulePill"
@@ -755,7 +873,7 @@ const quizAnswerFieldDisabled = computed(
                     出題規則
                   </button>
                   <button
-                    v-if="showBankQuizHistoryInStemHeader"
+                    v-if="showBankQuizHistoryInStemHeader && !showBankQuizHistoryTabs"
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1"
                     aria-label="查看先前出題"
@@ -773,15 +891,25 @@ const quizAnswerFieldDisabled = computed(
             <div
               class="my-design-quiz-field-inset-body px-3 pt-2 pb-2 min-w-0 lh-base quiz-card-quiz-stem"
             >
-              <div
-                v-if="quizMarkdownHtml"
-                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                v-html="quizMarkdownHtml"
+              <template v-if="showQuestionStemBody">
+                <div
+                  v-if="quizMarkdownHtml"
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="quizMarkdownHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black text-break"
+                >{{ card.quiz }}</span>
+              </template>
+              <QuizHistoryPanel
+                v-else-if="showQuestionHistoryBody"
+                compact
+                :unit-label="bankQuizHistoryUnitLabel"
+                :quiz-type-label="bankQuizHistoryQuizTypeLabel"
+                :is-followup="bankQuizHistoryIsFollowup"
+                :history-list="bankQuizHistoryListResolved"
               />
-              <span
-                v-else
-                class="my-font-md-400 my-color-black text-break"
-              >{{ card.quiz }}</span>
             </div>
           </section>
         </template>
@@ -791,10 +919,38 @@ const quizAnswerFieldDisabled = computed(
             :class="designUi && showBankQuizHistoryInStemHeader ? 'align-items-end' : 'align-items-center'"
           >
             <div
+              v-if="showBankQuizHistoryTabs"
+              class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+              role="tablist"
+              aria-label="題目與先前出題"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'current' }"
+                :aria-selected="questionStemTab === 'current'"
+                @click="questionStemTab = 'current'"
+              >
+                題目
+              </button>
+              <button
+                type="button"
+                role="tab"
+                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'history' }"
+                :aria-selected="questionStemTab === 'history'"
+                @click="questionStemTab = 'history'"
+              >
+                先前出題
+              </button>
+            </div>
+            <div
+              v-else
               :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
             >題目</div>
             <button
-              v-if="showBankQuizHistoryInStemHeader"
+              v-if="showBankQuizHistoryInStemHeader && !showBankQuizHistoryTabs"
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
               aria-label="查看先前出題"
@@ -808,15 +964,25 @@ const quizAnswerFieldDisabled = computed(
             class="lh-base mb-0 quiz-card-quiz-stem"
             :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
           >
-            <div
-              v-if="quizMarkdownHtml"
-              class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-              v-html="quizMarkdownHtml"
+            <template v-if="showQuestionStemBody">
+              <div
+                v-if="quizMarkdownHtml"
+                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                v-html="quizMarkdownHtml"
+              />
+              <span
+                v-else
+                class="my-font-md-400 my-color-black text-break"
+              >{{ card.quiz }}</span>
+            </template>
+            <QuizHistoryPanel
+              v-else-if="showQuestionHistoryBody"
+              compact
+              :unit-label="bankQuizHistoryUnitLabel"
+              :quiz-type-label="bankQuizHistoryQuizTypeLabel"
+              :is-followup="bankQuizHistoryIsFollowup"
+              :history-list="bankQuizHistoryListResolved"
             />
-            <span
-              v-else
-              class="my-font-md-400 my-color-black text-break"
-            >{{ card.quiz }}</span>
           </div>
         </template>
         <template v-if="designUi && hasQuizBody">
@@ -1033,84 +1199,129 @@ const quizAnswerFieldDisabled = computed(
           >
             <header class="my-design-quiz-field-inset__head">
               <div
-                class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                class="d-flex justify-content-between gap-2 px-3"
+                :class="
+                  showAnswerHintRefTabs
+                    ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
+                    : 'align-items-center py-2'
+                "
               >
-                <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
-                  答案
-                </h3>
                 <div
-                  v-if="hintReferenceInModal"
-                  class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
+                  v-if="showAnswerHintRefTabs"
+                  class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+                  role="tablist"
+                  aria-label="答案、提示與參考答案"
                 >
                   <button
-                    v-if="hintReferenceInModal && hasHintText"
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
-                    title="提示"
-                    aria-label="提示"
-                    @click="openHintRefModal('hint')"
+                    role="tab"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'answer' }"
+                    :aria-selected="answerSectionTab === 'answer'"
+                    @click="answerSectionTab = 'answer'"
+                  >
+                    答案
+                  </button>
+                  <button
+                    v-if="hasHintText"
+                    type="button"
+                    role="tab"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'hint' }"
+                    :aria-selected="answerSectionTab === 'hint'"
+                    @click="answerSectionTab = 'hint'"
                   >
                     提示
                   </button>
                   <button
-                    v-if="hintReferenceInModal && hasReferenceAnswerText"
+                    v-if="hasReferenceAnswerText"
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
-                    title="參考答案"
-                    aria-label="參考答案"
-                    @click="openHintRefModal('reference')"
+                    role="tab"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'reference' }"
+                    :aria-selected="answerSectionTab === 'reference'"
+                    @click="answerSectionTab = 'reference'"
                   >
                     參考答案
                   </button>
                 </div>
-                <span
-                  v-else-if="!showDesignAnswerPlainDisplay"
-                  class="my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0 ms-auto"
-                >{{ card.quiz_answer.length }} / 2000</span>
+                <h3
+                  v-else
+                  class="my-design-quiz-field-inset-label my-font-sm-400 mb-0"
+                >
+                  答案
+                </h3>
               </div>
-              <div
-                v-if="showDesignAnswerPlainDisplay"
-                class="px-3 py-0"
-              >
+              <div class="px-3 py-0">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body px-3 min-w-0 lh-base"
-              :class="showDesignAnswerPlainDisplay ? 'pt-2 pb-2' : 'pt-0 pb-2'"
+              class="my-design-quiz-field-inset-body my-design-quiz-answer-inset-body px-3 py-2 min-w-0 lh-base"
             >
-              <template v-if="showDesignAnswerPlainDisplay">
-                <span
+              <template v-if="showAnswerSectionBody">
+                <template v-if="showDesignAnswerPlainDisplay">
+                  <span
+                    :id="`quiz-answer-${card.id}`"
+                    class="my-font-md-400 my-color-black text-break"
+                  >{{ card.quiz_answer }}</span>
+                </template>
+                <textarea
+                  v-else
                   :id="`quiz-answer-${card.id}`"
-                  class="my-font-md-400 my-color-black text-break"
-                >{{ card.quiz_answer }}</span>
-              </template>
-              <textarea
-                v-else
-                :id="`quiz-answer-${card.id}`"
-                :value="card.quiz_answer"
-                class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 py-2 shadow-none"
-                :disabled="quizAnswerFieldDisabled"
-                @input="emit('update:quiz_answer', $event.target.value)"
-                rows="4"
-                placeholder=""
-                maxlength="2000"
-              />
-              <div
-                v-if="showDesignGradingStartInAnswerRow"
-                class="d-flex justify-content-end align-items-center flex-nowrap gap-2 pt-2 my-design-quiz-grading-start-row my-design-quiz-grading-start-row--answer"
-              >
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
-                  title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
-                  :disabled="designGradingStartButtonDisabled"
-                  :aria-busy="gradeSubmitting"
-                  aria-label="開始批改"
-                  @click="emit('confirm-answer', card)"
+                  :value="card.quiz_answer"
+                  class="form-control my-input-md my-design-quiz-answer-input rounded-2 w-100 min-w-0 py-2 shadow-none"
+                  :disabled="quizAnswerFieldDisabled"
+                  @input="emit('update:quiz_answer', $event.target.value)"
+                  rows="4"
+                  placeholder=""
+                  maxlength="2000"
+                />
+                <div
+                  v-if="showDesignGradingStartInAnswerRow"
+                  class="d-flex justify-content-end align-items-center flex-nowrap gap-2 pt-2 my-design-quiz-grading-start-row my-design-quiz-grading-start-row--answer"
                 >
-                  開始批改
-                </button>
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                    title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
+                    :disabled="designGradingStartButtonDisabled"
+                    :aria-busy="gradeSubmitting"
+                    aria-label="開始批改"
+                    @click="emit('confirm-answer', card)"
+                  >
+                    開始批改
+                  </button>
+                </div>
+              </template>
+              <div
+                v-else-if="showAnswerHintBody"
+                class="quiz-card-quiz-stem"
+              >
+                <div
+                  v-if="hintMarkdownHtml"
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="hintMarkdownHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black text-break"
+                  style="white-space: pre-wrap;"
+                >{{ card.hint }}</span>
+              </div>
+              <div
+                v-else-if="showAnswerReferenceBody"
+                class="quiz-card-reference-answer"
+              >
+                <div
+                  v-if="referenceAnswerMarkdownHtml"
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="referenceAnswerMarkdownHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black text-break"
+                >{{ card.referenceAnswer }}</span>
               </div>
             </div>
           </section>
@@ -1118,14 +1329,60 @@ const quizAnswerFieldDisabled = computed(
         <template v-else>
           <div
             class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
-            :class="hintReferenceInModal ? 'align-items-end' : 'align-items-center'"
+            :class="
+              showAnswerHintRefTabs && designUi
+                ? 'my-design-quiz-stem-tabs-row align-items-end'
+                : hintReferenceInModal
+                  ? 'align-items-end'
+                  : 'align-items-center'
+            "
           >
+            <div
+              v-if="showAnswerHintRefTabs && designUi"
+              class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+              role="tablist"
+              aria-label="答案、提示與參考答案"
+            >
+              <button
+                type="button"
+                role="tab"
+                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'answer' }"
+                :aria-selected="answerSectionTab === 'answer'"
+                @click="answerSectionTab = 'answer'"
+              >
+                答案
+              </button>
+              <button
+                v-if="hasHintText"
+                type="button"
+                role="tab"
+                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'hint' }"
+                :aria-selected="answerSectionTab === 'hint'"
+                @click="answerSectionTab = 'hint'"
+              >
+                提示
+              </button>
+              <button
+                v-if="hasReferenceAnswerText"
+                type="button"
+                role="tab"
+                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'reference' }"
+                :aria-selected="answerSectionTab === 'reference'"
+                @click="answerSectionTab = 'reference'"
+              >
+                參考答案
+              </button>
+            </div>
             <label
+              v-else
               :for="`quiz-answer-${card.id}`"
               :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
             >答案</label>
             <div
-              v-if="hintReferenceInModal"
+              v-if="hintReferenceInModal && !designUi"
               class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"
             >
               <button
@@ -1149,30 +1406,57 @@ const quizAnswerFieldDisabled = computed(
                 參考答案
               </button>
             </div>
-            <span
-              v-else-if="!readOnlyAnswer"
-              :class="designUi ? 'my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0' : 'form-text my-font-sm-400 my-color-gray-4 text-end flex-shrink-0 mb-0'"
-            >{{ card.quiz_answer.length }} / 2000</span>
           </div>
-          <template v-if="readOnlyAnswer">
+          <template v-if="!showAnswerHintRefTabs || !designUi || showAnswerSectionBody">
+            <template v-if="readOnlyAnswer">
+              <div
+                :id="`quiz-answer-${card.id}`"
+                class="my-font-sm-400 mb-0"
+                :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
+              >{{ card.quiz_answer }}</div>
+            </template>
+            <template v-else>
+              <textarea
+                :id="`quiz-answer-${card.id}`"
+                :value="card.quiz_answer"
+                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
+                :disabled="quizAnswerFieldDisabled"
+                @input="emit('update:quiz_answer', $event.target.value)"
+                rows="4"
+                placeholder="請輸入您的答案..."
+                maxlength="2000"
+              />
+            </template>
+          </template>
+          <div
+            v-else-if="showAnswerHintBody"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 mb-0"
+          >
             <div
-              :id="`quiz-answer-${card.id}`"
-              class="my-font-sm-400 mb-0"
-              :class="designUi ? 'form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2' : 'form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 min-w-0 px-3 py-2'"
-            >{{ card.quiz_answer }}</div>
-          </template>
-          <template v-else>
-            <textarea
-              :id="`quiz-answer-${card.id}`"
-              :value="card.quiz_answer"
-              class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2"
-              :disabled="quizAnswerFieldDisabled"
-              @input="emit('update:quiz_answer', $event.target.value)"
-              rows="4"
-              placeholder="請輸入您的答案..."
-              maxlength="2000"
+              v-if="hintMarkdownHtml"
+              class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+              v-html="hintMarkdownHtml"
             />
-          </template>
+            <span
+              v-else
+              class="my-font-md-400 my-color-black text-break"
+              style="white-space: pre-wrap;"
+            >{{ card.hint }}</span>
+          </div>
+          <div
+            v-else-if="showAnswerReferenceBody"
+            class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-3 py-2 mb-0 quiz-card-reference-answer"
+          >
+            <div
+              v-if="referenceAnswerMarkdownHtml"
+              class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+              v-html="referenceAnswerMarkdownHtml"
+            />
+            <span
+              v-else
+              class="my-font-md-400 my-color-black text-break"
+            >{{ card.referenceAnswer }}</span>
+          </div>
         </template>
         <template v-if="!readOnlyAnswer">
           <div
@@ -1266,15 +1550,39 @@ const quizAnswerFieldDisabled = computed(
               >
                 <header class="my-design-quiz-field-inset__head">
                   <div
-                    class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                    class="d-flex justify-content-between gap-2 px-3"
+                    :class="
+                      showGradingResultInsetTabs
+                        ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
+                        : 'align-items-center py-2'
+                    "
                   >
-                    <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                    <div
+                      v-if="showGradingResultInsetTabs"
+                      class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch flex-shrink-0"
+                      role="tablist"
+                      aria-label="批改結果"
+                    >
+                      <button
+                        type="button"
+                        role="tab"
+                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-design-quiz-stem-tab--active"
+                        aria-selected="true"
+                      >
+                        批改結果
+                      </button>
+                    </div>
+                    <h3
+                      v-else
+                      class="my-design-quiz-field-inset-label my-font-sm-400 mb-0"
+                    >
                       批改結果
                     </h3>
                     <button
                       v-if="showExamDesignGradingRulePill"
                       type="button"
                       class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1 ms-auto"
+                      :class="{ 'pb-2': showGradingResultInsetTabs }"
                       title="批改規則"
                       aria-label="批改規則"
                       @click="openPromptModal('grading')"
@@ -1287,7 +1595,7 @@ const quizAnswerFieldDisabled = computed(
                   </div>
                 </header>
                 <div
-                  class="my-design-quiz-field-inset-body px-3 pt-2 pb-2 min-w-0 lh-base"
+                  class="my-design-quiz-field-inset-body px-3 py-2 min-w-0 lh-base"
                   style="white-space: pre-wrap;"
                 >
                   <div class="my-font-md-400 my-color-black text-break">
@@ -1426,9 +1734,32 @@ const quizAnswerFieldDisabled = computed(
           >
             <header class="my-design-quiz-field-inset__head">
               <div
-                class="d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                class="d-flex justify-content-between gap-2 px-3"
+                :class="
+                  showGradingResultInsetTabs
+                    ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
+                    : 'align-items-center py-2'
+                "
               >
-                <h3 class="my-design-quiz-field-inset-label my-font-sm-400 mb-0">
+                <div
+                  v-if="showGradingResultInsetTabs"
+                  class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch flex-shrink-0"
+                  role="tablist"
+                  aria-label="批改結果"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-design-quiz-stem-tab--active"
+                    aria-selected="true"
+                  >
+                    批改結果
+                  </button>
+                </div>
+                <h3
+                  v-else
+                  class="my-design-quiz-field-inset-label my-font-sm-400 mb-0"
+                >
                   批改結果
                 </h3>
               </div>
@@ -1437,7 +1768,7 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body px-3 pt-2 pb-2 min-w-0 lh-base"
+              class="my-design-quiz-field-inset-body px-3 py-2 min-w-0 lh-base"
               style="white-space: pre-wrap;"
             >
               <div class="my-font-md-400 my-color-black text-break">
@@ -1497,6 +1828,36 @@ const quizAnswerFieldDisabled = computed(
 
 <style scoped>
 /* 題幹 Markdown：末段底距與答案靜態框一致（避免 .my-markdown-rendered p 等同 mb-2 的留白） */
+/* 題目／先前出題 tab：選中 2pt 黑底線疊在下方 hr 灰線上（對齊 .my-rag-tabs-bar） */
+.my-design-quiz-stem-tabs-row .my-design-quiz-stem-tab {
+  position: relative;
+  z-index: 0;
+  margin-bottom: -1px;
+}
+.my-design-quiz-stem-tab {
+  border: none;
+  border-bottom: 2pt solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--my-color-black) 46%, var(--my-color-white));
+  line-height: 1.25;
+  box-shadow: none;
+}
+.my-design-quiz-stem-tab--active,
+.my-design-quiz-stem-tab--active:hover,
+.my-design-quiz-stem-tab--active:focus,
+.my-design-quiz-stem-tab--active:focus-visible {
+  z-index: 1;
+  padding-bottom: calc(0.5rem + 1px);
+  border-bottom-color: var(--my-color-black);
+  color: var(--my-color-black);
+  background-color: transparent;
+  box-shadow: none;
+}
+.my-design-quiz-stem-tab:not(.my-design-quiz-stem-tab--active):hover:not(:disabled),
+.my-design-quiz-stem-tab:not(.my-design-quiz-stem-tab--active):focus-visible:not(:disabled) {
+  color: var(--my-color-black);
+}
 .quiz-card-quiz-stem :deep(.my-markdown-rendered > :last-child) {
   margin-bottom: 0;
 }

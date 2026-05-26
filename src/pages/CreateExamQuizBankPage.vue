@@ -84,7 +84,6 @@ import { useRagList } from '../composables/useRagList.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
-import QuizHistoryModal from '../components/QuizHistoryModal.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
@@ -2172,36 +2171,29 @@ const activeUnitTabItem = computed(() => {
   return tabs.find((t) => t.id === activeId) ?? null;
 });
 
-/** 先前出題 Modal（目前題型 sub-tab） */
-const bankQuizHistoryModalOpen = ref(false);
-
-function openBankQuizHistoryModal() {
-  bankQuizHistoryModalOpen.value = true;
-}
-
-
-const bankQuizHistoryModalList = computed(() => {
-  if (!bankQuizHistoryModalOpen.value) return [];
+/** 目前題型「先前出題」列表（題目區 tab 內嵌） */
+const activeUnitQuizHistoryList = computed(() => {
   const card = activeUnitQuizCard.value;
+  if (!card) return [];
   if (isUnitQuizFollowupMode(activeUnitSlotIndex.value, card)) {
     return unitQuizFollowupHistoryListForDisplay(card);
   }
   return unitQuizHistoryListForDisplay(card);
 });
 
-const bankQuizHistoryModalIsFollowup = computed(() => {
-  if (!bankQuizHistoryModalOpen.value) return false;
-  return isUnitQuizFollowupMode(activeUnitSlotIndex.value, activeUnitQuizCard.value);
+const activeUnitQuizHistoryIsFollowup = computed(() => {
+  const card = activeUnitQuizCard.value;
+  return card ? isUnitQuizFollowupMode(activeUnitSlotIndex.value, card) : false;
 });
 
-const bankQuizHistoryModalUnitLabel = computed(() => {
+const activeUnitQuizHistoryUnitLabel = computed(() => {
   const tabs = currentState.value.unitTabOrder ?? [];
   const t = tabs[activeUnitSlotIndex.value - 1];
   const lab = t ? String(t.unitName ?? t.label ?? '').trim() : '';
   return lab || '—';
 });
 
-const bankQuizHistoryModalQuizTypeLabel = computed(() => {
+const activeUnitQuizHistoryQuizTypeLabel = computed(() => {
   const card = activeUnitQuizCard.value;
   return card ? quizTypeTabLabel(card) : '—';
 });
@@ -2681,6 +2673,11 @@ const designUnitQuizCardBind = computed(() => {
     gradingPromptInModal: true,
     hintReferenceInModal: true,
     showBankQuizHistoryButton: true,
+    quizHistoryInline: true,
+    bankQuizHistoryList: activeUnitQuizHistoryList.value,
+    bankQuizHistoryIsFollowup: activeUnitQuizHistoryIsFollowup.value,
+    bankQuizHistoryUnitLabel: activeUnitQuizHistoryUnitLabel.value,
+    bankQuizHistoryQuizTypeLabel: activeUnitQuizHistoryQuizTypeLabel.value,
     showRagQuizForExamAction: true,
     hideRagQuizForExamToolbar: true,
   };
@@ -5424,14 +5421,6 @@ async function confirmAnswer(item) {
         </div>
       </div>
     </Teleport>
-    <QuizHistoryModal
-      v-model="bankQuizHistoryModalOpen"
-      :unit-label="bankQuizHistoryModalUnitLabel"
-      :quiz-type-label="bankQuizHistoryModalQuizTypeLabel"
-      :is-followup="bankQuizHistoryModalIsFollowup"
-      :history-list="bankQuizHistoryModalList"
-      title-id="bank-quiz-history-modal-title"
-    />
     <Teleport to="body">
       <div
         v-if="bankPromptEditModalOpen"
@@ -6701,7 +6690,6 @@ async function confirmAnswer(item) {
                         @confirm-answer="confirmGradeMerged"
                         @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                         @open-grading-prompt-edit="openBankGradingPromptEditModal"
-                        @open-quiz-history="openBankQuizHistoryModal"
                       />
                     </div>
                     </div>
@@ -6716,7 +6704,7 @@ async function confirmAnswer(item) {
                     class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
                     :class="designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white'"
                   >
-                    <div class="w-100 min-w-0 pt-2">
+                    <div class="w-100 min-w-0">
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
@@ -6724,7 +6712,6 @@ async function confirmAnswer(item) {
                         @confirm-answer="confirmGradeMerged"
                         @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                         @open-grading-prompt-edit="openBankGradingPromptEditModal"
-                        @open-quiz-history="openBankQuizHistoryModal"
                       />
                     </div>
                     <div class="w-100 min-w-0">
@@ -6735,7 +6722,6 @@ async function confirmAnswer(item) {
                         @confirm-answer="confirmGradeMerged"
                         @update:quiz_answer="(val) => { activeUnitQuizCard.quiz_answer = val }"
                         @open-grading-prompt-edit="openBankGradingPromptEditModal"
-                        @open-quiz-history="openBankQuizHistoryModal"
                       />
                     </div>
                   </div>
@@ -7622,6 +7608,11 @@ async function confirmAnswer(item) {
   padding-bottom: 0.5rem !important;
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+/* 題目／先前出題 tab：底線貼齊下方 hr，標題列不留 pb */
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
+  padding-bottom: 0 !important;
 }
 /* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-2 pb-2 */
 .my-design-quiz-field-inset__rule,
