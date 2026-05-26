@@ -2547,9 +2547,8 @@ function onDesignRightSubTabClick(item) {
       hasBuiltRagSummary.value
       && hasUnitSubTabs.value
       && unitQuizCardsAtUnitIndex(item.index).length > 0
-      && !isDesignRightUnitExpanded(item.index)
     ) {
-      ensureDesignRightUnitExpanded(item.index);
+      toggleDesignRightUnitExpanded(item.index);
     }
     return;
   }
@@ -6831,35 +6830,43 @@ async function confirmAnswer(item) {
                     :key="item.key"
                     class="nav-item w-100"
                   >
-                    <div class="d-flex align-items-stretch min-w-0 w-100 my-design-right-unit-row">
-                      <div class="d-flex align-items-stretch min-w-0 flex-grow-1 gap-2">
-                        <button
+                    <div
+                      class="d-flex align-items-stretch min-w-0 w-100 my-design-right-unit-row"
+                      :class="{ 'my-design-right-unit-row--active': item.active }"
+                      role="button"
+                      tabindex="0"
+                      :aria-current="item.active ? 'page' : undefined"
+                      :aria-expanded="
+                        hasBuiltRagSummary && hasUnitSubTabs && item.quizItems.length
+                          ? isDesignRightUnitExpanded(item.index)
+                          : undefined
+                      "
+                      :title="
+                        hasBuiltRagSummary && hasUnitSubTabs && item.quizItems.length
+                          ? (isDesignRightUnitExpanded(item.index) ? '收合題型' : '展開題型')
+                          : undefined
+                      "
+                      @click="onDesignRightSubTabClick(item)"
+                      @keydown.enter.prevent="onDesignRightSubTabClick(item)"
+                      @keydown.space.prevent="onDesignRightSubTabClick(item)"
+                    >
+                      <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-2">
+                        <span
                           v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizItems.length"
-                          type="button"
-                          class="btn flex-shrink-0 my-design-right-unit-expand-btn my-font-sm-400 my-color-gray-1 my-button-transparent-borderless lh-1"
-                          :title="isDesignRightUnitExpanded(item.index) ? '收合題型' : '展開題型'"
-                          :aria-label="isDesignRightUnitExpanded(item.index) ? '收合題型' : '展開題型'"
-                          :aria-expanded="isDesignRightUnitExpanded(item.index)"
-                          @click.stop="toggleDesignRightUnitExpanded(item.index)"
+                          class="my-design-right-unit-expand-icon flex-shrink-0 my-color-gray-1"
+                          aria-hidden="true"
                         >
                           <i
-                            class="fa-solid"
-                            :class="isDesignRightUnitExpanded(item.index) ? 'fa-chevron-down' : 'fa-chevron-right'"
-                            aria-hidden="true"
+                            class="fa-solid fa-chevron-right my-design-right-unit-expand-chevron"
+                            :class="{ 'my-design-right-unit-expand-chevron--open': isDesignRightUnitExpanded(item.index) }"
                           />
-                        </button>
-                        <button
-                          type="button"
-                          class="nav-link flex-grow-1 min-w-0 text-start text-break"
-                          :class="{ active: item.active }"
-                          :aria-current="item.active ? 'page' : undefined"
-                          @click="onDesignRightSubTabClick(item)"
-                        >
+                        </span>
+                        <span class="my-design-right-unit-row-label flex-grow-1 min-w-0 text-start text-break">
                           {{ item.label }}<span
                             v-if="!hasBuiltRagSummary || !hasUnitSubTabs"
                             class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2"
                           >{{ item.unitTypeLabel }}</span>
-                        </button>
+                        </span>
                       </div>
                       <span
                         v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizQuestionCount > 0"
@@ -6890,23 +6897,30 @@ async function confirmAnswer(item) {
                         v-for="qItem in item.quizItems"
                         :key="qItem.key"
                         class="nav-item w-100 my-design-right-unit-quiz-item"
+                        :class="{ 'my-design-right-unit-quiz-item--active': qItem.active }"
+                        role="button"
+                        tabindex="0"
+                        :aria-current="qItem.active ? 'page' : undefined"
+                        @click="onDesignRightSubTabClick(qItem)"
+                        @keydown.enter.prevent="onDesignRightSubTabClick(qItem)"
+                        @keydown.space.prevent="onDesignRightSubTabClick(qItem)"
                       >
-                        <button
-                          type="button"
-                          class="nav-link w-100 text-start text-break my-design-right-unit-quiz-link"
-                          :class="{ active: qItem.active }"
-                          :aria-current="qItem.active ? 'page' : undefined"
-                          @click="onDesignRightSubTabClick(qItem)"
-                        >
-                          {{ qItem.label }}<span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">追問</span><span
-                            v-if="qItem.forExam"
-                            class="rounded-circle d-inline-block my-bgcolor-green flex-shrink-0 ms-2"
-                            style="width: 0.5rem; height: 0.5rem"
-                            title="測驗用題型"
-                            role="img"
-                            aria-label="測驗用題型"
-                          />
-                        </button>
+                        <div class="my-design-right-unit-quiz-link w-100 text-start text-break d-flex align-items-center flex-wrap gap-2">
+                          <span
+                            class="my-design-right-unit-quiz-for-exam-slot flex-shrink-0 d-inline-flex align-items-center justify-content-center"
+                            :title="qItem.forExam ? '測驗用題型' : undefined"
+                          >
+                            <span
+                              v-if="qItem.forExam"
+                              class="rounded-circle d-inline-block my-bgcolor-green"
+                              style="width: 0.5rem; height: 0.5rem"
+                              role="img"
+                              aria-label="測驗用題型"
+                            />
+                          </span>
+                          <span class="min-w-0 text-break">{{ qItem.label }}</span>
+                          <span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0">追問</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -7069,9 +7083,13 @@ async function confirmAnswer(item) {
   padding-right: 0;
 }
 
-/* 題型列：全寬列 + 僅文字內縮（須高於上方 .nav-link padding 覆寫） */
-.my-design-right-nav--flat .my-design-right-step-block .nav-link.my-design-right-unit-quiz-link {
+/* 題型列：全寬列 + 僅文字內縮 */
+.my-design-right-nav--flat .my-design-right-unit-quiz-link {
   padding-left: 1.75rem;
+  padding-right: 0;
+}
+.my-design-right-nav--flat .my-design-right-unit-row-label {
+  padding-left: 0;
   padding-right: 0;
 }
 .my-design-right-pack-build-action {
@@ -7163,16 +7181,27 @@ async function confirmAnswer(item) {
 .my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
   background-color: var(--my-color-gray-3);
 }
-.my-design-right-unit-expand-btn {
-  align-self: center;
+.my-design-right-unit-expand-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   width: 1.25rem;
   min-width: 1.25rem;
-  padding: 0;
+  height: 1.25rem;
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+  pointer-events: none;
 }
-.my-design-right-unit-expand-btn:hover:not(:disabled),
-.my-design-right-unit-expand-btn:focus-visible:not(:disabled) {
-  color: var(--my-color-black);
-  background-color: transparent;
+.my-design-right-unit-expand-chevron {
+  display: block;
+  width: 0.625rem;
+  text-align: center;
+  transform-origin: 50% 50%;
+  transition: transform 0.15s ease;
+}
+.my-design-right-unit-expand-chevron--open {
+  transform: rotate(90deg);
 }
 .my-design-right-unit-count-badge {
   align-self: center;
@@ -7182,79 +7211,78 @@ async function confirmAnswer(item) {
   font-weight: var(--my-font-weight-regular);
   line-height: 1.25;
   color: var(--my-color-gray-1);
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-white);
   border: none;
   border-radius: 0.25rem;
 }
 .my-design-right-unit-row {
   width: 100%;
+  cursor: pointer;
   transition: background-color 0.15s ease;
 }
-.my-design-right-unit-row:has(.nav-link.active) {
+.my-design-right-unit-row-label {
+  display: block;
+  min-width: 0;
+  padding: var(--bs-nav-link-padding-y, 0.5rem) 0;
+  color: var(--my-color-black);
+}
+.my-design-right-unit-row--active {
   background-color: var(--my-color-white);
 }
-.my-design-right-unit-row:not(:has(.nav-link.active)):hover,
-.my-design-right-unit-row:not(:has(.nav-link.active)):focus-within {
+.my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
+.my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
   background-color: var(--my-color-gray-4);
 }
-.my-design-right-nav--flat .my-design-right-unit-row:not(:has(.nav-link.active)):hover,
-.my-design-right-nav--flat .my-design-right-unit-row:not(:has(.nav-link.active)):focus-within {
+.my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
+.my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
   background-color: var(--my-color-gray-3);
-}
-.my-design-right-unit-row .nav-link,
-.my-design-right-unit-row .nav-link:not(.active):hover,
-.my-design-right-unit-row .nav-link:not(.active):focus-visible,
-.my-design-right-unit-row .nav-link.active,
-.my-design-right-unit-row .nav-link.active:hover,
-.my-design-right-unit-row .nav-link.active:focus,
-.my-design-right-unit-row .nav-link.active:focus-visible {
-  background-color: transparent;
 }
 .my-design-right-unit-quiz-list {
   width: 100%;
 }
 .my-design-right-unit-quiz-item {
   width: 100%;
+  cursor: pointer;
   transition: background-color 0.15s ease;
 }
-.my-design-right-unit-quiz-item:has(.nav-link.active) {
+.my-design-right-unit-quiz-item--active {
   background-color: var(--my-color-white);
 }
-.my-design-right-unit-quiz-item:not(:has(.nav-link.active)):hover,
-.my-design-right-unit-quiz-item:not(:has(.nav-link.active)):focus-within {
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
   background-color: var(--my-color-gray-4);
 }
-.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(:has(.nav-link.active)):hover,
-.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(:has(.nav-link.active)):focus-within {
+.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
+.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
   background-color: var(--my-color-gray-3);
-}
-.my-design-right-unit-quiz-item .nav-link,
-.my-design-right-unit-quiz-item .nav-link:not(.active):hover,
-.my-design-right-unit-quiz-item .nav-link:not(.active):focus-visible,
-.my-design-right-unit-quiz-item .nav-link.active,
-.my-design-right-unit-quiz-item .nav-link.active:hover,
-.my-design-right-unit-quiz-item .nav-link.active:focus,
-.my-design-right-unit-quiz-item .nav-link.active:focus-visible {
-  background-color: transparent;
-}
-.my-design-right-nav .nav-link.active,
-.my-design-right-nav .my-design-right-unit-quiz-item .nav-link.active {
-  color: var(--my-color-black);
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
   align-self: center;
   margin-right: 0;
-  background: transparent;
+  background-color: transparent !important;
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
-.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled) {
-  background: transparent;
+.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled),
+.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:active:not(:disabled) {
+  background-color: transparent !important;
+  border-color: color-mix(in srgb, var(--my-color-gray-1) 55%, transparent);
   color: var(--my-color-black);
+}
+.my-design-right-unit-quiz-for-exam-slot {
+  width: 0.5rem;
+  min-width: 0.5rem;
+  height: 0.5rem;
 }
 .my-design-right-unit-quiz-link {
   width: 100%;
   font-size: var(--my-font-size-sm);
+  color: var(--my-color-black);
+  padding: var(--bs-nav-link-padding-y, 0.5rem) var(--bs-nav-link-padding-x, 1rem);
   padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 1.75rem);
+  box-sizing: border-box;
+}
+.my-design-right-unit-quiz-item--active .my-design-right-unit-quiz-link {
+  color: var(--my-color-black);
 }
 .my-pack-empty-start-layout {
   justify-content: center;
