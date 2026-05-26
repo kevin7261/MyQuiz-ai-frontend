@@ -633,7 +633,7 @@ watch(viewMode, (mode) => {
         class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
         @click.stop
       >
-        <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+        <div class="modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4">
           <div class="modal-header border-bottom-0 p-0">
             <h5
               id="bank2-new-upload-modal-title"
@@ -696,7 +696,7 @@ watch(viewMode, (mode) => {
               {{ newBankUploadError }}
             </div>
           </div>
-          <div class="modal-footer border-top-0 p-0 d-flex justify-content-end gap-2 w-100">
+          <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
             <button
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
