@@ -7,7 +7,7 @@
  * - /exam → 測驗/工作區（HomeView，內部 currentView 為 work）
  * - /exam_2、/exam_2/:exam_id → 測驗九宮格版（work2）
  * - /create-exam-bank_2、/create-exam-bank_2/:rag_id → 建立測驗題庫九宮格版
- * - /:view → 主區塊各功能（student-weakness-analysis、profile、create-exam-bank、design、manage-users 等），由 HomeView 依 view 渲染
+ * - /:view → 主區塊各功能（student-weakness-analysis、profile、create-exam-bank、design、design_2、manage-users 等），由 HomeView 依 view 渲染
  * - /main、/main/:view → 舊網址相容，重導向至 /exam 或 /:view
  *
  * 主區塊與 /exam 需登入、依 user_type 限制路由（/logs 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
@@ -24,6 +24,7 @@ const VALID_VIEWS = [
   'profile',
   'create-exam-bank',
   'design',
+  'design_2',
   'logo',
   'manage-users',
   'settings',
@@ -40,6 +41,7 @@ const VIEW_TITLES = {
   'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
   'create-exam-bank_2': '建立測驗題庫 - MyQuiz.ai',
   design: '設計稿 - MyQuiz.ai',
+  design_2: '設計稿 2 - MyQuiz.ai',
   logo: 'Logo 繪製 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
