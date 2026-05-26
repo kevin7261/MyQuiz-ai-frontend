@@ -35,7 +35,7 @@ function onTitleInput(e) {
       <div class="create-exam-bank-2-detail-bar__top-row d-flex align-items-start justify-content-between gap-2 w-100 min-w-0">
         <button
           type="button"
-          class="create-exam-bank-2-detail-bar__back-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 flex-shrink-0"
+          class="create-exam-bank-2-detail-bar__back-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
           aria-label="返回主頁"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
@@ -117,7 +117,7 @@ function onTitleInput(e) {
       <div class="create-exam-bank-2-detail-bar__start">
         <button
           type="button"
-          class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0"
+          class="create-exam-bank-2-detail-bar__back-btn btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
           aria-label="返回主頁"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
@@ -229,11 +229,17 @@ function onTitleInput(e) {
   white-space: nowrap;
 }
 
+.create-exam-bank-2-detail-bar__back-btn {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+  font-weight: var(--my-font-weight-regular);
+}
 .create-exam-bank-2-detail-bar__back-btn:hover:not(:disabled),
 .create-exam-bank-2-detail-bar__back-btn:focus-visible:not(:disabled),
 .create-exam-bank-2-detail-bar__back-btn:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  font-weight: var(--my-font-weight-semibold);
   background-color: transparent !important;
-  font-weight: 600;
 }
 
 .create-exam-bank-2-detail-bar__title-row {

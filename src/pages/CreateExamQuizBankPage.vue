@@ -6977,11 +6977,21 @@ async function confirmAnswer(item) {
   padding-right: 1.5rem !important;
 }
 
-/* create-exam-bank_3：小 pill 按鈕 px-2 */
+/* create-exam-bank_3：小 pill 按鈕 px-2、灰字（對齊 DesignPage2） */
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+}
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)) {
+  color: var(--my-color-gray-1);
+}
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled)) {
+  color: var(--my-color-gray-1);
 }
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
@@ -7260,6 +7270,7 @@ async function confirmAnswer(item) {
   align-self: center;
   margin-right: 0;
   background-color: transparent !important;
+  color: var(--my-color-gray-1);
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled),
@@ -7267,6 +7278,12 @@ async function confirmAnswer(item) {
   background-color: transparent !important;
   border-color: color-mix(in srgb, var(--my-color-gray-1) 55%, transparent);
   color: var(--my-color-black);
+}
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled) {
+  color: var(--my-color-gray-1);
 }
 .my-design-right-unit-quiz-for-exam-slot {
   width: 0.5rem;
@@ -7276,13 +7293,17 @@ async function confirmAnswer(item) {
 .my-design-right-unit-quiz-link {
   width: 100%;
   font-size: var(--my-font-size-sm);
-  color: var(--my-color-black);
+  color: var(--my-color-gray-1);
   padding: var(--bs-nav-link-padding-y, 0.5rem) var(--bs-nav-link-padding-x, 1rem);
   padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 1.75rem);
   box-sizing: border-box;
 }
 .my-design-right-unit-quiz-item--active .my-design-right-unit-quiz-link {
   color: var(--my-color-black);
+}
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover .my-design-right-unit-quiz-link,
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible .my-design-right-unit-quiz-link {
+  color: var(--my-color-gray-1);
 }
 .my-pack-empty-start-layout {
   justify-content: center;
