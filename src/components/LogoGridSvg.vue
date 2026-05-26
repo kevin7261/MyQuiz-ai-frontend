@@ -30,6 +30,11 @@ const props = defineProps({
    * viewBox 裁切為 80×100 區域
    */
   centerCellsOnly: { type: Boolean, default: false },
+  /**
+   * true：僅繪製格 51–54（中央 2×2），不含 71–72 延伸列
+   * viewBox 裁切為 80×80 區域
+   */
+  centerQuadOnly: { type: Boolean, default: false },
   /** false 時不繪製全幅底色（頂欄等透明底場景） */
   showBackground: { type: Boolean, default: true },
   /** true：height 100%、width auto，由外層容器決定尺寸並維持 viewBox 比例 */
@@ -92,11 +97,31 @@ const splitLayerGridCells = computed(() => {
 
 const useSplitLayerGrid = computed(() => splitLayerGridCells.value.length > 0);
 
-const useCenterCellsOnly = computed(
-  () => props.centerCellsOnly && !props.mergeCell5,
+const useCenterQuadOnly = computed(
+  () => props.centerQuadOnly && !props.mergeCell5,
 );
 
+const useCenterCellsOnly = computed(
+  () => props.centerCellsOnly && !props.mergeCell5 && !props.centerQuadOnly,
+);
+
+/** 51–54 區塊高度（含 71–72 延伸列時為 100） */
+const centerBlockHeight = computed(() => (useCenterQuadOnly.value ? 80 : 100));
+
+/** 中央菱形以 evenodd 挖洞（background 透明時），露出按鈕底色與四段 1/4 圓弧 */
+const useDiamondCutout = computed(() => {
+  const bg = String(c.value.background ?? '').trim().toLowerCase();
+  return bg === 'transparent' || bg === 'none';
+});
+
+const useCenterDiamondCutout = computed(
+  () => useDiamondCutout.value && (useCenterQuadOnly.value || useCenterCellsOnly.value),
+);
+
+const centerDiamondMaskId = computed(() => `${props.idPrefix}-center-diamond-mask`);
+
 const viewBox = computed(() => {
+  if (useCenterQuadOnly.value) return '80 80 80 80';
   if (useCenterCellsOnly.value) return '80 80 80 100';
   if (useSplitLayerGrid.value) {
     return props.layer === 'primary' ? '0 0 160 180' : '80 0 160 180';
@@ -114,7 +139,9 @@ const svgStyle = computed(() => {
     };
   }
   let height = props.svgHeight;
-  if (useCenterCellsOnly.value) {
+  if (useCenterQuadOnly.value) {
+    height = props.svgWidth;
+  } else if (useCenterCellsOnly.value) {
     height = Math.round(props.svgWidth * (100 / 80));
   } else if (useSplitLayerGrid.value) {
     height = Math.round(props.svgWidth * (180 / 160));
@@ -184,9 +211,34 @@ const svgStyle = computed(() => {
           <rect x="80" y="80" width="80" height="80"/>
         </clipPath>
       </template>
+      <mask
+        v-if="useCenterDiamondCutout"
+        :id="centerDiamondMaskId"
+        maskUnits="userSpaceOnUse"
+      >
+        <rect
+          x="80"
+          y="80"
+          width="80"
+          :height="centerBlockHeight"
+          fill="white"
+        />
+        <path :d="CENTER_DIAMOND_PATH" fill="black" />
+      </mask>
+      <clipPath
+        v-if="useCenterDiamondCutout"
+        :id="`${idPrefix}-clip-right-half`"
+      >
+        <rect x="120" y="80" width="40" :height="centerBlockHeight"/>
+      </clipPath>
     </defs>
     <rect
-      v-if="showBackground && useCenterCellsOnly"
+      v-if="showBackground && useCenterQuadOnly"
+      x="80" y="80" width="80" height="80"
+      :fill="backgroundPaint"
+    />
+    <rect
+      v-else-if="showBackground && useCenterCellsOnly"
       x="80" y="80" width="80" height="100"
       :fill="backgroundPaint"
     />
@@ -229,7 +281,7 @@ const svgStyle = computed(() => {
       <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
     </template>
     <g v-else>
-      <template v-if="!useCenterCellsOnly">
+      <template v-if="!useCenterCellsOnly && !useCenterQuadOnly">
         <!-- 格 1／2／3／4／6：弧線 -->
         <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
         <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
@@ -238,31 +290,50 @@ const svgStyle = computed(() => {
         <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
         <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
       </template>
-      <!-- 51＋53＋71 灰方塊；52＋54＋72 黑方塊；中央白菱形疊加 -->
-      <rect
-        v-if="showSecondary"
-        x="80"
-        y="80"
-        width="40"
-        height="100"
-        :fill="secondaryPaint"
-      />
-      <rect
-        v-if="showPrimary"
-        x="120"
-        y="80"
-        width="40"
-        height="100"
-        :fill="primaryPaint"
-      />
-      <path
-        v-if="showPrimary || showSecondary"
-        :d="CENTER_DIAMOND_PATH"
-        :fill="backgroundPaint"
-      />
+      <!-- 透明底：左 mask 挖洞（51＋53）；右填白色菱形（52＋54） -->
+      <template v-if="useCenterDiamondCutout">
+        <rect
+          v-if="showSecondary"
+          x="80"
+          y="80"
+          width="40"
+          :height="centerBlockHeight"
+          :fill="secondaryPaint"
+          :mask="`url(#${centerDiamondMaskId})`"
+        />
+        <path
+          v-if="showPrimary"
+          :d="CENTER_DIAMOND_PATH"
+          :fill="primaryPaint"
+          :clip-path="`url(#${idPrefix}-clip-right-half)`"
+        />
+      </template>
+      <template v-else>
+        <rect
+          v-if="showSecondary"
+          x="80"
+          y="80"
+          width="40"
+          :height="centerBlockHeight"
+          :fill="secondaryPaint"
+        />
+        <rect
+          v-if="showPrimary"
+          x="120"
+          y="80"
+          width="40"
+          :height="centerBlockHeight"
+          :fill="primaryPaint"
+        />
+        <path
+          v-if="showPrimary || showSecondary"
+          :d="CENTER_DIAMOND_PATH"
+          :fill="backgroundPaint"
+        />
+      </template>
       <!-- 62＋81 灰方塊 -->
       <rect
-        v-if="showSecondary && !useCenterCellsOnly"
+        v-if="showSecondary && !useCenterCellsOnly && !useCenterQuadOnly"
         x="200"
         y="80"
         width="40"
@@ -278,6 +349,11 @@ const svgStyle = computed(() => {
         :x="cell.x" :y="cell.y" :width="cell.w" :height="cell.h"
         fill="none" stroke="#b0b0b0" stroke-width="1"
       />
+    </template>
+    <template v-else-if="showGrid && useCenterQuadOnly">
+      <rect x="80" y="80" width="80" height="80" fill="none" stroke="#b0b0b0" stroke-width="1"/>
+      <line x1="120" y1="80" x2="120" y2="160" stroke="#b0b0b0" stroke-width="1"/>
+      <line x1="80" y1="120" x2="160" y2="120" stroke="#b0b0b0" stroke-width="1"/>
     </template>
     <template v-else-if="showGrid && useCenterCellsOnly">
       <rect x="80" y="80" width="80" height="80" fill="none" stroke="#b0b0b0" stroke-width="1"/>
@@ -309,6 +385,12 @@ const svgStyle = computed(() => {
           :x="cell.cx" :y="cell.cy"
           :font-size="cell.fontSize"
         >{{ cell.label }}</text>
+      </template>
+      <template v-else-if="useCenterQuadOnly">
+        <text x="100" y="100" font-size="13">51</text>
+        <text x="140" y="100" font-size="13">52</text>
+        <text x="100" y="140" font-size="13">53</text>
+        <text x="140" y="140" font-size="13">54</text>
       </template>
       <template v-else-if="useCenterCellsOnly">
         <text x="100" y="100" font-size="13">51</text>

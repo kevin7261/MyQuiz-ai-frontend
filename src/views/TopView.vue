@@ -9,29 +9,7 @@
   import { useAuthStore } from '../stores/authStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
-
-  /** 中央菱形：每次 TopView 建立時隨機鮮豔二色線性漸層 */
-  function createRandomLogoDiamondGradient() {
-    const vividHues = [0, 18, 32, 48, 120, 155, 195, 220, 265, 290, 315, 340];
-    const hue1 = vividHues[Math.floor(Math.random() * vividHues.length)]
-      + Math.floor(Math.random() * 14) - 7;
-    const hue2 = (hue1 + 55 + Math.floor(Math.random() * 95)) % 360;
-    const sat = 96 + Math.floor(Math.random() * 4);
-    const dirs = [
-      { x1: '0%', y1: '0%', x2: '100%', y2: '100%' },
-      { x1: '0%', y1: '100%', x2: '100%', y2: '0%' },
-      { x1: '0%', y1: '50%', x2: '100%', y2: '50%' },
-      { x1: '50%', y1: '0%', x2: '50%', y2: '100%' },
-    ];
-    const dir = dirs[Math.floor(Math.random() * dirs.length)];
-    return {
-      ...dir,
-      stops: [
-        { offset: '0%', color: `hsl(${hue1}, ${sat}%, ${50 + Math.floor(Math.random() * 8)}%)` },
-        { offset: '100%', color: `hsl(${hue2}, ${sat}%, ${44 + Math.floor(Math.random() * 10)}%)` },
-      ],
-    };
-  }
+  import { createRandomLogoDiamondGradient } from '../utils/logoDiamondGradient.js';
 
   export default {
     name: 'TopView',
@@ -139,26 +117,26 @@
       </div>
 
       <div class="my-top-view-inner__center min-w-0">
-        <p class="my-top-view-page-title my-font-lg-400 my-color-black text-truncate text-center w-100 mb-0 px-3 py-2">
+        <p class="my-top-view-page-title my-font-xl-400 my-color-black text-truncate text-center w-100 mb-0 px-3 py-2">
           {{ currentPageTitle }}
         </p>
       </div>
 
       <div class="my-top-view-inner__end d-flex align-items-center justify-content-end gap-2 gap-md-3 min-w-0 flex-shrink-0">
         <nav
-          class="my-top-view-nav nav nav-pills flex-row flex-shrink-0 gap-1 min-w-0 overflow-auto"
+          class="my-top-view-nav d-flex flex-row flex-shrink-0 gap-2 min-w-0 overflow-auto"
         >
           <router-link
             v-if="canSeeNavLink(userType, 'work')"
             to="/exam"
-            class="nav-link text-nowrap"
-            active-class="active"
+            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-top-view-nav-btn"
+            active-class="my-top-view-nav-btn--active"
           >測驗</router-link>
           <router-link
             v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
             to="/student-weakness-analysis"
-            class="nav-link text-nowrap"
-            active-class="active"
+            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-top-view-nav-btn"
+            active-class="my-top-view-nav-btn--active"
           >作答弱點分析</router-link>
         </nav>
 
@@ -307,22 +285,29 @@
   outline: none;
 }
 
-.my-top-view-nav .nav-link {
-  color: var(--my-color-black);
+.my-top-view-nav-btn {
+  color: var(--my-color-gray-1);
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
+  box-shadow: none;
+  text-decoration: none;
 }
 
-.my-top-view-nav .nav-link:not(.active):hover,
-.my-top-view-nav .nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-4);
-  color: var(--my-color-black);
+.my-top-view-nav-btn:hover,
+.my-top-view-nav-btn:focus-visible {
+  color: var(--my-color-gray-1);
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  outline: none;
 }
 
-.my-top-view-nav .nav-link.active,
-.my-top-view-nav .nav-link.active:hover,
-.my-top-view-nav .nav-link.active:focus,
-.my-top-view-nav .nav-link.active:focus-visible {
+.my-top-view-nav-btn--active,
+.my-top-view-nav-btn--active:hover,
+.my-top-view-nav-btn--active:focus,
+.my-top-view-nav-btn--active:focus-visible {
+  color: var(--my-color-gray-1);
   background-color: var(--my-color-gray-3);
-  color: var(--my-color-black);
+  border-color: var(--my-color-gray-2);
 }
 
 .my-design-08-dropdown .btn {

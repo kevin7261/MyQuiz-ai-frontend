@@ -84,6 +84,7 @@ import { useRagList } from '../composables/useRagList.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
+import LogoCenterMark from '../components/LogoCenterMark.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
@@ -6671,12 +6672,15 @@ async function confirmAnswer(item) {
                       <button
                         v-if="!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)"
                         type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-white px-4 py-2 my-design-quiz-generate-btn"
                         title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設"
                         aria-label="產生題目"
                         @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
-                        產生題目
+                        <LogoCenterMark
+                          :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                        />
+                        <span>產生題目</span>
                       </button>
                       <button
                         v-if="!isRagQuizMarkedForExam(activeUnitQuizCard) && !getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)"
@@ -7130,6 +7134,13 @@ async function confirmAnswer(item) {
   padding-bottom: 0.5rem !important;
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
+}
+.my-design-quiz-sub-block :deep(.my-design-quiz-generate-action-row .btn.my-design-quiz-generate-btn) {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
 }
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;
