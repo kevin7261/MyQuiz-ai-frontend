@@ -31,6 +31,7 @@ const PATH_TO_VIEW = {
   profile: 'profile',
   'create-exam-bank': 'createExamQuizBank',
   'create-exam-bank_2': 'createExamQuizBank2',
+  'create-exam-bank_3': 'createExamQuizBank3',
   design: 'designPage',
   design_2: 'designPage2',
   logo: 'logoPage',
@@ -59,6 +60,9 @@ const PATH_TO_VIEW = {
         if (route.path === '/exam_2' || route.name === 'Exam2Detail') return 'work2';
         if (route.path === '/create-exam-bank_2' || route.name === 'CreateExamBank2Detail') {
           return 'createExamQuizBank2';
+        }
+        if (route.path === '/create-exam-bank_3' || route.name === 'CreateExamBank3Detail') {
+          return 'createExamQuizBank3';
         }
         return PATH_TO_VIEW[route.params.view] || 'work';
       });
@@ -108,6 +112,10 @@ const PATH_TO_VIEW = {
         }
         if (type === 'createExamQuizBank2') {
           if (!route.path.startsWith('/create-exam-bank_2')) router.push('/create-exam-bank_2');
+          return;
+        }
+        if (type === 'createExamQuizBank3') {
+          if (!route.path.startsWith('/create-exam-bank_3')) router.push('/create-exam-bank_3');
           return;
         }
         const path = VIEW_TO_PATH[type] ?? 'work';

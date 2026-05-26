@@ -21,8 +21,10 @@ import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 
-defineProps({
+const props = defineProps({
   tabId: { type: String, required: true },
+  /** 路由前綴，供 create-exam-bank_2 / create-exam-bank_3 共用 */
+  routeBase: { type: String, default: '/create-exam-bank_2' },
 });
 
 const CREATE_BANK_TAB_UI_STORAGE_PREFIX = 'myquiz:createBankTabUI:v1:';
@@ -177,7 +179,7 @@ function openBankDetail(tabId, label) {
   selectedBankLabel.value = label || id;
   viewMode.value = 'detail';
   if (String(route.params.rag_id ?? '') !== id) {
-    router.push(`/create-exam-bank_2/${encodeURIComponent(id)}`);
+    router.push(`${props.routeBase}/${encodeURIComponent(id)}`);
   }
 }
 
@@ -188,7 +190,7 @@ function switchBankDetail(tabId, label) {
   selectedBankTabId.value = id;
   selectedBankLabel.value = label || id;
   if (String(route.params.rag_id ?? '') !== id) {
-    router.push(`/create-exam-bank_2/${encodeURIComponent(id)}`);
+    router.push(`${props.routeBase}/${encodeURIComponent(id)}`);
   }
 }
 
@@ -198,7 +200,7 @@ function backToGrid() {
   selectedBankLabel.value = '';
   fetchRagList();
   if (route.params.rag_id) {
-    router.push('/create-exam-bank_2');
+    router.push(props.routeBase);
   }
 }
 

@@ -66,6 +66,8 @@ router.beforeEach((to, _from, next) => {
     || to.name === 'Exam2Detail'
     || to.name === 'CreateExamBank2'
     || to.name === 'CreateExamBank2Detail'
+    || to.name === 'CreateExamBank3'
+    || to.name === 'CreateExamBank3Detail'
     || to.name === 'Main'
     || to.path === '/main'
     || to.path.startsWith('/main/');

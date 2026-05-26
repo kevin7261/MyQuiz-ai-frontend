@@ -39,6 +39,7 @@ export const STUDENT_ALLOWED_VIEWS = new Set([
   'student-weakness-analysis',
   'create-exam-bank',
   'create-exam-bank_2',
+  'create-exam-bank_3',
   'profile',
 ]);
 
@@ -50,6 +51,7 @@ export function routeViewKey(to) {
   if (to.name === 'Exam') return 'work';
   if (to.name === 'Exam2' || to.name === 'Exam2Detail') return 'work2';
   if (to.name === 'CreateExamBank2' || to.name === 'CreateExamBank2Detail') return 'create-exam-bank_2';
+  if (to.name === 'CreateExamBank3' || to.name === 'CreateExamBank3Detail') return 'create-exam-bank_3';
   if (to.name === 'Main' && to.params.view) return String(to.params.view);
   return null;
 }
