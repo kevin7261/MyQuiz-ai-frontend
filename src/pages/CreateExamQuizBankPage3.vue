@@ -11,5 +11,9 @@ defineProps({
 </script>
 
 <template>
-  <CreateExamQuizBankPage2 :tab-id="tabId" route-base="/create-exam-bank_3" />
+  <CreateExamQuizBankPage2
+    :tab-id="tabId"
+    route-base="/create-exam-bank_3"
+    :side-panel-on-left="true"
+  />
 </template>

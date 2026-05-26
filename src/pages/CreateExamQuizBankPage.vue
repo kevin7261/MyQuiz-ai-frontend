@@ -15,7 +15,7 @@
  * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，選定類型且資料夾就緒後自動載入逐字稿，完成載入前編輯區停用且不能開始建立單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
-import { ref, computed, watch, onActivated, reactive, nextTick } from 'vue';
+import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_RESPONSE_QUIZ_CONTENT,
@@ -90,9 +90,13 @@ import TabRenameModal from '../components/TabRenameModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 
-defineProps({
+const props = defineProps({
   tabId: { type: String, required: true },
+  /** true 時右側單元／題型清單改顯示於左欄（create-exam-bank_3） */
+  designSidePanelOnLeft: { type: Boolean, default: false },
 });
+
+const slots = useSlots();
 
 const pageTitle = computed(() => '建立測驗題庫');
 /** 用於載入中、新增、錯誤訊息等可讀名詞 */
@@ -445,6 +449,11 @@ const showDesignRightView = computed(() => {
   if (!activeTabId.value || !hasUploadedFileMetadata.value) return false;
   if (hasBuiltRagSummary.value) return true;
   return packUnitCarouselCountEffective.value > 0;
+});
+/** 左欄是否顯示：_3 有 side-panel-header slot 時即使尚未上傳也保留左欄（含 detail bar） */
+const showSidePanelColumn = computed(() => {
+  if (props.designSidePanelOnLeft && slots['side-panel-header']) return true;
+  return showDesignRightView.value;
 });
 
 /** 後端已有 rag_metadata 時，設定單元（unit_list）拆成條列：每個 li 為一群，群內資料夾以 + 連接 */
@@ -5023,7 +5032,10 @@ async function confirmAnswer(item) {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div
+    class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative"
+    :class="{ 'my-design--side-panel-left': designSidePanelOnLeft }"
+  >
     <LoadingOverlay
       :is-visible="loadingOverlayVisible"
       :loading-text="loadingOverlayText"
@@ -5756,12 +5768,21 @@ async function confirmAnswer(item) {
     </div>
 
     <div class="flex-grow-1 overflow-hidden my-bgcolor-gray-4 d-flex flex-column min-h-0">
-      <div class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout">
+      <div
+        class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout"
+        :class="{ 'my-design-tab-split-layout--side-left': designSidePanelOnLeft }"
+      >
         <div
           class="h-100 min-h-0 overflow-hidden my-design-tab-left-view"
-          :class="showDesignRightView ? 'col-8 col-xl-8 col-xxl-9' : 'col-12'"
+          :class="[
+            showSidePanelColumn ? 'col-8 col-xl-8 col-xxl-9' : 'col-12',
+            showSidePanelColumn && designSidePanelOnLeft ? 'order-2' : '',
+          ]"
         >
-          <div class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column">
+          <div
+            class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column"
+            :class="{ 'my-design-tab-left-view-scroll--show-scrollbar': designSidePanelOnLeft }"
+          >
       <div
         v-if="!showCreateBankMainForm"
         class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
@@ -5788,7 +5809,7 @@ async function confirmAnswer(item) {
         <div class="row justify-content-center">
           <div
             :class="
-              showDesignRightView
+              showSidePanelColumn
                 ? 'col-12 col-xl-10 col-xxl-8'
                 : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
             "
@@ -6624,22 +6645,38 @@ async function confirmAnswer(item) {
         </div>
         </div>
         <div
-          v-if="showDesignRightView"
-          class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4"
+          v-if="showSidePanelColumn"
+          class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4 my-design-tab-side-panel"
+          :class="designSidePanelOnLeft ? 'order-1 border-end' : 'border-start'"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-hidden"
             aria-label="設計輔助面板"
           >
+            <div
+              v-if="designSidePanelOnLeft && $slots['side-panel-header']"
+              class="flex-shrink-0 my-design-tab-side-panel-header"
+            >
+              <slot name="side-panel-header" />
+            </div>
             <!-- 建立流程：上傳檔案、設定單元 + 子項目垂直列表 -->
             <nav
               v-if="showDesignRightNav"
-              class="my-design-right-nav nav nav-pills flex-column flex-nowrap flex-grow-1 justify-content-start align-items-stretch gap-3 overflow-y-auto overflow-x-hidden px-3 py-3 min-h-0"
+              class="my-design-right-nav nav nav-pills flex-column flex-nowrap flex-grow-1 justify-content-start align-items-stretch overflow-y-auto overflow-x-hidden min-h-0"
+              :class="[
+                designSidePanelOnLeft ? 'my-design-right-nav--flat gap-0' : 'px-3 py-3 gap-3',
+              ]"
               aria-label="建立流程"
             >
               <!-- 區塊 1：上傳檔案 -->
-              <div class="my-design-right-step-block py-2">
-                <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 px-3 py-2">上傳檔案</div>
+              <div
+                class="my-design-right-step-block"
+                :class="designSidePanelOnLeft ? 'p-3 my-design-right-step-block--section-divide' : 'py-2'"
+              >
+                <div
+                  class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
+                  :class="designSidePanelOnLeft ? 'pb-2' : 'px-3 py-2'"
+                >上傳檔案</div>
                 <div class="nav-item">
                   <span
                     class="nav-link w-100 text-start text-break"
@@ -6649,8 +6686,15 @@ async function confirmAnswer(item) {
               </div>
 
               <!-- 區塊 2：單元 -->
-              <div v-if="hasUploadedFileMetadata" class="my-design-right-step-block" :class="hasBuiltRagSummary ? 'py-2' : 'pb-2'">
-                <div class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 px-3 py-2 min-w-0">
+              <div
+                v-if="hasUploadedFileMetadata"
+                class="my-design-right-step-block"
+                :class="designSidePanelOnLeft ? 'p-3' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
+              >
+                <div
+                  class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 min-w-0"
+                  :class="designSidePanelOnLeft ? 'pb-2' : 'px-3 py-2'"
+                >
                   <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">{{ hasBuiltRagSummary ? '單元 / 題型' : '單元' }}</div>
                   <div
                     v-if="!hasBuiltRagSummary"
@@ -6774,27 +6818,28 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </template>
-              </div>
-              <div
-                v-if="!hasBuiltRagSummary && hasUploadedFileMetadata && packUnitCarouselCountEffective > 0"
-                class="my-design-right-pack-build-action w-100 min-w-0 pb-2"
-              >
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 w-100"
-                  :disabled="startPackUnitBuildDisabled"
-                  :aria-busy="currentState.packLoading"
-                  aria-label="開始建立單元"
-                  @click="confirmPack"
-                >
-                  開始建立單元
-                </button>
                 <div
-                  v-if="currentState.packError"
-                  class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0 text-break"
-                  style="white-space: pre-wrap"
+                  v-if="!hasBuiltRagSummary && packUnitCarouselCountEffective > 0"
+                  class="my-design-right-pack-build-action w-100 min-w-0"
+                  :class="designSidePanelOnLeft ? '' : 'pb-2'"
                 >
-                  {{ currentState.packError }}
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 w-100"
+                    :disabled="startPackUnitBuildDisabled"
+                    :aria-busy="currentState.packLoading"
+                    aria-label="開始建立單元"
+                    @click="confirmPack"
+                  >
+                    開始建立單元
+                  </button>
+                  <div
+                    v-if="currentState.packError"
+                    class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0 text-break"
+                    style="white-space: pre-wrap"
+                  >
+                    {{ currentState.packError }}
+                  </div>
                 </div>
               </div>
             </nav>
@@ -6824,6 +6869,13 @@ async function confirmAnswer(item) {
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
 }
+
+/* create-exam-bank_3：小 pill 按鈕 px-2 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
 .my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
@@ -6841,6 +6893,17 @@ async function confirmAnswer(item) {
   min-height: 0;
   flex: 1 1 0;
 }
+.my-design-tab-split-layout--side-left {
+  flex-wrap: nowrap;
+}
+.my-design-tab-side-panel {
+  border-color: var(--my-color-gray-2, #e5e5e5) !important;
+}
+.my-design-tab-side-panel-header {
+  flex-shrink: 0;
+  z-index: 31;
+  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
 .my-design-tab-left-view,
 .my-design-tab-right-view {
   min-width: 0;
@@ -6854,10 +6917,10 @@ async function confirmAnswer(item) {
   overflow-x: hidden;
   overflow-y: auto;
 }
-.my-design-tab-left-view-scroll {
+.my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar) {
   scrollbar-width: none;
 }
-.my-design-tab-left-view-scroll::-webkit-scrollbar {
+.my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar)::-webkit-scrollbar {
   display: none;
 }
 /* 右側欄捲軸：對齊全站 gray-2 滑塊 */
@@ -6896,6 +6959,25 @@ async function confirmAnswer(item) {
   gap: 0;
   background-color: var(--my-color-gray-3);
   border-radius: 0.75rem;
+}
+.my-design-right-nav--flat {
+  gap: 0;
+}
+.my-design-right-nav--flat .my-design-right-step-block {
+  background-color: transparent;
+  border-radius: 0;
+}
+.my-design-right-nav--flat .my-design-right-step-block--section-divide {
+  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
+
+.my-design-right-nav--flat .my-design-right-step-block .nav-link {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.my-design-right-nav--flat .my-design-right-unit-quiz-link {
+  padding-left: 0.75rem;
 }
 .my-design-right-pack-build-action {
   box-sizing: border-box;

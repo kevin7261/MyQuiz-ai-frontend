@@ -65,19 +65,28 @@
         }
         return {};
       },
+      /** create-exam-bank_3：主內容區顯示捲軸（與左側清單一致） */
+      showMainScrollbar() {
+        return this.currentView === 'createExamQuizBank3';
+      },
     },
   };
 </script>
 
 <template>
-  <main class="my-right-view flex-grow-1 overflow-hidden d-flex flex-column">
-    <KeepAlive :max="12">
-      <component
-        :is="activePageComponent"
-        :key="currentView"
-        v-bind="activePageProps"
-      />
-    </KeepAlive>
+  <main class="my-right-view flex-grow-1 overflow-hidden d-flex flex-column min-h-0">
+    <div
+      class="my-right-view-scroll flex-grow-1 min-h-0 d-flex flex-column"
+      :class="{ 'my-right-view-scroll--visible': showMainScrollbar }"
+    >
+      <KeepAlive :max="12">
+        <component
+          :is="activePageComponent"
+          :key="currentView"
+          v-bind="activePageProps"
+        />
+      </KeepAlive>
+    </div>
   </main>
 </template>
 
@@ -85,5 +94,38 @@
 .my-right-view {
   min-height: 0;
   min-width: 0;
+}
+
+.my-right-view-scroll {
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.my-right-view-scroll--visible {
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
+}
+
+.my-right-view-scroll--visible::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
+}
+
+.my-right-view-scroll--visible::-webkit-scrollbar-track {
+  background: var(--my-scrollbar-track);
+  border-radius: calc(var(--my-scrollbar-size) / 2);
+}
+
+.my-right-view-scroll--visible::-webkit-scrollbar-thumb {
+  background-color: var(--my-scrollbar-thumb);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+
+.my-right-view-scroll--visible::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-scrollbar-thumb-hover);
 }
 </style>

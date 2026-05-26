@@ -15,6 +15,7 @@
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import CourseSelectModal from '../components/CourseSelectModal.vue';
   import LeftView from './LeftView.vue';
+  import TopView from './TopView.vue';
   import RightView from './RightView.vue';
   import { useDataStore } from '../stores/dataStore.js';
   import { useAuthStore } from '../stores/authStore.js';
@@ -43,7 +44,7 @@ const PATH_TO_VIEW = {
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, CourseSelectModal, LeftView, RightView },
+    components: { LoadingOverlay, CourseSelectModal, LeftView, TopView, RightView },
 
     setup() {
       const router = useRouter();
@@ -67,6 +68,11 @@ const PATH_TO_VIEW = {
         return PATH_TO_VIEW[route.params.view] || 'work';
       });
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
+
+      /** create-exam-bank_3：全寬版面，頂部導覽列取代左側欄 */
+      const useTopHeaderLayout = computed(
+        () => route.path.startsWith('/create-exam-bank_3') || route.name === 'CreateExamBank3Detail',
+      );
 
       /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */
       watch(
@@ -146,6 +152,7 @@ const PATH_TO_VIEW = {
 
       return {
         currentView,
+        useTopHeaderLayout,
         MAIN_WORK_TAB_ID,
         userName,
         authStore,
@@ -178,7 +185,19 @@ const PATH_TO_VIEW = {
       @close="onCourseModalClose"
     />
 
-    <div class="row h-100 g-0 my-home-layout">
+    <div v-if="useTopHeaderLayout" class="d-flex flex-column h-100 g-0 my-home-layout">
+      <TopView
+        :user-name="userName"
+        :user-type="authStore.user?.user_type"
+        @logout="onLogout"
+        @open-course-modal="openCourseModal"
+      />
+      <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
+        <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
+      </div>
+    </div>
+
+    <div v-else class="row h-100 g-0 my-home-layout">
       <div class="col-4 col-md-3 col-lg-2 h-100 overflow-hidden">
         <LeftView
           :user-name="userName"

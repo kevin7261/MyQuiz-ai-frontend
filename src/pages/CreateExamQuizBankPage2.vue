@@ -18,6 +18,7 @@ import {
 } from '../services/ragApi.js';
 import { deriveRagName, generateTabId } from '../utils/rag.js';
 import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
+import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 
@@ -25,6 +26,8 @@ const props = defineProps({
   tabId: { type: String, required: true },
   /** 路由前綴，供 create-exam-bank_2 / create-exam-bank_3 共用 */
   routeBase: { type: String, default: '/create-exam-bank_2' },
+  /** true 時嵌入頁右側清單改顯示於左側（create-exam-bank_3） */
+  sidePanelOnLeft: { type: Boolean, default: false },
 });
 
 const CREATE_BANK_TAB_UI_STORAGE_PREFIX = 'myquiz:createBankTabUI:v1:';
@@ -469,7 +472,10 @@ watch(viewMode, (mode) => {
 <template>
   <div
     class="create-exam-bank-2 d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4"
-    :class="{ 'create-exam-bank-2--detail': viewMode === 'detail' }"
+    :class="{
+      'create-exam-bank-2--detail': viewMode === 'detail',
+      'create-exam-bank-2--side-panel-left': sidePanelOnLeft,
+    }"
   >
     <!-- 九宮格題庫入口 -->
     <template v-if="viewMode === 'grid'">
@@ -479,7 +485,10 @@ watch(viewMode, (mode) => {
         </div>
       </header>
 
-      <div class="flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative d-flex flex-column">
+      <div
+        class="create-exam-bank-2__grid-scroll flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative d-flex flex-column"
+        :class="{ 'create-exam-bank-2__grid-scroll--scrollbar': sidePanelOnLeft }"
+      >
         <LoadingOverlay
           :is-visible="showGridLoadingOverlay"
           loading-text="載入中..."
@@ -510,7 +519,7 @@ watch(viewMode, (mode) => {
         </div>
 
         <!-- 有資料：顯示列表 -->
-        <div v-else class="bank-list-wrap mx-auto">
+        <div v-else class="bank-list-wrap" :class="{ 'mx-auto': !sidePanelOnLeft }">
           <!-- 新增按鈕列 -->
           <div class="bank-table-actions">
             <button
@@ -530,7 +539,8 @@ watch(viewMode, (mode) => {
             <span class="bank-table-header__dot-spacer" aria-hidden="true" />
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1"
+              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless py-1"
+              :class="sidePanelOnLeft ? 'px-2' : 'px-4'"
               :aria-label="sortOrder === 'asc' ? '升冪排序，點擊改為降冪' : '降冪排序，點擊改為升冪'"
               @click="toggleSort"
             >
@@ -571,93 +581,42 @@ watch(viewMode, (mode) => {
         :is-visible="deleteRagLoading"
         loading-text="刪除中..."
       />
-      <header class="create-exam-bank-2-detail-bar flex-shrink-0 px-2 py-3 my-bgcolor-gray-4 border-bottom">
-        <div class="create-exam-bank-2-detail-bar__start">
-          <button
-            type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0"
-            aria-label="返回主頁"
-            :disabled="detailHeaderActionsDisabled"
-            @click="backToGrid"
-          >
-            <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-            返回主頁
-          </button>
-        </div>
-        <div class="create-exam-bank-2-detail-bar__center min-w-0">
-          <input
-            v-model="selectedBankLabel"
-            type="text"
-            class="create-exam-bank-2-detail-bar__title my-font-lg-400 my-color-black text-truncate mb-0 text-center w-100 px-3 py-2 rounded-2"
-            maxlength="200"
-            autocomplete="off"
-            spellcheck="false"
-            aria-label="題庫名稱"
-            :disabled="detailHeaderActionsDisabled"
-            @focus="onBankTitleFocus"
-            @blur="onBankTitleBlur"
-            @keydown.enter.prevent="$event.target.blur()"
-          />
-        </div>
-        <div class="create-exam-bank-2-detail-bar__end">
-          <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch">
-            <button
-              type="button"
-              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless create-exam-bank-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              aria-label="題庫選單"
-              :disabled="detailHeaderActionsDisabled"
-            >
-              <i class="fa-solid fa-bars" aria-hidden="true" />
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end create-exam-bank-2-bank-switch-menu">
-              <li v-if="gridItems.length === 0">
-                <span class="dropdown-item disabled">尚無題庫</span>
-              </li>
-              <li v-for="item in gridItems" :key="item.tabId">
-                <button
-                  type="button"
-                  class="dropdown-item"
-                  :class="{ active: item.tabId === selectedBankTabId }"
-                  @click="switchBankDetail(item.tabId, item.label)"
-                >
-                  <span class="d-flex align-items-center gap-2">
-                    <span
-                      v-if="item.isExam"
-                      class="rounded-circle d-inline-block flex-shrink-0 my-bgcolor-green"
-                      style="width: 0.5rem; height: 0.5rem"
-                      title="試卷用題庫"
-                      aria-label="試卷用題庫"
-                    />
-                    <span class="text-truncate">{{ item.label }}</span>
-                  </span>
-                </button>
-              </li>
-              <li>
-                <hr class="dropdown-divider" />
-              </li>
-              <li>
-                <button
-                  type="button"
-                  class="dropdown-item my-color-red"
-                  :disabled="detailHeaderActionsDisabled"
-                  :aria-busy="deleteRagLoading"
-                  @click="openDeleteBankModal"
-                >
-                  刪除此題庫
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </header>
+      <CreateExamQuizBankPage2DetailBar
+        v-if="!sidePanelOnLeft"
+        v-model:selected-bank-label="selectedBankLabel"
+        :detail-header-actions-disabled="detailHeaderActionsDisabled"
+        :grid-items="gridItems"
+        :selected-bank-tab-id="selectedBankTabId"
+        :delete-rag-loading="deleteRagLoading"
+        @back="backToGrid"
+        @switch-bank="switchBankDetail"
+        @delete-bank="openDeleteBankModal"
+        @title-focus="onBankTitleFocus"
+        @title-blur="onBankTitleBlur"
+      />
 
       <CreateExamQuizBankPage
         :key="selectedBankTabId"
         :tab-id="tabId"
+        :design-side-panel-on-left="sidePanelOnLeft"
         class="create-exam-bank-2-embedded flex-grow-1 min-h-0"
-      />
+      >
+        <template v-if="sidePanelOnLeft" #side-panel-header>
+          <CreateExamQuizBankPage2DetailBar
+            v-model:selected-bank-label="selectedBankLabel"
+            :detail-header-actions-disabled="detailHeaderActionsDisabled"
+            :grid-items="gridItems"
+            :selected-bank-tab-id="selectedBankTabId"
+            :delete-rag-loading="deleteRagLoading"
+            in-side-panel
+            @back="backToGrid"
+            @switch-bank="switchBankDetail"
+            @delete-bank="openDeleteBankModal"
+            @title-focus="onBankTitleFocus"
+            @title-blur="onBankTitleBlur"
+          />
+        </template>
+      </CreateExamQuizBankPage>
     </template>
 
   </div>
@@ -787,6 +746,10 @@ watch(viewMode, (mode) => {
   margin-inline: -1rem;
 }
 
+.create-exam-bank-2--side-panel-left .bank-table-actions {
+  justify-content: flex-start;
+}
+
 @media (min-width: 768px) {
   .bank-table-actions {
     margin-inline: -1.5rem;
@@ -877,17 +840,7 @@ watch(viewMode, (mode) => {
 }
 
 
-/* ── detail bar ─────────────────────────────────────── */
-.create-exam-bank-2-detail-bar {
-  display: grid;
-  grid-template-columns: 1fr minmax(0, 50%) 1fr;
-  align-items: center;
-  gap: 0.75rem;
-  border-color: var(--my-color-gray-2, #e5e5e5) !important;
-  overflow: visible;
-  position: relative;
-  z-index: 30;
-}
+/* ── detail bar styles moved to CreateExamQuizBankPage2DetailBar.vue ── */
 
 .create-exam-bank-2.create-exam-bank-2--detail {
   overflow: visible;
@@ -897,76 +850,30 @@ watch(viewMode, (mode) => {
   overflow: hidden;
 }
 
-.create-exam-bank-2-detail-bar__start {
-  justify-self: start;
-  min-width: 0;
+.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
 }
 
-.create-exam-bank-2-detail-bar__center {
-  justify-self: stretch;
-  width: 100%;
-  min-width: 0;
+.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
 }
 
-.create-exam-bank-2-detail-bar__title {
-  display: block;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
-  margin: 0;
-  font-family: inherit;
-  line-height: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color 0.15s ease;
+.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-track {
+  background: var(--my-scrollbar-track);
+  border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 
-.create-exam-bank-2-detail-bar__title:hover:not(:disabled),
-.create-exam-bank-2-detail-bar__title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3, #f5f5f5);
+.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--my-scrollbar-thumb);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 
-.create-exam-bank-2-detail-bar__title:focus {
-  outline: none;
-  box-shadow: none;
-  border: none;
-}
-
-.create-exam-bank-2-detail-bar__title:disabled {
-  opacity: 1;
-  color: var(--my-color-black, #000);
-  background: transparent;
-}
-
-.create-exam-bank-2-detail-bar__end {
-  justify-self: end;
-  min-width: 0;
-}
-
-.create-exam-bank-2-detail-bar__menu-btn {
-  width: 2.375rem;
-  height: 2.375rem;
-  min-width: 2.375rem;
-  min-height: 2.375rem;
-  padding: 0;
-}
-
-.create-exam-bank-2-bank-switch-menu {
-  min-width: 10rem;
-  max-height: min(60vh, 24rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.create-exam-bank-2-bank-switch-menu > li {
-  display: block;
-  width: 100%;
-}
-
-.create-exam-bank-2-bank-switch-menu .dropdown-item {
-  width: 100%;
-  white-space: nowrap;
+.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-scrollbar-thumb-hover);
 }
 
 /* 嵌入原頁：隱藏「建立測驗題庫」標題列與分頁列 */
@@ -983,5 +890,18 @@ watch(viewMode, (mode) => {
 .create-exam-bank-2-embedded :deep(button.btn.rounded-2.px-3) {
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
+}
+
+/* create-exam-bank_3：小 pill 按鈕 px-2（覆寫上方 px-4） */
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
 }
 </style>

@@ -25,6 +25,8 @@ const props = defineProps({
    * - 黑：格 5 畫 1/4 弧（與 1、2、4 成圓）；灰：格 5 畫 1/4 弧（與 2、3、6 成圓）
    */
   mergeCell5: { type: Boolean, default: false },
+  /** false 時不繪製全幅底色（頂欄等透明底場景） */
+  showBackground: { type: Boolean, default: true },
 });
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
@@ -160,7 +162,7 @@ const svgStyle = computed(() => {
         </clipPath>
       </template>
     </defs>
-    <rect x="0" y="0" width="240" height="160" :fill="backgroundPaint"/>
+    <rect v-if="showBackground" x="0" y="0" width="240" height="160" :fill="backgroundPaint"/>
     <!-- mergeCell5 模式：格 5 各層畫 1/4 弧成圓 -->
     <template v-if="mergeCell5">
       <g :clip-path="`url(#${idPrefix}-clip-outside-5)`">
