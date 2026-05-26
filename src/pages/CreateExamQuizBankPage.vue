@@ -2423,15 +2423,6 @@ async function persistDefaultUnitQuizNameAfterCreate(ragQuizId, personId) {
   }
 }
 
-const activeUnitQuizCards = computed(() => {
-  const state = currentState.value;
-  const i = activeUnitSlotIndex.value - 1;
-  const stacks = state.unitSlotQuizCards;
-  if (!Array.isArray(stacks) || i < 0 || i >= stacks.length) return [];
-  const row = stacks[i];
-  return Array.isArray(row) ? row : [];
-});
-
 const hasUnitSubTabs = computed(() => (currentState.value.unitTabOrder ?? []).length > 0);
 
 /** 題型 sub-tab 顯示文字：有題名用題名，否則預設「未命名題型」（不顯示題型編號） */
@@ -2450,13 +2441,27 @@ const activeUnitQuizTypeIdxResolved = computed(() => {
   return i;
 });
 
+/** 後端軟刪或未同步清單時，題型列可能仍帶 deleted／deleted_at */
+function isRagQuizRowDeleted(row) {
+  if (!row || typeof row !== 'object') return false;
+  if (row.deleted === true || row.deleted === 1 || String(row.deleted).toLowerCase() === 'true') {
+    return true;
+  }
+  if (row.is_deleted === true || row.is_deleted === 1) return true;
+  const at = row.deleted_at ?? row.deletedAt;
+  return at != null && String(at).trim() !== '';
+}
+
 function unitQuizCardsAtUnitIndex(unitIndex) {
   const stacks = currentState.value.unitSlotQuizCards;
   const i = Number(unitIndex);
   if (!Array.isArray(stacks) || !Number.isFinite(i) || i < 0 || i >= stacks.length) return [];
   const row = stacks[i];
-  return Array.isArray(row) ? row : [];
+  if (!Array.isArray(row)) return [];
+  return row.filter((qRow) => !isRagQuizRowDeleted(qRow));
 }
+
+const activeUnitQuizCards = computed(() => unitQuizCardsAtUnitIndex(activeUnitSlotIndex.value - 1));
 
 /** 右側欄：設定單元子分頁；建置完成後各單元下嵌套「設定單元題型」之題型列 */
 const designRightUnitSubTabItems = computed(() => {
@@ -2487,8 +2492,34 @@ const designRightUnitSubTabItems = computed(() => {
       kind: 'pack-unit',
       active: unitIndex === activeUnitIdx && quizItems.length === 0,
       quizItems,
+      quizQuestionCount: unitQuizStackQuestionCount(stack, unitIndex),
     };
   });
+});
+
+/** 右側欄「單元／題型」：已展開單元 index（字串 key；預設皆收合） */
+const designRightUnitExpandedKeys = ref([]);
+
+function isDesignRightUnitExpanded(unitIndex) {
+  return designRightUnitExpandedKeys.value.includes(String(unitIndex));
+}
+
+function toggleDesignRightUnitExpanded(unitIndex) {
+  const key = String(unitIndex);
+  const keys = designRightUnitExpandedKeys.value;
+  designRightUnitExpandedKeys.value = keys.includes(key)
+    ? keys.filter((k) => k !== key)
+    : [...keys, key];
+}
+
+function ensureDesignRightUnitExpanded(unitIndex) {
+  const key = String(unitIndex);
+  if (designRightUnitExpandedKeys.value.includes(key)) return;
+  designRightUnitExpandedKeys.value = [...designRightUnitExpandedKeys.value, key];
+}
+
+watch(activeTabId, () => {
+  designRightUnitExpandedKeys.value = [];
 });
 
 function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
@@ -2504,12 +2535,24 @@ function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
   if (!Array.isArray(cards) || !Number.isFinite(qi) || qi < 0 || qi >= cards.length) return;
 
   currentState.value.activeUnitQuizTypeIndex = qi;
+  ensureDesignRightUnitExpanded(ui);
   scrollActivePackUnitTabIntoView();
 }
 
 function onDesignRightSubTabClick(item) {
   if (!item) return;
-  if (item.kind === 'pack-unit') selectPackUnit(item.index);
+  if (item.kind === 'pack-unit') {
+    selectPackUnit(item.index);
+    if (
+      hasBuiltRagSummary.value
+      && hasUnitSubTabs.value
+      && unitQuizCardsAtUnitIndex(item.index).length > 0
+      && !isDesignRightUnitExpanded(item.index)
+    ) {
+      ensureDesignRightUnitExpanded(item.index);
+    }
+    return;
+  }
   if (item.kind === 'unit-quiz') selectUnitQuizTypeForUnit(item.unitIndex, item.quizIndex);
 }
 
@@ -2520,6 +2563,7 @@ async function onDesignRightAddUnitQuiz(unitIndex) {
 
   activePackUnitIndex.value = ui;
   syncActiveUnitTabFromPackUnitCarousel();
+  ensureDesignRightUnitExpanded(ui);
   await createBlankUnitQuiz(slotIndex);
 }
 
@@ -2895,7 +2939,9 @@ function hydrateQuizCardsFromRag(rag, state) {
     const ragIdFallback = rag.rag_id ?? rag.id;
     if (!state.unitSlotQuizCards) state.unitSlotQuizCards = [];
     const listOfLists = rawUnits.map((u, ui) => {
-      const uqs = Array.isArray(u.quizzes) ? u.quizzes : [];
+      const uqs = (Array.isArray(u.quizzes) ? u.quizzes : []).filter(
+        (q) => !isRagQuizRowDeleted(q),
+      );
       if (uqs.length === 0) return [];
       const unitLabel = String(u.unit_name ?? u.rag_name ?? u.name ?? '').trim();
       const ragNameForCard = unitLabel || fallbackName || '';
@@ -3354,6 +3400,29 @@ function unitQuizHistoryListForLlm(quizCardRow) {
     push(quizCardRow.quiz);
   }
   return out;
+}
+
+/** 右側欄：單一題型已產出之題目筆數（不含 deleted；追問整串只計 1 題） */
+function unitQuizGeneratedQuestionCount(quizCardRow, slotIndex) {
+  if (!quizCardRow || typeof quizCardRow !== 'object' || isRagQuizRowDeleted(quizCardRow)) {
+    return 0;
+  }
+  const slot = Number(slotIndex);
+  if (isUnitQuizFollowupMode(slot, quizCardRow)) {
+    const hasCurrent = String(quizCardRow.quiz ?? '').trim().length > 0;
+    const hasHistory = unitQuizFollowupHistoryListForDisplay(quizCardRow).length > 0;
+    return hasCurrent || hasHistory ? 1 : 0;
+  }
+  return unitQuizHistoryListForLlm(quizCardRow).length;
+}
+
+/** 右側欄：單元內各題型題目筆數加總 */
+function unitQuizStackQuestionCount(stack, unitIndex) {
+  if (!Array.isArray(stack)) return 0;
+  const slotIndex = Number(unitIndex) + 1;
+  return stack
+    .filter((row) => !isRagQuizRowDeleted(row))
+    .reduce((sum, row) => sum + unitQuizGeneratedQuestionCount(row, slotIndex), 0);
 }
 
 /** 將舊題幹併入歷史（重新產生前） */
@@ -6760,18 +6829,42 @@ async function confirmAnswer(item) {
                   <div
                     v-for="item in designRightUnitSubTabItems"
                     :key="item.key"
-                    class="nav-item"
+                    class="nav-item w-100"
                   >
-                    <div class="d-flex align-items-stretch min-w-0 my-design-right-unit-row">
-                      <button
-                        type="button"
-                        class="nav-link flex-grow-1 min-w-0 text-start text-break"
-                        :class="{ active: item.active }"
-                        :aria-current="item.active ? 'page' : undefined"
-                        @click="onDesignRightSubTabClick(item)"
-                      >
-                        {{ item.label }}<span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">{{ item.unitTypeLabel }}</span>
-                      </button>
+                    <div class="d-flex align-items-stretch min-w-0 w-100 my-design-right-unit-row">
+                      <div class="d-flex align-items-stretch min-w-0 flex-grow-1 gap-2">
+                        <button
+                          v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizItems.length"
+                          type="button"
+                          class="btn flex-shrink-0 my-design-right-unit-expand-btn my-font-sm-400 my-color-gray-1 my-button-transparent-borderless lh-1"
+                          :title="isDesignRightUnitExpanded(item.index) ? '收合題型' : '展開題型'"
+                          :aria-label="isDesignRightUnitExpanded(item.index) ? '收合題型' : '展開題型'"
+                          :aria-expanded="isDesignRightUnitExpanded(item.index)"
+                          @click.stop="toggleDesignRightUnitExpanded(item.index)"
+                        >
+                          <i
+                            class="fa-solid"
+                            :class="isDesignRightUnitExpanded(item.index) ? 'fa-chevron-down' : 'fa-chevron-right'"
+                            aria-hidden="true"
+                          />
+                        </button>
+                        <button
+                          type="button"
+                          class="nav-link flex-grow-1 min-w-0 text-start text-break"
+                          :class="{ active: item.active }"
+                          :aria-current="item.active ? 'page' : undefined"
+                          @click="onDesignRightSubTabClick(item)"
+                        >
+                          {{ item.label }}<span
+                            v-if="!hasBuiltRagSummary || !hasUnitSubTabs"
+                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2"
+                          >{{ item.unitTypeLabel }}</span>
+                        </button>
+                      </div>
+                      <span
+                        v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizQuestionCount > 0"
+                        class="badge user-select-none flex-shrink-0 my-design-right-unit-count-badge"
+                      >{{ item.quizQuestionCount }}</span>
                       <button
                         v-if="hasBuiltRagSummary && hasUnitSubTabs"
                         type="button"
@@ -6790,13 +6883,13 @@ async function confirmAnswer(item) {
                       </button>
                     </div>
                     <div
-                      v-if="item.quizItems.length"
-                      class="my-design-right-unit-quiz-list"
+                      v-if="item.quizItems.length && isDesignRightUnitExpanded(item.index)"
+                      class="my-design-right-unit-quiz-list w-100"
                     >
                       <div
                         v-for="qItem in item.quizItems"
                         :key="qItem.key"
-                        class="nav-item"
+                        class="nav-item w-100 my-design-right-unit-quiz-item"
                       >
                         <button
                           type="button"
@@ -6971,13 +7064,15 @@ async function confirmAnswer(item) {
   border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
 }
 
-.my-design-right-nav--flat .my-design-right-step-block .nav-link {
+.my-design-right-nav--flat .my-design-right-step-block .nav-link:not(.my-design-right-unit-quiz-link) {
   padding-left: 0;
   padding-right: 0;
 }
 
-.my-design-right-nav--flat .my-design-right-unit-quiz-link {
-  padding-left: 0.75rem;
+/* 題型列：全寬列 + 僅文字內縮（須高於上方 .nav-link padding 覆寫） */
+.my-design-right-nav--flat .my-design-right-step-block .nav-link.my-design-right-unit-quiz-link {
+  padding-left: 1.75rem;
+  padding-right: 0;
 }
 .my-design-right-pack-build-action {
   box-sizing: border-box;
@@ -7063,16 +7158,48 @@ async function confirmAnswer(item) {
   background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
+/* 左欄（gray-4 底）：hover 須用 gray-3 才看得見 */
+.my-design-right-nav--flat button.nav-link:not(.active):hover,
+.my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-3);
+}
+.my-design-right-unit-expand-btn {
+  align-self: center;
+  width: 1.25rem;
+  min-width: 1.25rem;
+  padding: 0;
+}
+.my-design-right-unit-expand-btn:hover:not(:disabled),
+.my-design-right-unit-expand-btn:focus-visible:not(:disabled) {
+  color: var(--my-color-black);
+  background-color: transparent;
+}
+.my-design-right-unit-count-badge {
+  align-self: center;
+  margin-right: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: var(--my-font-weight-regular);
+  line-height: 1.25;
+  color: var(--my-color-gray-1);
+  background-color: var(--my-color-gray-3);
+  border: none;
+  border-radius: 0.25rem;
+}
 .my-design-right-unit-row {
   width: 100%;
   transition: background-color 0.15s ease;
 }
-.my-design-right-unit-row:has(> .nav-link.active) {
+.my-design-right-unit-row:has(.nav-link.active) {
   background-color: var(--my-color-white);
 }
-.my-design-right-unit-row:not(:has(> .nav-link.active)):hover,
-.my-design-right-unit-row:not(:has(> .nav-link.active)):focus-within {
+.my-design-right-unit-row:not(:has(.nav-link.active)):hover,
+.my-design-right-unit-row:not(:has(.nav-link.active)):focus-within {
   background-color: var(--my-color-gray-4);
+}
+.my-design-right-nav--flat .my-design-right-unit-row:not(:has(.nav-link.active)):hover,
+.my-design-right-nav--flat .my-design-right-unit-row:not(:has(.nav-link.active)):focus-within {
+  background-color: var(--my-color-gray-3);
 }
 .my-design-right-unit-row .nav-link,
 .my-design-right-unit-row .nav-link:not(.active):hover,
@@ -7083,15 +7210,36 @@ async function confirmAnswer(item) {
 .my-design-right-unit-row .nav-link.active:focus-visible {
   background-color: transparent;
 }
-.my-design-right-nav .nav-link.active,
-.my-design-right-nav .nav-link.active:hover,
-.my-design-right-nav .nav-link.active:focus,
-.my-design-right-nav .nav-link.active:focus-visible {
-  background-color: var(--my-color-white);
-  color: var(--my-color-black);
-}
 .my-design-right-unit-quiz-list {
-  padding-left: 0;
+  width: 100%;
+}
+.my-design-right-unit-quiz-item {
+  width: 100%;
+  transition: background-color 0.15s ease;
+}
+.my-design-right-unit-quiz-item:has(.nav-link.active) {
+  background-color: var(--my-color-white);
+}
+.my-design-right-unit-quiz-item:not(:has(.nav-link.active)):hover,
+.my-design-right-unit-quiz-item:not(:has(.nav-link.active)):focus-within {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(:has(.nav-link.active)):hover,
+.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(:has(.nav-link.active)):focus-within {
+  background-color: var(--my-color-gray-3);
+}
+.my-design-right-unit-quiz-item .nav-link,
+.my-design-right-unit-quiz-item .nav-link:not(.active):hover,
+.my-design-right-unit-quiz-item .nav-link:not(.active):focus-visible,
+.my-design-right-unit-quiz-item .nav-link.active,
+.my-design-right-unit-quiz-item .nav-link.active:hover,
+.my-design-right-unit-quiz-item .nav-link.active:focus,
+.my-design-right-unit-quiz-item .nav-link.active:focus-visible {
+  background-color: transparent;
+}
+.my-design-right-nav .nav-link.active,
+.my-design-right-nav .my-design-right-unit-quiz-item .nav-link.active {
+  color: var(--my-color-black);
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
   align-self: center;
@@ -7103,12 +7251,10 @@ async function confirmAnswer(item) {
   background: transparent;
   color: var(--my-color-black);
 }
-.my-design-right-unit-quiz-list .nav-item {
-  width: 100%;
-}
 .my-design-right-unit-quiz-link {
+  width: 100%;
   font-size: var(--my-font-size-sm);
-  padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 0.75rem);
+  padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 1.75rem);
 }
 .my-pack-empty-start-layout {
   justify-content: center;
