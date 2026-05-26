@@ -5,8 +5,14 @@ import {
   logoDiamondGradientToCssLinear,
 } from '../utils/logoDiamondGradient.js';
 
-defineProps({
+const props = defineProps({
   idPrefix: { type: String, required: true },
+  /** generate＝偏藍綠（產生題目）；grade＝偏紅橘（開始批改） */
+  tone: {
+    type: String,
+    required: true,
+    validator: (v) => ['generate', 'grade'].includes(v),
+  },
   disabled: { type: Boolean, default: false },
   ariaBusy: { type: Boolean, default: false },
   ariaLabel: { type: String, default: '' },
@@ -16,9 +22,9 @@ defineProps({
 
 defineEmits(['click']);
 
-/** 每顆按鈕各一組隨機漸層（與 TopView logo 菱形同色票機制） */
+/** 每顆按鈕各一組隨機漸層（色域依 tone；機制同 TopView logo） */
 const buttonStyle = {
-  background: logoDiamondGradientToCssLinear(createRandomLogoDiamondGradient()),
+  background: logoDiamondGradientToCssLinear(createRandomLogoDiamondGradient({ tone: props.tone })),
 };
 </script>
 

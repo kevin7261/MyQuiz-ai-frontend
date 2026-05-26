@@ -1283,6 +1283,7 @@ const quizAnswerFieldDisabled = computed(
                   class="d-flex justify-content-end align-items-center flex-nowrap gap-2 pt-2 my-design-quiz-grading-start-row my-design-quiz-grading-start-row--answer"
                 >
                   <LogoGradientPillButton
+                    tone="grade"
                     :id-prefix="`quiz-grade-mark-${card.id}-answer-row`"
                     title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                     :disabled="designGradingStartButtonDisabled"
@@ -1529,6 +1530,7 @@ const quizAnswerFieldDisabled = computed(
               class="d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2 my-design-quiz-grading-start-row"
             >
               <LogoGradientPillButton
+                tone="grade"
                 :id-prefix="`quiz-grade-mark-${card.id}-grading-row`"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="designGradingStartButtonDisabled"
@@ -1614,6 +1616,7 @@ const quizAnswerFieldDisabled = computed(
           >
             <LogoGradientPillButton
               v-if="showStartGradeButton"
+              tone="grade"
               :id-prefix="`quiz-grade-mark-${card.id}-toolbar-fallback`"
               title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
               :disabled="mergedGradeButtonDisabled"
@@ -1665,6 +1668,7 @@ const quizAnswerFieldDisabled = computed(
             </button>
             <LogoGradientPillButton
               v-if="showRagGradeDbButton && showStartGradeButton"
+              tone="grade"
               :id-prefix="`quiz-grade-mark-${card.id}-grade-db`"
               title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
               :disabled="ragGradeDbButtonDisabled"
@@ -1708,6 +1712,7 @@ const quizAnswerFieldDisabled = computed(
           </button>
           <LogoGradientPillButton
             v-if="showStartGradeButton"
+            tone="grade"
             :id-prefix="`quiz-grade-mark-${card.id}-standalone`"
             :disabled="standaloneStartGradeButtonDisabled"
             :aria-busy="gradeSubmitting"

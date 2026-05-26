@@ -6710,6 +6710,7 @@ async function confirmAnswer(item) {
                     >
                       <LogoGradientPillButton
                         v-if="!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)"
+                        tone="generate"
                         :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         extra-class="my-design-quiz-generate-btn"
                         title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設"
