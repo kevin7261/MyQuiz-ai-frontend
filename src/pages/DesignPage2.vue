@@ -14,7 +14,7 @@ const TABS = [
   { id: 'color',      label: "顏色" },
   { id: 'type',       label: "字階" },
   { id: 'header-bar', label: "頁首 & 頂列" },
-  { id: 'grid',       label: "九宮格" },
+  { id: 'list',       label: "列表" },
   { id: 'alert',      label: "提示" },
   { id: 'button',     label: "按鈕" },
   { id: 'badge',      label: "Badge" },
@@ -436,54 +436,123 @@ function toggleLoading() {
             </template>
 
             <!-- ══════════════════════════════════════════════════
-                 九宮格方塊
+                 列表
             ══════════════════════════════════════════════════ -->
-            <template v-else-if="activeTab === 'grid'">
+            <template v-else-if="activeTab === 'list'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">九宮格方塊</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">三種：一般 · 試卷用（右上角綠點）· 新增（虛線框、透明底）</p>
-                  <div class="bank-grid-wrap">
-                    <div class="bank-grid" role="list">
-                      <button type="button" class="bank-grid-tile" role="listitem">
-                        <span class="bank-grid-tile__label my-font-md-400 my-color-black text-break">範例試卷</span>
-                        <span class="bank-grid-tile__subtitle my-font-sm-400 my-color-gray-1 text-break">5 題</span>
-                      </button>
-                      <button type="button" class="bank-grid-tile" role="listitem">
-                        <span class="bank-grid-tile__exam-dot rounded-circle d-inline-block my-bgcolor-green" title="試卷用題庫" aria-label="試卷用題庫" />
-                        <span class="bank-grid-tile__label my-font-md-400 my-color-black text-break">試卷用題庫</span>
-                        <span class="bank-grid-tile__subtitle my-font-sm-400 my-color-gray-1 text-break">3 個單元</span>
-                      </button>
-                      <button type="button" class="bank-grid-tile bank-grid-tile--add">
-                        <span class="bank-grid-tile__icon bank-grid-tile__icon--add" aria-hidden="true"><i class="fa-solid fa-plus" /></span>
-                        <span class="bank-grid-tile__label my-font-md-400 my-color-gray-1">新增測驗題庫</span>
-                      </button>
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">列表</div>
+                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
+                    exam_2 / create-exam-bank_2 主頁入口；新增按鈕靠右（bank-table-actions）；
+                    表頭名稱＋排序（bank-table-header）；項目間 border-top 分隔，hover → gray-2 底色；
+                    create-exam-bank_2 含 dot-col 欄位（綠點）與表頭 dot-spacer 對齊
+                  </p>
+
+                  <!-- 靜態預覽 -->
+                  <div class="my-bgcolor-gray-4 rounded-3 p-3 mb-3">
+                    <div class="dp2-bank-list-wrap mx-auto">
+
+                      <!-- 新增按鈕列（靠右） -->
+                      <div class="dp2-bank-table-actions">
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2" disabled>
+                          <i class="fa-solid fa-plus" aria-hidden="true" />
+                          新增試卷
+                        </button>
+                      </div>
+
+                      <!-- 表頭：dot spacer ＋ 名稱排序 -->
+                      <div class="dp2-bank-table-header">
+                        <span class="dp2-bank-table-header__dot-spacer" aria-hidden="true" />
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless ps-0 pe-2 py-1" disabled>
+                          名稱
+                          <i class="fa-solid fa-chevron-up" aria-hidden="true" />
+                        </button>
+                      </div>
+
+                      <!-- 列表 -->
+                      <ul class="dp2-bank-list">
+                        <li>
+                          <button type="button" class="dp2-bank-list-row" disabled>
+                            <span class="dp2-bank-list-row__dot-col" />
+                            <span class="dp2-bank-list-row__label my-font-md-400 my-color-black">範例試卷 A</span>
+                            <span class="dp2-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
+                            <i class="fa-solid fa-chevron-right dp2-bank-list-row__chevron" aria-hidden="true" />
+                          </button>
+                        </li>
+                        <li>
+                          <button type="button" class="dp2-bank-list-row" disabled>
+                            <span class="dp2-bank-list-row__dot-col" aria-label="試卷用題庫">
+                              <span class="rounded-circle d-inline-block my-bgcolor-green dp2-bank-list-row__exam-dot" />
+                            </span>
+                            <span class="dp2-bank-list-row__label my-font-md-400 my-color-black">試卷用題庫</span>
+                            <span class="dp2-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">3 個單元</span>
+                            <i class="fa-solid fa-chevron-right dp2-bank-list-row__chevron" aria-hidden="true" />
+                          </button>
+                        </li>
+                        <li>
+                          <button type="button" class="dp2-bank-list-row" disabled>
+                            <span class="dp2-bank-list-row__dot-col" />
+                            <span class="dp2-bank-list-row__label my-font-md-400 my-color-black">未命名試卷</span>
+                            <i class="fa-solid fa-chevron-right dp2-bank-list-row__chevron" aria-hidden="true" />
+                          </button>
+                        </li>
+                      </ul>
                     </div>
                   </div>
-                  <div class="d-flex flex-column gap-2 mt-3">
+
+                  <!-- class 說明 -->
+                  <div class="d-flex flex-column gap-2">
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-grid-tile</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-grid-tile" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-wrap { width:100%; max-width:40rem; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-wrap" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-grid-tile__label my-font-md-400 my-color-black text-break</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-grid-tile__label my-font-md-400 my-color-black text-break" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-actions { display:flex; justify-content:flex-end; padding:0 1.25rem 0.75rem; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-table-actions { display: flex; justify-content: flex-end; padding: 0 1.25rem 0.75rem; }" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-grid-tile__subtitle my-font-sm-400 my-color-gray-1 text-break</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-grid-tile__subtitle my-font-sm-400 my-color-gray-1 text-break" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-header { display:flex; align-items:center; padding:0 1.25rem 0.5rem; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-table-header { display: flex; align-items: center; padding: 0 1.25rem 0.5rem; }" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-grid-tile__exam-dot rounded-circle d-inline-block my-bgcolor-green</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-grid-tile__exam-dot rounded-circle d-inline-block my-bgcolor-green" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-header__dot-spacer { display:inline-block; width:calc(0.5rem + 0.75rem); flex-shrink:0; } ← create-exam-bank_2 only</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-table-header__dot-spacer { display: inline-block; width: calc(0.5rem + 0.75rem); flex-shrink: 0; }" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-grid-tile bank-grid-tile--add</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-grid-tile bank-grid-tile--add" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list { list-style:none; padding:0; margin:0; border-bottom:1px solid gray-2; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list { list-style: none; padding: 0; margin: 0; border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5); }" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-grid-tile__icon bank-grid-tile__icon--add</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-grid-tile__icon bank-grid-tile__icon--add" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list > li { border-top:1px solid gray-2; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list > li { border-top: 1px solid var(--my-color-gray-2, #e5e5e5); }" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row { display:flex; align-items:center; gap:0.75rem; width:100%; padding:0.875rem 1.25rem; background:transparent; border:none; text-align:left; cursor:pointer; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-row { display: flex; align-items: center; gap: 0.75rem; width: 100%; padding: 0.875rem 1.25rem; background: transparent; border: none; text-align: left; cursor: pointer; }" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row:hover { background-color: var(--my-color-gray-2); }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-row:hover { background-color: var(--my-color-gray-2); }" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row__dot-col { flex-shrink:0; width:0.5rem; display:flex; align-items:center; justify-content:center; } ← create-exam-bank_2 only</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-row__dot-col { flex-shrink: 0; width: 0.5rem; display: flex; align-items: center; justify-content: center; }" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row__exam-dot rounded-circle d-inline-block my-bgcolor-green { width:0.5rem; height:0.5rem; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-row__exam-dot rounded-circle d-inline-block my-bgcolor-green" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row__label my-font-md-400 my-color-black { flex:1 1 0; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-row__label my-font-md-400 my-color-black" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row__subtitle my-font-sm-400 my-color-gray-1 { flex-shrink:0; white-space:nowrap; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-row__subtitle my-font-sm-400 my-color-gray-1" :on-light-bg="false" />
+                    </div>
+                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">fa-solid fa-chevron-right bank-list-row__chevron { flex-shrink:0; font-size:0.625rem; opacity:0.4; }</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="fa-solid fa-chevron-right bank-list-row__chevron" :on-light-bg="false" />
                     </div>
                   </div>
                 </div>
@@ -968,6 +1037,97 @@ function toggleLoading() {
 </template>
 
 <style scoped>
+/* ── list 入口預覽（dp2- 前綴，僅 DesignPage2 scoped 用） ──────── */
+.dp2-bank-list-wrap {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.dp2-bank-table-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 1.25rem 0.75rem;
+}
+
+.dp2-bank-table-header {
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem 0.5rem;
+}
+
+.dp2-bank-table-header__dot-spacer {
+  display: inline-block;
+  width: calc(0.5rem + 0.75rem);
+  flex-shrink: 0;
+}
+
+.dp2-bank-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
+
+.dp2-bank-list > li {
+  display: block;
+  border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
+
+.dp2-bank-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color 0.12s ease;
+}
+
+.dp2-bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-2, #e5e5e5);
+}
+
+.dp2-bank-list-row:focus-visible {
+  outline: 2px solid var(--my-color-black, #000);
+  outline-offset: -2px;
+}
+
+.dp2-bank-list-row__dot-col {
+  flex-shrink: 0;
+  width: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dp2-bank-list-row__exam-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.dp2-bank-list-row__label {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dp2-bank-list-row__subtitle {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.dp2-bank-list-row__chevron {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  opacity: 0.4;
+}
+
 /* bank-grid */
 .bank-grid-wrap { width: 100%; }
 

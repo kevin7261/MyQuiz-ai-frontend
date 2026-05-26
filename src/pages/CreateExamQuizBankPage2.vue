@@ -72,6 +72,21 @@ const gridItems = computed(() =>
   }),
 );
 
+const sortOrder = ref('asc');
+
+const sortedItems = computed(() => {
+  const items = [...gridItems.value];
+  return items.sort((a, b) =>
+    sortOrder.value === 'asc'
+      ? a.label.localeCompare(b.label, 'zh-TW')
+      : b.label.localeCompare(a.label, 'zh-TW'),
+  );
+});
+
+function toggleSort() {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
+}
+
 const showGridLoadingOverlay = computed(
   () => viewMode.value === 'grid' && ragListLoading.value && gridItems.value.length === 0,
 );
@@ -462,62 +477,88 @@ watch(viewMode, (mode) => {
         </div>
       </header>
 
-      <div class="flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative">
+      <div class="flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative d-flex flex-column">
         <LoadingOverlay
           :is-visible="showGridLoadingOverlay"
           loading-text="載入中..."
         />
 
-        <div class="bank-grid-wrap mx-auto">
-          <div
-            v-if="ragListError"
-            class="my-alert-warning-soft my-font-sm-400 py-2 mb-3"
+        <div
+          v-if="ragListError"
+          class="my-alert-warning-soft my-font-sm-400 py-2 mb-3"
+        >
+          {{ ragListError }}
+        </div>
+
+        <!-- 清單為空：居中顯示大型新增按鈕 -->
+        <div
+          v-if="sortedItems.length === 0 && !ragListLoading"
+          class="flex-grow-1 d-flex justify-content-center align-items-center"
+        >
+          <button
+            type="button"
+            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3"
+            :disabled="createRagLoading"
+            :aria-busy="createRagLoading"
+            @click="openNewBankUploadModal"
           >
-            {{ ragListError }}
-          </div>
+            <i class="fa-solid fa-plus" aria-hidden="true" />
+            新增{{ QUIZ_BANK_NOUN }}
+          </button>
+        </div>
 
-          <div class="bank-grid" role="list">
-            <button
-              v-for="item in gridItems"
-              :key="item.tabId"
-              type="button"
-              class="bank-grid-tile"
-              role="listitem"
-              @click="openBankDetail(item.tabId, item.label)"
-            >
-              <span
-                v-if="item.isExam"
-                class="bank-grid-tile__exam-dot rounded-circle d-inline-block my-bgcolor-green"
-                title="試卷用題庫"
-                aria-label="試卷用題庫"
-              />
-              <span class="bank-grid-tile__label my-font-md-400 my-color-black text-break">
-                {{ item.label }}
-              </span>
-              <span
-                v-if="item.subtitle"
-                class="bank-grid-tile__subtitle my-font-sm-400 my-color-gray-1 text-break"
-              >
-                {{ item.subtitle }}
-              </span>
-            </button>
-
+        <!-- 有資料：顯示列表 -->
+        <div v-else class="bank-list-wrap mx-auto">
+          <!-- 新增按鈕列 -->
+          <div class="bank-table-actions">
             <button
               type="button"
-              class="bank-grid-tile bank-grid-tile--add"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-3 py-2"
               :disabled="createRagLoading"
               :aria-busy="createRagLoading"
-              :aria-label="`新增${QUIZ_BANK_NOUN}`"
               @click="openNewBankUploadModal"
             >
-              <span class="bank-grid-tile__icon bank-grid-tile__icon--add" aria-hidden="true">
-                <i class="fa-solid fa-plus" />
-              </span>
-              <span class="bank-grid-tile__label my-font-md-400 my-color-gray-1">
-                新增{{ QUIZ_BANK_NOUN }}
-              </span>
+              <i class="fa-solid fa-plus" aria-hidden="true" />
+              新增{{ QUIZ_BANK_NOUN }}
             </button>
           </div>
+
+          <!-- 表頭：名稱排序（含 dot 欄位間距對齊） -->
+          <div class="bank-table-header">
+            <span class="bank-table-header__dot-spacer" aria-hidden="true" />
+            <button
+              type="button"
+              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless ps-0 pe-2 py-1"
+              :aria-label="sortOrder === 'asc' ? '升冪排序，點擊改為降冪' : '降冪排序，點擊改為升冪'"
+              @click="toggleSort"
+            >
+              名稱
+              <i :class="['fa-solid', sortOrder === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down']" aria-hidden="true" />
+            </button>
+          </div>
+
+          <ul class="bank-list">
+            <li v-for="item in sortedItems" :key="item.tabId">
+              <button
+                type="button"
+                class="bank-list-row"
+                @click="openBankDetail(item.tabId, item.label)"
+              >
+                <span class="bank-list-row__dot-col" :aria-label="item.isExam ? '試卷用題庫' : undefined">
+                  <span
+                    v-if="item.isExam"
+                    class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot"
+                  />
+                </span>
+                <span class="bank-list-row__label my-font-md-400 my-color-black">{{ item.label }}</span>
+                <span
+                  v-if="item.subtitle"
+                  class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1"
+                >{{ item.subtitle }}</span>
+                <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
+              </button>
+            </li>
+          </ul>
         </div>
       </div>
     </template>
@@ -731,107 +772,103 @@ watch(viewMode, (mode) => {
 </template>
 
 <style scoped>
-.bank-grid-wrap {
+/* ── list 入口 ──────────────────────────────────────── */
+.bank-list-wrap {
   width: 100%;
+  max-width: 40rem;
 }
 
-.bank-grid {
-  display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1rem;
-}
-
-@media (min-width: 768px) {
-  .bank-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 992px) {
-  .bank-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1200px) {
-  .bank-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1400px) {
-  .bank-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-}
-
-.bank-grid-tile {
-  position: relative;
+.bank-table-actions {
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 1.25rem 0.75rem;
+}
+
+.bank-table-header {
+  display: flex;
+  align-items: center;
+  padding: 0 1.25rem 0.5rem;
+}
+
+/* 與列內 dot-col (0.5rem) + gap (0.75rem) 等寬，讓「名稱」文字對齊列標籤 */
+.bank-table-header__dot-spacer {
+  display: inline-block;
+  width: calc(0.5rem + 0.75rem);
+  flex-shrink: 0;
+}
+
+.bank-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
+
+.bank-list > li {
+  display: block;
+}
+
+.bank-list > li {
+  border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
+
+.bank-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color 0.12s ease;
+}
+
+.bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-2, #e5e5e5);
+}
+
+.bank-list-row:focus-visible {
+  outline: 2px solid var(--my-color-black, #000);
+  outline-offset: -2px;
+}
+
+.bank-list-row__dot-col {
+  flex-shrink: 0;
+  width: 0.5rem;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  min-height: 9.5rem;
-  padding: 1.25rem 1rem;
-  border: 1px solid var(--my-color-gray-2, #e5e5e5);
-  border-radius: 1rem;
-  background: var(--my-color-gray-3, #f5f5f5);
-  cursor: pointer;
-  text-align: center;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
 }
 
-.bank-grid-tile:hover:not(:disabled) {
-  border-color: var(--my-color-gray-1, #999);
-  box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 0.08);
-  transform: translateY(-2px);
-}
-
-.bank-grid-tile:focus-visible {
-  outline: 2px solid var(--my-color-black, #000);
-  outline-offset: 2px;
-}
-
-.bank-grid-tile--add {
-  border-style: dashed;
-  background: transparent;
-}
-
-.bank-grid-tile--add:hover:not(:disabled) {
-  background: var(--my-color-gray-3, #f5f5f5);
-}
-
-.bank-grid-tile__exam-dot {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+.bank-list-row__exam-dot {
   width: 0.5rem;
   height: 0.5rem;
 }
 
-.bank-grid-tile__icon--add {
-  font-size: 2rem;
-  line-height: 1;
-  color: var(--my-color-gray-1, #999);
-}
-
-.bank-grid-tile__label {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+.bank-list-row__label {
+  flex: 1 1 0;
+  min-width: 0;
   overflow: hidden;
-  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.bank-grid-tile__subtitle {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 1;
-  overflow: hidden;
-  width: 100%;
+.bank-list-row__subtitle {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
+.bank-list-row__chevron {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  opacity: 0.4;
+}
+
+
+/* ── detail bar ─────────────────────────────────────── */
 .create-exam-bank-2-detail-bar {
   display: grid;
   grid-template-columns: 1fr minmax(0, 50%) 1fr;
