@@ -3542,8 +3542,11 @@ onActivated(() => {
 }
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-logo-gradient),
 .my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white),
-.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row--answer .btn.my-button-white) {
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-logo-gradient),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row--answer .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row--answer .btn.my-button-logo-gradient) {
   padding-top: 0.5rem !important;
   padding-bottom: 0.5rem !important;
   padding-left: 1.5rem !important;

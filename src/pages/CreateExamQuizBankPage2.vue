@@ -497,12 +497,6 @@ watch(viewMode, (mode) => {
   >
     <!-- 九宮格題庫入口 -->
     <template v-if="viewMode === 'grid'">
-      <header class="flex-shrink-0 p-4" :class="sidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
-        <div class="container-fluid px-0 text-center">
-          <p class="my-font-xl-400 my-color-black text-break mb-0">建立測驗題庫</p>
-        </div>
-      </header>
-
       <div
         class="create-exam-bank-2__grid-scroll flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative d-flex flex-column"
         :class="{ 'create-exam-bank-2__grid-scroll--scrollbar': sidePanelOnLeft }"
@@ -537,12 +531,12 @@ watch(viewMode, (mode) => {
         </div>
 
         <!-- 有資料：顯示列表 -->
-        <div v-else class="bank-list-wrap" :class="{ 'mx-auto': !sidePanelOnLeft }">
-          <!-- 新增按鈕列 -->
+        <div v-else class="bank-list-wrap mx-auto">
+          <!-- 新增按鈕：表格上方獨立列，靠表格右上 -->
           <div class="bank-table-actions">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
               :disabled="createRagLoading"
               :aria-busy="createRagLoading"
               @click="openNewBankUploadModal"
@@ -552,13 +546,13 @@ watch(viewMode, (mode) => {
             </button>
           </div>
 
-          <!-- 表頭：名稱排序（含 dot 欄位間距對齊） -->
+          <!-- 表頭：名稱排序 -->
           <div class="bank-table-header">
             <span class="bank-table-header__dot-spacer" aria-hidden="true" />
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless py-1"
-              :class="sidePanelOnLeft ? 'px-2' : 'px-4'"
+              class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
+              :class="{ 'rounded-pill': !sidePanelOnLeft }"
               :aria-label="sortOrder === 'asc' ? '升冪排序，點擊改為降冪' : '降冪排序，點擊改為升冪'"
               @click="toggleSort"
             >
@@ -763,23 +757,28 @@ watch(viewMode, (mode) => {
   display: flex;
   justify-content: flex-end;
   padding-bottom: 0.75rem;
-  margin-inline: -1rem;
-}
-
-.create-exam-bank-2--side-panel-left .bank-table-actions {
-  justify-content: flex-start;
-}
-
-@media (min-width: 768px) {
-  .bank-table-actions {
-    margin-inline: -1.5rem;
-  }
 }
 
 .bank-table-header {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
   padding: 0 1.25rem 0.5rem;
+}
+
+/* 與 detail bar「返回主頁」同款 */
+.bank-table-sort-btn {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+  font-weight: var(--my-font-weight-regular);
+}
+
+.bank-table-sort-btn:hover:not(:disabled),
+.bank-table-sort-btn:focus-visible:not(:disabled),
+.bank-table-sort-btn:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  font-weight: var(--my-font-weight-semibold);
+  background-color: transparent !important;
 }
 
 /* 與列內 dot-col (0.5rem) + gap (0.75rem) 等寬，讓「名稱」文字對齊列標籤 */
@@ -917,16 +916,25 @@ watch(viewMode, (mode) => {
 }
 
 /* create-exam-bank_3：小 pill 按鈕 px-2（覆寫上方 px-4） */
-.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400),
-.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400) {
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
 
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400),
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400) {
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+}
+
+/* create-exam-bank_3：詳細資訊等 stem history pill 維持 px-3 */
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
 .create-exam-bank-2--side-panel-left.create-exam-bank-2--detail,

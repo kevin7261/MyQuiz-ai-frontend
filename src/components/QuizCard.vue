@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
-import LogoCenterMark from './LogoCenterMark.vue';
+import LogoGradientPillButton from './LogoGradientPillButton.vue';
 import QuizHistoryModal from './QuizHistoryModal.vue';
 import QuizHistoryPanel from './QuizHistoryPanel.vue';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
@@ -1282,20 +1282,16 @@ const quizAnswerFieldDisabled = computed(
                   v-if="showDesignGradingStartInAnswerRow"
                   class="d-flex justify-content-end align-items-center flex-nowrap gap-2 pt-2 my-design-quiz-grading-start-row my-design-quiz-grading-start-row--answer"
                 >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                  <LogoGradientPillButton
+                    :id-prefix="`quiz-grade-mark-${card.id}-answer-row`"
                     title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                     :disabled="designGradingStartButtonDisabled"
                     :aria-busy="gradeSubmitting"
                     aria-label="開始批改"
                     @click="emit('confirm-answer', card)"
                   >
-                    <LogoCenterMark
-                      :id-prefix="`quiz-grade-mark-${card.id}-answer-row`"
-                    />
-                    <span>開始批改</span>
-                  </button>
+                    開始批改
+                  </LogoGradientPillButton>
                 </div>
               </template>
               <div
@@ -1532,20 +1528,16 @@ const quizAnswerFieldDisabled = computed(
               v-if="showDesignGradingStartRow"
               class="d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2 my-design-quiz-grading-start-row"
             >
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+              <LogoGradientPillButton
+                :id-prefix="`quiz-grade-mark-${card.id}-grading-row`"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="designGradingStartButtonDisabled"
                 :aria-busy="gradeSubmitting"
                 aria-label="開始批改"
                 @click="emit('confirm-answer', card)"
               >
-                <LogoCenterMark
-                  :id-prefix="`quiz-grade-mark-${card.id}-grading-row`"
-                />
-                <span>開始批改</span>
-              </button>
+                開始批改
+              </LogoGradientPillButton>
             </div>
             <div
               v-if="showDesignGradingResultBlock"
@@ -1620,21 +1612,17 @@ const quizAnswerFieldDisabled = computed(
                 : 'd-flex justify-content-end align-items-center flex-wrap gap-3 mt-2 pt-2'
             "
           >
-            <button
+            <LogoGradientPillButton
               v-if="showStartGradeButton"
-              type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
+              :id-prefix="`quiz-grade-mark-${card.id}-toolbar-fallback`"
               title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
               :disabled="mergedGradeButtonDisabled"
               :aria-busy="gradeSubmitting"
               aria-label="開始批改"
               @click="emit('confirm-answer', card)"
             >
-              <LogoCenterMark
-                :id-prefix="`quiz-grade-mark-${card.id}-toolbar-fallback`"
-              />
-              <span>開始批改</span>
-            </button>
+              開始批改
+            </LogoGradientPillButton>
           </div>
         </div>
         <div
@@ -1675,21 +1663,17 @@ const quizAnswerFieldDisabled = computed(
             >
               重設
             </button>
-            <button
+            <LogoGradientPillButton
               v-if="showRagGradeDbButton && showStartGradeButton"
-              type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
+              :id-prefix="`quiz-grade-mark-${card.id}-grade-db`"
               title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
               :disabled="ragGradeDbButtonDisabled"
               :aria-busy="gradeSubmitting"
               aria-label="開始批改"
               @click="emit('confirm-grade-db', card)"
             >
-              <LogoCenterMark
-                :id-prefix="`quiz-grade-mark-${card.id}-grade-db`"
-              />
-              <span>開始批改</span>
-            </button>
+              開始批改
+            </LogoGradientPillButton>
             <button
               v-if="showStartGradeButton && !cardMarkedForExam"
               type="button"
@@ -1722,20 +1706,16 @@ const quizAnswerFieldDisabled = computed(
           >
             先前出題
           </button>
-          <button
+          <LogoGradientPillButton
             v-if="showStartGradeButton"
-            type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-white px-3 py-2"
+            :id-prefix="`quiz-grade-mark-${card.id}-standalone`"
             :disabled="standaloneStartGradeButtonDisabled"
             :aria-busy="gradeSubmitting"
             aria-label="開始批改"
             @click="emit('confirm-answer', card)"
           >
-            <LogoCenterMark
-              :id-prefix="`quiz-grade-mark-${card.id}-standalone`"
-            />
-            <span>開始批改</span>
-          </button>
+            開始批改
+          </LogoGradientPillButton>
         </div>
       <!-- 批改結果區：僅在回傳後有內容時顯示（送出中不占位）；稿頁批改子區塊改由 showDesignGradingResultBlock 渲染 -->
       <div
@@ -1907,7 +1887,8 @@ const quizAnswerFieldDisabled = computed(
   opacity: 1;
 }
 /* 稿頁「開始批改」pill（批改子區左下、exam_design 答案區右下） */
-:deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
+:deep(.my-design-quiz-grading-start-row .btn.my-button-white),
+:deep(.my-design-quiz-grading-start-row .btn.my-button-logo-gradient) {
   white-space: nowrap;
   flex-shrink: 0;
 }

@@ -497,6 +497,23 @@ code {
   color: var(--my-color-black);
   border: 1px solid var(--my-color-gray-2);
 }
+
+/* Logo 隨機漸層 pill（產生題目／開始批改；與 TopView 品牌 icon 同色票機制） */
+.btn.my-button-logo-gradient {
+  color: var(--my-color-white) !important;
+  border-color: transparent !important;
+  box-shadow: none;
+}
+.btn.my-button-logo-gradient:hover:not(:disabled),
+.btn.my-button-logo-gradient:focus-visible:not(:disabled),
+.btn.my-button-logo-gradient:active:not(:disabled) {
+  filter: brightness(0.92);
+  color: var(--my-color-white) !important;
+}
+.btn.my-button-logo-gradient:disabled {
+  opacity: 0.55;
+  filter: none;
+}
 .my-bgcolor-black .btn.my-button-white:hover,
 .my-bgcolor-black .btn.my-button-white:active:not(:disabled) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
@@ -1103,14 +1120,19 @@ code {
   background-color: color-mix(in srgb, var(--my-color-blue) 12%, var(--my-color-white));
 }
 
-/* Modal／Teleport 外層半透明底（與 Bootstrap .modal.show 併用） */
+/* Modal／Teleport 外層半透明底（與 Bootstrap .modal.show 併用；backdrop-filter 霧化） */
 .my-modal-backdrop {
-  background-color: color-mix(in srgb, var(--my-color-black) 45%, transparent);
+  background-color: color-mix(in srgb, var(--my-color-black) 28%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* —— 下拉觸發箭頭：`my-dropdown-caret` 隱藏 Bootstrap ::after；FA `.my-dropdown-toggle-caret`。選單本體用 Bootstrap `.dropdown-menu`／`.dropdown-item` 預設（專案內不覆寫項目色／hover／active）。觸發鈕與 05 中號同 my-font-md-400 px-3 py-2 等 —— */
 .my-dropdown-caret.dropdown-toggle::after {
   display: none;
+  margin: 0;
+  width: 0;
+  content: none;
 }
 
 .my-dropdown-toggle-caret {

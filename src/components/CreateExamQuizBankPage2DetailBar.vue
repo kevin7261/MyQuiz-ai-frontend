@@ -143,10 +143,10 @@ function onTitleInput(e) {
         />
       </div>
       <div class="create-exam-bank-2-detail-bar__end">
-        <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch">
+        <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch my-design-08-dropdown">
           <button
             type="button"
-            class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless create-exam-bank-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
+            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white create-exam-bank-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret px-3 py-2"
             data-bs-toggle="dropdown"
             aria-expanded="false"
             aria-label="題庫選單"
@@ -293,12 +293,25 @@ function onTitleInput(e) {
   min-width: 0;
 }
 
+.create-exam-bank-2-bank-switch.my-design-08-dropdown .btn.my-button-white {
+  color: var(--my-color-black);
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
+  box-shadow: none;
+}
+
+.create-exam-bank-2-bank-switch.my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
+.create-exam-bank-2-bank-switch.my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
+.create-exam-bank-2-bank-switch.my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
+.create-exam-bank-2-bank-switch.my-design-08-dropdown .btn.my-button-white.show {
+  color: var(--my-color-black);
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+}
+
 .create-exam-bank-2-detail-bar__menu-btn {
-  width: 2.375rem;
-  height: 2.375rem;
   min-width: 2.375rem;
   min-height: 2.375rem;
-  padding: 0;
 }
 
 .create-exam-bank-2-bank-switch-menu {

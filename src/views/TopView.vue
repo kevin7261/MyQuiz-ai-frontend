@@ -143,13 +143,13 @@
         <div class="my-design-08-dropdown dropdown flex-shrink-0">
         <button
           type="button"
-          class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white min-w-0 px-3 py-2 text-start"
+          class="btn rounded-pill d-inline-flex align-items-center gap-3 dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white min-w-0 px-4 py-2 text-start"
           data-bs-toggle="dropdown"
           aria-expanded="false"
           aria-haspopup="true"
         >
-          <span class="overflow-hidden text-truncate text-start pe-2">{{ userName || '—' }}</span>
-          <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
+          <span class="overflow-hidden text-truncate text-start">{{ userName || '—' }}</span>
+          <i class="fa-solid fa-bars my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
         </button>
         <ul class="dropdown-menu dropdown-menu-end">
           <li>
@@ -310,8 +310,22 @@
   border-color: var(--my-color-gray-2);
 }
 
-.my-design-08-dropdown .btn {
-  min-width: 7rem;
+.my-top-view .my-design-08-dropdown .btn.my-button-white {
+  min-width: 0;
   max-width: 10rem;
+  width: auto;
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-2) !important;
+  box-shadow: none;
+}
+
+.my-top-view .my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
+.my-top-view .my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
+.my-top-view .my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
+.my-top-view .my-design-08-dropdown .btn.my-button-white.show {
+  color: var(--my-color-black) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white)) !important;
+  border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2)) !important;
 }
 </style>

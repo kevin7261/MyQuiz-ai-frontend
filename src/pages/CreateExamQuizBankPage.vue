@@ -84,7 +84,7 @@ import { useRagList } from '../composables/useRagList.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
-import LogoCenterMark from '../components/LogoCenterMark.vue';
+import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
@@ -181,6 +181,8 @@ const gradingSubmittingCardId = ref(null);
 /** 批改 overlay 文案：`llm-grade`＝規則已改動（儲存並批改）；`llm-grade-db`＝開始批改 */
 const gradingSubmittingOverlayKind = ref(/** @type {null | 'llm-grade' | 'llm-grade-db'} */ (null));
 const deleteRagLoading = ref(false);
+/** GET /rag/tab/units 載入單元 sub-tab（可併發，計數避免提早關閉 overlay） */
+const unitSubTabsLoadingCount = ref(0);
 const activeTabId = ref(null);
 const newTabIds = ref([]);
 /** POST /rag/tab/unit/quiz/for-exam 成功後，列表尚未含嵌套欄位時仍標記該 rag_tab_id（綠點／鎖刪與目前選中哪個分頁無關） */
@@ -762,6 +764,23 @@ const activeUnitQuizLoadingOverlayKind = computed(() => {
   return null;
 });
 
+/** 任一題型列「設為測驗用」API 進行中 */
+function anyUnitQuizCardLoadingFlag(flag) {
+  const stacks = currentState.value?.unitSlotQuizCards;
+  if (!Array.isArray(stacks)) return false;
+  for (const sub of stacks) {
+    if (!Array.isArray(sub)) continue;
+    for (const c of sub) {
+      if (c?.[flag]) return true;
+    }
+  }
+  return false;
+}
+
+const hasRagQuizForExamApiLoading = computed(() => anyUnitQuizCardLoadingFlag('ragQuizForExamLoading'));
+const hasRagQuizFollowupApiLoading = computed(() => anyUnitQuizCardLoadingFlag('ragQuizFollowupLoading'));
+const isUnitSubTabsLoading = computed(() => unitSubTabsLoadingCount.value > 0);
+
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
 /** 設定單元：逐字稿載入中（文字 GET /rag/unit/text）或檔案讀取（mp3-file／youtube-url 含 transcription）期間，禁「開始建立單元」等 */
@@ -779,7 +798,7 @@ const hasPackUnitSourceFileLoading = computed(
     && currentState.value.packUnitSourceFileLoading.some(Boolean),
 );
 
-/** 全螢幕 LoadingOverlay：列表／建立分頁／刪除／更名／ZIP 上傳／建題庫／產生題目／批改／設定單元（來源檔讀取或逐字稿載入含「分析逐字稿」） */
+/** 全螢幕 LoadingOverlay：任一 API 請求（列表／單元／設為測驗用／出題模式／建題庫／產生題目／批改／設定單元逐字稿等） */
 const loadingOverlayVisible = computed(
   () =>
     ragListLoading.value ||
@@ -788,6 +807,9 @@ const loadingOverlayVisible = computed(
     renameRagTabSaving.value ||
     renameUnitQuizSaving.value ||
     deleteUnitQuizLoading.value ||
+    isUnitSubTabsLoading.value ||
+    hasRagQuizForExamApiLoading.value ||
+    hasRagQuizFollowupApiLoading.value ||
     !!currentState.value?.zipLoading ||
     !!currentState.value?.packLoading ||
     hasAnySlotGenerating.value ||
@@ -800,6 +822,8 @@ const loadingOverlayText = computed(() => {
     if (gradingSubmittingOverlayKind.value === 'llm-grade') return '儲存並批改中...';
     return '批改中...';
   }
+  if (hasRagQuizForExamApiLoading.value) return '儲存測驗設定中...';
+  if (hasRagQuizFollowupApiLoading.value) return '儲存出題模式中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'add-row') return '產生題型中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存並追問出題中...';
@@ -809,6 +833,7 @@ const loadingOverlayText = computed(() => {
   const st = currentState.value;
   if (st?.zipLoading) return '上傳中...';
   if (st?.packLoading) return '建立單元中...';
+  if (isUnitSubTabsLoading.value) return '載入單元中...';
   if (hasPackUnitSourceFileLoading.value) return '檔案讀取中…';
   if (
     Array.isArray(st?.packUnitTranscriptLoading)
@@ -3778,27 +3803,32 @@ async function refreshUnitSubTabsFromApi(tabId) {
     setUnitSubTabsFromUnits(state, []);
     return [];
   }
-  let units = [];
+  unitSubTabsLoadingCount.value += 1;
   try {
-    units = await apiGetRagTabUnits(tabId, personId);
-  } catch {
-    units = [];
+    let units = [];
+    try {
+      units = await apiGetRagTabUnits(tabId, personId);
+    } catch {
+      units = [];
+    }
+    if (!Array.isArray(units) || units.length === 0) {
+      const rag = ragList.value.find((r) => String(r?.rag_tab_id ?? r?.id ?? r) === String(tabId));
+      units = unitsFromRagTabsRow(rag);
+    }
+    setUnitSubTabsFromUnits(state, units);
+    const ragRow = ragList.value.find((r) => String(r?.rag_tab_id ?? r?.id ?? r) === String(tabId));
+    if (
+      ragRow
+      && Array.isArray(units)
+      && units.length > 0
+    ) {
+      hydrateQuizCardsFromRag({ ...ragRow, units }, state);
+    }
+    applyPersistedUnitSubTabsIfActive(String(tabId));
+    return units;
+  } finally {
+    unitSubTabsLoadingCount.value = Math.max(0, unitSubTabsLoadingCount.value - 1);
   }
-  if (!Array.isArray(units) || units.length === 0) {
-    const rag = ragList.value.find((r) => String(r?.rag_tab_id ?? r?.id ?? r) === String(tabId));
-    units = unitsFromRagTabsRow(rag);
-  }
-  setUnitSubTabsFromUnits(state, units);
-  const ragRow = ragList.value.find((r) => String(r?.rag_tab_id ?? r?.id ?? r) === String(tabId));
-  if (
-    ragRow
-    && Array.isArray(units)
-    && units.length > 0
-  ) {
-    hydrateQuizCardsFromRag({ ...ragRow, units }, state);
-  }
-  applyPersistedUnitSubTabsIfActive(String(tabId));
-  return units;
 }
 
 /** GET /rag/tabs 由 useRagList 內 watch(immediate) 首次載入；每次從側欄再進入本頁（KeepAlive onActivated）再抓 GET /rag/tabs */
@@ -6678,19 +6708,16 @@ async function confirmAnswer(item) {
                     <div
                       class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
                     >
-                      <button
+                      <LogoGradientPillButton
                         v-if="!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)"
-                        type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-button-white px-4 py-2 my-design-quiz-generate-btn"
+                        :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                        extra-class="my-design-quiz-generate-btn"
                         title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設"
                         aria-label="產生題目"
                         @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
-                        <LogoCenterMark
-                          :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                        />
-                        <span>產生題目</span>
-                      </button>
+                        產生題目
+                      </LogoGradientPillButton>
                       <button
                         v-if="!isRagQuizMarkedForExam(activeUnitQuizCard) && !getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)"
                         type="button"
@@ -7121,10 +7148,16 @@ async function confirmAnswer(item) {
 }
 
 /* create-exam-bank_3：小 pill 按鈕 px-2、灰字（對齊 DesignPage2） */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400) {
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+}
+/* create-exam-bank_3：詳細資訊等 stem history pill 維持 px-3 */
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)),
 .my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)) {
@@ -7138,7 +7171,9 @@ async function confirmAnswer(item) {
 }
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
-.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white) {
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-logo-gradient),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-logo-gradient) {
   padding-top: 0.5rem !important;
   padding-bottom: 0.5rem !important;
   padding-left: 1.5rem !important;

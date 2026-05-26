@@ -20,3 +20,16 @@ export function createRandomLogoDiamondGradient() {
     ],
   };
 }
+
+/** 將 {@link createRandomLogoDiamondGradient} 轉為 CSS linear-gradient（按鈕背景用） */
+export function logoDiamondGradientToCssLinear(gradient) {
+  if (!gradient?.stops?.length) return 'transparent';
+  const parsePct = (v) => Number.parseFloat(String(v ?? '0').replace('%', '')) || 0;
+  const x1 = parsePct(gradient.x1);
+  const y1 = parsePct(gradient.y1);
+  const x2 = parsePct(gradient.x2);
+  const y2 = parsePct(gradient.y2);
+  const angle = Math.round((Math.atan2(x2 - x1, -(y2 - y1)) * 180) / Math.PI);
+  const stops = gradient.stops.map((s) => `${s.color} ${s.offset}`).join(', ');
+  return `linear-gradient(${angle}deg, ${stops})`;
+}
