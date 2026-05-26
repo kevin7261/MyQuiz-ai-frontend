@@ -6208,7 +6208,7 @@ async function confirmAnswer(item) {
             <div class="d-flex justify-content-start">
               <button
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-pack-unit-delete-btn px-4 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                 title="刪除此單元"
                 aria-label="刪除此單元"
                 :disabled="packGroupsEditBlocked"
@@ -6483,15 +6483,17 @@ async function confirmAnswer(item) {
               >
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                   <div
-                    v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
                     class="w-100 min-w-0 mb-3"
+                    :class="designSidePanelOnLeft ? 'd-flex align-items-center justify-content-between gap-2' : ''"
                     role="heading"
                     aria-level="3"
                   >
                     <input
+                      v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
                       :value="String(activeUnitQuizCard.quizName ?? '')"
                       type="text"
-                      class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start w-100 px-0 py-2 rounded-2"
+                      class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-2 rounded-2"
+                      :class="designSidePanelOnLeft ? 'flex-grow-1 min-w-0' : 'w-100'"
                       maxlength="200"
                       autocomplete="off"
                       spellcheck="false"
@@ -6502,14 +6504,32 @@ async function confirmAnswer(item) {
                       @blur="onUnitQuizTitleBlur"
                       @keydown.enter.prevent="$event.target.blur()"
                     />
-                  </div>
-                  <div
-                    v-else
-                    class="d-inline-flex align-items-center gap-2 flex-nowrap min-w-0 max-w-100 mb-3"
-                    role="heading"
-                    aria-level="3"
-                  >
-                    <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0 min-w-0">{{ quizTypeTabLabel(activeUnitQuizCard) }}</span>
+                    <span
+                      v-else
+                      class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0 min-w-0"
+                      :class="designSidePanelOnLeft ? 'flex-grow-1' : ''"
+                    >{{ quizTypeTabLabel(activeUnitQuizCard) }}</span>
+                    <button
+                      v-if="designSidePanelOnLeft"
+                      type="button"
+                      role="switch"
+                      class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
+                      :class="{
+                        'my-quiz-generate-mode-switch--on': isRagQuizMarkedForExam(activeUnitQuizCard),
+                      }"
+                      :aria-checked="isRagQuizMarkedForExam(activeUnitQuizCard)"
+                      :aria-label="
+                        isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'
+                      "
+                      :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
+                      :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
+                      @click="onMarkRagQuizForExam(activeUnitQuizCard)"
+                    >
+                      <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
+                        <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
+                      </span>
+                      <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
+                    </button>
                   </div>
                   <div
                     class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
@@ -6559,6 +6579,7 @@ async function confirmAnswer(item) {
                       </button>
                     </div>
                     <button
+                      v-if="!designSidePanelOnLeft"
                       type="button"
                       role="switch"
                       class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
@@ -6598,7 +6619,7 @@ async function confirmAnswer(item) {
                 </div>
                 <!-- 子區塊：題目區（頂部 pt-2 在出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
                 <div class="my-design-quiz-sub-block-outer">
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                  <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2">
                     <div
                       class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
@@ -6733,7 +6754,7 @@ async function confirmAnswer(item) {
                     <button
                       v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
                       type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-pack-unit-delete-btn px-4 py-2"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                       title="刪除此題型"
                       aria-label="刪除此題型"
                       :disabled="
@@ -7151,6 +7172,10 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
   background-color: var(--my-color-gray-3) !important;
 }
+.my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-2);
+}
 .my-design-right-nav {
   flex-wrap: nowrap;
   width: 100%;
@@ -7527,20 +7552,6 @@ async function confirmAnswer(item) {
   --bs-gutter-x: 0.5rem;
   --bs-gutter-y: 1.5rem;
 }
-.my-pack-unit-delete-btn {
-  color: var(--my-color-red);
-  background-color: var(--my-color-white);
-  border: none;
-  text-decoration: none;
-}
-.my-pack-unit-delete-btn:hover,
-.my-pack-unit-delete-btn:active:not(:disabled) {
-  color: var(--my-color-red-hover);
-  background-color: color-mix(in srgb, var(--my-color-red) 8%, var(--my-color-white));
-}
-.my-pack-unit-delete-btn:disabled {
-  opacity: 0.55;
-}
 .my-pack-unit-settings-carousel {
   display: flex;
   flex-direction: column;
@@ -7563,7 +7574,7 @@ async function confirmAnswer(item) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 題型區三子區塊：題目／批改＝淺灰底 gray-3；答案＝白底 */
+/* 題型區三子區塊：題目＝白底 gray-2 邊框；答案＝白底；批改子區 inset 灰框 */
 .my-design-quiz-sub-block-outer {
   box-sizing: border-box;
   width: 100%;
@@ -7575,6 +7586,11 @@ async function confirmAnswer(item) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+/* 題目子區塊：白底 + gray-2 邊框（同 tab 下方 hr） */
+.my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
 }
 /* 稿頁三子區塊：題目／答案無框；批改規則／批改結果為灰框白底；出題規則為黑底區 */
 /* 灰框欄位：圓角灰邊白底（批改子區） */

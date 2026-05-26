@@ -5,6 +5,7 @@
    * 職責與 LeftView 相同，改為水平排列於頁面頂部。
    */
   import { computed, ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
@@ -41,6 +42,7 @@
     },
     emits: ['logout', 'open-course-modal'],
     setup(props, { emit }) {
+      const route = useRoute();
       const authStore = useAuthStore();
       const onLogout = () => emit('logout');
       const onOpenCourseModal = () => emit('open-course-modal');
@@ -52,6 +54,13 @@
 
       /** 超過一門課程時顯示可切換的 v 鈕；僅一門時為一般文字 */
       const hasMultipleCourses = computed(() => authStore.courses.length > 1);
+
+      /** 頂欄中央：目前頁面名稱（取自路由 meta.title，去掉站名後綴） */
+      const currentPageTitle = computed(() => {
+        const raw = String(route.meta?.title ?? '').trim();
+        if (!raw) return 'MyQuiz.ai';
+        return raw.replace(/\s*-\s*MyQuiz\.ai\s*$/i, '').trim() || 'MyQuiz.ai';
+      });
 
       const showDividerBeforeProfile = computed(() => {
         const t = props.userType;
@@ -88,6 +97,7 @@
         showDividerBeforeProfile,
         currentCourseName,
         hasMultipleCourses,
+        currentPageTitle,
         topViewLogoColors,
         topViewLogoIdSuffix,
       };
@@ -114,8 +124,8 @@
       />
     </button>
 
-    <div class="my-top-view-inner d-flex align-items-center gap-2 gap-md-3 px-3 py-2 min-w-0 flex-grow-1">
-      <div class="d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
+    <div class="my-top-view-inner px-3 py-2 min-w-0 flex-grow-1">
+      <div class="my-top-view-inner__start d-flex align-items-center min-w-0">
         <button
           v-if="hasMultipleCourses"
           type="button"
@@ -128,24 +138,31 @@
         <span v-else class="my-top-view-course-label py-2 flex-shrink-0">{{ currentCourseName }}</span>
       </div>
 
-      <nav
-        class="my-top-view-nav nav nav-pills flex-row flex-grow-1 justify-content-center gap-1 min-w-0 overflow-auto"
-      >
-        <router-link
-          v-if="canSeeNavLink(userType, 'work')"
-          to="/exam"
-          class="nav-link text-nowrap"
-          active-class="active"
-        >測驗</router-link>
-        <router-link
-          v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
-          to="/student-weakness-analysis"
-          class="nav-link text-nowrap"
-          active-class="active"
-        >作答弱點分析</router-link>
-      </nav>
+      <div class="my-top-view-inner__center min-w-0">
+        <p class="my-top-view-page-title my-font-lg-400 my-color-black text-truncate text-center w-100 mb-0 px-3 py-2">
+          {{ currentPageTitle }}
+        </p>
+      </div>
 
-      <div class="my-design-08-dropdown dropdown flex-shrink-0">
+      <div class="my-top-view-inner__end d-flex align-items-center justify-content-end gap-2 gap-md-3 min-w-0 flex-shrink-0">
+        <nav
+          class="my-top-view-nav nav nav-pills flex-row flex-shrink-0 gap-1 min-w-0 overflow-auto"
+        >
+          <router-link
+            v-if="canSeeNavLink(userType, 'work')"
+            to="/exam"
+            class="nav-link text-nowrap"
+            active-class="active"
+          >測驗</router-link>
+          <router-link
+            v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
+            to="/student-weakness-analysis"
+            class="nav-link text-nowrap"
+            active-class="active"
+          >作答弱點分析</router-link>
+        </nav>
+
+        <div class="my-design-08-dropdown dropdown flex-shrink-0">
         <button
           type="button"
           class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white min-w-0 px-3 py-2 text-start"
@@ -194,6 +211,7 @@
             <a class="dropdown-item my-color-red" href="#" @click.prevent="onLogout">登出</a>
           </li>
         </ul>
+        </div>
       </div>
     </div>
   </header>
@@ -207,7 +225,31 @@
 }
 
 .my-top-view-inner {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 50%) 1fr;
+  align-items: center;
+  gap: 0.75rem;
   min-height: 3.25rem;
+}
+
+.my-top-view-inner__start {
+  justify-self: start;
+  min-width: 0;
+}
+
+.my-top-view-inner__center {
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.my-top-view-inner__end {
+  justify-self: end;
+  min-width: 0;
+}
+
+.my-top-view-page-title {
+  line-height: 1.35;
 }
 
 .my-top-view-brand {

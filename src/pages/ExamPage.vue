@@ -3346,7 +3346,7 @@ onActivated(() => {
                                   :key="roundCard._roundId"
                                 >
                                   <div class="my-design-quiz-sub-block-outer">
-                                    <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                                    <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2">
                                       <div class="w-100 min-w-0 pt-2">
                                         <QuizCard
                                           :card="roundCard"
@@ -3401,7 +3401,7 @@ onActivated(() => {
                               <!-- 子區塊：題目 -->
                               <div class="my-design-quiz-sub-block-outer">
                                 <div
-                                  class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2 d-flex flex-column"
+                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2 d-flex flex-column"
                                 >
                                   <div
                                     v-if="getSlotFormState(activeExamSlotIndex1).error"
@@ -3666,6 +3666,10 @@ onActivated(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+.my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
 }
 .my-design-quiz-field-inset,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {

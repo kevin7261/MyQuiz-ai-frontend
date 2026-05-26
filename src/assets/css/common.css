@@ -331,6 +331,39 @@ code {
   opacity: 0.55;
 }
 
+/* 白底紅字刪除膠囊（併 .btn）：紅框；刪除此單元／刪除此題型等 */
+.btn.my-btn-outline-red-hollow,
+.btn.my-pack-unit-delete-btn {
+  --bs-btn-color: var(--my-color-red);
+  --bs-btn-bg: var(--my-color-white);
+  --bs-btn-border-color: var(--my-color-red);
+  --bs-btn-hover-color: var(--my-color-red-hover);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-red) 8%, var(--my-color-white));
+  --bs-btn-hover-border-color: var(--my-color-red-hover);
+  --bs-btn-active-color: var(--my-color-red-hover);
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-red) 8%, var(--my-color-white));
+  --bs-btn-active-border-color: var(--my-color-red-hover);
+  --bs-btn-disabled-color: var(--my-color-red);
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-disabled-border-color: var(--my-color-red);
+  color: var(--my-color-red);
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-red) !important;
+  box-shadow: none;
+}
+.btn.my-btn-outline-red-hollow:hover:not(:disabled),
+.btn.my-btn-outline-red-hollow:active:not(:disabled),
+.btn.my-pack-unit-delete-btn:hover:not(:disabled),
+.btn.my-pack-unit-delete-btn:active:not(:disabled) {
+  color: var(--my-color-red-hover);
+  background-color: color-mix(in srgb, var(--my-color-red) 8%, var(--my-color-white));
+  border-color: var(--my-color-red-hover) !important;
+}
+.btn.my-btn-outline-red-hollow:disabled,
+.btn.my-pack-unit-delete-btn:disabled {
+  opacity: 0.55;
+}
+
 /* 填色膠囊一鍵：底／字／hover·active；併 .btn 提高權重，避免 Bootstrap .btn:active 蓋掉 */
 .btn.my-button-red {
   background-color: var(--my-color-red);
