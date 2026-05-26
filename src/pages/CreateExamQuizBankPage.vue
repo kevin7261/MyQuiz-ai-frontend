@@ -176,8 +176,10 @@ const deleteUnitQuizModalOpen = ref(false);
 const deleteUnitQuizDraftIndex = ref(null);
 /** 題型 sub-tab 軟刪（PUT /rag/tab/quiz/delete/{rag_quiz_id}） */
 const deleteUnitQuizLoading = ref(false);
-/** 正在送出批改的題卡 id（全螢幕 LoadingOverlay「批改中...」；結果區待回傳） */
+/** 正在送出批改的題卡 id（全螢幕 LoadingOverlay；結果區待回傳） */
 const gradingSubmittingCardId = ref(null);
+/** 批改 overlay 文案：`llm-grade`＝規則已改動（儲存並批改）；`llm-grade-db`＝開始批改 */
+const gradingSubmittingOverlayKind = ref(/** @type {null | 'llm-grade' | 'llm-grade-db'} */ (null));
 const deleteRagLoading = ref(false);
 const activeTabId = ref(null);
 const newTabIds = ref([]);
@@ -794,8 +796,11 @@ const loadingOverlayVisible = computed(
 );
 
 const loadingOverlayText = computed(() => {
-  if (isGradingSubmitting.value) return '批改中...';
-  if (activeUnitQuizLoadingOverlayKind.value === 'add-row') return '產生題型中';
+  if (isGradingSubmitting.value) {
+    if (gradingSubmittingOverlayKind.value === 'llm-grade') return '儲存並批改中...';
+    return '批改中...';
+  }
+  if (activeUnitQuizLoadingOverlayKind.value === 'add-row') return '產生題型中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存並追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return '產生題目中...';
@@ -5145,6 +5150,7 @@ async function confirmAnswerGradeDb(item) {
     return;
   }
   gradingSubmittingCardId.value = item.id;
+  gradingSubmittingOverlayKind.value = 'llm-grade-db';
   try {
     await submitGrade(item, { sourceTabId, ragId }, { ragGradeUsesStoredPrompt: true });
     if (item.confirmed) {
@@ -5154,6 +5160,7 @@ async function confirmAnswerGradeDb(item) {
     }
   } finally {
     gradingSubmittingCardId.value = null;
+    gradingSubmittingOverlayKind.value = null;
   }
 }
 
@@ -5188,6 +5195,7 @@ async function confirmAnswer(item) {
     return;
   }
   gradingSubmittingCardId.value = item.id;
+  gradingSubmittingOverlayKind.value = 'llm-grade';
   try {
     await submitGrade(item, { sourceTabId, ragId }, {});
     if (item.confirmed) {
@@ -5197,6 +5205,7 @@ async function confirmAnswer(item) {
     }
   } finally {
     gradingSubmittingCardId.value = null;
+    gradingSubmittingOverlayKind.value = null;
   }
 }
 </script>
@@ -6542,7 +6551,7 @@ async function confirmAnswer(item) {
                     >
                       <button
                         type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
                         :class="
                           !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                             ? 'my-button-white'
@@ -6561,7 +6570,7 @@ async function confirmAnswer(item) {
                       </button>
                       <button
                         type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
                         :class="
                           isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                             ? 'my-button-white'
