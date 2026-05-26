@@ -685,7 +685,7 @@ watch(
 
 .exam-2-detail-bar {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: 1fr minmax(0, 50%) 1fr;
   align-items: center;
   gap: 0.75rem;
   border-color: var(--my-color-gray-2, #e5e5e5) !important;
@@ -708,8 +708,9 @@ watch(
 }
 
 .exam-2-detail-bar__center {
-  justify-self: center;
-  max-width: 100%;
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 .exam-2-detail-bar__title {

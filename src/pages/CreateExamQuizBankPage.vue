@@ -6976,8 +6976,8 @@ async function confirmAnswer(item) {
 .my-design-right-nav button.nav-link {
   cursor: pointer;
 }
-.my-design-right-nav .nav-link:not(.active):hover,
-.my-design-right-nav .nav-link:not(.active):focus-visible {
+.my-design-right-nav button.nav-link:not(.active):hover,
+.my-design-right-nav button.nav-link:not(.active):focus-visible {
   background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
