@@ -25,8 +25,15 @@ const props = defineProps({
    * - 黑：格 5 畫 1/4 弧（與 1、2、4 成圓）；灰：格 5 畫 1/4 弧（與 2、3、6 成圓）
    */
   mergeCell5: { type: Boolean, default: false },
+  /**
+   * true：僅繪製格 51–54、71–72（中央 2×2＋下方延伸列），不含外圈弧線與格 6
+   * viewBox 裁切為 80×100 區域
+   */
+  centerCellsOnly: { type: Boolean, default: false },
   /** false 時不繪製全幅底色（頂欄等透明底場景） */
   showBackground: { type: Boolean, default: true },
+  /** true：height 100%、width auto，由外層容器決定尺寸並維持 viewBox 比例 */
+  sizeToContainer: { type: Boolean, default: false },
 });
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
@@ -85,7 +92,12 @@ const splitLayerGridCells = computed(() => {
 
 const useSplitLayerGrid = computed(() => splitLayerGridCells.value.length > 0);
 
+const useCenterCellsOnly = computed(
+  () => props.centerCellsOnly && !props.mergeCell5,
+);
+
 const viewBox = computed(() => {
+  if (useCenterCellsOnly.value) return '80 80 80 100';
   if (useSplitLayerGrid.value) {
     return props.layer === 'primary' ? '0 0 160 180' : '80 0 160 180';
   }
@@ -93,9 +105,20 @@ const viewBox = computed(() => {
 });
 
 const svgStyle = computed(() => {
-  const height = useSplitLayerGrid.value
-    ? Math.round(props.svgWidth * (180 / 160))
-    : props.svgHeight;
+  if (props.sizeToContainer) {
+    return {
+      height: '100%',
+      width: 'auto',
+      display: 'block',
+      flexShrink: 0,
+    };
+  }
+  let height = props.svgHeight;
+  if (useCenterCellsOnly.value) {
+    height = Math.round(props.svgWidth * (100 / 80));
+  } else if (useSplitLayerGrid.value) {
+    height = Math.round(props.svgWidth * (180 / 160));
+  }
   return {
     width: `${props.svgWidth}px`,
     height: `${height}px`,
@@ -162,7 +185,16 @@ const svgStyle = computed(() => {
         </clipPath>
       </template>
     </defs>
-    <rect v-if="showBackground" x="0" y="0" width="240" height="160" :fill="backgroundPaint"/>
+    <rect
+      v-if="showBackground && useCenterCellsOnly"
+      x="80" y="80" width="80" height="100"
+      :fill="backgroundPaint"
+    />
+    <rect
+      v-else-if="showBackground"
+      x="0" y="0" width="240" height="160"
+      :fill="backgroundPaint"
+    />
     <!-- mergeCell5 模式：格 5 各層畫 1/4 弧成圓 -->
     <template v-if="mergeCell5">
       <g :clip-path="`url(#${idPrefix}-clip-outside-5)`">
@@ -197,13 +229,15 @@ const svgStyle = computed(() => {
       <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
     </template>
     <g v-else>
-      <!-- 格 1／2／3／4／6：弧線 -->
-      <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-      <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-      <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-      <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-      <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-      <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+      <template v-if="!useCenterCellsOnly">
+        <!-- 格 1／2／3／4／6：弧線 -->
+        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+      </template>
       <!-- 51＋53＋71 灰方塊；52＋54＋72 黑方塊；中央白菱形疊加 -->
       <rect
         v-if="showSecondary"
@@ -227,7 +261,14 @@ const svgStyle = computed(() => {
         :fill="backgroundPaint"
       />
       <!-- 62＋81 灰方塊 -->
-      <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
+      <rect
+        v-if="showSecondary && !useCenterCellsOnly"
+        x="200"
+        y="80"
+        width="40"
+        height="100"
+        :fill="secondaryPaint"
+      />
     </g>
     <!-- 格線 -->
     <template v-if="showGrid && useSplitLayerGrid">
@@ -237,6 +278,14 @@ const svgStyle = computed(() => {
         :x="cell.x" :y="cell.y" :width="cell.w" :height="cell.h"
         fill="none" stroke="#b0b0b0" stroke-width="1"
       />
+    </template>
+    <template v-else-if="showGrid && useCenterCellsOnly">
+      <rect x="80" y="80" width="80" height="80" fill="none" stroke="#b0b0b0" stroke-width="1"/>
+      <rect x="80" y="160" width="40" height="20" fill="none" stroke="#b0b0b0" stroke-width="1"/>
+      <rect x="120" y="160" width="40" height="20" fill="none" stroke="#b0b0b0" stroke-width="1"/>
+      <line x1="120" y1="80" x2="120" y2="160" stroke="#b0b0b0" stroke-width="1"/>
+      <line x1="80" y1="120" x2="160" y2="120" stroke="#b0b0b0" stroke-width="1"/>
+      <line x1="120" y1="160" x2="120" y2="180" stroke="#b0b0b0" stroke-width="1"/>
     </template>
     <template v-else-if="showGrid">
       <rect x="0" y="0" width="240" height="160" fill="none" stroke="#b0b0b0" stroke-width="1"/>
@@ -260,6 +309,14 @@ const svgStyle = computed(() => {
           :x="cell.cx" :y="cell.cy"
           :font-size="cell.fontSize"
         >{{ cell.label }}</text>
+      </template>
+      <template v-else-if="useCenterCellsOnly">
+        <text x="100" y="100" font-size="13">51</text>
+        <text x="140" y="100" font-size="13">52</text>
+        <text x="100" y="140" font-size="13">53</text>
+        <text x="140" y="140" font-size="13">54</text>
+        <text x="100" y="170" font-size="10">71</text>
+        <text x="140" y="170" font-size="10">72</text>
       </template>
       <template v-else>
         <text x="40"  y="40"  font-size="20">1</text>

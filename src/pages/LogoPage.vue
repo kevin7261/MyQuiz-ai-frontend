@@ -123,6 +123,9 @@ const sizeVariants = [
 
 const sizeHeight = (width) => Math.round(width * (180 / 240));
 
+/** 中央格（51–54、71–72）寬度：與同級完整 logo 等高 */
+const centerCellsWidth = (fullWidth) => Math.round(fullWidth * (144 / 240));
+
 /** 04 區塊：Q（黑）／ A（灰） */
 const layerVariants = [
   { id: 'primary', label: 'Q', layer: 'primary' },
@@ -135,6 +138,9 @@ const layerGridModes = [
 ];
 
 const diamondGridWidth = 80;
+
+/** 01 區塊：僅 51–54、71–72 時與完整 logo 同高（180px） */
+const centerCellsLogoWidth = centerCellsWidth(240);
 
 </script>
 
@@ -182,6 +188,32 @@ const diamondGridWidth = 80;
                     </div>
                   </div>
 
+                  <div class="d-flex flex-column align-items-center gap-2">
+                    <p class="my-font-sm-400 my-color-black mb-0 text-center">51–54、71–72<br>格線版</p>
+                    <div class="rounded-3 p-3 d-inline-flex" style="background:#ffffff">
+                      <LogoGridSvg
+                        show-grid
+                        center-cells-only
+                        id-prefix="center-grid"
+                        :svg-width="centerCellsLogoWidth"
+                        :svg-height="180"
+                      />
+                    </div>
+                  </div>
+
+                  <div class="d-flex flex-column align-items-center gap-2">
+                    <p class="my-font-sm-400 my-color-black mb-0 text-center">51–54、71–72<br>無格線版</p>
+                    <div class="rounded-3 p-3 d-inline-flex" style="background:#ffffff">
+                      <LogoGridSvg
+                        :show-grid="false"
+                        center-cells-only
+                        id-prefix="center-bare"
+                        :svg-width="centerCellsLogoWidth"
+                        :svg-height="180"
+                      />
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </section>
@@ -213,6 +245,31 @@ const diamondGridWidth = 80;
                 </div>
 
                 <p class="my-font-sm-600 my-color-black mb-3 mt-4 pt-4 border-top border-secondary-subtle">
+                  51–54、71–72
+                </p>
+                <div class="d-flex flex-wrap gap-4 align-items-start">
+                  <div
+                    v-for="variant in colorVariants"
+                    :key="`center-var-${variant.id}`"
+                    class="d-flex flex-column align-items-center gap-2"
+                  >
+                    <p class="my-font-sm-400 my-color-black mb-0">{{ variant.label }}</p>
+                    <div
+                      class="rounded-3 p-3 d-inline-flex"
+                      :style="{ background: variant.colors.background }"
+                    >
+                      <LogoGridSvg
+                        :show-grid="false"
+                        center-cells-only
+                        :id-prefix="`center-var-${variant.id}`"
+                        :colors="variant.colors"
+                        :svg-width="centerCellsLogoWidth"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p class="my-font-sm-600 my-color-black mb-3 mt-4 pt-4 border-top border-secondary-subtle">
                   漸層特效
                 </p>
                 <div class="d-flex flex-wrap gap-4 align-items-start">
@@ -230,6 +287,31 @@ const diamondGridWidth = 80;
                         :show-grid="false"
                         :id-prefix="`grad-${variant.id}`"
                         :colors="variant.colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p class="my-font-sm-600 my-color-black mb-3 mt-4 pt-4 border-top border-secondary-subtle">
+                  51–54、71–72 · 漸層特效
+                </p>
+                <div class="d-flex flex-wrap gap-4 align-items-start">
+                  <div
+                    v-for="variant in gradientVariants"
+                    :key="`center-grad-${variant.id}`"
+                    class="d-flex flex-column align-items-center gap-2"
+                  >
+                    <p class="my-font-sm-400 my-color-black mb-0">{{ variant.label }}</p>
+                    <div
+                      class="rounded-3 p-3 d-inline-flex"
+                      :style="{ background: variant.colors.background }"
+                    >
+                      <LogoGridSvg
+                        :show-grid="false"
+                        center-cells-only
+                        :id-prefix="`center-grad-${variant.id}`"
+                        :colors="variant.colors"
+                        :svg-width="centerCellsLogoWidth"
                       />
                     </div>
                   </div>
@@ -256,6 +338,27 @@ const diamondGridWidth = 80;
                         :id-prefix="`size-${size.id}`"
                         :svg-width="size.width"
                         :svg-height="sizeHeight(size.width)"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <p class="my-font-sm-600 my-color-black mb-3 mt-4 pt-4 border-top border-secondary-subtle">
+                  51–54、71–72
+                </p>
+                <div class="d-flex flex-wrap gap-4 align-items-end">
+                  <div
+                    v-for="size in sizeVariants"
+                    :key="`center-size-${size.id}`"
+                    class="d-flex flex-column align-items-center gap-2"
+                  >
+                    <p class="my-font-sm-400 my-color-black mb-0">{{ size.label }}</p>
+                    <div class="rounded-3 p-2 d-inline-flex" style="background:#ffffff">
+                      <LogoGridSvg
+                        :show-grid="false"
+                        center-cells-only
+                        :id-prefix="`center-size-${size.id}`"
+                        :svg-width="centerCellsWidth(size.width)"
                       />
                     </div>
                   </div>

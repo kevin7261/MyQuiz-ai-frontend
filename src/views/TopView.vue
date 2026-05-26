@@ -4,13 +4,33 @@
    *
    * 職責與 LeftView 相同，改為水平排列於頁面頂部。
    */
-  import { computed } from 'vue';
+  import { computed, ref } from 'vue';
   import { useAuthStore } from '../stores/authStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
 
-  const TOP_VIEW_LOGO_WIDTH = 40;
-  const TOP_VIEW_LOGO_HEIGHT = Math.round(TOP_VIEW_LOGO_WIDTH * (180 / 240));
+  /** 中央菱形：每次 TopView 建立時隨機鮮豔二色線性漸層 */
+  function createRandomLogoDiamondGradient() {
+    const vividHues = [0, 18, 32, 48, 120, 155, 195, 220, 265, 290, 315, 340];
+    const hue1 = vividHues[Math.floor(Math.random() * vividHues.length)]
+      + Math.floor(Math.random() * 14) - 7;
+    const hue2 = (hue1 + 55 + Math.floor(Math.random() * 95)) % 360;
+    const sat = 96 + Math.floor(Math.random() * 4);
+    const dirs = [
+      { x1: '0%', y1: '0%', x2: '100%', y2: '100%' },
+      { x1: '0%', y1: '100%', x2: '100%', y2: '0%' },
+      { x1: '0%', y1: '50%', x2: '100%', y2: '50%' },
+      { x1: '50%', y1: '0%', x2: '50%', y2: '100%' },
+    ];
+    const dir = dirs[Math.floor(Math.random() * dirs.length)];
+    return {
+      ...dir,
+      stops: [
+        { offset: '0%', color: `hsl(${hue1}, ${sat}%, ${50 + Math.floor(Math.random() * 8)}%)` },
+        { offset: '100%', color: `hsl(${hue2}, ${sat}%, ${44 + Math.floor(Math.random() * 10)}%)` },
+      ],
+    };
+  }
 
   export default {
     name: 'TopView',
@@ -44,15 +64,32 @@
         );
       });
 
+      function buildTopViewLogoColors() {
+        return {
+          primary: 'var(--my-color-gray-3)',
+          secondary: 'var(--my-color-white)',
+          backgroundGradient: createRandomLogoDiamondGradient(),
+        };
+      }
+
+      const topViewLogoColors = ref(buildTopViewLogoColors());
+      const topViewLogoIdSuffix = ref(0);
+
+      function onLogoClick() {
+        topViewLogoColors.value = buildTopViewLogoColors();
+        topViewLogoIdSuffix.value += 1;
+      }
+
       return {
         onLogout,
         onOpenCourseModal,
+        onLogoClick,
         canSeeNavLink,
         showDividerBeforeProfile,
         currentCourseName,
         hasMultipleCourses,
-        topViewLogoWidth: TOP_VIEW_LOGO_WIDTH,
-        topViewLogoHeight: TOP_VIEW_LOGO_HEIGHT,
+        topViewLogoColors,
+        topViewLogoIdSuffix,
       };
     },
   };
@@ -60,19 +97,25 @@
 
 <template>
   <header class="my-top-view flex-shrink-0 my-bgcolor-gray-3 border-bottom">
-    <div class="my-top-view-inner d-flex align-items-center gap-2 gap-md-3 px-3 py-2 min-w-0">
-      <div class="d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
-        <div class="my-top-view-brand flex-shrink-0" aria-label="MyQuiz.ai">
-          <LogoGridSvg
-            :show-grid="false"
-            :show-background="false"
-            id-prefix="top-view-brand"
-            :colors="{ background: 'var(--my-color-gray-3)' }"
-            :svg-width="topViewLogoWidth"
-            :svg-height="topViewLogoHeight"
-          />
-        </div>
+    <button
+      type="button"
+      class="my-top-view-brand flex-shrink-0"
+      aria-label="MyQuiz.ai，點擊變更 logo 配色"
+      @click="onLogoClick"
+    >
+      <LogoGridSvg
+        :key="topViewLogoIdSuffix"
+        :show-grid="false"
+        :show-background="false"
+        center-cells-only
+        size-to-container
+        :id-prefix="`top-view-brand-${topViewLogoIdSuffix}`"
+        :colors="topViewLogoColors"
+      />
+    </button>
 
+    <div class="my-top-view-inner d-flex align-items-center gap-2 gap-md-3 px-3 py-2 min-w-0 flex-grow-1">
+      <div class="d-flex align-items-center gap-2 flex-shrink-0 min-w-0">
         <button
           v-if="hasMultipleCourses"
           type="button"
@@ -159,6 +202,8 @@
 <style scoped>
 .my-top-view {
   z-index: 40;
+  display: flex;
+  align-items: stretch;
 }
 
 .my-top-view-inner {
@@ -167,8 +212,21 @@
 
 .my-top-view-brand {
   display: flex;
-  align-items: center;
+  align-self: stretch;
+  flex-shrink: 0;
+  height: 100%;
   line-height: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.my-top-view-brand:hover,
+.my-top-view-brand:focus-visible {
+  outline: none;
+  opacity: 0.92;
 }
 
 .my-top-view-course-btn,
