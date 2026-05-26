@@ -6084,7 +6084,7 @@ async function confirmAnswer(item) {
                     aria-label="單元快捷選單"
                     :disabled="packGroupsEditBlocked"
                   >
-                    <i class="fa-solid fa-bars" aria-hidden="true" />
+                    <i class="fa-solid fa-chevron-down" aria-hidden="true" />
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     <li>
@@ -6675,7 +6675,7 @@ async function confirmAnswer(item) {
                         aria-label="單元功能選單"
                         :disabled="packGroupsEditBlocked"
                       >
-                      <i class="fa-solid fa-bars" aria-hidden="true" />
+                      <i class="fa-solid fa-chevron-down" aria-hidden="true" />
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                       <li>
