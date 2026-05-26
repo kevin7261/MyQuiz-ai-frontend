@@ -6508,10 +6508,7 @@ async function confirmAnswer(item) {
                 </div>
                 <!-- 子區塊：題目區（頂部 pt-2 在出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
                 <div class="my-design-quiz-sub-block-outer">
-                  <div
-                    class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
-                    :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-3'"
-                  >
+                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
                     <div
                       class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
@@ -6614,7 +6611,10 @@ async function confirmAnswer(item) {
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer"
                 >
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-white p-0 pb-2">
+                  <div
+                    class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
+                    :class="designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white'"
+                  >
                     <div class="w-100 min-w-0 pt-2">
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
@@ -7057,10 +7057,12 @@ async function confirmAnswer(item) {
 .my-design-tab-left-view--white-canvas {
   background-color: var(--my-color-white) !important;
 }
-.my-design--side-panel-left .my-pack-unit-attrs-panel,
+.my-design--side-panel-left .my-pack-unit-attrs-panel {
+  background-color: var(--my-color-white) !important;
+}
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
-  background-color: var(--my-color-white) !important;
+  background-color: var(--my-color-gray-3) !important;
 }
 .my-design-right-nav {
   flex-wrap: nowrap;
