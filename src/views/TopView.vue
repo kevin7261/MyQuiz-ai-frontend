@@ -66,8 +66,8 @@
 
       function buildTopViewLogoColors() {
         return {
-          primary: 'var(--my-color-gray-3)',
-          secondary: 'var(--my-color-white)',
+          primary: 'var(--my-color-white)',
+          secondary: 'var(--my-color-gray-3)',
           backgroundGradient: createRandomLogoDiamondGradient(),
         };
       }
@@ -96,7 +96,7 @@
 </script>
 
 <template>
-  <header class="my-top-view flex-shrink-0 my-bgcolor-gray-3 border-bottom">
+  <header class="my-top-view flex-shrink-0 my-bgcolor-white border-bottom">
     <button
       type="button"
       class="my-top-view-brand flex-shrink-0"
@@ -219,7 +219,7 @@
   margin: 0;
   padding: 0;
   border: none;
-  background: transparent;
+  background-color: var(--my-color-gray-3);
   cursor: pointer;
 }
 
@@ -279,7 +279,7 @@
 .my-top-view-nav .nav-link.active:hover,
 .my-top-view-nav .nav-link.active:focus,
 .my-top-view-nav .nav-link.active:focus-visible {
-  background-color: var(--my-color-white);
+  background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
 }
 

@@ -25,9 +25,9 @@ function onTitleInput(e) {
 
 <template>
   <header
-    class="create-exam-bank-2-detail-bar flex-shrink-0 my-bgcolor-gray-4"
+    class="create-exam-bank-2-detail-bar flex-shrink-0"
     :class="[
-      inSidePanel ? 'p-3' : 'px-2 py-3 border-bottom',
+      inSidePanel ? 'p-3 my-bgcolor-gray-4' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
       { 'create-exam-bank-2-detail-bar--in-side-panel gap-2': inSidePanel },
     ]"
   >

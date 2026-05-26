@@ -471,15 +471,17 @@ watch(viewMode, (mode) => {
 
 <template>
   <div
-    class="create-exam-bank-2 d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4"
+    class="create-exam-bank-2 d-flex flex-column h-100 overflow-hidden"
     :class="{
       'create-exam-bank-2--detail': viewMode === 'detail',
       'create-exam-bank-2--side-panel-left': sidePanelOnLeft,
+      'my-bgcolor-white': sidePanelOnLeft,
+      'my-bgcolor-gray-4': !sidePanelOnLeft,
     }"
   >
     <!-- 九宮格題庫入口 -->
     <template v-if="viewMode === 'grid'">
-      <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+      <header class="flex-shrink-0 p-4" :class="sidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
         <div class="container-fluid px-0 text-center">
           <p class="my-font-xl-400 my-color-black text-break mb-0">建立測驗題庫</p>
         </div>
@@ -903,5 +905,14 @@ watch(viewMode, (mode) => {
 .create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
+}
+
+.create-exam-bank-2--side-panel-left.create-exam-bank-2--detail,
+.create-exam-bank-2--side-panel-left.create-exam-bank-2--detail .create-exam-bank-2-embedded {
+  background-color: var(--my-color-white) !important;
+}
+
+.create-exam-bank-2--side-panel-left.create-exam-bank-2--detail .create-exam-bank-2-embedded :deep(.my-design--side-panel-left) {
+  background-color: var(--my-color-white) !important;
 }
 </style>

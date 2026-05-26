@@ -74,7 +74,7 @@
 </script>
 
 <template>
-  <main class="my-right-view flex-grow-1 overflow-hidden d-flex flex-column min-h-0">
+  <main class="my-right-view flex-grow-1 overflow-hidden d-flex flex-column min-h-0 my-bgcolor-white">
     <div
       class="my-right-view-scroll flex-grow-1 min-h-0 d-flex flex-column"
       :class="{ 'my-right-view-scroll--visible': showMainScrollbar }"
@@ -94,12 +94,14 @@
 .my-right-view {
   min-height: 0;
   min-width: 0;
+  background-color: var(--my-color-white);
 }
 
 .my-right-view-scroll {
   min-height: 0;
   min-width: 0;
   overflow: hidden;
+  background-color: var(--my-color-white);
 }
 
 .my-right-view-scroll--visible {

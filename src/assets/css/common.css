@@ -981,7 +981,15 @@ code {
 /* 建立測驗題庫／試卷設計 left 主欄及外層容器：統一 gray-4 底（#fafafa） */
 .my-design-tab-left-view,
 .my-design-tab-left-view-scroll {
-  background-color: #fafafa;
+  background-color: var(--my-color-gray-4);
+}
+/* create-exam-bank_3：主內容區白底（覆寫上方 gray-4） */
+.my-design--side-panel-left .my-design-tab-left-view,
+.my-design--side-panel-left .my-design-tab-left-view-scroll,
+.my-design-tab-left-view--white-canvas,
+.my-design-tab-left-view--white-canvas.my-design-tab-left-view-scroll,
+.my-design--side-panel-left .my-rag-unit-type-text-scroll {
+  background-color: var(--my-color-white) !important;
 }
 .my-design-tab-left-view-scroll {
   min-height: 0;

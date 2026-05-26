@@ -5102,8 +5102,11 @@ async function confirmAnswer(item) {
 
 <template>
   <div
-    class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative"
-    :class="{ 'my-design--side-panel-left': designSidePanelOnLeft }"
+    class="d-flex flex-column h-100 overflow-hidden position-relative"
+    :class="[
+      designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-4',
+      { 'my-design--side-panel-left': designSidePanelOnLeft },
+    ]"
   >
     <LoadingOverlay
       :is-visible="loadingOverlayVisible"
@@ -5732,12 +5735,12 @@ async function confirmAnswer(item) {
         </div>
       </div>
     </Teleport>
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+    <header v-if="!designSidePanelOnLeft" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">{{ pageTitle }}</p>
       </div>
     </header>
-    <div class="flex-shrink-0 my-rag-tabs-bar my-bgcolor-gray-4">
+    <div v-if="!designSidePanelOnLeft" class="flex-shrink-0 my-rag-tabs-bar my-bgcolor-gray-4">
       <div class="d-flex justify-content-center align-items-center w-100">
         <template v-if="ragListLoading && ragItems.length === 0 && newTabItems.length === 0">
           <div class="w-100 py-2" aria-busy="true" />
@@ -5836,7 +5839,10 @@ async function confirmAnswer(item) {
       </div>
     </div>
 
-    <div class="flex-grow-1 overflow-hidden my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div
+      class="flex-grow-1 overflow-hidden d-flex flex-column min-h-0"
+      :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+    >
       <div
         class="row g-0 flex-grow-1 min-h-0 h-100 my-design-tab-split-layout"
         :class="{ 'my-design-tab-split-layout--side-left': designSidePanelOnLeft }"
@@ -5846,11 +5852,15 @@ async function confirmAnswer(item) {
           :class="[
             showSidePanelColumn ? 'col-8 col-xl-8 col-xxl-9' : 'col-12',
             showSidePanelColumn && designSidePanelOnLeft ? 'order-2' : '',
+            { 'my-design-tab-left-view--white-canvas': designSidePanelOnLeft },
           ]"
         >
           <div
             class="my-design-tab-left-view-scroll h-100 min-h-0 overflow-auto d-flex flex-column"
-            :class="{ 'my-design-tab-left-view-scroll--show-scrollbar': designSidePanelOnLeft }"
+            :class="{
+              'my-design-tab-left-view-scroll--show-scrollbar': designSidePanelOnLeft,
+              'my-design-tab-left-view--white-canvas': designSidePanelOnLeft,
+            }"
           >
       <div
         v-if="!showCreateBankMainForm"
@@ -5925,7 +5935,8 @@ async function confirmAnswer(item) {
               </div>
             <div
               :key="'rg-' + activePackUnitGi"
-              class="my-pack-unit-attrs-panel rounded-4 my-bgcolor-gray-3 p-3 w-100 min-w-0 d-flex flex-column gap-4"
+              class="my-pack-unit-attrs-panel rounded-4 p-3 w-100 min-w-0 d-flex flex-column gap-4"
+              :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-3'"
               role="group"
               aria-label="單元設定"
             >
@@ -6306,7 +6317,15 @@ async function confirmAnswer(item) {
                 />
                 <div
                   v-if="bankUnitContentCollapsed"
-                  style="position: absolute; bottom: 0; left: 0; right: 0; height: 64px; background: linear-gradient(to bottom, transparent, var(--my-color-gray-4)); pointer-events: none;"
+                  :style="{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '64px',
+                    background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-4)'})`,
+                    pointerEvents: 'none',
+                  }"
                 />
               </div>
               <div
@@ -6489,7 +6508,10 @@ async function confirmAnswer(item) {
                 </div>
                 <!-- 子區塊：題目區（頂部 pt-2 在出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
                 <div class="my-design-quiz-sub-block-outer">
-                  <div class="my-design-quiz-sub-block rounded-4 my-bgcolor-gray-3 p-0 pb-2">
+                  <div
+                    class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
+                    :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-3'"
+                  >
                     <div
                       class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
@@ -7026,6 +7048,19 @@ async function confirmAnswer(item) {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
+}
+.my-design--side-panel-left {
+  background-color: var(--my-color-white) !important;
+}
+.my-design--side-panel-left .my-design-tab-left-view,
+.my-design--side-panel-left .my-design-tab-left-view-scroll,
+.my-design-tab-left-view--white-canvas {
+  background-color: var(--my-color-white) !important;
+}
+.my-design--side-panel-left .my-pack-unit-attrs-panel,
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
+  background-color: var(--my-color-white) !important;
 }
 .my-design-right-nav {
   flex-wrap: nowrap;
