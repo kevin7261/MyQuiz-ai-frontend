@@ -198,7 +198,12 @@ const PATH_TO_VIEW = {
     />
 
     <div v-if="useTopHeaderLayout" class="d-flex flex-row h-100 g-0 my-home-layout my-home-layout--top-header">
-      <SideRailView />
+      <SideRailView
+        :user-name="userName"
+        :user-type="authStore.user?.user_type"
+        @logout="onLogout"
+        @open-course-modal="openCourseModal"
+      />
       <div class="d-flex flex-column flex-grow-1 min-w-0 min-h-0">
         <TopView
           :user-name="userName"

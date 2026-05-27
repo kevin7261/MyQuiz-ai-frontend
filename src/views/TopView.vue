@@ -37,22 +37,10 @@
         return raw.replace(/\s*-\s*MyQuiz\.ai\s*$/i, '').trim() || 'MyQuiz.ai';
       });
 
-      const showDividerBeforeProfile = computed(() => {
-        const t = props.userType;
-        if (!canSeeNavLink(t, 'profile')) return false;
-        return (
-          canSeeNavLink(t, 'student-answer-analysis') ||
-          canSeeNavLink(t, 'users') ||
-          canSeeNavLink(t, 'settings') ||
-          canSeeNavLink(t, 'logs')
-        );
-      });
-
       return {
         onLogout,
         onOpenCourseModal,
         canSeeNavLink,
-        showDividerBeforeProfile,
         currentCourseName,
         hasMultipleCourses,
         currentPageTitle,
@@ -139,12 +127,6 @@
           </li>
           <li v-if="canSeeNavLink(userType, 'logs')">
             <router-link class="dropdown-item" to="/logs" active-class="active">系統紀錄</router-link>
-          </li>
-          <li v-if="showDividerBeforeProfile">
-            <hr class="dropdown-divider" />
-          </li>
-          <li v-if="canSeeNavLink(userType, 'profile')">
-            <router-link class="dropdown-item" to="/profile" active-class="active">設定</router-link>
           </li>
           <li>
             <hr class="dropdown-divider" />
