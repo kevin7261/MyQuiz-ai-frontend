@@ -2594,6 +2594,7 @@ const designRightUnitSubTabItems = computed(() => {
       kind: 'pack-unit',
       active: unitIndex === activeUnitIdx && quizItems.length === 0,
       quizItems,
+      quizTypeCount: stack.length,
       quizQuestionCount: unitQuizStackQuestionCount(stack),
     };
   });
@@ -6070,7 +6071,15 @@ async function confirmAnswer(item) {
             }"
           >
       <div
-        v-if="!showCreateBankMainForm"
+        v-if="bankWork3NoQuizTypesEmpty"
+        class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
+      >
+        <p class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break">
+          目前沒有題型，請在左側選單的單元按 + 新增題型
+        </p>
+      </div>
+      <div
+        v-else-if="!showCreateBankMainForm"
         class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0"
       >
         <button
@@ -6093,7 +6102,6 @@ async function confirmAnswer(item) {
         class="container-fluid px-3 px-md-4 py-4 d-flex flex-column flex-grow-1 min-h-0"
         :class="{
           'my-pack-empty-start-layout': isPackEmptyStartView,
-          'min-h-0': designSidePanelOnLeft && bankWork3NoQuizTypesEmpty,
         }"
       >
         <div class="row justify-content-center">
@@ -6419,14 +6427,8 @@ async function confirmAnswer(item) {
       <section
         v-if="hasBuiltRagSummary"
         class="text-start my-page-block-spacing"
-        :class="{
-          'flex-grow-1 d-flex flex-column min-h-0 mb-0': bankWork3NoQuizTypesEmpty,
-        }"
       >
-        <div
-          class="my-design-pack-unit-blocks w-100 min-w-0"
-          :class="{ 'flex-grow-1 d-flex flex-column min-h-0': bankWork3NoQuizTypesEmpty }"
-        >
+        <div class="my-design-pack-unit-blocks w-100 min-w-0">
         <div
           class="w-100 min-w-0 text-start flex-shrink-0"
           role="group"
@@ -6439,8 +6441,7 @@ async function confirmAnswer(item) {
             設定單元題型
           </div>
           <div
-            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0"
-            :class="bankWork3NoQuizTypesEmpty ? 'mb-0' : 'mb-4'"
+            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
             role="heading"
             aria-level="2"
           >
@@ -6468,18 +6469,7 @@ async function confirmAnswer(item) {
             class="my-font-md-400 my-color-black"
           >—</span>
         </div>
-        <div
-          v-if="bankWork3NoQuizTypesEmpty"
-          class="my-design-main-step-block my-design-main-step-block--section-divide flex-grow-1 d-flex flex-column min-h-0 w-100"
-          aria-label="題型"
-        >
-          <div class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100">
-            <p class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break">
-              目前沒有題型，請在左側選單的單元按 + 新增題型
-            </p>
-          </div>
-        </div>
-        <template v-else-if="packUnitCarouselCountEffective">
+        <template v-if="packUnitCarouselCountEffective">
             <section
               v-if="bankShowUnitTranscriptUi"
               class="w-100 min-w-0 mb-3"
@@ -7112,9 +7102,9 @@ async function confirmAnswer(item) {
                         </span>
                       </div>
                       <span
-                        v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizQuestionCount > 0"
+                        v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizTypeCount > 0"
                         class="badge user-select-none flex-shrink-0 my-design-right-unit-count-badge"
-                      >{{ item.quizQuestionCount }}</span>
+                      >{{ item.quizTypeCount }}</span>
                       <button
                         v-if="hasBuiltRagSummary && hasUnitSubTabs"
                         type="button"
