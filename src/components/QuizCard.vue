@@ -360,12 +360,12 @@ const isDesignSubBlockFragment = computed(
     && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
 );
 
-/** exam_design 題目子區：讚／差列與題幹 inset 內距對齊 */
+/** exam_design 題目子區：讚／差列內距 */
 const designStemToolbarRowPaddingClass = computed(() =>
   isDesignSubBlockFragment.value
   && props.designSubBlock === 'question'
   && props.showExamRating
-    ? 'px-3 py-2'
+    ? 'px-3 pt-2'
     : '',
 );
 
