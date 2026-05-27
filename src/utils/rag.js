@@ -217,6 +217,24 @@ export function normalizePackUnitType(raw) {
   return DEFAULT_PACK_UNIT_TYPE;
 }
 
+/** 設定單元類型顯示名（左欄 icon aria-label、類型選取 title） */
+export function packUnitTypeDisplayLabel(unitType) {
+  const ut = normalizePackUnitType(unitType);
+  if (ut === UNIT_TYPE_TEXT) return '文字';
+  if (ut === UNIT_TYPE_MP3) return 'MP3';
+  if (ut === UNIT_TYPE_YOUTUBE) return 'YouTube';
+  return 'RAG';
+}
+
+/** 設定單元類型 Font Awesome icon */
+export function packUnitTypeIconClasses(unitType) {
+  const ut = normalizePackUnitType(unitType);
+  if (ut === UNIT_TYPE_TEXT) return 'fa-solid fa-a';
+  if (ut === UNIT_TYPE_MP3) return 'fa-solid fa-microphone';
+  if (ut === UNIT_TYPE_YOUTUBE) return 'fa-brands fa-youtube';
+  return 'fa-solid fa-database';
+}
+
 /** 出題單元預設分段長度／重疊（與 POST build-rag-zip rag_chunk_* 對齊；每群一筆） */
 export const DEFAULT_PACK_CHUNK_SIZE = 1000;
 export const DEFAULT_PACK_CHUNK_OVERLAP = 200;

@@ -12,7 +12,7 @@
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：GET /rag/tabs 每筆 Rag.for_exam，或其 units／quizzes 任一有 Rag_Quiz.for_exam，或本機題卡 rag_quiz_for_exam，皆於分頁列顯示綠點並禁止刪除該題庫分頁（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）與已儲存批改規則之 POST /rag/tab/unit/quiz/llm-grade-db；GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，選定類型且資料夾就緒後自動載入逐字稿，完成載入前編輯區停用且不能開始建立單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
+ * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，選定類型且資料夾就緒後自動載入逐字稿，完成載入前編輯區停用且不能新增單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
@@ -73,6 +73,7 @@ import {
   normalizePackUnitType,
   packGroupRequiresRagType,
   enforcePackUnitTypesForFolderGroups,
+  packUnitTypeDisplayLabel,
   UNIT_TYPE_RAG,
   UNIT_TYPE_TEXT,
   UNIT_TYPE_MP3,
@@ -88,6 +89,7 @@ import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
+import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 import {
@@ -124,10 +126,17 @@ const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
 /** design_3 核准按鈕 class（create-exam-bank_3 禁用 gray-3／black／outline-gray-1） */
 const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
-const d3FilledPillSm = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+/** 設定單元「加入資料夾」：work3 白底欄位用 gray-3 pill；exam_2 灰底欄位用 white pill */
+const d3PackUnitAddFolderPill = computed(() => (
+  props.designSidePanelOnLeft ? 'my-button-gray-3' : 'my-button-white'
+));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
 const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
 const d3SegmentSelected = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+/** create-exam-bank_3：一般／追問 segmented 選中態（淺灰底） */
+const d3QuizModeSegmentSelected = computed(() => (
+  props.designSidePanelOnLeft ? 'my-button-gray-3' : 'my-button-white'
+));
 const d3CircleIconBtnClass = computed(() => (
   props.designSidePanelOnLeft
     ? 'my-button-transparent-borderless my-btn-circle'
@@ -183,11 +192,8 @@ const unitQuizTitleBeforeEdit = ref('');
 const packBuildSuccessModalOpen = ref(false);
 /** 建置完成後：唯讀單元屬性 Modal */
 const packUnitDetailModalOpen = ref(false);
-/** 設定單元 sub-tab 更名（本機 packUnitNames） */
-const renamePackUnitModalOpen = ref(false);
-const renamePackUnitDraftIndex = ref(null);
-const renamePackUnitInitialName = ref('');
-const renamePackUnitError = ref('');
+/** 設定單元 sub-tab 更名（本機 packUnitNames；inline blur 儲存，對齊題庫名稱） */
+const packUnitTitleBeforeEdit = ref('');
 /** 刪除設定單元確認 Modal */
 const deletePackUnitModalOpen = ref(false);
 const deletePackUnitDraftIndex = ref(null);
@@ -474,7 +480,7 @@ function checkRagHasList(rag) {
   return getRagUnitListString(rag) !== '';
 }
 
-/** 至少一列出題單元，且每列至少一個課程標籤（與「開始建立單元」按鈕啟用條件一致） */
+/** 至少一列出題單元，且每列至少一個課程標籤（與「建立單元」按鈕啟用條件一致） */
 function isPackTasksListReady(list) {
   if (!Array.isArray(list) || list.length < 1) return false;
   return list.every((g) => Array.isArray(g) && g.length >= 1);
@@ -822,7 +828,7 @@ const isUnitSubTabsLoading = computed(() => unitSubTabsLoadingCount.value > 0);
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
-/** 設定單元：逐字稿載入中（文字 GET /rag/unit/text）或檔案讀取（mp3-file／youtube-url 含 transcription）期間，禁「開始建立單元」等 */
+/** 設定單元：逐字稿載入中（文字 GET /rag/unit/text）或檔案讀取（mp3-file／youtube-url 含 transcription）期間，禁「新增單元」等 */
 const hasPackUnitTranscriptLoading = computed(() => {
   const st = currentState.value;
   const t = Array.isArray(st?.packUnitTranscriptLoading) && st.packUnitTranscriptLoading.some(Boolean);
@@ -994,8 +1000,8 @@ const designRightUploadFileLabel = computed(() => {
 /** 建置前尚無設定單元時，主區提示文案 */
 const packUnitEmptyStartHint = computed(() => {
   const name = String(designRightUploadFileLabel.value || uploadedZipDisplayName.value || '').trim();
-  if (name && name !== '（已上傳）') return `${name} 已上傳，開始建立單元`;
-  return '教材已上傳，開始建立單元';
+  if (name && name !== '（已上傳）') return `${name} 已上傳，請在左側選單設定單元`;
+  return '教材已上傳，請在左側選單設定單元';
 });
 
 /** 建置前尚無設定單元：主區空白引導（置中版面） */
@@ -1426,32 +1432,25 @@ function setPackUnitNameAt(gi, val) {
   state.packUnitNames = arr;
 }
 
-function openRenamePackUnitTab(gi) {
+function onPackUnitTitleInput(e) {
   if (packGroupsEditBlocked.value) return;
-  const i = Number(gi);
-  if (!Number.isFinite(i) || i < 0) return;
-  renamePackUnitDraftIndex.value = i;
-  renamePackUnitInitialName.value = resolvePackUnitNavLabel(
-    ragListDisplayGroups.value[i],
-    i,
-    currentState.value.packUnitNames,
-  );
-  renamePackUnitError.value = '';
-  renamePackUnitModalOpen.value = true;
+  setPackUnitNameAt(activePackUnitGi.value, e.target.value);
 }
 
-function onRenamePackUnitSave(name) {
-  if (!name || !String(name).trim()) {
-    renamePackUnitError.value = '請輸入名稱';
+function onPackUnitTitleFocus() {
+  packUnitTitleBeforeEdit.value = activePackUnitDisplayLabel.value;
+}
+
+function onPackUnitTitleBlur(e) {
+  if (packGroupsEditBlocked.value) return;
+  const gi = activePackUnitGi.value;
+  const name = String(e.target?.value ?? '').trim();
+  if (!name) {
+    setPackUnitNameAt(gi, String(packUnitTitleBeforeEdit.value ?? '').trim());
     return;
   }
-  const gi = renamePackUnitDraftIndex.value;
-  if (gi == null || !Number.isFinite(gi) || gi < 0) {
-    renamePackUnitError.value = '找不到此單元，請重新整理頁面後再試';
-    return;
-  }
-  setPackUnitNameAt(gi, String(name).trim());
-  renamePackUnitModalOpen.value = false;
+  if (name === String(packUnitTitleBeforeEdit.value ?? '').trim()) return;
+  setPackUnitNameAt(gi, name);
 }
 
 function deletePackUnitAt(gi) {
@@ -1720,7 +1719,7 @@ function arePackUnitTranscriptsReadyForBuild(state = currentState.value) {
   return missingPackUnitTranscriptIndexes(state).length === 0;
 }
 
-/** 「開始建立單元」按鈕：unit_type 2／3／4 時須已取得非空逐字稿；另需資料夾就緒、不在載入中、未在建置中 */
+/** 「建立單元」按鈕：unit_type 2／3／4 時須已取得非空逐字稿；另需資料夾就緒、不在載入中、未在建置中 */
 const startPackUnitBuildDisabled = computed(() => {
   const st = currentState.value;
   return (
@@ -2589,6 +2588,7 @@ const designRightUnitSubTabItems = computed(() => {
     return {
       key: `pack-unit-${item.index}-${item.label}`,
       label: String(item.label ?? '').trim() || `單元 ${Number(item.index) + 1}`,
+      unitType: normalizePackUnitType(unitTab?.unitType ?? packUnitTypeAt(unitIndex)),
       unitTypeLabel: packUnitTypeDisplayLabel(unitTab?.unitType ?? packUnitTypeAt(unitIndex)),
       index: item.index,
       kind: 'pack-unit',
@@ -3170,14 +3170,6 @@ function hydratePackChunkArraysFromRag(rag, groupCount) {
     sizes: sizes.slice(0, count),
     overs: overs.slice(0, count),
   };
-}
-
-/** 設定單元唯讀：unit_type → 下拉同款文字 */
-function packUnitTypeDisplayLabel(unitType) {
-  const normalized = normalizePackUnitType(unitType);
-  const hit = PACK_UNIT_TYPE_OPTIONS.find((o) => Number(o.value) === normalized);
-  if (hit) return hit.label;
-  return '文字';
 }
 
 /** 唯讀「設定單元」：RAG 分段參數顯示在與類型／來源檔同列（不外層縮排） */
@@ -4324,7 +4316,7 @@ async function confirmDeleteUnitQuiz() {
 
 // ─── Pack（Build RAG ZIP） ─────────────────────────────────────────────────────
 
-/** POST /rag/tab/build-rag-zip（按鈕「開始建立單元」） */
+/** POST /rag/tab/build-rag-zip（按鈕「建立單元」） */
 async function confirmPack() {
   const state = currentState.value;
   const fileId = String(state.zipTabId ?? '').trim();
@@ -4343,7 +4335,7 @@ async function confirmPack() {
     return;
   }
   if (hasPackUnitTranscriptLoading.value) {
-    state.packError = '逐字稿尚在分析或檔案讀取中，請稍候再開始建立單元';
+    state.packError = '逐字稿尚在分析或檔案讀取中，請稍候再建立單元';
     return;
   }
   const missingTranscriptIndexes = missingPackUnitTranscriptIndexes(state);
@@ -5332,15 +5324,6 @@ async function confirmAnswer(item) {
       :confirm-button-class="d3ConfirmPillMd"
       @save="onRenameRagTabSave"
     />
-    <TabRenameModal
-      v-model="renamePackUnitModalOpen"
-      :initial-name="renamePackUnitInitialName"
-      :saving="false"
-      :error="renamePackUnitError"
-      title="修改單元"
-      :confirm-button-class="d3ConfirmPillMd"
-      @save="onRenamePackUnitSave"
-    />
     <Teleport to="body">
       <div
         v-if="packFolderPickModalOpen"
@@ -6144,25 +6127,25 @@ async function confirmAnswer(item) {
                   設定單元
                 </div>
                 <div
-                  class="d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
+                  class="min-w-0 w-100"
                   role="heading"
                   aria-level="2"
                 >
-                  <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ activePackUnitDisplayLabel }}</span>
-                  <button
-                    type="button"
-                    :class="
-                      designSidePanelOnLeft
-                        ? 'btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-transparent-borderless my-btn-circle lh-1'
-                        : 'btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 flex-shrink-0'
-                    "
-                    title="重新命名單元"
-                    aria-label="重新命名單元"
+                  <input
+                    :key="'pack-unit-name-' + activePackUnitGi"
+                    :value="activePackUnitDisplayLabel"
+                    type="text"
+                    class="my-design-pack-unit-name-title my-design-pack-unit-main-title my-font-xl-400 my-color-black text-truncate mb-0 text-start w-100 px-0 py-1 rounded-2"
+                    maxlength="200"
+                    autocomplete="off"
+                    spellcheck="false"
+                    aria-label="單元名稱"
                     :disabled="packGroupsEditBlocked"
-                    @click="openRenamePackUnitTab(activePackUnitGi)"
-                  >
-                    <i class="fa-solid fa-pen" aria-hidden="true" />
-                  </button>
+                    @input="onPackUnitTitleInput"
+                    @focus="onPackUnitTitleFocus"
+                    @blur="onPackUnitTitleBlur"
+                    @keydown.enter.prevent="$event.target.blur()"
+                  />
                 </div>
               </div>
             <div
@@ -6177,7 +6160,7 @@ async function confirmAnswer(item) {
                     <div class="my-design-pack-unit-section w-100 min-w-0">
                       <div class="my-font-sm-400 my-color-gray-1 mb-0">資料夾組合</div>
                       <div
-                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-2 py-2 my-font-md-400 mt-1 d-flex align-items-center gap-2 my-pack-folder-combo-field"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 min-w-0 px-2 py-2 my-font-md-400 mt-1 d-flex flex-wrap align-items-center gap-2 my-pack-folder-combo-field"
                         style="min-height: 2.5rem; height: auto;"
                         role="group"
                         aria-label="資料夾組合"
@@ -6199,8 +6182,8 @@ async function confirmAnswer(item) {
                         </div>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 px-3 py-1"
-                          :class="d3FilledPillSm"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-pack-unit-add-folder-btn px-3 py-1"
+                          :class="d3PackUnitAddFolderPill"
                           title="加入資料夾"
                           aria-label="加入資料夾"
                           :disabled="packGroupsEditBlocked || !secondFoldersFull.length"
@@ -6218,7 +6201,8 @@ async function confirmAnswer(item) {
                         類型
                       </div>
                       <div
-                        class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-white flex-shrink-0 align-self-start p-1 mt-1"
+                        class="my-pack-unit-type-segment d-inline-flex flex-wrap gap-1 rounded-pill flex-shrink-0 align-self-start p-1 mt-1"
+                        :class="designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white'"
                         role="group"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 類型`"
                       >
@@ -6226,7 +6210,7 @@ async function confirmAnswer(item) {
                           v-for="opt in PACK_UNIT_TYPE_OPTIONS"
                           :key="'pack-unit-type-' + activePackUnitGi + '-' + opt.value"
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-pack-unit-type-btn px-3 py-1"
                           :class="
                             packUnitTypeAt(activePackUnitGi) === opt.value
                               ? d3SegmentSelected
@@ -6237,8 +6221,14 @@ async function confirmAnswer(item) {
                               || activePackUnitGroup.length === 0
                               || packUnitTypeOptionDisabled(activePackUnitGi, opt.value)
                           "
+                          :title="opt.label"
+                          :aria-label="opt.label"
                           @click="onPackUnitTypePick(activePackUnitGi, opt.value)"
                         >
+                          <PackUnitTypeIcon
+                            :unit-type="opt.value"
+                            decorative
+                          />
                           {{ opt.label }}
                         </button>
                       </div>
@@ -6353,7 +6343,7 @@ async function confirmAnswer(item) {
                   </div>
               </div>
             </div>
-            <div class="d-flex justify-content-start">
+            <div class="d-flex flex-column align-items-start gap-3 w-100 min-w-0">
               <button
                 type="button"
                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
@@ -6364,6 +6354,30 @@ async function confirmAnswer(item) {
               >
                 刪除此單元
               </button>
+              <div
+                v-if="!designSidePanelOnLeft"
+                class="w-100 min-w-0"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2 w-100"
+                  :class="d3ConfirmPillMd"
+                  :disabled="startPackUnitBuildDisabled"
+                  :aria-busy="currentState.packLoading"
+                  title="開始建立單元"
+                  aria-label="開始建立單元"
+                  @click="confirmPack"
+                >
+                  開始建立單元
+                </button>
+                <div
+                  v-if="currentState.packError"
+                  class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0 text-break"
+                  style="white-space: pre-wrap"
+                >
+                  {{ currentState.packError }}
+                </div>
+              </div>
             </div>
             </template>
             <div
@@ -6394,59 +6408,6 @@ async function confirmAnswer(item) {
               >
                 ZIP 內尚無可選資料夾
               </p>
-              <div class="d-flex flex-wrap justify-content-center align-items-stretch gap-2 w-100 min-w-0 my-pack-empty-actions-row">
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
-                  :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
-                  :disabled="packGroupsEditBlocked"
-                  title="新增單元"
-                  aria-label="新增單元"
-                  @click="onAddPackUnitClick"
-                >
-                  <i class="fa-solid fa-plus" aria-hidden="true" />
-                  新增單元
-                </button>
-                <div
-                  v-if="secondFoldersFull.length"
-                  class="dropdown flex-shrink-0 d-flex"
-                >
-                  <button
-                    type="button"
-                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-pack-empty-quick-menu-btn dropdown-toggle my-dropdown-caret lh-1"
-                    :class="designSidePanelOnLeft ? 'my-button-transparent-borderless my-btn-circle' : 'my-button-gray-3'"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    aria-label="單元快捷選單"
-                    :disabled="packGroupsEditBlocked"
-                  >
-                    <i class="fa-solid fa-chevron-down" aria-hidden="true" />
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <button
-                        type="button"
-                        class="dropdown-item my-font-md-400"
-                        :disabled="packGroupsEditBlocked"
-                        @click="addAllSecondFoldersAsGroups"
-                      >
-                        每個資料夾獨立單元
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        type="button"
-                        class="dropdown-item my-font-md-400"
-                        :disabled="packGroupsEditBlocked"
-                        title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
-                        @click="setAllSecondFoldersAsSingleGroup"
-                      >
-                        每個資料夾合併單元
-                      </button>
-                    </li>
-                  </ul>
-                </div>
-              </div>
             </div>
           </div>
             </div>
@@ -6485,10 +6446,12 @@ async function confirmAnswer(item) {
           >
             <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
               <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ builtPackUnitSectionHeadingTitle }}</span>
-              <span
-                v-if="activeReadonlyPackUnitRow?.typeLabel"
-                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-              >{{ activeReadonlyPackUnitRow.typeLabel }}</span>
+              <PackUnitTypeIcon
+                v-if="activeReadonlyPackUnitRow?.unitType != null"
+                :unit-type="activeReadonlyPackUnitRow.unitType"
+                color-class="my-color-gray-1"
+                class="flex-shrink-0"
+              />
             </div>
             <button
               v-if="activeReadonlyPackUnitRow"
@@ -6721,7 +6684,7 @@ async function confirmAnswer(item) {
                           designSidePanelOnLeft
                             ? (
                               !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? d3SegmentSelected
+                                ? d3QuizModeSegmentSelected
                                 : 'my-button-transparent-borderless my-color-black'
                             )
                             : (
@@ -6748,7 +6711,7 @@ async function confirmAnswer(item) {
                           designSidePanelOnLeft
                             ? (
                               isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? d3SegmentSelected
+                                ? d3QuizModeSegmentSelected
                                 : 'my-button-transparent-borderless my-color-black'
                             )
                             : (
@@ -7098,71 +7061,10 @@ async function confirmAnswer(item) {
                 :class="designSidePanelOnLeft ? 'pb-2' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
               >
                 <div
-                  class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 min-w-0"
+                  class="my-design-right-step-block-head d-flex align-items-center min-w-0"
                   :class="designSidePanelOnLeft ? 'px-3 pt-3 pb-2' : 'px-3 py-2'"
                 >
                   <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">{{ hasBuiltRagSummary ? '單元 / 題型' : '單元' }}</div>
-                  <div
-                    v-if="!hasBuiltRagSummary"
-                    class="d-flex align-items-center flex-shrink-0"
-                  >
-                    <button
-                      type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 lh-1"
-                      :class="d3CircleIconBtnClass"
-                      title="新增單元"
-                      aria-label="新增單元"
-                      :disabled="packGroupsEditBlocked"
-                      @click="onAddPackUnitClick"
-                    >
-                      <i class="fa-solid fa-plus" aria-hidden="true" />
-                    </button>
-                    <div class="dropdown flex-shrink-0">
-                      <button
-                        type="button"
-                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 lh-1 dropdown-toggle my-dropdown-caret"
-                        :class="d3CircleIconBtnClass"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false"
-                        aria-label="單元功能選單"
-                        :disabled="packGroupsEditBlocked"
-                      >
-                      <i class="fa-solid fa-chevron-down" aria-hidden="true" />
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <button
-                          type="button"
-                          class="dropdown-item my-font-md-400"
-                          :disabled="!(currentState.packTasksList || []).length"
-                          title="清空所有設定單元（含空位）"
-                          @click="openDeleteAllPackUnitsModal"
-                        >
-                          刪除全部
-                        </button>
-                      </li>
-                      <li v-if="secondFoldersFull.length">
-                        <button
-                          type="button"
-                          class="dropdown-item my-font-md-400"
-                          @click="addAllSecondFoldersAsGroups"
-                        >
-                          每個資料夾獨立單元
-                        </button>
-                      </li>
-                      <li v-if="secondFoldersFull.length">
-                        <button
-                          type="button"
-                          class="dropdown-item my-font-md-400"
-                          title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
-                          @click="setAllSecondFoldersAsSingleGroup"
-                        >
-                          每個資料夾合併單元
-                        </button>
-                      </li>
-                    </ul>
-                    </div>
-                  </div>
                 </div>
                 <template v-if="designRightUnitSubTabItems.length">
                   <div
@@ -7202,9 +7104,11 @@ async function confirmAnswer(item) {
                           />
                         </span>
                         <span class="my-design-right-unit-row-label flex-grow-1 min-w-0 text-start text-break">
-                          {{ item.label }}<span
-                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2 flex-shrink-0"
-                          >{{ item.unitTypeLabel }}</span>
+                          {{ item.label }}<PackUnitTypeIcon
+                            :unit-type="item.unitType"
+                            color-class="my-color-gray-1"
+                            class="ms-2 flex-shrink-0"
+                          />
                         </span>
                       </div>
                       <span
@@ -7266,26 +7170,65 @@ async function confirmAnswer(item) {
                   </div>
                 </template>
                 <div
-                  v-if="!hasBuiltRagSummary && packUnitCarouselCountEffective > 0"
-                  class="my-design-right-pack-build-action w-100 min-w-0"
-                  :class="designSidePanelOnLeft ? 'px-3 pb-3' : 'pb-2'"
+                  v-if="!hasBuiltRagSummary"
+                  class="my-design-side-nav-add-unit-row px-3 pt-2 pb-3 d-flex align-items-stretch gap-2 min-w-0"
                 >
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 w-100"
-                    :disabled="startPackUnitBuildDisabled"
-                    :aria-busy="currentState.packLoading"
-                    aria-label="開始建立單元"
-                    @click="confirmPack"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 flex-grow-1 min-w-0"
+                    :class="d3ConfirmPillMd"
+                    title="新增單元"
+                    aria-label="新增單元"
+                    :disabled="packGroupsEditBlocked"
+                    @click="onAddPackUnitClick"
                   >
-                    開始建立單元
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    新增單元
                   </button>
-                  <div
-                    v-if="currentState.packError"
-                    class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0 text-break"
-                    style="white-space: pre-wrap"
-                  >
-                    {{ currentState.packError }}
+                  <div class="dropdown flex-shrink-0 d-flex">
+                    <button
+                      type="button"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 lh-1 dropdown-toggle my-dropdown-caret my-design-side-nav-unit-menu-btn px-0 py-0"
+                      :class="designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-color-gray-1 my-btn-outline-gray-1'"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      aria-label="單元功能選單"
+                      :disabled="packGroupsEditBlocked"
+                    >
+                      <i class="fa-solid fa-chevron-down" aria-hidden="true" />
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <button
+                          type="button"
+                          class="dropdown-item my-font-md-400"
+                          :disabled="!(currentState.packTasksList || []).length"
+                          title="清空所有設定單元（含空位）"
+                          @click="openDeleteAllPackUnitsModal"
+                        >
+                          刪除全部
+                        </button>
+                      </li>
+                      <li v-if="secondFoldersFull.length">
+                        <button
+                          type="button"
+                          class="dropdown-item my-font-md-400"
+                          @click="addAllSecondFoldersAsGroups"
+                        >
+                          每個資料夾獨立單元
+                        </button>
+                      </li>
+                      <li v-if="secondFoldersFull.length">
+                        <button
+                          type="button"
+                          class="dropdown-item my-font-md-400"
+                          title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                          @click="setAllSecondFoldersAsSingleGroup"
+                        >
+                          每個資料夾合併單元
+                        </button>
+                      </li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -7294,17 +7237,40 @@ async function confirmAnswer(item) {
               v-if="designSidePanelOnLeft && hasUploadedFileMetadata"
               class="my-design-side-nav-delete"
             >
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex align-items-center my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2"
-                title="刪除此題庫"
-                aria-label="刪除此題庫"
-                :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
-                :aria-busy="sidePanelDeleteRagLoading"
-                @click="emit('delete-bank')"
-              >
-                刪除此題庫
-              </button>
+              <div class="d-flex flex-column gap-2 w-100 min-w-0">
+                <template v-if="!hasBuiltRagSummary">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2 w-100"
+                    :class="d3ConfirmPillMd"
+                    :disabled="startPackUnitBuildDisabled"
+                    :aria-busy="currentState.packLoading"
+                    title="開始建立單元"
+                    aria-label="開始建立單元"
+                    @click="confirmPack"
+                  >
+                    開始建立單元
+                  </button>
+                  <div
+                    v-if="currentState.packError"
+                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 text-break"
+                    style="white-space: pre-wrap"
+                  >
+                    {{ currentState.packError }}
+                  </div>
+                </template>
+                <button
+                  type="button"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 w-100"
+                  title="刪除此題庫"
+                  aria-label="刪除此題庫"
+                  :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
+                  :aria-busy="sidePanelDeleteRagLoading"
+                  @click="emit('delete-bank')"
+                >
+                  刪除此題庫
+                </button>
+              </div>
             </div>
           </aside>
         </div>
@@ -7326,45 +7292,35 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* create-exam-bank_3：rounded-pill 雙鈕；外框在群組，內層未選 transparent-borderless、選中 white（design_3） */
-.my-quiz-generate-mode-segment--outline {
-  border: 1px solid var(--my-color-gray-2);
-  border-radius: 9999px;
-  box-sizing: border-box;
-}
-.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-white),
-.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-gray-3),
-.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-transparent-borderless) {
-  border: none !important;
-  box-shadow: none;
-}
-/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
-:deep(button.btn.rounded-pill.px-3),
-:deep(button.btn.rounded-2.px-3) {
+/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距（類型 picker 除外） */
+:deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+:deep(button.btn.rounded-2.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
 }
 
-/* create-exam-bank_3：小 pill 按鈕 px-2、灰字（對齊 DesignPage2） */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
+/* create-exam-bank_3：小 pill 按鈕 px-2、灰字（對齊 DesignPage2）；類型／加入資料夾 picker 除外 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
-/* create-exam-bank_3：詳細資訊等 stem history pill 維持 px-3 */
+/* create-exam-bank_3：詳細資訊等 stem history、設定單元類型／加入資料夾 pill 維持 px-3 */
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400) {
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)) {
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-pack-unit-type-btn)) {
   color: var(--my-color-gray-1);
 }
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled)) {
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)) {
   color: var(--my-color-gray-1);
 }
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
@@ -7425,6 +7381,7 @@ async function confirmAnswer(item) {
 
 .my-design--side-panel-left .my-pack-unit-attrs-panel {
   background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-2);
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
@@ -7566,6 +7523,34 @@ async function confirmAnswer(item) {
 .my-design-pack-unit-main-title {
   line-height: 1.35;
   white-space: nowrap;
+}
+/* 設定單元名稱：inline 編輯（對齊 create-exam-bank-2-detail-bar__title） */
+.my-design-pack-unit-name-title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+.my-design-pack-unit-name-title:hover:not(:disabled),
+.my-design-pack-unit-name-title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-3, #f5f5f5);
+}
+.my-design-pack-unit-name-title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+.my-design-pack-unit-name-title:disabled {
+  opacity: 1;
+  color: var(--my-color-black, #000);
+  background: transparent;
 }
 /* 區段主標題：title → 橫線 → 內容（my-font-xl-400 + my-design-pack-unit-main-title） */
 .my-design-page-section-heading {
@@ -7714,20 +7699,28 @@ async function confirmAnswer(item) {
 }
 /* 單元／題型區圓形 +、選單：預設 gray-1；hover 改 black（列上「新增題型」見 .my-design-right-unit-add-quiz-btn） */
 /* 單元／題型區圓形 +、選單：design_3 用 transparent-borderless；exam_2 用 outline-gray-1 */
-.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle {
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle,
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless {
   color: var(--my-color-gray-1);
 }
 .my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
 .my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
-.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:active:not(:disabled) {
+.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:active:not(:disabled),
+.my-design--side-panel-left .my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:hover:not(:disabled),
+.my-design--side-panel-left .my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
+.my-design--side-panel-left .my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:active:not(:disabled) {
   color: var(--my-color-black);
 }
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle {
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1 {
   color: var(--my-color-gray-1);
 }
 .my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
 .my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
-.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled) {
+.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled),
+.my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:hover:not(:disabled),
+.my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:focus-visible:not(:disabled),
+.my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:active:not(:disabled) {
   color: var(--my-color-black);
 }
 .my-design-right-unit-quiz-for-exam-slot {
@@ -7762,16 +7755,6 @@ async function confirmAnswer(item) {
 }
 .my-pack-empty-start-panel {
   width: 100%;
-}
-.my-pack-empty-actions-row .my-pack-empty-quick-menu-btn {
-  width: auto;
-  min-width: 0;
-  min-height: 0;
-  height: auto;
-  align-self: stretch;
-  aspect-ratio: 1;
-  padding: 0;
-  box-sizing: border-box;
 }
 .my-pack-folder-combo-field {
   cursor: default;
@@ -8176,5 +8159,26 @@ async function confirmAnswer(item) {
 }
 .my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
   min-height: 200px;
+}
+
+/* 設定單元「類型」picker：px-3、icon 同色（蓋過 work3 小 pill px-2 覆寫） */
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.rounded-pill) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
+  color: inherit !important;
+}
+
+/* 左欄「+ 新增單元」列：右側圓形選單與 pill 同高 */
+.my-design-side-nav-add-unit-row > .dropdown > .my-design-side-nav-unit-menu-btn.btn {
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
+  flex-shrink: 0;
 }
 </style>

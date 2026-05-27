@@ -827,6 +827,19 @@ code {
   color: var(--my-color-yellow);
 }
 
+/* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-3、未選 transparent-borderless */
+.my-quiz-generate-mode-segment--outline {
+  border: 1px solid var(--my-color-gray-2);
+  border-radius: 9999px;
+  box-sizing: border-box;
+}
+.my-quiz-generate-mode-segment--outline > .btn.my-button-white,
+.my-quiz-generate-mode-segment--outline > .btn.my-button-gray-3,
+.my-quiz-generate-mode-segment--outline > .btn.my-button-transparent-borderless {
+  border: none !important;
+  box-shadow: none;
+}
+
 /* nav-tabs（建立測驗題庫分頁列、ExamPage）：Bootstrap 在 :hover／:focus 會套四邊 border-color，取消左右垂直線 */
 .nav.nav-tabs .nav-link {
   border-left: none !important;
@@ -1701,6 +1714,70 @@ div.form-control {
 }
 .my-pack-unit-tabs .nav-link {
   max-width: 12rem;
+}
+
+/* 設定單元類型 icon（RAG／文字／MP3／YouTube） */
+.my-pack-unit-type-icon {
+  display: inline-block;
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+  width: 1rem;
+  text-align: center;
+  flex-shrink: 0;
+}
+.my-pack-unit-type-icon--inherit,
+.my-pack-unit-type-icon--inherit::before {
+  color: inherit !important;
+}
+
+/* 設定單元「類型」segmented pill group：px-3；選中／未選字色；icon 與文字同色 */
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.rounded-pill {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white:hover:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white:focus-visible:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
+  color: var(--my-color-black) !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3 {
+  background-color: var(--my-color-gray-3) !important;
+  color: var(--my-color-black) !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3:hover:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3:focus-visible:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3)) !important;
+  color: var(--my-color-black) !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:hover:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:active:not(:disabled) {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon,
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before {
+  color: inherit !important;
+}
+
+/* 設定單元「加入資料夾」pill：px-3 */
+.btn.my-pack-unit-add-folder-btn.rounded-pill {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
 /* 左欄清單底部刪除（exam_3／create-exam-bank_3）：固定於 list 下方；併 my-btn-outline-red-hollow，灰底上透明＋hover 淡紅 */

@@ -9,6 +9,14 @@ import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import ExamPageExamSwitchDropdown from '../components/ExamPageExamSwitchDropdown.vue';
 import CreateExamQuizBankBankSwitchDropdown from '../components/CreateExamQuizBankBankSwitchDropdown.vue';
+import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
+import {
+  UNIT_TYPE_RAG,
+  UNIT_TYPE_TEXT,
+  UNIT_TYPE_MP3,
+  UNIT_TYPE_YOUTUBE,
+  packUnitTypeIconClasses,
+} from '../utils/rag.js';
 
 defineProps({
   tabId: { type: String, default: '' },
@@ -320,6 +328,33 @@ const DESIGN3_EMBED_SPECS = [
   { name: 'embed-hide-tabs', usage: '嵌入時隱藏分頁列', css: '.exam-2-embedded :deep(.my-rag-tabs-bar) { display: none !important; }' },
   { name: 'embed-detail-bar-mod', usage: '左欄 detail bar 修飾 class', css: 'exam-2-detail-bar--in-side-panel · create-exam-bank-2-detail-bar--in-side-panel', copyText: 'exam-2-detail-bar--in-side-panel' },
 ];
+
+const DESIGN3_PACK_UNIT_TYPE_ICONS = [
+  {
+    name: 'icon-unit-rag',
+    unitType: UNIT_TYPE_RAG,
+    usage: 'unit_type=1（RAG）；左側清單單元列、建置後主標題旁、設定單元「類型」pill',
+  },
+  {
+    name: 'icon-unit-text',
+    unitType: UNIT_TYPE_TEXT,
+    usage: 'unit_type=2（文字）',
+  },
+  {
+    name: 'icon-unit-mp3',
+    unitType: UNIT_TYPE_MP3,
+    usage: 'unit_type=3（MP3）',
+  },
+  {
+    name: 'icon-unit-youtube',
+    unitType: UNIT_TYPE_YOUTUBE,
+    usage: 'unit_type=4（YouTube）',
+  },
+];
+
+function design3PackUnitTypeIconCss(unitType) {
+  return `${packUnitTypeIconClasses(unitType)} · my-pack-unit-type-icon · my-color-gray-1`;
+}
 </script>
 
 <template>
@@ -737,6 +772,55 @@ const DESIGN3_EMBED_SPECS = [
                       <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2">確定上傳</button>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
+                      name="btn-quiz-mode-segment"
+                      usage="create-exam-bank_3 出題模式：一般／追問（my-quiz-generate-mode-segment--outline；選中 my-button-gray-3、未選 my-button-transparent-borderless my-color-black）"
+                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline gap-2 p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-3（選中）· my-button-transparent-borderless my-color-black（未選）"
+                    >
+                      <div
+                        class="d-inline-flex flex-wrap gap-2 p-1 my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline"
+                        role="group"
+                        aria-label="出題模式"
+                      >
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-gray-3 px-4 py-2"
+                          aria-pressed="true"
+                        >
+                          一般
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-color-black px-4 py-2"
+                          aria-pressed="false"
+                        >
+                          追問
+                        </button>
+                      </div>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-add-pack-unit-row"
+                      usage="create-exam-bank_3 左側「+ 新增單元」列（my-design-side-nav-add-unit-row）：左 pill my-button-white；右圓形單元功能選單 my-button-transparent-borderless、與 pill 同高"
+                      css="my-design-side-nav-add-unit-row d-flex align-items-stretch gap-2 · btn rounded-pill my-font-md-400 my-button-white px-4 py-2 flex-grow-1 · btn rounded-circle my-design-side-nav-unit-menu-btn my-button-transparent-borderless my-font-md-400 px-0 py-0"
+                      copy-text="my-design-side-nav-add-unit-row"
+                    >
+                      <div class="my-design-side-nav-add-unit-row d-flex align-items-stretch gap-2 my-bgcolor-gray-4 p-3 rounded-3" style="max-width: 20rem;">
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-grow-1 min-w-0"
+                        >
+                          <i class="fa-solid fa-plus" aria-hidden="true" />
+                          新增單元
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 lh-1 my-button-transparent-borderless my-design-side-nav-unit-menu-btn px-0 py-0"
+                          aria-label="單元功能選單（示意）"
+                        >
+                          <i class="fa-solid fa-chevron-down" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
                       name="btn-delete-confirm"
                       usage="刪除確認 Modal 刪除"
                       css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
@@ -791,8 +875,8 @@ const DESIGN3_EMBED_SPECS = [
                  Badge
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'badge'">
-              <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-design-page-section p-4">
+              <section class="my-page-block-spacing">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">Badge</div>
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
@@ -813,6 +897,90 @@ const DESIGN3_EMBED_SPECS = [
                       <div class="d-flex align-items-center gap-2">
                         <span class="my-font-sm-400 my-color-gray-1">單元名稱</span>
                         <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1">追問</span>
+                      </div>
+                    </DesignPageSpecItem>
+                  </div>
+                </div>
+              </section>
+
+              <section class="my-page-block-spacing mb-0">
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">設定單元類型 icon</div>
+                  <div class="d-flex flex-column gap-4">
+                    <DesignPageSpecItem
+                      v-for="item in DESIGN3_PACK_UNIT_TYPE_ICONS"
+                      :key="item.name"
+                      :name="item.name"
+                      :usage="item.usage"
+                      :css="design3PackUnitTypeIconCss(item.unitType)"
+                      :copy-text="design3PackUnitTypeIconCss(item.unitType)"
+                    >
+                      <PackUnitTypeIcon
+                        :unit-type="item.unitType"
+                        color-class="my-color-gray-1"
+                      />
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="icon-unit-nav-row"
+                      usage="create-exam-bank_3 左側清單：單元名稱 + PackUnitTypeIcon（ms-2 flex-shrink-0）"
+                      css="my-design-right-unit-row-label · PackUnitTypeIcon · my-color-gray-1"
+                      copy-text="PackUnitTypeIcon"
+                    >
+                      <span class="my-font-md-400 my-color-black d-inline-flex align-items-center flex-wrap gap-0">
+                        範例單元
+                        <PackUnitTypeIcon
+                          :unit-type="UNIT_TYPE_RAG"
+                          color-class="my-color-gray-1"
+                          class="ms-2"
+                        />
+                      </span>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="icon-unit-type-picker"
+                      usage="設定單元「類型」：rounded-pill my-bgcolor-gray-4 p-1 內四顆 icon＋文字 pill（選中 my-button-white + my-color-black）"
+                      css="my-pack-unit-type-segment d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-4 p-1 · btn rounded-pill my-font-sm-400 my-pack-unit-type-btn px-3 py-1 gap-2 · PackUnitTypeIcon decorative（icon 繼承按鈕字色）"
+                    >
+                      <div
+                        class="my-pack-unit-type-segment d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-4 p-1"
+                        role="group"
+                        aria-label="設定單元類型"
+                      >
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white my-pack-unit-type-btn px-3 py-1"
+                          title="RAG"
+                          aria-label="RAG"
+                        >
+                          <PackUnitTypeIcon :unit-type="UNIT_TYPE_RAG" decorative />
+                          RAG
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-pack-unit-type-btn px-3 py-1"
+                          title="文字"
+                          aria-label="文字"
+                        >
+                          <PackUnitTypeIcon :unit-type="UNIT_TYPE_TEXT" decorative />
+                          文字
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-pack-unit-type-btn px-3 py-1"
+                          title="MP3"
+                          aria-label="MP3"
+                        >
+                          <PackUnitTypeIcon :unit-type="UNIT_TYPE_MP3" decorative />
+                          MP3
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-pack-unit-type-btn px-3 py-1"
+                          title="YouTube"
+                          aria-label="YouTube"
+                        >
+                          <PackUnitTypeIcon :unit-type="UNIT_TYPE_YOUTUBE" decorative />
+                          YouTube
+                        </button>
                       </div>
                     </DesignPageSpecItem>
                   </div>
@@ -1304,5 +1472,22 @@ const DESIGN3_EMBED_SPECS = [
 .design-page-3-prompt-block-preview {
   background-color: var(--my-color-black);
   max-width: 16rem;
+}
+
+/* 稿頁預覽：左欄「+ 新增單元」列（對齊 CreateExamQuizBankPage scoped） */
+.design-page-3-side-panel-preview .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn,
+.my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn {
+  align-self: stretch;
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+  color: var(--my-color-gray-1);
+}
+.my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn:hover:not(:disabled),
+.my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn:focus-visible:not(:disabled) {
+  color: var(--my-color-black);
 }
 </style>
