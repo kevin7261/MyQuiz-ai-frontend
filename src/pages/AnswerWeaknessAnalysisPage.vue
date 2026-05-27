@@ -540,7 +540,7 @@ function weaknessSlotQuizBodyTrim(idx) {
     <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div :class="props.design3 ? 'col-12 col-xl-10 col-xxl-8' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
+          <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
             <div
               v-if="canEditWeaknessReportRules"
               :class="props.design3
