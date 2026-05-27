@@ -138,6 +138,18 @@ const designStemTabsClass = computed(() => {
   return props.logoGradientBias === 'work3' ? `${base} gap-4` : `${base} gap-3`;
 });
 
+const isWork3Design = computed(() => props.logoGradientBias === 'work3');
+
+/** design_3：次要小 pill（出題規則、顯示提示等；禁用 my-btn-outline-gray-1） */
+const designSecondarySmallPillClass = computed(() =>
+  (isWork3Design.value ? 'my-button-transparent-borderless' : 'my-btn-outline-gray-1'),
+);
+
+/** design_3：history／詳細資訊／批改規則 pill（禁用 my-button-gray-3） */
+const designHistorySmallPillClass = computed(() =>
+  (isWork3Design.value ? 'my-button-transparent-borderless' : 'my-button-gray-3'),
+);
+
 const emit = defineEmits([
   'toggle-hint',
   'toggle-reference-answer',
@@ -832,7 +844,7 @@ const quizAnswerFieldDisabled = computed(
       >
       <div
         v-if="!hideSlotIndex"
-        class="my-font-lg-600 my-color-black"
+        class="my-font-lg-400 my-color-black"
         :class="designUi ? 'mb-0' : 'mb-3'"
       >第 {{ slotIndex }} 題</div>
       </div>
@@ -979,7 +991,7 @@ const quizAnswerFieldDisabled = computed(
             <button
               v-if="showBankQuizHistoryInStemHeader && !showBankQuizHistoryTabs"
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1 ms-auto"
+              :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1 ms-auto', designSecondarySmallPillClass]"
               aria-label="查看先前出題"
               :disabled="examQuizHistoryButtonDisabled"
               @click="emit('open-quiz-history')"
@@ -1025,7 +1037,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 v-if="hideGradingPrompt && !hideExamRulePills && quizUserPromptSnapshotTrimmed !== ''"
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
                 @click="openPromptModal('question')"
               >
                 出題規則
@@ -1033,7 +1045,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 v-if="hasHintText && !hintReferenceInModal"
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
                 @click="emit('toggle-hint', card)"
               >
                 {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
@@ -1041,7 +1053,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 v-if="!questionHintOnly && hasReferenceAnswerText && !hintReferenceInModal"
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
                 @click="emit('toggle-reference-answer', card)"
               >
                 {{ card.referenceAnswerVisible ? '隱藏參考答案' : '顯示參考答案' }}
@@ -1138,7 +1150,7 @@ const quizAnswerFieldDisabled = computed(
         <button
           v-else-if="!designUi && hideGradingPrompt && !hideExamRulePills && hasQuizBody && quizUserPromptSnapshotTrimmed !== ''"
           type="button"
-          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+          :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
           @click="openPromptModal('question')"
         >
           出題規則
@@ -1153,7 +1165,7 @@ const quizAnswerFieldDisabled = computed(
           <button
             v-if="hasHintText"
             type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+            :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
             style="flex: 0 0 auto;"
             @click="emit('toggle-hint', card)"
           >
@@ -1162,7 +1174,7 @@ const quizAnswerFieldDisabled = computed(
           <button
             v-if="!questionHintOnly && hasReferenceAnswerText"
             type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+            :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
             style="flex: 0 0 auto;"
             @click="emit('toggle-reference-answer', card)"
           >
@@ -1396,7 +1408,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 v-if="hasHintText"
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
                 title="提示"
                 aria-label="提示"
                 @click="openHintRefModal('hint')"
@@ -1406,7 +1418,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 v-if="hasReferenceAnswerText"
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
                 title="參考答案"
                 aria-label="參考答案"
                 @click="openHintRefModal('reference')"
@@ -1593,7 +1605,7 @@ const quizAnswerFieldDisabled = computed(
                     >
                       <button
                         type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                        :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', designHistorySmallPillClass]"
                         title="批改規則"
                         aria-label="批改規則"
                         @click="openPromptModal('grading')"
@@ -1717,7 +1729,7 @@ const quizAnswerFieldDisabled = computed(
           <button
             v-if="showQuizHistoryPreviewButton"
             type="button"
-            class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+            :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
             aria-label="查看先前出題"
             :disabled="examQuizHistoryButtonDisabled"
             @click="openQuizHistoryModal"
@@ -1827,7 +1839,7 @@ const quizAnswerFieldDisabled = computed(
         <button
           v-if="hideGradingPrompt && !hideExamRulePills"
           type="button"
-          class="btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+          :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center align-self-start flex-shrink-0 my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', designHistorySmallPillClass]"
           @click="openPromptModal('grading')"
         >
           批改規則

@@ -122,6 +122,17 @@ const quizBankNoun = computed(() => '測驗題庫');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
+/** design_3 核准按鈕 class（create-exam-bank_3 禁用 gray-3／black／outline-gray-1） */
+const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+const d3FilledPillSm = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
+const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
+const d3SegmentSelected = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+const d3CircleIconBtnClass = computed(() => (
+  props.designSidePanelOnLeft
+    ? 'my-button-transparent-borderless my-btn-circle'
+    : 'my-color-gray-1 my-btn-outline-gray-1 my-btn-circle'
+));
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
 
@@ -5318,6 +5329,7 @@ async function confirmAnswer(item) {
       :saving="renameRagTabSaving"
       :error="renameRagTabError"
       title="修改名稱"
+      :confirm-button-class="d3ConfirmPillMd"
       @save="onRenameRagTabSave"
     />
     <TabRenameModal
@@ -5326,6 +5338,7 @@ async function confirmAnswer(item) {
       :saving="false"
       :error="renamePackUnitError"
       title="修改單元"
+      :confirm-button-class="d3ConfirmPillMd"
       @save="onRenamePackUnitSave"
     />
     <Teleport to="body">
@@ -5398,7 +5411,8 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-3 py-2"
+                :class="d3ConfirmPillMd"
                 :disabled="packGroupsEditBlocked"
                 @click="confirmPackFolderPick"
               >
@@ -5532,7 +5546,8 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                :class="d3ConfirmPillMd"
                 @click="closePackUnitDetailModal"
               >
                 關閉
@@ -5591,7 +5606,8 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                :class="d3ConfirmPillMd"
                 :disabled="bankPromptEditModalSavingDisabled"
                 @click="applyBankPromptEditModal"
               >
@@ -5649,7 +5665,8 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                :class="d3ConfirmPillMd"
                 :disabled="transcriptEditModalDisabled"
                 @click="applyTranscriptEditModal"
               >
@@ -5931,7 +5948,8 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-center w-100">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-3 py-2"
+                :class="d3ConfirmPillMd"
                 @click="closePackBuildSuccessModal"
               >
                 確定
@@ -6075,7 +6093,8 @@ async function confirmAnswer(item) {
         <button
           v-if="!ragListLoading"
           type="button"
-          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
           :title="`新增${quizBankNoun}`"
           :aria-label="`新增${quizBankNoun}`"
           :disabled="createRagLoading"
@@ -6129,10 +6148,14 @@ async function confirmAnswer(item) {
                   role="heading"
                   aria-level="2"
                 >
-                  <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0">{{ activePackUnitDisplayLabel }}</span>
+                  <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ activePackUnitDisplayLabel }}</span>
                   <button
                     type="button"
-                    class="btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 flex-shrink-0"
+                    :class="
+                      designSidePanelOnLeft
+                        ? 'btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-transparent-borderless my-btn-circle lh-1'
+                        : 'btn btn-link text-decoration-none my-tab-nav-action-btn my-color-gray-4 flex-shrink-0'
+                    "
                     title="重新命名單元"
                     aria-label="重新命名單元"
                     :disabled="packGroupsEditBlocked"
@@ -6176,7 +6199,8 @@ async function confirmAnswer(item) {
                         </div>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-gray-3 px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 px-3 py-1"
+                          :class="d3FilledPillSm"
                           title="加入資料夾"
                           aria-label="加入資料夾"
                           :disabled="packGroupsEditBlocked || !secondFoldersFull.length"
@@ -6205,7 +6229,7 @@ async function confirmAnswer(item) {
                           class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1"
                           :class="
                             packUnitTypeAt(activePackUnitGi) === opt.value
-                              ? 'my-button-gray-3'
+                              ? d3SegmentSelected
                               : 'my-button-transparent-borderless'
                           "
                           :disabled="
@@ -6277,7 +6301,7 @@ async function confirmAnswer(item) {
                         </div>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                          :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
                           :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(activePackUnitGi) || packUnitTranscriptBusy(activePackUnitGi)"
                           aria-label="編輯來源內容"
                           @click="openTranscriptEditModal(activePackUnitGi)"
@@ -6373,7 +6397,8 @@ async function confirmAnswer(item) {
               <div class="d-flex flex-wrap justify-content-center align-items-stretch gap-2 w-100 min-w-0 my-pack-empty-actions-row">
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-3"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+                  :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
                   :disabled="packGroupsEditBlocked"
                   title="新增單元"
                   aria-label="新增單元"
@@ -6388,7 +6413,8 @@ async function confirmAnswer(item) {
                 >
                   <button
                     type="button"
-                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-gray-3 my-pack-empty-quick-menu-btn dropdown-toggle my-dropdown-caret lh-1"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-pack-empty-quick-menu-btn dropdown-toggle my-dropdown-caret lh-1"
+                    :class="designSidePanelOnLeft ? 'my-button-transparent-borderless my-btn-circle' : 'my-button-gray-3'"
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                     aria-label="單元快捷選單"
@@ -6458,7 +6484,7 @@ async function confirmAnswer(item) {
             aria-level="2"
           >
             <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
-              <span class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0">{{ builtPackUnitSectionHeadingTitle }}</span>
+              <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ builtPackUnitSectionHeadingTitle }}</span>
               <span
                 v-if="activeReadonlyPackUnitRow?.typeLabel"
                 class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
@@ -6467,7 +6493,7 @@ async function confirmAnswer(item) {
             <button
               v-if="activeReadonlyPackUnitRow"
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+              :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
               aria-label="詳細資訊"
               @click="openPackUnitDetailModal"
             >
@@ -6592,7 +6618,8 @@ async function confirmAnswer(item) {
               <div class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0">
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
                   title="新增題型"
                   aria-label="新增題型"
                   :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
@@ -6649,7 +6676,7 @@ async function confirmAnswer(item) {
                     />
                     <span
                       v-else
-                      class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0 min-w-0"
+                      class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0 min-w-0"
                       :class="designSidePanelOnLeft ? 'flex-grow-1' : ''"
                     >{{ quizTypeTabLabel(activeUnitQuizCard) }}</span>
                     <button
@@ -6694,7 +6721,7 @@ async function confirmAnswer(item) {
                           designSidePanelOnLeft
                             ? (
                               !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? 'my-button-gray-3'
+                                ? d3SegmentSelected
                                 : 'my-button-transparent-borderless my-color-black'
                             )
                             : (
@@ -6721,7 +6748,7 @@ async function confirmAnswer(item) {
                           designSidePanelOnLeft
                             ? (
                               isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? 'my-button-gray-3'
+                                ? d3SegmentSelected
                                 : 'my-button-transparent-borderless my-color-black'
                             )
                             : (
@@ -6955,7 +6982,7 @@ async function confirmAnswer(item) {
               <div
                 class="w-100 min-w-0 d-flex flex-column gap-3"
               >
-                <div class="my-font-lg-600 my-color-black mb-0">
+                <div class="my-font-lg-400 my-color-black mb-0">
                   {{ activeUnitTabItem ? activeUnitTabItem.label : '出題' }}
                 </div>
                 <div class="text-start w-100 min-w-0">
@@ -7000,7 +7027,8 @@ async function confirmAnswer(item) {
             >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
                 title="新增題目"
                 aria-label="新增題目"
                 @click="openNextQuizSlot"
@@ -7080,7 +7108,8 @@ async function confirmAnswer(item) {
                   >
                     <button
                       type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1"
+                      class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 lh-1"
+                      :class="d3CircleIconBtnClass"
                       title="新增單元"
                       aria-label="新增單元"
                       :disabled="packGroupsEditBlocked"
@@ -7091,7 +7120,8 @@ async function confirmAnswer(item) {
                     <div class="dropdown flex-shrink-0">
                       <button
                         type="button"
-                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 dropdown-toggle my-dropdown-caret"
+                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 lh-1 dropdown-toggle my-dropdown-caret"
+                        :class="d3CircleIconBtnClass"
                         data-bs-toggle="dropdown"
                         aria-expanded="false"
                         aria-label="單元功能選單"
@@ -7184,7 +7214,8 @@ async function confirmAnswer(item) {
                       <button
                         v-if="hasBuiltRagSummary && hasUnitSubTabs"
                         type="button"
-                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-btn-outline-gray-1 my-btn-circle lh-1 my-design-right-unit-add-quiz-btn"
+                        class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 lh-1 my-design-right-unit-add-quiz-btn"
+                        :class="d3CircleIconBtnClass"
                         title="新增題型"
                         aria-label="新增題型"
                         :aria-busy="getSlotFormState(item.index + 1).unitQuizCreateLoading"
@@ -7295,12 +7326,13 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* create-exam-bank_3：rounded-pill 雙鈕；外框在群組，內層未選無框、選中 gray-3 */
+/* create-exam-bank_3：rounded-pill 雙鈕；外框在群組，內層未選 transparent-borderless、選中 white（design_3） */
 .my-quiz-generate-mode-segment--outline {
   border: 1px solid var(--my-color-gray-2);
   border-radius: 9999px;
   box-sizing: border-box;
 }
+.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-white),
 .my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-gray-3),
 .my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-transparent-borderless) {
   border: none !important;
@@ -7532,13 +7564,11 @@ async function confirmAnswer(item) {
 }
 /* 建置後單元主標題：大於全站 xl（1.125rem） */
 .my-design-pack-unit-main-title {
-  font-size: 1.5rem;
-  font-weight: var(--my-font-weight-semibold);
   line-height: 1.35;
   color: var(--my-color-black);
   white-space: nowrap;
 }
-/* 區段主標題：title → 橫線 → 內容（併 .my-font-lg-600.my-test-section-heading-title） */
+/* 區段主標題：title → 橫線 → 內容（my-font-xl-400 + my-design-pack-unit-main-title） */
 .my-design-page-section-heading {
   display: flex;
   flex-direction: column;
@@ -7684,6 +7714,15 @@ async function confirmAnswer(item) {
   color: var(--my-color-black);
 }
 /* 單元／題型區圓形 +、選單：預設 gray-1；hover 改 black（列上「新增題型」見 .my-design-right-unit-add-quiz-btn） */
+/* 單元／題型區圓形 +、選單：design_3 用 transparent-borderless；exam_2 用 outline-gray-1 */
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle {
+  color: var(--my-color-gray-1);
+}
+.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
+.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
+.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:active:not(:disabled) {
+  color: var(--my-color-black);
+}
 .my-design-right-nav .my-btn-outline-gray-1.my-btn-circle {
   color: var(--my-color-gray-1);
 }

@@ -84,7 +84,7 @@
     <div class="my-course-header-inner px-3 min-w-0 w-100">
       <div class="my-course-header-inner__center min-w-0">
         <p
-          class="my-course-header-course-title my-font-lg-400 my-color-black text-truncate text-start w-100 mb-0"
+          class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0"
           :role="headerTitleGoesHome ? 'button' : undefined"
           :tabindex="headerTitleGoesHome ? 0 : undefined"
           :aria-label="headerTitleGoesHome ? '返回主頁' : undefined"
@@ -94,7 +94,7 @@
           <span class="my-font-lg-600">{{ currentCourseName }}</span>
           <template v-if="pageTitle">
             <span class="my-course-header-course-title__sep mx-2" aria-hidden="true">|</span>
-            <span>{{ pageTitle }}</span>
+            <span class="my-font-lg-400">{{ pageTitle }}</span>
           </template>
         </p>
       </div>

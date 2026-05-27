@@ -96,8 +96,8 @@ const DESIGN3_CLASS_HEX = {
   'my-color-gray-3': '#f2f2f2',
   'my-bgcolor-gray-4': '#f2f2f2',
   'my-color-gray-4': '#888888',
-  'my-bgcolor-white': '#ffffff',
-  'my-bgcolor-surface': '#ffffff',
+  'my-bgcolor-white': '#fdfdfd',
+  'my-bgcolor-surface': '#fdfdfd',
   'my-bgcolor-green': '#25b17c',
   'my-color-green': '#25b17c',
   'my-bgcolor-red': '#e84136',
@@ -136,7 +136,7 @@ const DESIGN3_COLORS_GRAY = [
   },
   {
     name: 'color-white',
-    usage: '白底（#fff）：左側 detail bar in-side-panel · Badge（my-bgcolor-surface 同義）',
+    usage: '白底（#fdfdfd）：左側 detail bar in-side-panel · Badge（my-bgcolor-surface 同義）',
     rows: [{ className: 'my-bgcolor-white' }, { className: 'my-color-black' }],
   },
 ];
@@ -157,74 +157,121 @@ const DESIGN3_COLORS_ACCENT = [
 const DESIGN3_TYPE_GROUPS = [
   {
     scale: 'xl · 1.125rem',
+    fontClass: 'my-font-xl-400',
     items: [
       {
-        name: 'type-xl-header',
-        usage: 'TopView 頁面名稱（測驗／建立測驗題庫）',
-        css: 'my-font-xl-400 my-color-black',
-        previewClass: 'my-font-xl-400 my-color-black',
-        previewText: '頁首標題（測驗 / 建立測驗題庫）',
+        name: 'type-xl-black',
+        usage: '建置後單元主標（my-design-pack-unit-main-title + my-font-xl-400）',
+        colorClass: 'my-color-black',
+        cssExtra: 'my-design-pack-unit-main-title · my-test-section-heading-title',
+        previewText: '第一單元名稱',
       },
     ],
   },
   {
     scale: 'lg · 1rem',
+    scaleLabel: 'lg · 1rem · my-font-lg-400 / my-font-lg-600',
+    fontClass: 'my-font-lg-400',
     items: [
       {
-        name: 'type-lg-detail-title',
-        usage: '左欄 detail bar 可編輯試卷／題庫名稱',
-        css: 'my-font-lg-400 my-color-black',
-        previewClass: 'my-font-lg-400 my-color-black',
-        previewText: 'detail-bar 標題輸入框（可編輯試卷名稱）',
+        name: 'type-lg-black-course-name',
+        fontClass: 'my-font-lg-600',
+        usage: 'TopView 課程 header 課程名稱（粗體；與頁面名稱以 | 分隔）',
+        colorClass: 'my-color-black',
+        cssExtra: 'my-course-header-course-title',
+        previewKind: 'course-header',
+      },
+      {
+        name: 'type-lg-black',
+        usage: 'TopView 頁面名稱；detail bar 標題；題型名稱；設定單元題型；QuizCard「第 N 題」；空清單大按鈕',
+        colorClass: 'my-color-black',
+        cssExtra: 'my-design-unit-quiz-type-title',
+        previewText: '測驗',
+      },
+      {
+        name: 'type-lg-gray-1',
+        usage: 'pack 空狀態說明、居中提示段落',
+        colorClass: 'my-color-gray-1',
+        previewText: '請在右側新增設定單元，或點下方按鈕',
       },
     ],
   },
   {
     scale: 'md · 0.875rem',
+    fontClass: 'my-font-md-400',
     items: [
       {
-        name: 'type-md-title',
-        usage: 'Design 區塊標題、Modal 主要按鈕',
-        css: 'my-font-md-400 my-color-black',
-        previewClass: 'my-font-md-400 my-color-black',
-        previewText: '方塊標題、Modal 按鈕',
+        name: 'type-md-black',
+        usage: 'Design 區塊標題、Modal 按鈕、題幹 Markdown 正文、grid 列表列名稱（bank-list-row__label）',
+        colorClass: 'my-color-black',
+        cssExtra: 'bank-list-row__label',
+        previewText: '方塊標題、題目正文、範例試卷 A',
       },
       {
-        name: 'type-md-secondary',
-        usage: '取消按鈕、圓形選單鈕、次要操作',
-        css: 'my-font-md-400 my-color-gray-1',
-        previewClass: 'my-font-md-400 my-color-gray-1',
-        previewText: '取消按鈕、圓形選單鈕',
+        name: 'type-md-gray-1',
+        usage: '取消按鈕、圓形選單鈕；exam_3 空題目提示',
+        colorClass: 'my-color-gray-1',
+        previewText: '取消按鈕 / 目前沒有題目，請在左側選單新增題目',
       },
     ],
   },
   {
     scale: 'sm · 0.75rem',
+    fontClass: 'my-font-sm-400',
     items: [
       {
-        name: 'type-sm-body',
-        usage: 'Modal 說明、已選檔名、提示訊息',
-        css: 'my-font-sm-400 my-color-black',
-        previewClass: 'my-font-sm-400 my-color-black',
-        previewText: 'Modal 說明、已選檔名、提示訊息',
+        name: 'type-sm-black',
+        usage: 'Modal 說明、已選檔名',
+        colorClass: 'my-color-black',
+        previewText: 'Modal 說明、已選檔名',
       },
       {
-        name: 'type-sm-secondary',
-        usage: '方塊副標題、返回按鈕、說明文字',
-        css: 'my-font-sm-400 my-color-gray-1',
-        previewClass: 'my-font-sm-400 my-color-gray-1',
-        previewText: '方塊副標題、返回按鈕、說明文字',
+        name: 'type-sm-gray-1',
+        usage: '欄位標題、左欄步驟標、breadcrumb、列表副標、返回按鈕',
+        colorClass: 'my-color-gray-1',
+        cssExtra: 'my-design-right-step-heading · exam-quiz-nav-breadcrumb · bank-list-row__subtitle',
+        previewText: '資料夾組合 / 單元一 › 開場白問答 / 5 題',
       },
       {
-        name: 'type-sm-muted',
-        usage: 'ZIP drop zone 提示文字、說明 ul',
-        css: 'my-font-sm-400 my-color-gray-4',
-        previewClass: 'my-font-sm-400 my-color-gray-4',
+        name: 'type-sm-gray-4',
+        usage: 'ZIP drop zone 提示、說明 ul、placeholder「尚未選擇資料夾」',
+        colorClass: 'my-color-gray-4',
         previewText: 'drop zone 提示文字、說明 ul',
+      },
+      {
+        name: 'type-sm-red',
+        usage: '欄位驗證、操作失敗 inline 錯誤',
+        colorClass: 'my-color-red',
+        previewText: '請選擇 .zip 檔案',
+      },
+      {
+        name: 'type-sm-stem-tab',
+        usage: 'QuizCard 題目／答案 tab（未選 gray-1、選中 black + 2pt 底線；my-design-quiz-stem-tab）',
+        colorClass: 'my-color-gray-1',
+        cssExtra: 'my-design-quiz-stem-tab · my-design-quiz-stem-tab--active',
+        previewKind: 'stem-tabs',
+      },
+      {
+        name: 'type-sm-on-dark-prompt',
+        usage: '出題規則黑底區標題（create-exam-bank_3；scoped gray-2 on black）',
+        colorClass: '',
+        cssExtra: 'my-design-quiz-question-prompt-block__title',
+        previewKind: 'prompt-block-title',
+        previewText: '出題規則',
       },
     ],
   },
 ];
+
+function design3ItemFontClass(group, item) {
+  return item.fontClass ?? group.fontClass;
+}
+
+function design3TypeCss(group, item) {
+  const fc = design3ItemFontClass(group, item);
+  const base = item.colorClass ? `${fc} ${item.colorClass}` : fc;
+  return item.cssExtra ? `${base} · ${item.cssExtra}` : base;
+}
 
 const DESIGN3_LIST_SPECS = [
   {
@@ -319,19 +366,52 @@ const DESIGN3_EMBED_SPECS = [
             <template v-if="activeTab === 'type'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">字階</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">字階</div>
                   <div class="d-flex flex-column gap-5">
-                    <div v-for="group in DESIGN3_TYPE_GROUPS" :key="group.scale">
-                      <div class="my-font-sm-400 my-color-gray-1 pb-2 mb-3" style="border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);">{{ group.scale }}</div>
+                    <div
+                      v-for="group in DESIGN3_TYPE_GROUPS"
+                      :key="group.fontClass"
+                      class="design-page-3-type-scale-block"
+                    >
+                      <div
+                        class="my-font-sm-400 my-color-gray-1 pb-2 mb-3 design-page-3-type-scale-block__heading"
+                      >{{ group.scaleLabel ?? `${group.scale} · ${group.fontClass}` }}</div>
                       <div class="d-flex flex-column gap-4">
                         <DesignPageSpecItem
                           v-for="item in group.items"
                           :key="item.name"
                           :name="item.name"
                           :usage="item.usage"
-                          :css="item.css"
+                          :css="design3TypeCss(group, item)"
                         >
-                          <p :class="[item.previewClass, 'mb-0']">{{ item.previewText }}</p>
+                          <p
+                            v-if="item.previewKind === 'course-header'"
+                            class="mb-0"
+                          >
+                            <span :class="[design3ItemFontClass(group, item), item.colorClass]">範例課程</span>
+                            <span class="my-course-header-course-title__sep mx-2" aria-hidden="true">|</span>
+                            <span :class="[group.fontClass, item.colorClass]">測驗</span>
+                          </p>
+                          <div
+                            v-else-if="item.previewKind === 'stem-tabs'"
+                            class="design-page-3-stem-tabs-preview d-inline-flex align-items-stretch gap-4 border-bottom mb-0"
+                            style="border-color: var(--my-color-gray-2) !important;"
+                          >
+                            <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--active my-font-sm-400">題目</button>
+                            <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400">答案</button>
+                          </div>
+                          <div
+                            v-else-if="item.previewKind === 'prompt-block-title'"
+                            class="design-page-3-prompt-block-preview rounded-2 overflow-hidden"
+                          >
+                            <div class="px-3 py-2">
+                              <span class="my-design-quiz-question-prompt-block__title my-font-sm-400">{{ item.previewText }}</span>
+                            </div>
+                          </div>
+                          <p
+                            v-else
+                            :class="[group.fontClass, item.colorClass, 'mb-0']"
+                          >{{ item.previewText }}</p>
                         </DesignPageSpecItem>
                       </div>
                     </div>
@@ -348,7 +428,7 @@ const DESIGN3_EMBED_SPECS = [
               <!-- 灰階 -->
               <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">灰階</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">灰階</div>
                   <div class="row g-3">
                     <div
                       v-for="item in DESIGN3_COLORS_GRAY"
@@ -369,7 +449,7 @@ const DESIGN3_EMBED_SPECS = [
               <!-- 彩色 -->
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">彩色</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">彩色</div>
                   <div class="row g-3">
                     <div
                       v-for="item in DESIGN3_COLORS_ACCENT"
@@ -394,20 +474,20 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'header-bar'">
               <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">課程 header（TopView）</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">課程 header（TopView）</div>
                   <DesignPageSpecItem
                     name="header-topview"
                     usage="SideRailView（64px）＋ TopView（64px 高、白底）；中央「課程名稱 | 頁面名稱」；右側試卷／題庫切換下拉"
-                    css="my-course-header my-bgcolor-white · my-font-lg-600（課程名）· ExamPageExamSwitchDropdown／CreateExamQuizBankBankSwitchDropdown（my-course-header-nav-btn px-4 py-2）"
+                    css="my-course-header my-bgcolor-white · my-font-lg-600 my-color-black（課程名）· my-font-lg-400 my-color-black（頁面名）· ExamPageExamSwitchDropdown／CreateExamQuizBankBankSwitchDropdown（my-course-header-nav-btn px-4 py-2）"
                     copy-text="my-course-header my-bgcolor-white"
                   >
                   <header class="design-page-3-topview-preview my-course-header flex-shrink-0 my-bgcolor-white border rounded-3">
                     <div class="my-course-header-inner px-3 min-w-0 w-100">
                       <div class="my-course-header-inner__center min-w-0">
-                        <p class="my-course-header-course-title my-font-lg-400 my-color-black text-truncate text-start w-100 mb-0">
+                        <p class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0">
                           <span class="my-font-lg-600">範例課程</span>
                           <span class="my-course-header-course-title__sep mx-2" aria-hidden="true">|</span>
-                          <span>測驗</span>
+                          <span class="my-font-lg-400">測驗</span>
                         </p>
                       </div>
                       <div class="my-course-header-inner__end d-flex align-items-center justify-content-end gap-2 min-w-0 flex-shrink-0">
@@ -428,7 +508,7 @@ const DESIGN3_EMBED_SPECS = [
 
               <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">左側清單 detail bar（exam_3）</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">左側清單 detail bar（exam_3）</div>
                   <DesignPageSpecItem
                     name="header-exam-detail-bar"
                     usage="ExamPage2DetailBar in-side-panel；#side-panel-header slot；返回「← 返回主頁」；標題左對齊白底"
@@ -450,7 +530,7 @@ const DESIGN3_EMBED_SPECS = [
 
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">左側清單 detail bar（create-exam-bank_3）</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">左側清單 detail bar（create-exam-bank_3）</div>
                   <DesignPageSpecItem
                     name="header-bank-detail-bar"
                     usage="CreateExamQuizBankPage2DetailBar in-side-panel；結構同 exam_3 detail bar"
@@ -477,7 +557,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'list'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">列表</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">列表</div>
 
                   <p class="my-font-sm-400 my-color-black mb-2">exam_3（無綠點欄）</p>
                   <div class="design-page-3__list-preview design-page-3__list-preview--work3 mb-4">
@@ -570,7 +650,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'alert'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">提示訊息</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">提示訊息</div>
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       name="alert-warning"
@@ -597,7 +677,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'button'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">按鈕</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">按鈕</div>
                   <div class="d-flex flex-column gap-4">
                     <div class="my-color-gray-4 my-font-sm-400">小（my-font-sm-400）</div>
                     <DesignPageSpecItem
@@ -721,7 +801,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'badge'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">Badge</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">Badge</div>
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       name="badge-followup"
@@ -754,7 +834,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'dropdown'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">切換下拉選單</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">切換下拉選單</div>
                   <div class="d-flex flex-wrap gap-4 align-items-start mb-4">
                     <div>
                       <p class="my-font-sm-400 my-color-gray-1 mb-2">ExamPageExamSwitchDropdown</p>
@@ -791,7 +871,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'modal'">
               <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">上傳 Modal</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-2">上傳 Modal</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-3">
                     create-exam-bank_3 新增題庫；Teleport to body；
                     <code class="my-color-black">modal-dialog-centered modal-lg modal-dialog-scrollable</code>；
@@ -869,7 +949,7 @@ const DESIGN3_EMBED_SPECS = [
 
               <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">刪除確認 Modal</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">刪除確認 Modal</div>
                   <DesignPageSpecItem
                     name="modal-delete-component"
                     usage="兩頁共用 ConfirmDeleteModal；props：v-model · title · :message · :deleting · :error → @confirm"
@@ -889,7 +969,7 @@ const DESIGN3_EMBED_SPECS = [
 
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">LoadingOverlay</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">LoadingOverlay</div>
                   <DesignPageSpecItem
                     name="loading-overlay"
                     usage="兩頁共用 LoadingOverlay；grid 初次載入 loading-text=載入中…；detail 刪除中 loading-text=刪除中…"
@@ -914,7 +994,7 @@ const DESIGN3_EMBED_SPECS = [
             <template v-else-if="activeTab === 'embed'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">嵌入模式</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">嵌入模式</div>
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       v-for="spec in DESIGN3_EMBED_SPECS"
@@ -1039,6 +1119,11 @@ const DESIGN3_EMBED_SPECS = [
 
 .design-page-3__sections {
   max-width: 52rem;
+}
+
+/* 字階 tab：單一「字階」區塊內依 xl／lg／md／sm 分子區 */
+.design-page-3-type-scale-block__heading {
+  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
 }
 
 /* ── TopView 預覽（對齊 TopView.vue） ───────────────────────── */
@@ -1214,5 +1299,49 @@ const DESIGN3_EMBED_SPECS = [
   flex-shrink: 0;
   font-size: 0.625rem;
   opacity: 0.4;
+}
+
+/* ── 字階預覽：exam_3／create-exam-bank_3 語意標題（對齊 ExamPage／CreateExamQuizBankPage scoped） ── */
+.my-design-pack-unit-main-title {
+  line-height: 1.35;
+  color: var(--my-color-black);
+  white-space: nowrap;
+}
+
+.design-page-3-topview-preview .my-course-header-course-title__sep,
+.my-course-header-course-title__sep {
+  color: var(--my-color-gray-1);
+  font-weight: var(--my-font-weight-regular);
+}
+
+.design-page-3-stem-tabs-preview .my-design-quiz-stem-tab {
+  position: relative;
+  z-index: 0;
+  margin-bottom: -1px;
+  border: none;
+  border-bottom: 2pt solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--my-color-gray-1);
+  line-height: 1.25;
+  box-shadow: none;
+}
+
+.design-page-3-stem-tabs-preview .my-design-quiz-stem-tab--active {
+  z-index: 1;
+  padding-bottom: calc(0.5rem + 1px);
+  border-bottom-color: var(--my-color-black);
+  color: var(--my-color-black);
+}
+
+.design-page-3-prompt-block-preview {
+  background-color: var(--my-color-black);
+  max-width: 16rem;
+}
+
+.design-page-3-prompt-block-preview .my-design-quiz-question-prompt-block__title {
+  color: var(--my-color-gray-2);
+  line-height: 1.35;
+  white-space: nowrap;
 }
 </style>

@@ -12,7 +12,7 @@ const props = defineProps({
   hexForClass: { type: Function, required: true },
 });
 
-const LIGHT_SWATCH_HEX = new Set(['#ffffff', '#f2f2f2', '#f5f5f5', '#e2e2e2']);
+const LIGHT_SWATCH_HEX = new Set(['#ffffff', '#fdfdfd', '#f2f2f2', '#f5f5f5', '#e2e2e2']);
 
 function swatchDotStyle(className) {
   const hex = (props.hexForClass(className) || '').toLowerCase();

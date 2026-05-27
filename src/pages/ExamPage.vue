@@ -104,6 +104,10 @@ const quizBankNoun = computed(() => '試卷');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
 const examAddQuestionConfirmLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
+/** design_3 核准填色 pill（exam_3 禁用 my-button-gray-3／my-button-black） */
+const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
+const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
 
@@ -3065,6 +3069,7 @@ onActivated(() => {
       :saving="examRenameSaving"
       :error="examRenameError"
       title="修改名稱"
+      :confirm-button-class="d3ConfirmPillMd"
       @save="onExamRenameSave"
     />
     <ExamAddQuestionModal
@@ -3160,7 +3165,8 @@ onActivated(() => {
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                :class="d3ConfirmPillMd"
                 @click="closeExamUnitDetailModal"
               >
                 關閉
@@ -3262,7 +3268,8 @@ onActivated(() => {
         <button
           v-if="!examListLoading"
           type="button"
-          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
           :title="`新增${quizBankNoun}`"
           :aria-label="`新增${quizBankNoun}`"
           :disabled="createExamLoading"
@@ -3370,13 +3377,13 @@ onActivated(() => {
                           >
                             <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
                               <span
-                                class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0"
+                                class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0"
                               >{{ examSlotHeadingQuestionTitle(activeExamSlotIndex1) }}</span>
                             </div>
                             <button
                               v-if="examSlotDetailModalButtonVisible(activeExamSlotIndex1)"
                               type="button"
-                              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-button-gray-3 my-design-quiz-stem-history-btn px-3 py-1"
+                              :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
                               aria-label="詳細資訊"
                               @click="openExamUnitDetailModal(activeExamSlotIndex1)"
                             >
@@ -3706,7 +3713,8 @@ onActivated(() => {
                 <div :class="designSidePanelOnLeft ? 'px-3 pb-3 pt-2' : 'px-3 pb-2 pt-2'">
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 w-100"
+                    :class="d3ConfirmPillMd"
                     title="新增題目"
                     aria-label="新增題目"
                     :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
@@ -3963,8 +3971,6 @@ onActivated(() => {
   color: var(--my-color-black);
 }
 .my-design-pack-unit-main-title {
-  font-size: 1.5rem;
-  font-weight: var(--my-font-weight-semibold);
   line-height: 1.35;
   color: var(--my-color-black);
   white-space: nowrap;

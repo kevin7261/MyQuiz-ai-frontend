@@ -27,6 +27,8 @@ const props = defineProps({
   error: { type: String, default: '' },
   /** 標題列文字 */
   title: { type: String, default: '修改名稱' },
+  /** design_3：確定鈕改用 my-button-white（預設 my-button-black） */
+  confirmButtonClass: { type: String, default: 'my-button-black' },
 });
 
 const emit = defineEmits(['update:modelValue', 'save']);
@@ -117,7 +119,8 @@ function onSave() {
             </button>
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-3 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-3 py-2"
+              :class="confirmButtonClass"
               :disabled="confirmDisabled"
               :aria-busy="saving"
               @click="onSave"
