@@ -2,7 +2,7 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列中央顯示課程名稱，右側為導覽與使用者選單。
+   * 課程切換由左側系統 header 負責；本列中央顯示課程名稱，右側為題庫切換（詳情時）與使用者下拉選單（含測驗、作答弱點分析等）。
    */
   import { computed } from 'vue';
   import { storeToRefs } from 'pinia';
@@ -53,7 +53,7 @@
   <header class="my-course-header flex-shrink-0 my-bgcolor-white border-bottom">
     <div class="my-course-header-inner px-3 min-w-0 w-100">
       <div class="my-course-header-inner__center min-w-0">
-        <p class="my-course-header-course-title my-font-xl-400 my-color-black text-truncate text-start w-100 mb-0">
+        <p class="my-course-header-course-title my-font-lg-400 my-color-black text-truncate text-start w-100 mb-0">
           {{ currentCourseName }}
         </p>
       </div>
@@ -72,18 +72,6 @@
             @switch-bank="onBankSwitch"
             @delete-bank="onBankDelete"
           />
-          <router-link
-            v-if="canSeeNavLink(userType, 'work')"
-            to="/exam"
-            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-course-header-nav-btn"
-            active-class="my-course-header-nav-btn--active"
-          >測驗</router-link>
-          <router-link
-            v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
-            to="/student-weakness-analysis"
-            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-course-header-nav-btn"
-            active-class="my-course-header-nav-btn--active"
-          >作答弱點分析</router-link>
         </nav>
 
         <div class="my-course-header__user-dropdown my-design-08-dropdown dropdown flex-shrink-0 position-static">
@@ -98,8 +86,14 @@
           <i class="fa-solid fa-bars my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
         </button>
         <ul class="dropdown-menu dropdown-menu-end my-course-header__user-menu">
+          <li v-if="canSeeNavLink(userType, 'work')">
+            <router-link class="dropdown-item" to="/exam_3" active-class="active">測驗</router-link>
+          </li>
           <li>
-            <router-link class="dropdown-item" to="/create-exam-bank" active-class="active">建立測驗題庫</router-link>
+            <router-link class="dropdown-item" to="/create-exam-bank_3" active-class="active">建立測驗題庫</router-link>
+          </li>
+          <li v-if="canSeeNavLink(userType, 'student-weakness-analysis')">
+            <router-link class="dropdown-item" to="/student-weakness-analysis" active-class="active">作答弱點分析</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
             <router-link class="dropdown-item" to="/student-answer-analysis" active-class="active">學生作答分析</router-link>

@@ -7,8 +7,10 @@ defineProps({
   deleteRagLoading: { type: Boolean, default: false },
   /** 嵌入左側清單欄上方時使用垂直排版 */
   inSidePanel: { type: Boolean, default: false },
-  /** 返回鈕文字（create-exam-bank_3 為「建立測驗題庫 >」） */
+  /** 返回鈕文字（create-exam-bank_3 為「建立測驗題庫」） */
   backLabel: { type: String, default: '返回主頁' },
+  /** true 時文字後顯示 chevron-right icon（取代「>」） */
+  backTrailingChevron: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([

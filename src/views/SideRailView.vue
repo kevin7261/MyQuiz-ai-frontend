@@ -3,7 +3,7 @@
    * SideRailView - 系統 header（create-exam-bank_3 等全寬版面左側直立欄）
    *
    * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
-   * 頂部 64×64：僅白色菱形 logo；15% 高度左右各 50% 隨機漸層淡出。
+   * 頂部 64×64：僅白色菱形 logo（點擊重繪頂部隨機漸層）；15% 高度左右各 50% 隨機漸層淡出。
    * 底部 64×64 icon：課程、設定、使用者。
    */
   import { ref } from 'vue';
@@ -23,9 +23,16 @@
     },
     emits: ['logout', 'open-course-modal'],
     setup(props, { emit }) {
-      const splitGradients = createRandomLogoDiamondSplitHorizontalGradients();
-      const systemHeaderGradientLeftStyle = ref({ background: splitGradients.left });
-      const systemHeaderGradientRightStyle = ref({ background: splitGradients.right });
+      const systemHeaderGradientLeftStyle = ref({ background: 'transparent' });
+      const systemHeaderGradientRightStyle = ref({ background: 'transparent' });
+
+      function applyLogoGradients() {
+        const split = createRandomLogoDiamondSplitHorizontalGradients();
+        systemHeaderGradientLeftStyle.value = { background: split.left };
+        systemHeaderGradientRightStyle.value = { background: split.right };
+      }
+
+      applyLogoGradients();
 
       const onLogout = () => emit('logout');
       const onOpenCourseModal = () => emit('open-course-modal');
@@ -34,6 +41,7 @@
         SYSTEM_HEADER_LOGO_MARK_SIZE_PT,
         systemHeaderGradientLeftStyle,
         systemHeaderGradientRightStyle,
+        regenerateLogoGradients: applyLogoGradients,
         onLogout,
         onOpenCourseModal,
         canSeeNavLink,
@@ -55,13 +63,19 @@
       />
     </div>
 
-    <div class="my-system-header__logo">
+    <button
+      type="button"
+      class="my-system-header__logo"
+      aria-label="重新產生標誌漸層"
+      title="重新產生標誌漸層"
+      @click="regenerateLogoGradients"
+    >
       <LogoCenterMark
         id-prefix="system-header-logo"
         variant="white-diamond-only"
         :size-pt="SYSTEM_HEADER_LOGO_MARK_SIZE_PT"
       />
-    </div>
+    </button>
 
     <div class="my-system-header__spacer flex-grow-1 min-h-0" aria-hidden="true" />
 
@@ -179,8 +193,18 @@
   height: 64px;
   min-width: 64px;
   min-height: 64px;
+  margin: 0;
+  padding: 0;
+  border: none;
   line-height: 0;
   background: transparent;
+  cursor: pointer;
+}
+
+.my-system-header__logo:hover,
+.my-system-header__logo:focus-visible {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  outline: none;
 }
 
 .my-system-header__spacer {
