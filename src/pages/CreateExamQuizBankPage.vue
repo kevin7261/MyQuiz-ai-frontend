@@ -6719,7 +6719,10 @@ async function confirmAnswer(item) {
                             </button>
                           </div>
                         </div>
-                        <div class="px-3 py-0">
+                        <div
+                          v-if="!designSidePanelOnLeft"
+                          class="px-3 py-0"
+                        >
                           <hr class="my-design-quiz-question-prompt-block__rule m-0">
                         </div>
                       </header>
@@ -7290,7 +7293,7 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
   padding-top: 0.5rem !important;
 }
-/* create-exam-bank_3：出題／批改規則黑底區 hr 下方文字 pt-2 */
+/* create-exam-bank_3：出題／批改規則黑底區內文 pt-2（標題列下方無橫線） */
 .my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
 .my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),

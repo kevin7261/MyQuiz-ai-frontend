@@ -1502,7 +1502,10 @@ const quizAnswerFieldDisabled = computed(
                     <i class="fa-solid fa-pen" aria-hidden="true" />
                   </button>
                 </div>
-                <div class="px-3 py-0">
+                <div
+                  v-if="logoGradientBias !== 'work3'"
+                  class="px-3 py-0"
+                >
                   <hr class="my-design-quiz-question-prompt-block__rule m-0">
                 </div>
               </header>

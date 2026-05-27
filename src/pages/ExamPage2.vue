@@ -782,14 +782,15 @@ watch(
   padding-right: 1.5rem !important;
 }
 
-.exam-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
-.exam-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
+/* 出題規則（my-design-quiz-history-btn）和顯示／隱藏文本（my-button-transparent-borderless）維持 px-3 */
+.exam-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)),
+.exam-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
 
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)),
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
@@ -797,7 +798,11 @@ watch(
 .exam-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .exam-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
 .exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400) {
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.exam-2--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-pill.my-font-sm-400),
+.exam-2--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400),
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-history-btn.rounded-pill.my-font-sm-400),
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }

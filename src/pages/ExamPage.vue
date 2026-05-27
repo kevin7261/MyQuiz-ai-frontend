@@ -3596,14 +3596,16 @@ onActivated(() => {
   padding-right: 1.5rem !important;
 }
 
-/* exam_3：小 pill 按鈕 px-2（對齊 create-exam-bank_3） */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
+/* exam_3：小 pill 按鈕 px-2（對齊 create-exam-bank_3）；出題規則（my-design-quiz-history-btn）和顯示／隱藏文本（my-button-transparent-borderless）維持 px-3 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400) {
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
