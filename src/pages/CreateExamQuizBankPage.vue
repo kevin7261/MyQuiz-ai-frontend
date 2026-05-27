@@ -7084,11 +7084,12 @@ async function confirmAnswer(item) {
                     >
                       <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-2">
                         <span
-                          v-if="hasBuiltRagSummary && hasUnitSubTabs && item.quizItems.length"
+                          v-if="hasBuiltRagSummary && hasUnitSubTabs"
                           class="my-design-right-unit-expand-icon flex-shrink-0 my-color-gray-1"
                           aria-hidden="true"
                         >
                           <i
+                            v-if="item.quizItems.length"
                             class="fa-solid fa-chevron-right my-design-right-unit-expand-chevron"
                             :class="{ 'my-design-right-unit-expand-chevron--open': isDesignRightUnitExpanded(item.index) }"
                           />

@@ -36,16 +36,17 @@ const demoBankGridItems = [
 // ── Tab 狀態 ──────────────────────────────────────────────────
 const activeTab = ref('color');
 const TABS = [
-  { id: 'color',      label: "顏色" },
-  { id: 'type',       label: "字階" },
-  { id: 'header-bar', label: "頁首 & 頂列" },
-  { id: 'list',       label: "列表" },
-  { id: 'alert',      label: "提示" },
-  { id: 'button',     label: "按鈕" },
-  { id: 'badge',      label: "Badge" },
-  { id: 'dropdown',   label: "下拉" },
-  { id: 'modal',      label: "Modal & Overlay" },
-  { id: 'embed',      label: "嵌入" },
+  { id: 'color',      label: '顏色' },
+  { id: 'type',       label: '字體' },
+  { id: 'button',     label: '按鈕' },
+  { id: 'badge',      label: 'badge' },
+  { id: 'icon',       label: 'icon' },
+  { id: 'alert',      label: '提示' },
+  { id: 'dropdown',   label: '下拉' },
+  { id: 'list',       label: '列表' },
+  { id: 'modal',      label: 'modal overlay' },
+  { id: 'header-bar', label: '頁首頂列' },
+  { id: 'embed',      label: '嵌入' },
 ];
 
 // ── 上傳 Modal ───────────────────────────────────────────
@@ -169,9 +170,11 @@ const DESIGN3_TYPE_GROUPS = [
     items: [
       {
         name: 'type-xl-black',
-        usage: '建置後單元主標',
+        usage: '建置後單元主標；create-exam-bank_3 設定單元名稱 inline 編輯（my-design-pack-unit-name-title）',
         colorClass: 'my-color-black',
         previewText: '第一單元名稱',
+        previewKind: 'pack-unit-name',
+        cssExtra: 'my-design-pack-unit-name-title my-design-pack-unit-main-title text-truncate px-0 py-1 rounded-2',
       },
     ],
   },
@@ -213,9 +216,9 @@ const DESIGN3_TYPE_GROUPS = [
       },
       {
         name: 'type-md-gray-1',
-        usage: '取消按鈕、圓形選單鈕；exam_3 空題目提示',
+        usage: '取消按鈕、圓形選單鈕；exam_3 空題目提示；create-exam-bank_3 主內容空題型居中提示',
         colorClass: 'my-color-gray-1',
-        previewText: '取消按鈕 / 目前沒有題目，請在左側選單新增題目',
+        previewText: '目前沒有題型，請在左側選單的單元按 + 新增題型',
       },
     ],
   },
@@ -233,7 +236,7 @@ const DESIGN3_TYPE_GROUPS = [
         name: 'type-sm-gray-1',
         usage: '欄位標題、左欄步驟標、breadcrumb、列表副標、返回按鈕',
         colorClass: 'my-color-gray-1',
-        previewText: '資料夾組合 / 單元一 › 開場白問答 / 5 題',
+        previewText: '資料夾組合 / 單元一 › 開場白問答 / 題型子列',
       },
       {
         name: 'type-sm-gray-4',
@@ -390,7 +393,7 @@ function design3PackUnitTypeIconCss(unitType) {
         <div class="design-page-3__sections mx-auto w-100">
 
             <!-- ══════════════════════════════════════════════════
-                 字階
+                 字體
             ══════════════════════════════════════════════════ -->
             <template v-if="activeTab === 'type'">
               <section
@@ -437,6 +440,14 @@ function design3PackUnitTypeIconCss(unitType) {
                           <span class="my-font-sm-400 my-color-gray-2 mb-0">{{ item.previewText }}</span>
                         </div>
                       </div>
+                      <input
+                        v-else-if="item.previewKind === 'pack-unit-name'"
+                        type="text"
+                        class="my-design-pack-unit-name-title my-design-pack-unit-main-title my-font-xl-400 my-color-black text-truncate mb-0 text-start w-100 px-0 py-1 rounded-2"
+                        value="第一單元名稱"
+                        readonly
+                        aria-label="單元名稱（示意）"
+                      />
                       <p
                         v-else
                         :class="[design3ItemFontClass(group, item), item.colorClass, 'mb-0']"
@@ -496,7 +507,7 @@ function design3PackUnitTypeIconCss(unitType) {
             </template>
 
             <!-- ══════════════════════════════════════════════════
-                 頁首標題 ＋ 內頁頂列
+                 頁首頂列
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'header-bar'">
               <section class="my-page-block-spacing">
@@ -693,6 +704,17 @@ function design3PackUnitTypeIconCss(unitType) {
                     >
                       <div class="my-alert-danger-soft my-font-sm-400 py-2">建立或上傳失敗（示意）</div>
                     </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="hint-empty-quiz-types"
+                      usage="create-exam-bank_3 建置後主內容無題型：flex 居中 my-font-md-400 my-color-gray-1"
+                      css="flex-grow-1 d-flex align-items-center justify-content-center · my-font-md-400 my-color-gray-1 mb-0 text-center text-break"
+                    >
+                      <div class="d-flex align-items-center justify-content-center px-3 py-4 my-bgcolor-gray-4 rounded-3" style="min-height: 6rem; max-width: 20rem;">
+                        <p class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break">
+                          目前沒有題型，請在左側選單的單元按 + 新增題型
+                        </p>
+                      </div>
+                    </DesignPageSpecItem>
                   </div>
                 </div>
               </section>
@@ -821,6 +843,19 @@ function design3PackUnitTypeIconCss(unitType) {
                       </div>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
+                      name="btn-start-pack-build"
+                      usage="create-exam-bank_3 左側底欄「開始建立單元」（建置前；my-button-white 黑底 pill，位於「刪除此題庫」上方）"
+                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
+                    >
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
+                        style="max-width: 20rem;"
+                      >
+                        開始建立單元
+                      </button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
                       name="btn-delete-confirm"
                       usage="刪除確認 Modal 刪除"
                       css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
@@ -875,9 +910,9 @@ function design3PackUnitTypeIconCss(unitType) {
                  Badge
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'badge'">
-              <section class="my-page-block-spacing">
-                <div class="rounded-4 my-design-page-section p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">Badge</div>
+              <section class="my-page-block-spacing mb-0">
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">badge</div>
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       name="badge-followup"
@@ -899,13 +934,26 @@ function design3PackUnitTypeIconCss(unitType) {
                         <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1">追問</span>
                       </div>
                     </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="badge-unit-quiz-type-count"
+                      usage="create-exam-bank_3 左側單元列題型數（my-design-right-unit-count-badge；數字為該單元題型列數）"
+                      css="badge user-select-none flex-shrink-0 my-design-right-unit-count-badge"
+                      copy-text="my-design-right-unit-count-badge"
+                    >
+                      <span class="badge user-select-none flex-shrink-0 my-design-right-unit-count-badge">3</span>
+                    </DesignPageSpecItem>
                   </div>
                 </div>
               </section>
+            </template>
 
+            <!-- ══════════════════════════════════════════════════
+                 icon
+            ══════════════════════════════════════════════════ -->
+            <template v-else-if="activeTab === 'icon'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">設定單元類型 icon</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">icon</div>
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       v-for="item in DESIGN3_PACK_UNIT_TYPE_ICONS"
@@ -931,7 +979,7 @@ function design3PackUnitTypeIconCss(unitType) {
                         <PackUnitTypeIcon
                           :unit-type="UNIT_TYPE_RAG"
                           color-class="my-color-gray-1"
-                          class="ms-2"
+                          class="ms-2 flex-shrink-0"
                         />
                       </span>
                     </DesignPageSpecItem>
@@ -1489,5 +1537,42 @@ function design3PackUnitTypeIconCss(unitType) {
 .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn:hover:not(:disabled),
 .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn:focus-visible:not(:disabled) {
   color: var(--my-color-black);
+}
+
+/* 稿頁預覽：設定單元名稱 inline 編輯、左欄單元列 badge */
+.my-design-pack-unit-name-title {
+  display: block;
+  max-width: 16rem;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+.my-design-pack-unit-name-title:hover:not(:disabled),
+.my-design-pack-unit-name-title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-3, #f5f5f5);
+}
+.my-design-right-unit-count-badge {
+  align-self: center;
+  margin-right: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: var(--my-font-weight-regular);
+  line-height: 1.25;
+  color: var(--my-color-gray-1);
+  background-color: var(--my-color-white);
+  border: none;
+  border-radius: 0.25rem;
+}
+.my-design-right-unit-row-label {
+  display: block;
+  min-width: 0;
+  padding: var(--bs-nav-link-padding-y, 0.5rem) 0;
 }
 </style>
