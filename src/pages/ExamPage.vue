@@ -3450,7 +3450,7 @@ onActivated(() => {
                                       left: 0,
                                       right: 0,
                                       height: '64px',
-                                      background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-4)'})`,
+                                      background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-3)'})`,
                                       pointerEvents: 'none',
                                     }"
                                   />
@@ -3947,7 +3947,7 @@ onActivated(() => {
 }
 .my-design-right-nav .nav-link:not(.active):hover,
 .my-design-right-nav .nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-4);
+  background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
 }
 /* 左欄（gray-4 底）：hover 須用 gray-3 才看得見 */
@@ -4205,7 +4205,7 @@ onActivated(() => {
 }
 .form-control.my-design-quiz-answer-input:disabled,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-4);
+  background-color: var(--my-color-gray-3);
   border-color: var(--my-color-gray-2);
   opacity: 1;
 }

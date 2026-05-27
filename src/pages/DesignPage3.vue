@@ -84,7 +84,7 @@ function toggleLoading() {
   loadingTimer = setTimeout(() => { loadingVisible.value = false; }, 3000);
 }
 
-/** 對齊 variables.css；my-color-gray-4 為黑 46%＋白混色（common .my-color-gray-4）→ #a1a1a1 */
+/** 對齊 variables.css；my-color-gray-4 淺底輔助字同 gray-1 → #888888 */
 const DESIGN3_CLASS_HEX = {
   'my-bgcolor-black': '#333333',
   'my-color-black': '#333333',
@@ -92,10 +92,10 @@ const DESIGN3_CLASS_HEX = {
   'my-color-gray-1': '#888888',
   'my-bgcolor-gray-2': '#e2e2e2',
   'my-color-gray-2': '#e2e2e2',
-  'my-bgcolor-gray-3': '#f0f0f0',
-  'my-color-gray-3': '#f0f0f0',
-  'my-bgcolor-gray-4': '#fafafa',
-  'my-color-gray-4': '#a1a1a1',
+  'my-bgcolor-gray-3': '#f2f2f2',
+  'my-color-gray-3': '#f2f2f2',
+  'my-bgcolor-gray-4': '#f2f2f2',
+  'my-color-gray-4': '#888888',
   'my-bgcolor-white': '#ffffff',
   'my-bgcolor-surface': '#ffffff',
   'my-bgcolor-green': '#25b17c',
@@ -112,58 +112,32 @@ const DESIGN3_COLORS_GRAY = [
   {
     name: 'color-black',
     usage: '主要文字、標題、方塊標題、Modal 標題、已選檔名',
-    dotClass: 'my-bgcolor-black',
-    dotBorder: false,
     rows: [{ className: 'my-bgcolor-black' }, { className: 'my-color-black' }],
   },
   {
     name: 'color-gray-1',
     usage: '次要文字、返回按鈕、圓形選單鈕、取消按鈕、方塊副標題',
-    dotClass: 'my-bgcolor-gray-1',
-    dotBorder: false,
     rows: [{ className: 'my-bgcolor-gray-1' }, { className: 'my-color-gray-1' }],
   },
   {
     name: 'color-gray-2',
     usage: '邊線、表頭分隔、列表列框線',
-    dotClass: 'my-bgcolor-gray-2',
-    dotBorder: false,
     rows: [{ className: 'my-bgcolor-gray-2' }, { className: 'my-color-gray-2' }],
   },
   {
     name: 'color-gray-3',
     usage: 'Design 參考區塊底、ZIP drop zone 底',
-    dotClass: 'my-bgcolor-gray-3',
-    dotBorder: false,
     rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-black' }],
   },
   {
-    name: 'color-side-detail-bar',
-    usage: '左側清單 detail bar 背景（ExamPage2DetailBar／CreateExamQuizBankPage2DetailBar in-side-panel）',
-    dotClass: 'my-bgcolor-surface',
-    dotBorder: true,
+    name: 'color-gray-4',
+    usage: '左側題目／流程清單（my-design-right-nav）· drop zone 提示文字、說明 ul 等最淡輔助字色',
+    rows: [{ className: 'my-bgcolor-gray-4' }, { className: 'my-color-gray-4' }],
+  },
+  {
+    name: 'color-white',
+    usage: '白底（#fff）：左側 detail bar in-side-panel · Badge（my-bgcolor-surface 同義）',
     rows: [{ className: 'my-bgcolor-white' }, { className: 'my-color-black' }],
-  },
-  {
-    name: 'color-side-nav-list',
-    usage: '左側題目／流程清單（my-design-right-nav）',
-    dotClass: 'my-bgcolor-gray-4',
-    dotBorder: true,
-    rows: [{ className: 'my-bgcolor-gray-4' }],
-  },
-  {
-    name: 'color-gray-4-text',
-    usage: 'drop zone 提示文字、說明 ul（最淡輔助色）',
-    dotClass: 'my-bgcolor-gray-4',
-    dotBorder: true,
-    rows: [{ className: 'my-color-gray-4' }],
-  },
-  {
-    name: 'color-surface',
-    usage: 'Badge 背景（白底）',
-    dotClass: 'my-bgcolor-surface',
-    dotBorder: true,
-    rows: [{ className: 'my-bgcolor-surface' }, { className: 'my-color-black' }],
   },
 ];
 
@@ -171,15 +145,11 @@ const DESIGN3_COLORS_ACCENT = [
   {
     name: 'color-green',
     usage: '試卷用題庫：列表綠點、下拉選單列小圓點',
-    dotClass: 'my-bgcolor-green',
-    dotBorder: false,
     rows: [{ className: 'my-bgcolor-green' }, { className: 'my-color-green' }],
   },
   {
     name: 'color-red',
     usage: '下拉選單刪除項（exam_3／create-exam-bank_3 共用）',
-    dotClass: 'my-bgcolor-red',
-    dotBorder: false,
     rows: [{ className: 'my-bgcolor-red' }, { className: 'my-color-red' }],
   },
 ];
@@ -388,8 +358,6 @@ const DESIGN3_EMBED_SPECS = [
                       <DesignPageSpecColorGroup
                         :name="item.name"
                         :usage="item.usage"
-                        :dot-class="item.dotClass"
-                        :dot-border="item.dotBorder"
                         :rows="item.rows"
                         :hex-for-class="design3ClassHex"
                       />
@@ -411,8 +379,6 @@ const DESIGN3_EMBED_SPECS = [
                       <DesignPageSpecColorGroup
                         :name="item.name"
                         :usage="item.usage"
-                        :dot-class="item.dotClass"
-                        :dot-border="item.dotBorder"
                         :rows="item.rows"
                         :hex-for-class="design3ClassHex"
                       />

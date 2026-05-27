@@ -200,7 +200,7 @@
 }
 .my-left-view-nav .nav-link:not(.active):hover,
 .my-left-view-nav .nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-4);
+  background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
 }
 .my-left-view-nav .nav-link.active,

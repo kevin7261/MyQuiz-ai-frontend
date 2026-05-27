@@ -1,18 +1,27 @@
 <script setup>
 import DesignPageCopyBtn from './DesignPageCopyBtn.vue';
 
-defineProps({
+const props = defineProps({
   name: { type: String, required: true },
   usage: { type: String, required: true },
-  dotClass: { type: String, required: true },
-  dotBorder: { type: Boolean, default: false },
   rows: {
     type: Array,
     required: true,
-    /** @type {Array<{ className: string, hex?: string }>} */
+    /** @type {Array<{ className: string }>} */
   },
   hexForClass: { type: Function, required: true },
 });
+
+const LIGHT_SWATCH_HEX = new Set(['#ffffff', '#f2f2f2', '#f5f5f5', '#e2e2e2']);
+
+function swatchDotStyle(className) {
+  const hex = (props.hexForClass(className) || '').toLowerCase();
+  const style = { backgroundColor: hex || undefined };
+  if (!hex || LIGHT_SWATCH_HEX.has(hex)) {
+    style.border = '1px solid var(--my-color-gray-2, #e2e2e2)';
+  }
+  return style;
+}
 </script>
 
 <template>
@@ -24,12 +33,14 @@ defineProps({
       <dd class="my-design-spec-item__value my-font-sm-400 my-color-gray-1 text-break">{{ usage }}</dd>
     </dl>
     <div class="my-design-swatch-cell">
-      <span
-        class="my-design-swatch-dot"
-        :class="dotClass"
-        :style="dotBorder ? { border: '1px solid var(--my-color-gray-2, #e2e2e2)' } : undefined"
-        aria-hidden="true"
-      />
+      <div class="my-design-swatch-dots" aria-hidden="true">
+        <span
+          v-for="row in rows"
+          :key="'dot-' + row.className"
+          class="my-design-swatch-dot"
+          :style="swatchDotStyle(row.className)"
+        />
+      </div>
       <div class="my-design-swatch-rows design-page-spec-color-rows">
         <div
           v-for="row in rows"

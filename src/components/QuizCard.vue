@@ -1852,7 +1852,7 @@ const quizAnswerFieldDisabled = computed(
   border-bottom: 2pt solid transparent;
   border-radius: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--my-color-black) 46%, var(--my-color-white));
+  color: var(--my-color-gray-1);
   line-height: 1.25;
   box-shadow: none;
 }
@@ -1899,7 +1899,7 @@ const quizAnswerFieldDisabled = computed(
   box-shadow: none;
 }
 :deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-4);
+  background-color: var(--my-color-gray-3);
   border-color: var(--my-color-gray-2);
   opacity: 1;
 }

@@ -96,7 +96,7 @@ function close() {
 
 <style scoped>
 .my-course-select-btn {
-  background-color: var(--my-color-gray-4, #f5f5f5);
+  background-color: var(--my-color-gray-3, #f2f2f2);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }

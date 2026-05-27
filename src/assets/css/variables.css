@@ -1,9 +1,9 @@
 /**
  * 設計權杖 — 僅保留目前前端實際用到的變數：
- * - body 預設字體（--my-font-family-primary：Google Sans＋系統中文）／prompt 黑底等寬（--my-font-family-code：Google Sans Code）／字級／字距／色（common.css；中性灰階 #333／gray-1～gray-4／#fff＋紅綠藍；淺底次要字色見 common .my-color-gray-4 等混色；表單欄位標題併 --my-color-gray-1；中型輸入邊線併 --my-color-gray-2）
+ * - body 預設字體（--my-font-family-primary：Google Sans＋系統中文）／prompt 黑底等寬（--my-font-family-code：Google Sans Code）／字級／字距／色（common.css；中性灰階 #333／gray-1～3／#fff＋紅綠藍；淺底次要字色見 common .my-color-gray-4（同 gray-1）；表單欄位標題併 --my-color-gray-1；中型輸入邊線併 --my-color-gray-2）
  * - 字級 rem 僅在此定義 --my-font-size-*；版面字級／字重僅併 common `.my-font-{xl|lg|md|sm}-{400|600}`（勿另造 `.my-font-size-*` 等純字級 class，與變數前綴區隔）
  * - 字重：僅 --my-font-weight-regular（400）、--my-font-weight-semibold（600）；common 內用 var(--my-font-weight-*)，禁止字面量 400／600
- * - common：字階 .my-font-*-{400|600}（僅字級字重）；網頁標題（頂欄品牌等）.my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（次色另併 .my-color-gray-1）；字色 .my-color-*；底 .my-bgcolor-*；全頁 canvas 為 body gray-4；業務內容區塊 .my-bgcolor-page-block（同 --my-color-gray-3）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-2／.my-bgcolor-gray-3／.my-bgcolor-gray-4；描邊鈕 .my-button-white-border、黑底填色 .my-button-black、填色「白」.my-button-white（淺頁為黑底白字；黑底稿內例外淺底）、黑無框 .my-button-transparent-borderless；32×32 圓形圖示鈕 .my-btn-circle（分頁「+」、稿頁複製等）
+ * - common：字階 .my-font-*-{400|600}（僅字級字重）；網頁標題（頂欄品牌等）.my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（次色另併 .my-color-gray-1）；字色 .my-color-*；底 .my-bgcolor-*；全頁 canvas 為 body gray-3；業務內容區塊 .my-bgcolor-page-block（同 --my-color-gray-3）、rounded-3、p-3 p-lg-4、mb-4；淺灰底 .my-bgcolor-gray-2／.my-bgcolor-gray-3（.my-bgcolor-gray-4 同 gray-3）；描邊鈕 .my-button-white-border、黑底填色 .my-button-black、填色「白」.my-button-white（淺頁為黑底白字；黑底稿內例外淺底）、黑無框 .my-button-transparent-borderless；32×32 圓形圖示鈕 .my-btn-circle（分頁「+」、稿頁複製等）
  * - 主要區塊縱向間距：common .my-page-block-spacing（業務頁內文區多區塊用）
  * - 欄位標題與其下第一個控件：--my-field-label-input-gap（common 鄰接選擇器；直向父層請 gap-0）
  * - 下拉選單（有限選項）：Design 頁「08 · 下拉選單」— .my-design-08-dropdown；觸發 btn rounded-2 · dropdown-toggle · my-dropdown-caret · my-font-md-400 · my-button-white · px-3 py-2；選單 Bootstrap .dropdown-menu；可重用 Design08OptionDropdown、UnitSelectDropdown
@@ -31,12 +31,11 @@
   --my-font-weight-regular: 400;
   --my-font-weight-semibold: 600;
 
-  /* 中性灰階 gray-1～4（gray-1 次深字色；gray-2～4 由深→淺底／邊線）；字 #333；純白 #fff（.my-color-gray-4 為淺底次要字 class，混色非必等於權杖 --my-color-gray-4） */
+  /* 中性灰階：gray-1 次深字色；gray-2 邊線；gray-3 淺底 #f2f2f2（canvas／區塊）；.my-color-gray-4 淺底輔助字 class 同 gray-1 */
   --my-color-black: #333333;
   --my-color-gray-1: #888888;
   --my-color-gray-2: #e2e2e2;
-  --my-color-gray-3: #f0f0f0;
-  --my-color-gray-4: #fafafa;
+  --my-color-gray-3: #f2f2f2;
   --my-color-white: #ffffff;
   /* 設定單元：資料夾／資料夾組合拖放區（深於白底 tag、淺於 gray-1 字色） */
   --my-pack-folder-field-bg: color-mix(in srgb, var(--my-color-gray-1) 22%, var(--my-color-gray-2));
@@ -64,8 +63,8 @@
   /* Bootstrap .btn-close：SVG fill 對齊 --my-color-black（#333333） */
   --my-btn-close-bg-svg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23333333'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e");
 
-  /* 捲軸：軌道 gray-4（同 body 主畫面）；滑塊 gray-2 */
-  --my-scrollbar-track: var(--my-color-gray-4);
+  /* 捲軸：軌道 gray-3（同 body canvas）；滑塊 gray-2 */
+  --my-scrollbar-track: var(--my-color-gray-3);
   --my-scrollbar-size: 6pt;
   --my-scrollbar-thumb-inset: 1pt; /* 左右／上下各 1pt → 6 − 2 = 4pt */
   --my-scrollbar-thumb: var(--my-color-gray-2);
