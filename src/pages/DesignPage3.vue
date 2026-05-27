@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
-import DesignPageCopyBtn from '../components/DesignPageCopyBtn.vue';
+import DesignPageSpecItem from '../components/DesignPageSpecItem.vue';
+import DesignPageSpecColorGroup from '../components/DesignPageSpecColorGroup.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
@@ -83,83 +84,83 @@ function toggleLoading() {
   loadingTimer = setTimeout(() => { loadingVisible.value = false; }, 3000);
 }
 
-/** 權杖 hex → rgb(…)；my-color-gray-4 為黑 46%＋白混色 */
-function hexToRgb(hex) {
-  const raw = String(hex).replace('#', '').trim();
-  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
-  if (!/^[0-9a-f]{6}$/i.test(full)) return '';
-  const n = parseInt(full, 16);
-  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
-}
-
-function mixBlackWhiteRgb(blackPct) {
-  const t = blackPct / 100;
-  const b = { r: 51, g: 51, b: 51 };
-  const w = { r: 255, g: 255, b: 255 };
-  return `rgb(${Math.round(b.r * t + w.r * (1 - t))}, ${Math.round(b.g * t + w.g * (1 - t))}, ${Math.round(b.b * t + w.b * (1 - t))})`;
-}
-
-const DESIGN3_CLASS_RGB = {
-  'my-bgcolor-black': hexToRgb('#333333'),
-  'my-color-black': hexToRgb('#333333'),
-  'my-bgcolor-gray-1': hexToRgb('#888888'),
-  'my-color-gray-1': hexToRgb('#888888'),
-  'my-bgcolor-gray-2': hexToRgb('#e2e2e2'),
-  'my-color-gray-2': hexToRgb('#e2e2e2'),
-  'my-bgcolor-gray-3': hexToRgb('#f0f0f0'),
-  'my-color-gray-3': hexToRgb('#f0f0f0'),
-  'my-bgcolor-gray-4': hexToRgb('#fafafa'),
-  'my-color-gray-4': mixBlackWhiteRgb(46),
-  'my-bgcolor-surface': hexToRgb('#ffffff'),
-  'my-bgcolor-green': hexToRgb('#25b17c'),
-  'my-color-green': hexToRgb('#25b17c'),
-  'my-bgcolor-red': hexToRgb('#e84136'),
-  'my-color-red': hexToRgb('#e84136'),
+/** 對齊 variables.css；my-color-gray-4 為黑 46%＋白混色（common .my-color-gray-4）→ #a1a1a1 */
+const DESIGN3_CLASS_HEX = {
+  'my-bgcolor-black': '#333333',
+  'my-color-black': '#333333',
+  'my-bgcolor-gray-1': '#888888',
+  'my-color-gray-1': '#888888',
+  'my-bgcolor-gray-2': '#e2e2e2',
+  'my-color-gray-2': '#e2e2e2',
+  'my-bgcolor-gray-3': '#f0f0f0',
+  'my-color-gray-3': '#f0f0f0',
+  'my-bgcolor-gray-4': '#fafafa',
+  'my-color-gray-4': '#a1a1a1',
+  'my-bgcolor-white': '#ffffff',
+  'my-bgcolor-surface': '#ffffff',
+  'my-bgcolor-green': '#25b17c',
+  'my-color-green': '#25b17c',
+  'my-bgcolor-red': '#e84136',
+  'my-color-red': '#e84136',
 };
 
-function design3ClassRgb(className) {
-  return DESIGN3_CLASS_RGB[className] ?? '';
+function design3ClassHex(className) {
+  return DESIGN3_CLASS_HEX[className] ?? '';
 }
 
 const DESIGN3_COLORS_GRAY = [
   {
-    desc: '主要文字、標題、方塊標題、Modal 標題、已選檔名',
+    name: 'color-black',
+    usage: '主要文字、標題、方塊標題、Modal 標題、已選檔名',
     dotClass: 'my-bgcolor-black',
     dotBorder: false,
     rows: [{ className: 'my-bgcolor-black' }, { className: 'my-color-black' }],
   },
   {
-    desc: '次要文字、返回按鈕、圓形選單鈕、取消按鈕、方塊副標題',
+    name: 'color-gray-1',
+    usage: '次要文字、返回按鈕、圓形選單鈕、取消按鈕、方塊副標題',
     dotClass: 'my-bgcolor-gray-1',
     dotBorder: false,
     rows: [{ className: 'my-bgcolor-gray-1' }, { className: 'my-color-gray-1' }],
   },
   {
-    desc: '邊線、表頭分隔、列表列框線（gray-2）',
+    name: 'color-gray-2',
+    usage: '邊線、表頭分隔、列表列框線',
     dotClass: 'my-bgcolor-gray-2',
     dotBorder: false,
     rows: [{ className: 'my-bgcolor-gray-2' }, { className: 'my-color-gray-2' }],
   },
   {
-    desc: 'Design 參考區塊底、drop zone 底（gray-3）',
+    name: 'color-gray-3',
+    usage: 'Design 參考區塊底、ZIP drop zone 底',
     dotClass: 'my-bgcolor-gray-3',
     dotBorder: false,
     rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-black' }],
   },
   {
-    desc: '左側清單 detail bar 背景（exam_3／create-exam-bank_3 in-side-panel）',
-    dotClass: 'my-bgcolor-gray-4',
+    name: 'color-side-detail-bar',
+    usage: '左側清單 detail bar 背景（ExamPage2DetailBar／CreateExamQuizBankPage2DetailBar in-side-panel）',
+    dotClass: 'my-bgcolor-surface',
     dotBorder: true,
-    rows: [{ className: 'my-bgcolor-gray-4' }, { className: 'my-color-black' }],
+    rows: [{ className: 'my-bgcolor-white' }, { className: 'my-color-black' }],
   },
   {
-    desc: 'drop zone 提示文字、說明 ul（最淡輔助色）',
+    name: 'color-side-nav-list',
+    usage: '左側題目／流程清單（my-design-right-nav）',
+    dotClass: 'my-bgcolor-gray-4',
+    dotBorder: true,
+    rows: [{ className: 'my-bgcolor-gray-4' }],
+  },
+  {
+    name: 'color-gray-4-text',
+    usage: 'drop zone 提示文字、說明 ul（最淡輔助色）',
     dotClass: 'my-bgcolor-gray-4',
     dotBorder: true,
     rows: [{ className: 'my-color-gray-4' }],
   },
   {
-    desc: 'Badge 背景（白底）',
+    name: 'color-surface',
+    usage: 'Badge 背景（白底）',
     dotClass: 'my-bgcolor-surface',
     dotBorder: true,
     rows: [{ className: 'my-bgcolor-surface' }, { className: 'my-color-black' }],
@@ -168,17 +169,145 @@ const DESIGN3_COLORS_GRAY = [
 
 const DESIGN3_COLORS_ACCENT = [
   {
-    desc: '試卷用題庫：列表綠點、下拉選單列小圓點',
+    name: 'color-green',
+    usage: '試卷用題庫：列表綠點、下拉選單列小圓點',
     dotClass: 'my-bgcolor-green',
     dotBorder: false,
     rows: [{ className: 'my-bgcolor-green' }, { className: 'my-color-green' }],
   },
   {
-    desc: '下拉選單刪除項（兩頁共用）',
+    name: 'color-red',
+    usage: '下拉選單刪除項（exam_3／create-exam-bank_3 共用）',
     dotClass: 'my-bgcolor-red',
     dotBorder: false,
     rows: [{ className: 'my-bgcolor-red' }, { className: 'my-color-red' }],
   },
+];
+
+const DESIGN3_TYPE_GROUPS = [
+  {
+    scale: 'xl · 1.125rem',
+    items: [
+      {
+        name: 'type-xl-header',
+        usage: 'TopView 頁面名稱（測驗／建立測驗題庫）',
+        css: 'my-font-xl-400 my-color-black',
+        previewClass: 'my-font-xl-400 my-color-black',
+        previewText: '頁首標題（測驗 / 建立測驗題庫）',
+      },
+    ],
+  },
+  {
+    scale: 'lg · 1rem',
+    items: [
+      {
+        name: 'type-lg-detail-title',
+        usage: '左欄 detail bar 可編輯試卷／題庫名稱',
+        css: 'my-font-lg-400 my-color-black',
+        previewClass: 'my-font-lg-400 my-color-black',
+        previewText: 'detail-bar 標題輸入框（可編輯試卷名稱）',
+      },
+    ],
+  },
+  {
+    scale: 'md · 0.875rem',
+    items: [
+      {
+        name: 'type-md-title',
+        usage: 'Design 區塊標題、Modal 主要按鈕',
+        css: 'my-font-md-400 my-color-black',
+        previewClass: 'my-font-md-400 my-color-black',
+        previewText: '方塊標題、Modal 按鈕',
+      },
+      {
+        name: 'type-md-secondary',
+        usage: '取消按鈕、圓形選單鈕、次要操作',
+        css: 'my-font-md-400 my-color-gray-1',
+        previewClass: 'my-font-md-400 my-color-gray-1',
+        previewText: '取消按鈕、圓形選單鈕',
+      },
+    ],
+  },
+  {
+    scale: 'sm · 0.75rem',
+    items: [
+      {
+        name: 'type-sm-body',
+        usage: 'Modal 說明、已選檔名、提示訊息',
+        css: 'my-font-sm-400 my-color-black',
+        previewClass: 'my-font-sm-400 my-color-black',
+        previewText: 'Modal 說明、已選檔名、提示訊息',
+      },
+      {
+        name: 'type-sm-secondary',
+        usage: '方塊副標題、返回按鈕、說明文字',
+        css: 'my-font-sm-400 my-color-gray-1',
+        previewClass: 'my-font-sm-400 my-color-gray-1',
+        previewText: '方塊副標題、返回按鈕、說明文字',
+      },
+      {
+        name: 'type-sm-muted',
+        usage: 'ZIP drop zone 提示文字、說明 ul',
+        css: 'my-font-sm-400 my-color-gray-4',
+        previewClass: 'my-font-sm-400 my-color-gray-4',
+        previewText: 'drop zone 提示文字、說明 ul',
+      },
+    ],
+  },
+];
+
+const DESIGN3_LIST_SPECS = [
+  {
+    name: 'list-bank-core',
+    usage: 'ExamPage2／CreateExamQuizBankPage2 grid 主頁列表（白底；hover → gray-3）',
+    css: 'bank-list-wrap · bank-table-actions · bank-table-header · bank-table-sort-btn · bank-list · bank-list-row',
+    copyText: 'bank-list-wrap',
+  },
+  {
+    name: 'list-bank-exam-dot',
+    usage: 'create-exam-bank_3 綠點欄與表頭對齊',
+    css: 'bank-table-header__dot-spacer · bank-list-row__dot-col · bank-list-row__exam-dot rounded-circle d-inline-block my-bgcolor-green',
+    copyText: 'bank-table-header__dot-spacer',
+  },
+];
+
+const DESIGN3_DROPDOWN_SPECS = [
+  {
+    name: 'dropdown-menu-class',
+    usage: '試卷／題庫切換選單本體（scoped）',
+    css: 'exam-page-exam-switch-menu · create-exam-bank-bank-switch-menu',
+    copyText: 'exam-page-exam-switch-menu',
+  },
+  {
+    name: 'dropdown-header-trigger',
+    usage: 'TopView 右側「所有試卷／所有題庫」觸發鈕',
+    css: 'btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2',
+  },
+  {
+    name: 'dropdown-item-states',
+    usage: '選單列 active／disabled／刪除（my-color-red）',
+    css: 'dropdown-item active · dropdown-item disabled · dropdown-item my-color-red',
+    copyText: 'dropdown-item my-color-red',
+  },
+];
+
+const DESIGN3_MODAL_SPECS = [
+  { name: 'modal-backdrop', usage: '上傳 Modal 外層（Teleport to body）', css: 'modal fade show d-block my-modal-backdrop' },
+  { name: 'modal-dialog', usage: '上傳 Modal 對話框', css: 'modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable' },
+  { name: 'modal-content', usage: 'Modal 內容白底區', css: 'modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4' },
+  { name: 'modal-header', usage: 'Modal 標題列', css: 'modal-header border-bottom-0 p-0' },
+  { name: 'modal-title', usage: 'Modal 標題字', css: 'modal-title my-color-black' },
+  { name: 'modal-body', usage: 'Modal 內文區', css: 'modal-body p-0 min-w-0' },
+  { name: 'modal-drop-zone', usage: 'ZIP 拖放區（空／已選）', css: 'my-zip-drop-zone text-center position-relative' },
+  { name: 'modal-drop-zone-over', usage: 'ZIP 拖放區拖曳中', css: 'my-zip-drop-zone my-zip-drop-zone-over' },
+  { name: 'modal-footer', usage: 'Modal 底部按鈕列', css: 'modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0' },
+];
+
+const DESIGN3_EMBED_SPECS = [
+  { name: 'embed-side-panel-root', usage: 'ExamPage2／CreateExamQuizBankPage2 根層（sidePanelOnLeft）', css: 'exam-2--side-panel-left · create-exam-bank-2--side-panel-left', copyText: 'exam-2--side-panel-left' },
+  { name: 'embed-hide-header', usage: '嵌入時隱藏 ExamPage 內頁 header', css: '.exam-2-embedded :deep(> header) { display: none; }' },
+  { name: 'embed-hide-tabs', usage: '嵌入時隱藏分頁列', css: '.exam-2-embedded :deep(.my-rag-tabs-bar) { display: none !important; }' },
+  { name: 'embed-detail-bar-mod', usage: '左欄 detail bar 修飾 class', css: 'exam-2-detail-bar--in-side-panel · create-exam-bank-2-detail-bar--in-side-panel', copyText: 'exam-2-detail-bar--in-side-panel' },
 ];
 </script>
 
@@ -219,87 +348,23 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-if="activeTab === 'type'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">字階</div>
                   <div class="d-flex flex-column gap-5">
-
-                    <!-- xl · 1.125rem ─────────────────────────── -->
-                    <div>
-                      <div class="my-font-sm-400 my-color-gray-1 pb-2 mb-3" style="border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);">xl · 1.125rem</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-xl-400 my-color-black mb-2">頁首標題（測驗 / 建立測驗題庫）</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-xl-400 my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-xl-400 my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
+                    <div v-for="group in DESIGN3_TYPE_GROUPS" :key="group.scale">
+                      <div class="my-font-sm-400 my-color-gray-1 pb-2 mb-3" style="border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);">{{ group.scale }}</div>
+                      <div class="d-flex flex-column gap-4">
+                        <DesignPageSpecItem
+                          v-for="item in group.items"
+                          :key="item.name"
+                          :name="item.name"
+                          :usage="item.usage"
+                          :css="item.css"
+                        >
+                          <p :class="[item.previewClass, 'mb-0']">{{ item.previewText }}</p>
+                        </DesignPageSpecItem>
                       </div>
                     </div>
-
-                    <!-- lg · 1rem ─────────────────────────────── -->
-                    <div>
-                      <div class="my-font-sm-400 my-color-gray-1 pb-2 mb-3" style="border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);">lg · 1rem</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-lg-400 my-color-black mb-2">detail-bar 標題輸入框（可編輯試卷名稱）</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-lg-400 my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-lg-400 my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- md · 0.875rem ─────────────────────────── -->
-                    <div>
-                      <div class="my-font-sm-400 my-color-gray-1 pb-2 mb-3" style="border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);">md · 0.875rem</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-md-400 my-color-black mb-2">方塊標題、Modal 按鈕</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-md-400 my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-md-400 my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-md-400 my-color-gray-1 mb-2">取消按鈕、圓形選單鈕</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-md-400 my-color-gray-1</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-md-400 my-color-gray-1" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- sm · 0.75rem ─────────────────────────── -->
-                    <div>
-                      <div class="my-font-sm-400 my-color-gray-1 pb-2 mb-3" style="border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);">sm · 0.75rem</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">Modal 說明、已選檔名、提示訊息</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-sm-400 my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-sm-400 my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-gray-1 mb-2">方塊副標題、返回按鈕、說明文字</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-sm-400 my-color-gray-1</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-sm-400 my-color-gray-1" :on-light-bg="false" />
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-gray-4 mb-2">drop zone 提示文字、說明 ul</p>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-font-sm-400 my-color-gray-4</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-sm-400 my-color-gray-4" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               </section>
@@ -312,39 +377,22 @@ const DESIGN3_COLORS_ACCENT = [
 
               <!-- 灰階 -->
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">灰階</div>
                   <div class="row g-3">
                     <div
-                      v-for="(item, itemIdx) in DESIGN3_COLORS_GRAY"
-                      :key="'design3-gray-' + itemIdx"
+                      v-for="item in DESIGN3_COLORS_GRAY"
+                      :key="item.name"
                       class="col-12"
                     >
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">{{ item.desc }}</p>
-                      <div class="my-design-swatch-cell">
-                        <span
-                          class="my-design-swatch-dot"
-                          :class="item.dotClass"
-                          :style="item.dotBorder ? { border: '1px solid var(--my-color-gray-2, #e2e2e2)' } : undefined"
-                          aria-hidden="true"
-                        />
-                        <div class="my-design-swatch-rows">
-                          <div
-                            v-for="row in item.rows"
-                            :key="row.className"
-                            class="my-design-swatch-row my-bgcolor-black min-w-0"
-                          >
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">
-                              {{ row.className }} · {{ design3ClassRgb(row.className) }}
-                            </code>
-                            <DesignPageCopyBtn
-                              class="flex-shrink-0 ms-auto"
-                              :text="row.className"
-                              :on-light-bg="false"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <DesignPageSpecColorGroup
+                        :name="item.name"
+                        :usage="item.usage"
+                        :dot-class="item.dotClass"
+                        :dot-border="item.dotBorder"
+                        :rows="item.rows"
+                        :hex-for-class="design3ClassHex"
+                      />
                     </div>
                   </div>
                 </div>
@@ -352,38 +400,22 @@ const DESIGN3_COLORS_ACCENT = [
 
               <!-- 彩色 -->
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">彩色</div>
                   <div class="row g-3">
                     <div
-                      v-for="(item, itemIdx) in DESIGN3_COLORS_ACCENT"
-                      :key="'design3-accent-' + itemIdx"
+                      v-for="item in DESIGN3_COLORS_ACCENT"
+                      :key="item.name"
                       class="col-12"
                     >
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">{{ item.desc }}</p>
-                      <div class="my-design-swatch-cell">
-                        <span
-                          class="my-design-swatch-dot"
-                          :class="item.dotClass"
-                          aria-hidden="true"
-                        />
-                        <div class="my-design-swatch-rows">
-                          <div
-                            v-for="row in item.rows"
-                            :key="row.className"
-                            class="my-design-swatch-row my-bgcolor-black min-w-0"
-                          >
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">
-                              {{ row.className }} · {{ design3ClassRgb(row.className) }}
-                            </code>
-                            <DesignPageCopyBtn
-                              class="flex-shrink-0 ms-auto"
-                              :text="row.className"
-                              :on-light-bg="false"
-                            />
-                          </div>
-                        </div>
-                      </div>
+                      <DesignPageSpecColorGroup
+                        :name="item.name"
+                        :usage="item.usage"
+                        :dot-class="item.dotClass"
+                        :dot-border="item.dotBorder"
+                        :rows="item.rows"
+                        :hex-for-class="design3ClassHex"
+                      />
                     </div>
                   </div>
                 </div>
@@ -395,15 +427,14 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'header-bar'">
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">課程 header（TopView）</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    <code class="my-color-black">SideRailView</code>（64px）＋
-                    <code class="my-color-black">TopView</code>（64px 高、白底）；
-                    中央「<strong>課程名稱</strong> | 頁面名稱」（課程名 my-font-lg-600）；
-                    右側 <code class="my-color-black">ExamPageExamSwitchDropdown</code>（所有試卷，觸發鈕 <code class="my-color-black">px-4 py-2</code>；exam_3 列表／詳情皆顯示）或
-                    <code class="my-color-black">CreateExamQuizBankBankSwitchDropdown</code>（所有題庫，<code class="my-color-black">variant=course-header-nav</code> 同 <code class="my-color-black">px-4 py-2</code>；create-exam-bank_3 詳情）
-                  </p>
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">課程 header（TopView）</div>
+                  <DesignPageSpecItem
+                    name="header-topview"
+                    usage="SideRailView（64px）＋ TopView（64px 高、白底）；中央「課程名稱 | 頁面名稱」；右側試卷／題庫切換下拉"
+                    css="my-course-header my-bgcolor-white · my-font-lg-600（課程名）· ExamPageExamSwitchDropdown／CreateExamQuizBankBankSwitchDropdown（my-course-header-nav-btn px-4 py-2）"
+                    copy-text="my-course-header my-bgcolor-white"
+                  >
                   <header class="design-page-3-topview-preview my-course-header flex-shrink-0 my-bgcolor-white border rounded-3">
                     <div class="my-course-header-inner px-3 min-w-0 w-100">
                       <div class="my-course-header-inner__center min-w-0">
@@ -425,47 +456,51 @@ const DESIGN3_COLORS_ACCENT = [
                       </div>
                     </div>
                   </header>
+                  </DesignPageSpecItem>
                 </div>
               </section>
 
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">左側清單 detail bar（exam_3）</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    元件 <code class="my-color-black">ExamPage2DetailBar</code> ·
-                    <code class="my-color-black">in-side-panel</code>；
-                    返回鈕 <code class="my-color-black">← 返回主頁</code>（
-                    <code class="my-color-black">fa-arrow-left</code> + 預設
-                    <code class="my-color-black">back-label</code>）；
-                    底 <code class="my-color-black">my-bgcolor-gray-4</code>；標題左對齊
-                  </p>
-                  <div class="design-page-3-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">左側清單 detail bar（exam_3）</div>
+                  <DesignPageSpecItem
+                    name="header-exam-detail-bar"
+                    usage="ExamPage2DetailBar in-side-panel；#side-panel-header slot；返回「← 返回主頁」；標題左對齊白底"
+                    css="exam-2-detail-bar--in-side-panel · exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 · exam-2-detail-bar__title my-font-lg-400 my-color-black"
+                    copy-text="exam-2-detail-bar--in-side-panel"
+                  >
+                  <div class="design-page-3-side-panel-preview my-bgcolor-white rounded-3 overflow-hidden border" style="max-width: 20rem;">
                     <ExamPage2DetailBar
                       v-model:selected-exam-label="demoExamLabel"
                       :grid-items="demoExamGridItems"
                       selected-exam-tab-id="exam-a"
                       in-side-panel
                     />
+                    <div class="my-bgcolor-gray-4 px-3 py-4 my-font-sm-400 my-color-gray-1 border-top">題目清單（my-design-right-nav）</div>
                   </div>
+                  </DesignPageSpecItem>
                 </div>
               </section>
 
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">左側清單 detail bar（create-exam-bank_3）</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    元件 <code class="my-color-black">CreateExamQuizBankPage2DetailBar</code> ·
-                    <code class="my-color-black">in-side-panel</code>；
-                    返回鈕 <code class="my-color-black">← 返回主頁</code>
-                  </p>
-                  <div class="design-page-3-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">左側清單 detail bar（create-exam-bank_3）</div>
+                  <DesignPageSpecItem
+                    name="header-bank-detail-bar"
+                    usage="CreateExamQuizBankPage2DetailBar in-side-panel；結構同 exam_3 detail bar"
+                    css="create-exam-bank-2-detail-bar--in-side-panel · create-exam-bank-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 · create-exam-bank-2-detail-bar__title my-font-lg-400 my-color-black"
+                    copy-text="create-exam-bank-2-detail-bar--in-side-panel"
+                  >
+                  <div class="design-page-3-side-panel-preview my-bgcolor-white rounded-3 overflow-hidden border" style="max-width: 20rem;">
                     <CreateExamQuizBankPage2DetailBar
                       v-model:selected-bank-label="demoBankLabel"
                       :grid-items="demoBankGridItems"
                       selected-bank-tab-id="bank-a"
                       in-side-panel
                     />
+                    <div class="my-bgcolor-gray-4 px-3 py-4 my-font-sm-400 my-color-gray-1 border-top">流程清單（my-design-right-nav）</div>
                   </div>
+                  </DesignPageSpecItem>
                 </div>
               </section>
             </template>
@@ -475,15 +510,8 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'list'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">列表</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    <code class="my-color-black">ExamPage2</code>／
-                    <code class="my-color-black">CreateExamQuizBankPage2</code> grid 主頁（白底）；
-                    class 前綴 <code class="my-color-black">bank-*</code>（ExamPage2.vue／CreateExamQuizBankPage2.vue scoped）；
-                    表頭排序用 <code class="my-color-black">bank-table-sort-btn</code>（px-0，無 rounded-pill）；
-                    hover → gray-3（白底主頁，對齊 exam-2--side-panel-left）
-                  </p>
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">列表</div>
 
                   <p class="my-font-sm-400 my-color-black mb-2">exam_3（無綠點欄）</p>
                   <div class="design-page-3__list-preview design-page-3__list-preview--work3 mb-4">
@@ -556,15 +584,15 @@ const DESIGN3_COLORS_ACCENT = [
                     </div>
                   </div>
 
-                  <div class="d-flex flex-column gap-2">
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-wrap · bank-table-actions · bank-table-header · bank-table-sort-btn · bank-list · bank-list-row</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-list-wrap" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-header__dot-spacer · bank-list-row__dot-col · bank-list-row__exam-dot（create-exam-bank_3 only）</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="bank-table-header__dot-spacer" :on-light-bg="false" />
-                    </div>
+                  <div class="d-flex flex-column gap-4 mt-3">
+                    <DesignPageSpecItem
+                      v-for="spec in DESIGN3_LIST_SPECS"
+                      :key="spec.name"
+                      :name="spec.name"
+                      :usage="spec.usage"
+                      :css="spec.css"
+                      :copy-text="spec.copyText"
+                    />
                   </div>
                 </div>
               </section>
@@ -575,21 +603,23 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'alert'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">提示訊息</div>
-                  <div class="d-flex flex-column gap-3 mb-3">
-                    <div class="my-alert-warning-soft my-font-sm-400 py-2">ragListError / examListError（列表載入警告）</div>
-                    <div class="my-alert-danger-soft my-font-sm-400 py-2">createExamError / newBankUploadError（建立或上傳失敗）</div>
-                  </div>
-                  <div class="d-flex flex-column gap-2">
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-alert-warning-soft my-font-sm-400 py-2</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-alert-warning-soft my-font-sm-400 py-2" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-alert-danger-soft my-font-sm-400 py-2</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-alert-danger-soft my-font-sm-400 py-2" :on-light-bg="false" />
-                    </div>
+                  <div class="d-flex flex-column gap-4">
+                    <DesignPageSpecItem
+                      name="alert-warning"
+                      usage="ragListError／examListError 列表載入警告"
+                      css="my-alert-warning-soft my-font-sm-400 py-2"
+                    >
+                      <div class="my-alert-warning-soft my-font-sm-400 py-2">列表載入警告（示意）</div>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="alert-danger"
+                      usage="createExamError／newBankUploadError 建立或上傳失敗"
+                      css="my-alert-danger-soft my-font-sm-400 py-2"
+                    >
+                      <div class="my-alert-danger-soft my-font-sm-400 py-2">建立或上傳失敗（示意）</div>
+                    </DesignPageSpecItem>
                   </div>
                 </div>
               </section>
@@ -600,200 +630,120 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'button'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">按鈕</div>
                   <div class="d-flex flex-column gap-4">
+                    <div class="my-color-gray-4 my-font-sm-400">小（my-font-sm-400）</div>
+                    <DesignPageSpecItem
+                      name="btn-sort"
+                      usage="grid 列表表頭排序（bank-table-sort-btn；px-0 無 rounded-pill）"
+                      css="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1"
+                    >
+                      <button type="button" class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1">
+                        名稱
+                        <i class="fa-solid fa-chevron-up" aria-hidden="true" />
+                      </button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-back-side-panel"
+                      usage="左欄 detail bar 返回主頁（exam_2／create-exam-bank_2）"
+                      css="exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2"
+                      copy-text="exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2"
+                    >
+                      <button type="button" class="btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2">
+                        <i class="fa-solid fa-arrow-left flex-shrink-0" aria-hidden="true" />
+                        <span>返回主頁</span>
+                      </button>
+                    </DesignPageSpecItem>
 
-                    <!-- 小：my-font-sm-400 -->
-                    <div>
-                      <div class="my-color-gray-4 my-font-sm-400 mb-2">小（my-font-sm-400）</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">表頭排序</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 align-self-start">
-                              名稱
-                              <i class="fa-solid fa-chevron-up" aria-hidden="true" />
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">← 返回主頁（exam_3／create-exam-bank_3 左欄）</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 flex-shrink-0 align-self-start">
-                              <i class="fa-solid fa-arrow-left flex-shrink-0" aria-hidden="true" />
-                              <span>返回主頁</span>
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">*-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
+                    <div class="my-color-gray-4 my-font-sm-400 pt-2">中（my-font-md-400）</div>
+                    <DesignPageSpecItem
+                      name="btn-add-list"
+                      usage="grid 列表右上方新增試卷／題庫"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+                    >
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
+                        <i class="fa-solid fa-plus" aria-hidden="true" />
+                        新增試卷
+                      </button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-logo-gradient"
+                      usage="開始出題／開始批改（LogoGradientPillButton gradient-bias=work3）"
+                      css="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 px-4 py-2 my-button-logo-gradient"
+                    >
+                      <div class="d-flex flex-wrap align-items-center gap-3">
+                        <LogoGradientPillButton id-prefix="design-page-3-generate" tone="generate" gradient-bias="work3" />
+                        <LogoGradientPillButton id-prefix="design-page-3-grade" tone="grade" gradient-bias="work3" />
                       </div>
-                    </div>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-modal-cancel-gray"
+                      usage="上傳 Modal 取消"
+                      css="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2"
+                    >
+                      <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2">取消</button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-delete-modal-cancel"
+                      usage="刪除確認 Modal 取消"
+                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2"
+                    >
+                      <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2">取消</button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-upload-confirm"
+                      usage="上傳 Modal 確定上傳"
+                      css="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2"
+                    >
+                      <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2">確定上傳</button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-delete-confirm"
+                      usage="刪除確認 Modal 刪除"
+                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
+                    >
+                      <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2">刪除</button>
+                    </DesignPageSpecItem>
 
-                    <!-- 中：my-font-md-400 -->
-                    <div>
-                      <div class="my-color-gray-4 my-font-sm-400 mb-2">中（my-font-md-400）</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">列表新增</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 align-self-start">
-                              <i class="fa-solid fa-plus" aria-hidden="true" />
-                              新增試卷
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">開始出題／開始批改（Logo 隨機漸層 pill，work3 藍色／紅色）</p>
-                          <div class="design-page-3-btn-spec d-flex flex-wrap align-items-center gap-3 w-100">
-                            <LogoGradientPillButton
-                              id-prefix="design-page-3-generate"
-                              tone="generate"
-                              gradient-bias="work3"
-                              extra-class="align-self-start"
-                            >
-                              開始出題
-                            </LogoGradientPillButton>
-                            <LogoGradientPillButton
-                              id-prefix="design-page-3-grade"
-                              tone="grade"
-                              gradient-bias="work3"
-                              extra-class="align-self-start"
-                            >
-                              開始批改
-                            </LogoGradientPillButton>
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100 mt-2">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">LogoGradientPillButton tone="generate"|"grade" gradient-bias="work3"</code>
-                            <DesignPageCopyBtn class="flex-shrink-0" text='LogoGradientPillButton tone="generate" gradient-bias="work3"' :on-light-bg="false" />
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">上傳取消</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2 align-self-start">
-                              取消
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">刪除確認取消</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2 align-self-start">
-                              取消
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">確定上傳</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2 align-self-start">
-                              確定上傳
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">刪除確認</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2 align-self-start">
-                              刪除
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    <div class="my-color-gray-4 my-font-sm-400 pt-2">大（my-font-lg-400）</div>
+                    <DesignPageSpecItem
+                      name="btn-add-empty-list"
+                      usage="空清單居中新增試卷"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3"
+                    >
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3">
+                        <i class="fa-solid fa-plus" aria-hidden="true" />
+                        新增試卷
+                      </button>
+                    </DesignPageSpecItem>
 
-                    <!-- 大：my-font-lg-400 -->
-                    <div>
-                      <div class="my-color-gray-4 my-font-sm-400 mb-2">大（my-font-lg-400）</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">空清單新增</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3 align-self-start">
-                              <i class="fa-solid fa-plus" aria-hidden="true" />
-                              新增試卷
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 圓形／列表列／關閉 -->
-                    <div>
-                      <div class="my-color-gray-4 my-font-sm-400 mb-2">圓形／列表列／關閉</div>
-                      <div class="d-flex flex-column gap-3">
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">頂列選單（TopView course-header-nav）</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <ExamPageExamSwitchDropdown
-                              :grid-items="demoExamGridItems"
-                              selected-exam-tab-id="exam-a"
-                            />
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">列表列</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100" style="max-width: 28rem;">
-                            <button type="button" class="bank-list-row w-100">
-                              <span class="bank-list-row__label my-font-md-400 my-color-black">範例試卷</span>
-                              <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
-                              <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
-                            </button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="bank-list-row" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                        <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">Modal 關閉</p>
-                          <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn-close flex-shrink-0 align-self-start" aria-label="關閉"></button>
-                            <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn-close</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn-close" :on-light-bg="false" />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
+                    <div class="my-color-gray-4 my-font-sm-400 pt-2">其他</div>
+                    <DesignPageSpecItem
+                      name="btn-header-switch"
+                      usage="TopView 試卷／題庫切換觸發鈕（同 dropdown-header-trigger）"
+                      css="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2"
+                    >
+                      <ExamPageExamSwitchDropdown :grid-items="demoExamGridItems" selected-exam-tab-id="exam-a" />
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-list-row"
+                      usage="grid 列表可點擊列（bank-list-row）"
+                      css="bank-list-row"
+                    >
+                      <button type="button" class="bank-list-row w-100" style="max-width: 28rem;">
+                        <span class="bank-list-row__label my-font-md-400 my-color-black">範例試卷</span>
+                        <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
+                        <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
+                      </button>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="btn-modal-close"
+                      usage="Modal 關閉鈕（Bootstrap btn-close）"
+                      css="btn-close"
+                    >
+                      <button type="button" class="btn-close" aria-label="關閉" />
+                    </DesignPageSpecItem>
                   </div>
                 </div>
               </section>
@@ -804,37 +754,29 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'badge'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">Badge</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">「追問」標籤；UnitSelectDropdown 下拉選單內</p>
-                  <div class="d-flex flex-column gap-3 mb-3">
-
-                    <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">觸發按鈕列內（右側加 ms-2 flex-shrink-0）</p>
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="my-font-sm-400 my-color-gray-1">單元名稱</span>
-                        <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1">追問</span>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p class="my-font-sm-400 my-color-gray-1 mb-2">下拉選項列內</p>
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">Badge</div>
+                  <div class="d-flex flex-column gap-4">
+                    <DesignPageSpecItem
+                      name="badge-followup"
+                      usage="UnitSelectDropdown 下拉選項列內「追問」"
+                      css="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
+                    >
                       <div class="d-flex align-items-center gap-2">
                         <span class="my-font-sm-400 my-color-gray-1">選項 A</span>
                         <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1">追問</span>
                       </div>
-                    </div>
-
-                  </div>
-                  <div class="d-flex flex-column gap-2">
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1" :on-light-bg="false" />
-                    </div>
+                    </DesignPageSpecItem>
+                    <DesignPageSpecItem
+                      name="badge-followup-trigger"
+                      usage="觸發按鈕列內「追問」（右側 ms-2 flex-shrink-0）"
+                      css="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1"
+                    >
+                      <div class="d-flex align-items-center gap-2">
+                        <span class="my-font-sm-400 my-color-gray-1">單元名稱</span>
+                        <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1">追問</span>
+                      </div>
+                    </DesignPageSpecItem>
                   </div>
                 </div>
               </section>
@@ -845,16 +787,9 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'dropdown'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">切換下拉選單</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    exam_3 TopView 右側（列表／詳情）：
-                    <code class="my-color-black">ExamPageExamSwitchDropdown</code>（所有試卷，觸發鈕 <code class="my-color-black">px-4 py-2</code>）；
-                    create-exam-bank_3 詳情：
-                    <code class="my-color-black">CreateExamQuizBankBankSwitchDropdown</code>（所有題庫，<code class="my-color-black">variant=course-header-nav</code> 同 <code class="my-color-black">px-4 py-2</code>）；
-                    dropdown-menu-end；active／disabled；my-color-red = 刪除
-                  </p>
-                  <div class="d-flex flex-wrap gap-4 align-items-start mb-3">
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">切換下拉選單</div>
+                  <div class="d-flex flex-wrap gap-4 align-items-start mb-4">
                     <div>
                       <p class="my-font-sm-400 my-color-gray-1 mb-2">ExamPageExamSwitchDropdown</p>
                       <ExamPageExamSwitchDropdown
@@ -870,19 +805,15 @@ const DESIGN3_COLORS_ACCENT = [
                       />
                     </div>
                   </div>
-                  <div class="d-flex flex-column gap-2">
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">exam-page-exam-switch-menu · create-exam-bank-bank-switch-menu</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="exam-page-exam-switch-menu" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-course-header-nav-btn · 觸發鈕置末 px-4 py-2（所有試卷／所有題庫）</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">dropdown-item active · dropdown-item disabled · dropdown-item my-color-red</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="dropdown-item my-color-red" :on-light-bg="false" />
-                    </div>
+                  <div class="d-flex flex-column gap-4">
+                    <DesignPageSpecItem
+                      v-for="spec in DESIGN3_DROPDOWN_SPECS"
+                      :key="spec.name"
+                      :name="spec.name"
+                      :usage="spec.usage"
+                      :css="spec.css"
+                      :copy-text="spec.copyText"
+                    />
                   </div>
                 </div>
               </section>
@@ -893,7 +824,7 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'modal'">
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">上傳 Modal</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-3">
                     create-exam-bank_3 新增題庫；Teleport to body；
@@ -958,56 +889,27 @@ const DESIGN3_COLORS_ACCENT = [
                     </div>
                   </div>
 
-                  <div class="d-flex flex-column gap-2 mt-3">
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal fade show d-block my-modal-backdrop</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal fade show d-block my-modal-backdrop" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-header border-bottom-0 p-0</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-header border-bottom-0 p-0" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-title my-color-black</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-title my-color-black" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-body p-0 min-w-0</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-body p-0 min-w-0" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-zip-drop-zone text-center position-relative</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-zip-drop-zone text-center position-relative" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-zip-drop-zone my-zip-drop-zone-over</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-zip-drop-zone my-zip-drop-zone-over" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0" :on-light-bg="false" />
-                    </div>
+                  <div class="d-flex flex-column gap-4 mt-4">
+                    <DesignPageSpecItem
+                      v-for="spec in DESIGN3_MODAL_SPECS"
+                      :key="spec.name"
+                      :name="spec.name"
+                      :usage="spec.usage"
+                      :css="spec.css"
+                    />
                   </div>
                 </div>
               </section>
 
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">刪除確認 Modal</div>
-                  <p class="my-font-sm-400 my-color-black mb-2">
-                    兩頁共用元件 <code class="my-color-black">ConfirmDeleteModal</code>
-                  </p>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    props：<code>v-model</code> · <code>title</code> · <code>:message</code> · <code>:deleting</code> · <code>:error</code> → <code>@confirm</code>
-                  </p>
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">刪除確認 Modal</div>
+                  <DesignPageSpecItem
+                    name="modal-delete-component"
+                    usage="兩頁共用 ConfirmDeleteModal；props：v-model · title · :message · :deleting · :error → @confirm"
+                    css="ConfirmDeleteModal（元件）· 按鈕 class 見 btn-delete-confirm／btn-delete-modal-cancel"
+                    copy-text="ConfirmDeleteModal"
+                  />
                   <button
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
@@ -1020,13 +922,14 @@ const DESIGN3_COLORS_ACCENT = [
               </section>
 
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">LoadingOverlay</div>
-                  <p class="my-font-sm-400 my-color-black mb-2">兩頁共用 <code class="my-color-black">LoadingOverlay</code>；兩種情境</p>
-                  <ul class="my-font-sm-400 my-color-gray-1 d-flex flex-column gap-1 mb-4 ps-3">
-                    <li>grid 模式初次載入：<code>:is-visible="showGridLoadingOverlay"</code>（loading-text="載入中..."）</li>
-                    <li>detail 模式刪除中：<code>:is-visible="deleteExamLoading / deleteRagLoading"</code>（loading-text="刪除中..."）</li>
-                  </ul>
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">LoadingOverlay</div>
+                  <DesignPageSpecItem
+                    name="loading-overlay"
+                    usage="兩頁共用 LoadingOverlay；grid 初次載入 loading-text=載入中…；detail 刪除中 loading-text=刪除中…"
+                    css="LoadingOverlay :is-visible · loading-text（props）"
+                    copy-text="LoadingOverlay"
+                  />
                   <button
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2"
@@ -1044,30 +947,17 @@ const DESIGN3_COLORS_ACCENT = [
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'embed'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">嵌入模式</div>
-                  <p class="my-font-sm-400 my-color-gray-1 mb-3">
-                    exam_3／create-exam-bank_3：<code class="my-color-black">sidePanelOnLeft</code>；
-                    版面為 <code class="my-color-black">SideRailView</code> ＋ <code class="my-color-black">TopView</code> ＋ 左欄清單（gray-4）＋ 右欄主內容（白底）；
-                    detail bar 經 <code class="my-color-black">#side-panel-header</code> slot 嵌入左欄
-                  </p>
-                  <div class="d-flex flex-column gap-2">
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">.exam-2--side-panel-left · .create-exam-bank-2--side-panel-left</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="exam-2--side-panel-left" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">.exam-2-embedded :deep(> header) { display: none; }</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".exam-2-embedded :deep(> header) { display: none; }" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">.exam-2-embedded :deep(.my-rag-tabs-bar) { display: none !important; }</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text=".exam-2-embedded :deep(.my-rag-tabs-bar) { display: none !important; }" :on-light-bg="false" />
-                    </div>
-                    <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">ExamPage2DetailBar in-side-panel · CreateExamQuizBankPage2DetailBar in-side-panel</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="ExamPage2DetailBar in-side-panel" :on-light-bg="false" />
-                    </div>
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">嵌入模式</div>
+                  <div class="d-flex flex-column gap-4">
+                    <DesignPageSpecItem
+                      v-for="spec in DESIGN3_EMBED_SPECS"
+                      :key="spec.name"
+                      :name="spec.name"
+                      :usage="spec.usage"
+                      :css="spec.css"
+                      :copy-text="spec.copyText"
+                    />
                   </div>
                 </div>
               </section>
@@ -1358,22 +1248,5 @@ const DESIGN3_COLORS_ACCENT = [
   flex-shrink: 0;
   font-size: 0.625rem;
   opacity: 0.4;
-}
-
-/* 按鈕 tab：黑框 class 列，複製鈕固定右上 */
-.design-page-3-btn-spec .my-design-swatch-row {
-  position: relative;
-  align-items: flex-start;
-  padding-right: calc(1rem + 32px + 0.25rem);
-}
-.design-page-3-btn-spec .my-design-swatch-row > code {
-  min-width: 0;
-  width: 100%;
-}
-.design-page-3-btn-spec .my-design-swatch-row :deep(.my-design-page-copy-btn) {
-  position: absolute;
-  top: 0.5rem;
-  right: 1rem;
-  margin: 0;
 }
 </style>

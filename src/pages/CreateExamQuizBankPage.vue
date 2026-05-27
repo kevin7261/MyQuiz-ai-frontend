@@ -7021,8 +7021,8 @@ async function confirmAnswer(item) {
         </div>
         <div
           v-if="showSidePanelColumn"
-          class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-bgcolor-gray-4 my-design-tab-side-panel"
-          :class="designSidePanelOnLeft ? 'order-1 border-end' : 'border-start'"
+          class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-design-tab-side-panel"
+          :class="designSidePanelOnLeft ? 'order-1 border-end my-bgcolor-white' : 'border-start my-bgcolor-gray-4'"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-hidden"
@@ -7039,7 +7039,7 @@ async function confirmAnswer(item) {
               v-if="showDesignRightNav"
               class="my-design-right-nav nav nav-pills flex-column flex-nowrap flex-grow-1 justify-content-start align-items-stretch overflow-y-auto overflow-x-hidden min-h-0"
               :class="[
-                designSidePanelOnLeft ? 'my-design-right-nav--flat gap-0' : 'px-3 py-3 gap-3',
+                designSidePanelOnLeft ? 'my-design-right-nav--flat gap-0 my-bgcolor-gray-4' : 'px-3 py-3 gap-3',
               ]"
               aria-label="建立流程"
             >

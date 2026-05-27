@@ -51,11 +51,11 @@
   --my-color-yellow: #ffd000;
   --my-color-yellow-hover: #e8bc00;
 
-  /* ZIP／檔案拖放區（淺灰底 gray-3；hover／拖曳中混藍） */
+  /* ZIP／檔案拖放區（淺灰底 gray-3；hover 混藍；拖曳中 my-zip-drop-zone-over 混黑） */
   --my-drop-zone-border: color-mix(in srgb, var(--my-color-black) 20%, transparent);
   --my-drop-zone-bg: var(--my-color-gray-3);
   --my-drop-zone-hover-bg: color-mix(in srgb, var(--my-color-blue) 4%, var(--my-color-gray-3));
-  --my-drop-zone-active-bg: color-mix(in srgb, var(--my-color-blue) 8%, var(--my-color-gray-3));
+  --my-drop-zone-active-bg: color-mix(in srgb, var(--my-color-black) 8%, var(--my-color-gray-3));
   --my-drop-pack-active-bg: color-mix(in srgb, var(--my-color-blue) 15%, var(--my-color-white));
 
   /* 淺底區塊輕描邊（勿用 Bootstrap border-secondary／border-opacity-*） */

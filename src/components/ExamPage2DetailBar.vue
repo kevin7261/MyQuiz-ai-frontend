@@ -29,7 +29,7 @@ function onTitleInput(e) {
   <header
     class="exam-2-detail-bar flex-shrink-0"
     :class="[
-      inSidePanel ? 'my-bgcolor-gray-4' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
+      inSidePanel ? 'my-bgcolor-white' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
       { 'exam-2-detail-bar--in-side-panel': inSidePanel },
     ]"
   >

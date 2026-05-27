@@ -113,7 +113,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-if="activeTab === 'type'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">字階</div>
                   <div class="d-flex flex-column gap-5">
 
@@ -206,7 +206,7 @@ function toggleLoading() {
 
               <!-- 灰階 -->
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">灰階</div>
                   <div class="row g-3">
 
@@ -320,7 +320,7 @@ function toggleLoading() {
 
               <!-- 彩色 -->
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">彩色</div>
                   <div class="row g-3">
 
@@ -368,7 +368,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'header-bar'">
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">頁首標題</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">grid 模式頂部；「測驗」／「建立測驗題庫」</p>
                   <header class="my-bgcolor-gray-4 p-4 rounded-3">
@@ -388,7 +388,7 @@ function toggleLoading() {
               </section>
 
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">內頁頂列</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">
                     3欄 grid（1fr / minmax(0,50%) / 1fr）；
@@ -440,7 +440,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'list'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">列表</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">
                     exam_2 / create-exam-bank_2 主頁入口；新增按鈕靠右（bank-table-actions）；
@@ -564,7 +564,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'alert'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">提示訊息</div>
                   <div class="d-flex flex-column gap-3 mb-3">
                     <div class="my-alert-warning-soft my-font-sm-400 py-2">ragListError / examListError（列表載入警告）</div>
@@ -589,7 +589,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'button'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">按鈕</div>
                   <div class="d-flex flex-column gap-4">
 
@@ -767,7 +767,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'badge'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">Badge</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">「追問」標籤；UnitSelectDropdown 下拉選單內</p>
                   <div class="d-flex flex-column gap-3 mb-3">
@@ -808,7 +808,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'dropdown'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">切換下拉選單</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">dropdown-menu-end；min-width 10rem max-height min(60vh,24rem) overflow-y:auto；active = 目前；disabled = 無項目；my-color-red = 刪除</p>
                   <div class="d-flex flex-wrap gap-4 align-items-start mb-3">
@@ -882,7 +882,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'modal'">
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">上傳 Modal</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-3">
                     create-exam-bank_2 新增題庫；Teleport to body；
@@ -989,7 +989,7 @@ function toggleLoading() {
               </section>
 
               <section class="my-page-block-spacing">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">刪除確認 Modal</div>
                   <p class="my-font-sm-400 my-color-black mb-2">
                     兩頁共用元件 <code class="my-color-black">ConfirmDeleteModal</code>
@@ -1009,7 +1009,7 @@ function toggleLoading() {
               </section>
 
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">LoadingOverlay</div>
                   <p class="my-font-sm-400 my-color-black mb-2">兩頁共用 <code class="my-color-black">LoadingOverlay</code>；兩種情境</p>
                   <ul class="my-font-sm-400 my-color-gray-1 d-flex flex-column gap-1 mb-4 ps-3">
@@ -1033,7 +1033,7 @@ function toggleLoading() {
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'embed'">
               <section class="my-page-block-spacing mb-0">
-                <div class="rounded-4 my-bgcolor-gray-3 p-4">
+                <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">嵌入模式</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-3">detail 模式嵌入原頁（:deep 隱藏 header 與分頁列 .my-rag-tabs-bar）</p>
                   <div class="d-flex flex-column gap-2">
