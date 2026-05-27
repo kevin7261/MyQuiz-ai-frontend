@@ -503,11 +503,11 @@ const DESIGN3_EMBED_SPECS = [
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">左側清單 detail bar（exam_3）</div>
                   <DesignPageSpecItem
                     name="header-exam-detail-bar"
-                    usage="ExamPage2DetailBar in-side-panel；#side-panel-header slot；返回「← 返回主頁」；標題左對齊白底"
+                    usage="ExamPage2DetailBar in-side-panel；#side-panel-header slot；返回「← 返回主頁」；標題左對齊灰底"
                     css="exam-2-detail-bar--in-side-panel · exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 · exam-2-detail-bar__title my-font-lg-400 my-color-black"
                     copy-text="exam-2-detail-bar--in-side-panel"
                   >
-                  <div class="design-page-3-side-panel-preview my-bgcolor-white rounded-3 overflow-hidden border" style="max-width: 20rem;">
+                  <div class="design-page-3-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
                     <ExamPage2DetailBar
                       v-model:selected-exam-label="demoExamLabel"
                       :grid-items="demoExamGridItems"
@@ -529,7 +529,7 @@ const DESIGN3_EMBED_SPECS = [
                     css="create-exam-bank-2-detail-bar--in-side-panel · create-exam-bank-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 · create-exam-bank-2-detail-bar__title my-font-lg-400 my-color-black"
                     copy-text="create-exam-bank-2-detail-bar--in-side-panel"
                   >
-                  <div class="design-page-3-side-panel-preview my-bgcolor-white rounded-3 overflow-hidden border" style="max-width: 20rem;">
+                  <div class="design-page-3-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
                     <CreateExamQuizBankPage2DetailBar
                       v-model:selected-bank-label="demoBankLabel"
                       :grid-items="demoBankGridItems"

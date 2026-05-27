@@ -537,12 +537,10 @@ watch(viewMode, (mode) => {
 
 <template>
   <div
-    class="create-exam-bank-2 d-flex flex-column h-100 overflow-hidden"
+    class="create-exam-bank-2 d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4"
     :class="{
       'create-exam-bank-2--detail': viewMode === 'detail',
       'create-exam-bank-2--side-panel-left': sidePanelOnLeft,
-      'my-bgcolor-white': sidePanelOnLeft,
-      'my-bgcolor-gray-4': !sidePanelOnLeft,
     }"
   >
     <!-- 九宮格題庫入口 -->

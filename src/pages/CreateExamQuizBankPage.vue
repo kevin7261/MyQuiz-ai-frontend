@@ -7050,7 +7050,7 @@ async function confirmAnswer(item) {
         <div
           v-if="showSidePanelColumn"
           class="col-4 col-xl-4 col-xxl-3 h-100 min-h-0 overflow-hidden my-design-tab-side-panel"
-          :class="designSidePanelOnLeft ? 'order-1 border-end my-bgcolor-white' : 'border-start my-bgcolor-gray-4'"
+          :class="designSidePanelOnLeft ? 'order-1 border-end my-bgcolor-gray-4' : 'border-start my-bgcolor-gray-4'"
         >
           <aside
             class="h-100 w-100 my-design-tab-right-view d-flex flex-column overflow-hidden"

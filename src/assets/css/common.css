@@ -1708,7 +1708,7 @@ div.form-control {
   flex-shrink: 0;
   border-top: 1px solid var(--my-color-gray-2);
   padding: 0.75rem 1rem;
-  background-color: transparent;
+  background-color: var(--my-color-gray-3);
 }
 .my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow {
   background-color: transparent;
