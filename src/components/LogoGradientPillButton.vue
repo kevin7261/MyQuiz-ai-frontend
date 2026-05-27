@@ -13,6 +13,12 @@ const props = defineProps({
     required: true,
     validator: (v) => ['generate', 'grade'].includes(v),
   },
+  /** default＝原稿頁；work3＝exam_3／create-exam-bank_3（出題偏藍、批改偏紅） */
+  gradientBias: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'work3'].includes(v),
+  },
   disabled: { type: Boolean, default: false },
   ariaBusy: { type: Boolean, default: false },
   ariaLabel: { type: String, default: '' },
@@ -24,7 +30,9 @@ defineEmits(['click']);
 
 /** 每顆按鈕各一組隨機漸層（色域依 tone；機制同 TopView logo） */
 const buttonStyle = {
-  background: logoDiamondGradientToCssLinear(createRandomLogoDiamondGradient({ tone: props.tone })),
+  background: logoDiamondGradientToCssLinear(
+    createRandomLogoDiamondGradient({ tone: props.tone, bias: props.gradientBias }),
+  ),
 };
 </script>
 

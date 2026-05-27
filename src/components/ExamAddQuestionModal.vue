@@ -34,6 +34,8 @@ const props = defineProps({
   quizPickSelectValue: { type: Function, required: true },
   quizOptionLabel: { type: Function, required: true },
   quizOptionFollowUp: { type: Function, default: null },
+  /** 確認按鈕文字（exam_3 為「開始出題」） */
+  confirmButtonLabel: { type: String, default: '產生題目' },
 });
 
 const emit = defineEmits(['update:modelValue', 'confirm']);
@@ -177,10 +179,10 @@ function onConfirm() {
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2"
               :disabled="confirmDisabled"
               :aria-busy="submitting"
-              aria-label="產生題目"
+              :aria-label="confirmButtonLabel"
               @click="onConfirm"
             >
-              產生題目
+              {{ confirmButtonLabel }}
             </button>
           </div>
         </div>

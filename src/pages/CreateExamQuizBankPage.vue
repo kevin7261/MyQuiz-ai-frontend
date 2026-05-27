@@ -111,6 +111,10 @@ const slots = useSlots();
 const pageTitle = computed(() => '建立測驗題庫');
 /** 用於載入中、新增、錯誤訊息等可讀名詞 */
 const quizBankNoun = computed(() => '測驗題庫');
+/** exam_3／create-exam-bank_3：Logo 漸層 pill 色偏（出題偏藍、批改偏紅） */
+const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
+const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
+const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
 
@@ -827,7 +831,7 @@ const loadingOverlayText = computed(() => {
   if (activeUnitQuizLoadingOverlayKind.value === 'add-row') return '產生題型中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存並追問出題中...';
-  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return '產生題目中...';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return generateDbOverlayLabel.value;
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '儲存並產生題目中...';
   if (hasAnySlotGenerating.value) return '儲存並產生題目中...';
   const st = currentState.value;
@@ -2711,6 +2715,7 @@ const designUnitQuizCardBind = computed(() => {
     bankQuizHistoryQuizTypeLabel: activeUnitQuizHistoryQuizTypeLabel.value,
     showRagQuizForExamAction: true,
     hideRagQuizForExamToolbar: true,
+    logoGradientBias: work3LogoGradientBias.value,
   };
 });
 
@@ -6575,7 +6580,12 @@ async function confirmAnswer(item) {
                     class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                   >
                     <div
-                      class="d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-3 flex-shrink-0 align-self-start p-1 my-quiz-generate-mode-segment"
+                      class="d-inline-flex flex-wrap flex-shrink-0 align-self-start my-quiz-generate-mode-segment"
+                      :class="
+                        designSidePanelOnLeft
+                          ? 'gap-2 my-quiz-generate-mode-segment--outline'
+                          : 'gap-1 rounded-pill my-bgcolor-gray-3 p-1'
+                      "
                       role="group"
                       aria-label="出題模式"
                     >
@@ -6583,9 +6593,17 @@ async function confirmAnswer(item) {
                         type="button"
                         class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
                         :class="
-                          !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                            ? 'my-button-white'
-                            : 'my-button-transparent-borderless'
+                          designSidePanelOnLeft
+                            ? (
+                              !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                ? 'my-button-gray-3'
+                                : 'my-btn-outline-gray-1 my-color-black'
+                            )
+                            : (
+                              !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                ? 'my-button-white'
+                                : 'my-button-transparent-borderless'
+                            )
                         "
                         :disabled="
                           !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
@@ -6602,9 +6620,17 @@ async function confirmAnswer(item) {
                         type="button"
                         class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
                         :class="
-                          isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                            ? 'my-button-white'
-                            : 'my-button-transparent-borderless'
+                          designSidePanelOnLeft
+                            ? (
+                              isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                ? 'my-button-gray-3'
+                                : 'my-btn-outline-gray-1 my-color-black'
+                            )
+                            : (
+                              isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                ? 'my-button-white'
+                                : 'my-button-transparent-borderless'
+                            )
                         "
                         :disabled="
                           !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
@@ -6657,7 +6683,7 @@ async function confirmAnswer(item) {
                     {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
                 </div>
-                <!-- 子區塊：題目區（出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
+                <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
                 <div class="my-design-quiz-sub-block-outer">
                   <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2">
                     <div
@@ -6711,13 +6737,16 @@ async function confirmAnswer(item) {
                       <LogoGradientPillButton
                         v-if="!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)"
                         tone="generate"
+                        :gradient-bias="work3LogoGradientBias"
                         :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         extra-class="my-design-quiz-generate-btn"
-                        title="使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設"
-                        aria-label="產生題目"
+                        :title="designSidePanelOnLeft
+                          ? '使用後端已儲存之出題規則開始出題；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設'
+                          : '使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設'"
+                        :aria-label="generateDbButtonLabel"
                         @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
-                        產生題目
+                        {{ generateDbButtonLabel }}
                       </LogoGradientPillButton>
                       <button
                         v-if="!isRagQuizMarkedForExam(activeUnitQuizCard) && !getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)"
@@ -6744,6 +6773,7 @@ async function confirmAnswer(item) {
                     <div
                       v-if="activeUnitQuizHasGeneratedBody"
                       class="w-100 min-w-0"
+                      :class="designSidePanelOnLeft ? 'pt-2' : ''"
                     >
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
@@ -6766,7 +6796,10 @@ async function confirmAnswer(item) {
                     class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
                     :class="designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white'"
                   >
-                    <div class="w-100 min-w-0">
+                    <div
+                      class="w-100 min-w-0"
+                      :class="designSidePanelOnLeft ? 'pt-2' : ''"
+                    >
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
@@ -7129,17 +7162,22 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
-/* 出題模式：gray-3 軌＋選中白底（與原白軌＋gray-3 選中對調） */
-.my-quiz-generate-mode-segment :deep(> .btn.my-button-white) {
+/* 出題模式：gray-3 軌＋選中白底（與原白軌＋gray-3 選中對調；create-exam-bank_2） */
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white) {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
   border-color: transparent;
   box-shadow: none;
 }
-.my-quiz-generate-mode-segment :deep(> .btn.my-button-white:hover),
-.my-quiz-generate-mode-segment :deep(> .btn.my-button-white:active:not(:disabled)) {
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white:hover),
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white:active:not(:disabled)) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
+}
+/* create-exam-bank_3：未選中 my-btn-outline-gray-1；選中 gray-3 填色＋gray-2 邊框 */
+.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-gray-3) {
+  border: 1px solid var(--my-color-gray-2);
+  box-shadow: none;
 }
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
 :deep(button.btn.rounded-pill.px-3),
@@ -7231,6 +7269,16 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
   border: 1px solid var(--my-color-gray-2);
+}
+/* create-exam-bank_3：題目／答案 tab 列不加 pt-2（區塊頂 pt-2 在父層 wrap） */
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-tabs-row) {
+  padding-top: 0 !important;
+}
+/* create-exam-bank_3：題目／答案內文（標題列 hr 下方）pt-2 pb-2 */
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2) {
+  padding-top: 0.5rem !important;
 }
 .my-design-right-nav {
   flex-wrap: nowrap;

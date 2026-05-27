@@ -104,7 +104,21 @@ const props = defineProps({
     default: '',
     validator: (v) => ['', 'question', 'answer', 'grading'].includes(String(v ?? '')),
   },
+  /** exam_3／create-exam-bank_3：Logo 漸層 pill 色偏（出題偏藍、批改偏紅） */
+  logoGradientBias: {
+    type: String,
+    default: 'default',
+    validator: (v) => ['default', 'work3'].includes(v),
+  },
 });
+
+/** work3 題目／答案 tab 列：無 pt-2（區塊頂 pt-2 由父層負責） */
+function designStemTabsRowHeadClass(useTabs) {
+  if (!useTabs) return 'align-items-center py-2';
+  return props.createExamBankDesignLayout
+    ? 'my-design-quiz-stem-tabs-row align-items-end pb-0'
+    : 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0';
+}
 
 const emit = defineEmits([
   'toggle-hint',
@@ -812,11 +826,7 @@ const quizAnswerFieldDisabled = computed(
             <header class="my-design-quiz-field-inset__head">
               <div
                 class="d-flex justify-content-between gap-2 px-3"
-                :class="
-                  showBankQuizHistoryTabs
-                    ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
-                    : 'align-items-center py-2'
-                "
+                :class="designStemTabsRowHeadClass(showBankQuizHistoryTabs)"
               >
                 <div
                   v-if="showBankQuizHistoryTabs"
@@ -1193,11 +1203,7 @@ const quizAnswerFieldDisabled = computed(
             <header class="my-design-quiz-field-inset__head">
               <div
                 class="d-flex justify-content-between gap-2 px-3"
-                :class="
-                  showAnswerHintRefTabs
-                    ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
-                    : 'align-items-center py-2'
-                "
+                :class="designStemTabsRowHeadClass(showAnswerHintRefTabs)"
               >
                 <div
                   v-if="showAnswerHintRefTabs"
@@ -1507,6 +1513,7 @@ const quizAnswerFieldDisabled = computed(
             >
               <LogoGradientPillButton
                 tone="grade"
+                :gradient-bias="logoGradientBias"
                 :id-prefix="`quiz-grade-mark-${card.id}-grading-row`"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="designGradingStartButtonDisabled"
@@ -1528,11 +1535,7 @@ const quizAnswerFieldDisabled = computed(
                 <header class="my-design-quiz-field-inset__head">
                   <div
                     class="d-flex justify-content-between gap-2 px-3"
-                    :class="
-                      showGradingResultInsetTabs
-                        ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
-                        : 'align-items-center py-2'
-                    "
+                    :class="designStemTabsRowHeadClass(showGradingResultInsetTabs)"
                   >
                     <div
                       v-if="showGradingResultInsetTabs"
@@ -1597,6 +1600,7 @@ const quizAnswerFieldDisabled = computed(
             <LogoGradientPillButton
               v-if="showStartGradeButton"
               tone="grade"
+              :gradient-bias="logoGradientBias"
               :id-prefix="`quiz-grade-mark-${card.id}-toolbar-fallback`"
               title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
               :disabled="mergedGradeButtonDisabled"
@@ -1649,6 +1653,7 @@ const quizAnswerFieldDisabled = computed(
             <LogoGradientPillButton
               v-if="showRagGradeDbButton && showStartGradeButton"
               tone="grade"
+              :gradient-bias="logoGradientBias"
               :id-prefix="`quiz-grade-mark-${card.id}-grade-db`"
               title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
               :disabled="ragGradeDbButtonDisabled"
@@ -1693,6 +1698,7 @@ const quizAnswerFieldDisabled = computed(
           <LogoGradientPillButton
             v-if="showStartGradeButton"
             tone="grade"
+            :gradient-bias="logoGradientBias"
             :id-prefix="`quiz-grade-mark-${card.id}-standalone`"
             :disabled="standaloneStartGradeButtonDisabled"
             :aria-busy="gradeSubmitting"
@@ -1716,11 +1722,7 @@ const quizAnswerFieldDisabled = computed(
             <header class="my-design-quiz-field-inset__head">
               <div
                 class="d-flex justify-content-between gap-2 px-3"
-                :class="
-                  showGradingResultInsetTabs
-                    ? 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0'
-                    : 'align-items-center py-2'
-                "
+                :class="designStemTabsRowHeadClass(showGradingResultInsetTabs)"
               >
                 <div
                   v-if="showGradingResultInsetTabs"

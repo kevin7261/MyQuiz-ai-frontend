@@ -13,13 +13,30 @@ export function createRandomLogoDiamondGradient(options = {}) {
   let hue1;
   let hue2;
   if (tone === 'generate') {
-    /** 產生題目：偏藍綠（青～藍綠） */
-    hue1 = 155 + Math.floor(Math.random() * 45);
-    hue2 = clampHue(hue1 + 20 + Math.floor(Math.random() * 35), 140, 215);
+    if (options.bias === 'work3') {
+      /** work3 開始出題：偏藍 */
+      hue1 = 200 + Math.floor(Math.random() * 40);
+      hue2 = clampHue(hue1 + 12 + Math.floor(Math.random() * 35), 190, 250);
+    } else {
+      /** 產生題目：偏藍綠（青～藍綠） */
+      hue1 = 155 + Math.floor(Math.random() * 45);
+      hue2 = clampHue(hue1 + 20 + Math.floor(Math.random() * 35), 140, 215);
+    }
   } else if (tone === 'grade') {
-    /** 開始批改：偏紅橘 */
-    hue1 = 5 + Math.floor(Math.random() * 38);
-    hue2 = clampHue(hue1 + 18 + Math.floor(Math.random() * 32), 0, 55);
+    if (options.bias === 'work3') {
+      /** work3 開始批改：偏紅 */
+      if (Math.random() < 0.4) {
+        hue1 = 350 + Math.floor(Math.random() * 10);
+        hue2 = clampHue(hue1 + 8 + Math.floor(Math.random() * 12), 345, 360);
+      } else {
+        hue1 = Math.floor(Math.random() * 18);
+        hue2 = clampHue(hue1 + 10 + Math.floor(Math.random() * 22), 0, 35);
+      }
+    } else {
+      /** 開始批改：偏紅橘 */
+      hue1 = 5 + Math.floor(Math.random() * 38);
+      hue2 = clampHue(hue1 + 18 + Math.floor(Math.random() * 32), 0, 55);
+    }
   } else {
     const vividHues = [0, 18, 32, 48, 120, 155, 195, 220, 265, 290, 315, 340];
     hue1 = vividHues[Math.floor(Math.random() * vividHues.length)]

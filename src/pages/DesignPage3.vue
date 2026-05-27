@@ -645,26 +645,28 @@ function toggleLoading() {
                           </div>
                         </div>
                         <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">產生題目／開始批改（Logo 隨機漸層 pill）</p>
+                          <p class="my-font-sm-400 my-color-black mb-2">開始出題／開始批改（Logo 隨機漸層 pill，work3 偏藍／偏紅）</p>
                           <div class="design-page-3-btn-spec d-flex flex-wrap align-items-center gap-3 w-100">
                             <LogoGradientPillButton
                               id-prefix="design-page-3-generate"
                               tone="generate"
+                              gradient-bias="work3"
                               extra-class="align-self-start"
                             >
-                              產生題目
+                              開始出題
                             </LogoGradientPillButton>
                             <LogoGradientPillButton
                               id-prefix="design-page-3-grade"
                               tone="grade"
+                              gradient-bias="work3"
                               extra-class="align-self-start"
                             >
                               開始批改
                             </LogoGradientPillButton>
                           </div>
                           <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100 mt-2">
-                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">LogoGradientPillButton tone="generate"|"grade"（my-button-logo-gradient）</code>
-                            <DesignPageCopyBtn class="flex-shrink-0" text='LogoGradientPillButton tone="generate"' :on-light-bg="false" />
+                            <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">LogoGradientPillButton tone="generate"|"grade" gradient-bias="work3"</code>
+                            <DesignPageCopyBtn class="flex-shrink-0" text='LogoGradientPillButton tone="generate" gradient-bias="work3"' :on-light-bg="false" />
                           </div>
                         </div>
                         <div>

@@ -86,8 +86,24 @@ function toggleSort() {
 }
 
 const showGridLoadingOverlay = computed(
-  () => viewMode.value === 'grid' && examListLoading.value && gridItems.value.length === 0,
+  () => viewMode.value === 'grid' && (examListLoading.value || createExamLoading.value),
 );
+
+const gridLoadingOverlayText = computed(() => {
+  if (createExamLoading.value) return '建立中...';
+  if (examListLoading.value) return '載入中...';
+  return '處理中...';
+});
+
+const showDetailLoadingOverlay = computed(
+  () => deleteExamLoading.value || renameTitleSaving.value,
+);
+
+const detailLoadingOverlayText = computed(() => {
+  if (deleteExamLoading.value) return '刪除中...';
+  if (renameTitleSaving.value) return '儲存中...';
+  return '處理中...';
+});
 
 const detailHeaderActionsDisabled = computed(
   () => deleteExamLoading.value || renameTitleSaving.value || createExamLoading.value,
@@ -480,7 +496,7 @@ watch(
       >
         <LoadingOverlay
           :is-visible="showGridLoadingOverlay"
-          loading-text="載入中..."
+          :loading-text="gridLoadingOverlayText"
         />
 
         <div
@@ -565,8 +581,8 @@ watch(
 
     <template v-else>
       <LoadingOverlay
-        :is-visible="deleteExamLoading"
-        loading-text="刪除中..."
+        :is-visible="showDetailLoadingOverlay"
+        :loading-text="detailLoadingOverlayText"
       />
       <ExamPage2DetailBar
         v-if="!sidePanelOnLeft"
