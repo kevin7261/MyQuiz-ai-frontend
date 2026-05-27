@@ -542,10 +542,12 @@ watch(
 
 <template>
   <div
-    class="exam-2 d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4"
+    class="exam-2 d-flex flex-column h-100 overflow-hidden"
     :class="{
       'exam-2--detail': viewMode === 'detail',
       'exam-2--side-panel-left': sidePanelOnLeft,
+      'my-bgcolor-white': sidePanelOnLeft,
+      'my-bgcolor-gray-4': !sidePanelOnLeft,
     }"
   >
     <template v-if="viewMode === 'grid'">
