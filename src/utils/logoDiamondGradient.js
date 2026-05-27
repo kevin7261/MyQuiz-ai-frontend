@@ -135,10 +135,14 @@ function createRandomMeshGradientCss({ color1, color2, stops }) {
 
 /**
  * 隨機 CSS 漸層：線性（0–359°）、徑向、錐形或多點徑向疊加
+ * @param {{ tone?: string, bias?: string, linearOnly?: boolean }} [options]
  * @returns {string}
  */
 export function createRandomLogoGradientCss(options = {}) {
   const colors = pickRandomGradientColors(options);
+  if (options.linearOnly) {
+    return createRandomLinearGradientCss(colors.stops);
+  }
   const roll = Math.random();
   if (roll < 0.38) {
     return createRandomLinearGradientCss(colors.stops);

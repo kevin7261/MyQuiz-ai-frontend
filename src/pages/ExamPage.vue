@@ -3589,7 +3589,7 @@ onActivated(() => {
               >
                 <div
                   class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
-                  :class="designSidePanelOnLeft ? 'px-3 pb-2' : 'px-3 py-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pt-3 pb-2' : 'px-3 py-2'"
                 >題目</div>
                 <div
                   v-for="item in designRightQuizSubTabItems"

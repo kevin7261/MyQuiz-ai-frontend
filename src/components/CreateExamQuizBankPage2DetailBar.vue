@@ -31,7 +31,7 @@ function onTitleInput(e) {
   <header
     class="create-exam-bank-2-detail-bar flex-shrink-0"
     :class="[
-      inSidePanel ? 'p-3 my-bgcolor-gray-4' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
+      inSidePanel ? 'my-bgcolor-gray-4' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
       { 'create-exam-bank-2-detail-bar--in-side-panel': inSidePanel },
     ]"
   >
@@ -39,7 +39,7 @@ function onTitleInput(e) {
       <div class="create-exam-bank-2-detail-bar__top-row d-flex align-items-start w-100 min-w-0">
         <button
           type="button"
-          class="create-exam-bank-2-detail-bar__back-btn create-exam-bank-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 pt-0 pb-2 flex-shrink-0"
+          class="create-exam-bank-2-detail-bar__back-btn create-exam-bank-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 flex-shrink-0"
           :aria-label="backLabel"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
@@ -52,7 +52,7 @@ function onTitleInput(e) {
           />
         </button>
       </div>
-      <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0">
+      <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0 px-3 pb-2">
         <input
           :value="selectedBankLabel"
           type="text"

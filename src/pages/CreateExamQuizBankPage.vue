@@ -6953,12 +6953,15 @@ async function confirmAnswer(item) {
               >
                 <div
                   class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
-                  :class="designSidePanelOnLeft ? 'px-3 pb-2' : 'px-3 py-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pt-3 pb-2' : 'px-3 py-2'"
                 >上傳檔案</div>
                 <div class="nav-item w-100">
                   <span
                     class="nav-link w-100 text-start text-break"
-                    :class="{ active: !hasUploadedFileMetadata }"
+                    :class="[
+                      { active: !hasUploadedFileMetadata },
+                      designSidePanelOnLeft ? 'px-3 pt-2 pb-3' : '',
+                    ]"
                   >{{ designRightUploadFileLabel || '—' }}</span>
                 </div>
               </div>
@@ -6971,7 +6974,7 @@ async function confirmAnswer(item) {
               >
                 <div
                   class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 min-w-0"
-                  :class="designSidePanelOnLeft ? 'px-3 pb-2' : 'px-3 py-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pt-3 pb-2' : 'px-3 py-2'"
                 >
                   <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">{{ hasBuiltRagSummary ? '單元 / 題型' : '單元' }}</div>
                   <div

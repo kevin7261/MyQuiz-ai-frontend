@@ -25,9 +25,13 @@ const props = defineProps({
 
 defineEmits(['click']);
 
-/** 每顆按鈕各一組隨機漸層（色域依 tone；機制同 TopView logo） */
+/** 每顆按鈕各一組隨機線性漸層（色域依 tone；僅 linear-gradient） */
 const buttonStyle = {
-  background: createRandomLogoGradientCss({ tone: props.tone, bias: props.gradientBias }),
+  background: createRandomLogoGradientCss({
+    tone: props.tone,
+    bias: props.gradientBias,
+    linearOnly: true,
+  }),
 };
 </script>
 
