@@ -22,7 +22,9 @@ import HomeView from '../views/HomeView.vue';
 const VALID_VIEWS = [
   'work',
   'student-weakness-analysis',
+  'student-weakness-analysis_3',
   'student-answer-analysis',
+  'student-answer-analysis_3',
   'profile',
   'create-exam-bank',
   'design',
@@ -30,6 +32,7 @@ const VALID_VIEWS = [
   'design_3',
   'logo',
   'manage-users',
+  'manage-users_3',
   'settings',
   'logs',
 ];
@@ -40,7 +43,9 @@ const VIEW_TITLES = {
   work2: '測驗 - MyQuiz.ai',
   work3: '測驗 - MyQuiz.ai',
   'student-weakness-analysis': '作答弱點分析 - MyQuiz.ai',
+  'student-weakness-analysis_3': '作答弱點分析 - MyQuiz.ai',
   'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
+  'student-answer-analysis_3': '學生作答分析 - MyQuiz.ai',
   profile: '設定 - MyQuiz.ai',
   'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
   'create-exam-bank_2': '建立測驗題庫 - MyQuiz.ai',
@@ -50,6 +55,7 @@ const VIEW_TITLES = {
   design_3: '設計稿 3 - MyQuiz.ai',
   logo: 'Logo 繪製 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
+  'manage-users_3': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
   logs: '系統 Log - MyQuiz.ai',
 };

@@ -29,7 +29,9 @@
 const PATH_TO_VIEW = {
   work: 'work',
   'student-weakness-analysis': 'studentWeaknessAnalysis',
+  'student-weakness-analysis_3': 'studentWeaknessAnalysis3',
   'student-answer-analysis': 'studentAnswerAnalysis',
+  'student-answer-analysis_3': 'studentAnswerAnalysis3',
   profile: 'profile',
   'create-exam-bank': 'createExamQuizBank',
   'create-exam-bank_2': 'createExamQuizBank2',
@@ -39,6 +41,7 @@ const PATH_TO_VIEW = {
   design_3: 'designPage3',
   logo: 'logoPage',
   'manage-users': 'userManagement',
+  'manage-users_3': 'userManagement3',
   settings: 'systemSettings',
   logs: 'logList',
 };
@@ -79,7 +82,10 @@ const PATH_TO_VIEW = {
           || route.name === 'CreateExamBank3Detail'
           || route.path.startsWith('/exam_3')
           || route.name === 'Exam3Detail'
-          || route.params.view === 'design_3',
+          || route.params.view === 'design_3'
+          || route.params.view === 'student-weakness-analysis_3'
+          || route.params.view === 'student-answer-analysis_3'
+          || route.params.view === 'manage-users_3',
       );
 
       /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */

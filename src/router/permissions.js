@@ -38,6 +38,7 @@ export const STUDENT_ALLOWED_VIEWS = new Set([
   'work2',
   'work3',
   'student-weakness-analysis',
+  'student-weakness-analysis_3',
   'create-exam-bank',
   'create-exam-bank_2',
   'create-exam-bank_3',

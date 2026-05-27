@@ -10,6 +10,11 @@
  * 刪除：PUT /user/users/delete，body 為被刪 person_id；query 為呼叫者（loggedFetch 預設）。
  */
 import { ref, computed, onActivated } from 'vue';
+
+const props = defineProps({
+  hidePageHeader: { type: Boolean, default: false },
+  design3: { type: Boolean, default: false },
+});
 import { API_BASE, API_USER_USERS, API_USER_DELETE } from '../constants/api.js';
 import { useAuthStore } from '../stores/authStore.js';
 import { userTypeLabel } from '../router/permissions.js';
@@ -31,6 +36,24 @@ const modalBatchOpen = ref(false);
 
 const deletingPersonId = ref(null);
 const deleteUserError = ref('');
+
+/** design_3 清單：登入 ID 排序 */
+const userSortOrder = ref('asc');
+
+const sortedUsers = computed(() => {
+  const list = [...users.value];
+  list.sort((a, b) => {
+    const pa = String(a?.person_id ?? '').trim();
+    const pb = String(b?.person_id ?? '').trim();
+    const cmp = pa.localeCompare(pb, 'zh-TW');
+    return userSortOrder.value === 'asc' ? cmp : -cmp;
+  });
+  return list;
+});
+
+function toggleUserSort() {
+  userSortOrder.value = userSortOrder.value === 'asc' ? 'desc' : 'asc';
+}
 
 /** 目前列表中的 person_id（trim 後），供重複檢查；依賴 users，只在列表變動時重建 */
 const existingPersonIdSet = computed(() => {
@@ -126,12 +149,15 @@ onActivated(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div
+    class="d-flex flex-column h-100 overflow-hidden position-relative"
+    :class="props.design3 ? 'user-mgmt-page-3 my-bgcolor-white' : 'my-bgcolor-gray-4'"
+  >
     <LoadingOverlay
       :is-visible="loading"
       loading-text="載入名單中..."
     />
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+    <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">使用者管理</p>
       </div>
@@ -140,14 +166,102 @@ onActivated(() => {
       <div v-if="error" class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
       <div v-if="deleteUserError" class="my-alert-danger-soft my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ deleteUserError }}</div>
     </div>
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-            <div class="text-start my-page-block-spacing">
+          <div :class="props.design3 ? 'col-12 col-xl-10 col-xxl-8' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
+            <template v-if="props.design3">
+              <div
+                v-if="!loading && users.length === 0"
+                class="d-flex flex-column justify-content-center align-items-center gap-2 py-5"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+                  @click="modalSingleOpen = true"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  新增一筆使用者
+                </button>
+                <button
+                  type="button"
+                  class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+                  @click="modalBatchOpen = true"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  批次新增學生
+                </button>
+              </div>
+
+              <div v-else class="bank-list-wrap mx-auto w-100">
+                <div class="bank-table-actions d-flex flex-wrap justify-content-end gap-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
+                    @click="modalSingleOpen = true"
+                  >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    新增一筆使用者
+                  </button>
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
+                    @click="modalBatchOpen = true"
+                  >
+                    <i class="fa-solid fa-plus" aria-hidden="true" />
+                    批次新增學生
+                  </button>
+                </div>
+
+                <div class="bank-table-header user-mgmt-bank-table-header">
+                  <button
+                    type="button"
+                    class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
+                    :aria-label="userSortOrder === 'asc' ? '登入 ID 升冪排序，點擊改為降冪' : '登入 ID 降冪排序，點擊改為升冪'"
+                    @click="toggleUserSort"
+                  >
+                    登入 ID
+                    <i :class="['fa-solid', userSortOrder === 'asc' ? 'fa-chevron-up' : 'fa-chevron-down']" aria-hidden="true" />
+                  </button>
+                  <span class="my-font-sm-400 my-color-gray-1 user-mgmt-bank-col user-mgmt-bank-col--name">姓名</span>
+                  <span class="my-font-sm-400 my-color-gray-1 user-mgmt-bank-col user-mgmt-bank-col--type">類型</span>
+                  <span class="user-mgmt-bank-col user-mgmt-bank-col--action" aria-hidden="true" />
+                </div>
+
+                <ul v-if="!loading" class="bank-list">
+                  <li v-for="(u, idx) in sortedUsers" :key="userRowKey(u, idx)">
+                    <div class="bank-list-row bank-list-row--read-only user-mgmt-bank-list-row">
+                      <span class="bank-list-row__label my-font-md-400 my-color-black">{{ u.person_id ?? '—' }}</span>
+                      <span class="my-font-md-400 my-color-black user-mgmt-bank-col user-mgmt-bank-col--name text-truncate">{{ u.name ?? '—' }}</span>
+                      <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1 user-mgmt-bank-col user-mgmt-bank-col--type">{{ userTypeLabel(u.user_type) }}</span>
+                      <span class="user-mgmt-bank-col user-mgmt-bank-col--action d-flex justify-content-center">
+                        <button
+                          v-if="u.person_id != null && String(u.person_id).trim() !== '' && !isCurrentUserRow(u)"
+                          type="button"
+                          class="btn btn-link my-color-red text-decoration-none lh-1 p-0"
+                          :disabled="deletingPersonId != null"
+                          :title="`刪除 ${String(u.person_id).trim()}`"
+                          @click="deleteUser(u)"
+                        >
+                          <i class="fa-solid fa-xmark" aria-hidden="true" />
+                          <span class="visually-hidden">刪除</span>
+                        </button>
+                        <span v-else class="my-color-gray-4">—</span>
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+
+                <p v-if="!loading" class="text-center my-font-sm-400 my-color-gray-1 mt-3 mb-0">
+                  共 {{ count }} 筆使用者
+                </p>
+              </div>
+            </template>
+
+            <div v-else class="text-start my-page-block-spacing">
               <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0">
                 <div class="mb-3">
-                  <p class="my-font-sm-400 my-color-gray-4 text-center mb-0">
+                  <p class="text-center mb-0 my-font-sm-400 my-color-gray-4">
                     共 {{ count }} 筆使用者
                   </p>
                 </div>
@@ -226,3 +340,102 @@ onActivated(() => {
     />
   </div>
 </template>
+
+<style scoped>
+/* manage-users_3：design_3 清單（對齊 exam_3 bank-list） */
+.user-mgmt-page-3 .bank-list-wrap {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.user-mgmt-page-3 .bank-table-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 0.75rem;
+}
+
+.user-mgmt-page-3 .bank-table-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.25rem 0.5rem;
+}
+
+.user-mgmt-page-3 .user-mgmt-bank-table-header,
+.user-mgmt-page-3 .user-mgmt-bank-list-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 5.5rem) 2rem;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.user-mgmt-page-3 .user-mgmt-bank-table-header {
+  padding-left: 1.25rem;
+  padding-right: 1.25rem;
+}
+
+.user-mgmt-page-3 .bank-table-sort-btn {
+  background-color: transparent !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  min-width: 0;
+  justify-self: start;
+}
+
+.user-mgmt-page-3 .bank-table-sort-btn:hover:not(:disabled),
+.user-mgmt-page-3 .bank-table-sort-btn:focus-visible:not(:disabled),
+.user-mgmt-page-3 .bank-table-sort-btn:active:not(:disabled) {
+  background-color: transparent !important;
+}
+
+.user-mgmt-page-3 .bank-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--my-color-gray-2);
+}
+
+.user-mgmt-page-3 .bank-list > li {
+  display: block;
+  border-top: 1px solid var(--my-color-gray-2);
+}
+
+.user-mgmt-page-3 .bank-list-row {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  min-width: 0;
+  transition: background-color 0.12s ease;
+}
+
+.user-mgmt-page-3 .bank-list-row--read-only {
+  cursor: default;
+}
+
+.user-mgmt-page-3 .bank-list-row--read-only:hover {
+  background-color: var(--my-color-gray-3);
+}
+
+.user-mgmt-page-3 .bank-list-row__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-mgmt-page-3 .user-mgmt-bank-col--name {
+  min-width: 0;
+}
+
+.user-mgmt-page-3 .bank-list-row__subtitle {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.user-mgmt-page-3 .user-mgmt-bank-col--action {
+  flex-shrink: 0;
+  width: 2rem;
+}
+</style>

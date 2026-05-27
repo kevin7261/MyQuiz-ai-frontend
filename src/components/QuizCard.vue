@@ -417,6 +417,7 @@ const showDesignAnswerPlainDisplay = computed(
 /** 稿頁「開始批改」是否應顯示（不含子區塊位置） */
 const showDesignGradingStartButton = computed(() => {
   if (!props.createExamBankDesignLayout) return false;
+  if (props.readOnlyAnswer) return false;
   if (
     isExamDesignGradingLayout.value
     && (gradingResultActual.value || props.card?.confirmed === true)
@@ -920,7 +921,7 @@ const quizAnswerFieldDisabled = computed(
                   <button
                     v-if="showExamDesignQuizRulePill"
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1"
+                    :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1', designHistorySmallPillClass]"
                     title="出題規則"
                     aria-label="出題規則"
                     @click="openPromptModal('question')"
@@ -930,7 +931,7 @@ const quizAnswerFieldDisabled = computed(
                   <button
                     v-if="showBankQuizHistoryInStemHeader && !showBankQuizHistoryTabs"
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1"
+                    :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1', designHistorySmallPillClass]"
                     aria-label="查看先前出題"
                     :disabled="examQuizHistoryButtonDisabled"
                     @click="emit('open-quiz-history')"

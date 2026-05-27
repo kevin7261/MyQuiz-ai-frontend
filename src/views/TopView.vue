@@ -46,6 +46,9 @@
         if (path.startsWith('/exam_3')) return '測驗';
         if (path.startsWith('/create-exam-bank_3')) return '建立測驗題庫';
         if (route.params.view === 'design_3') return 'UI 元件參考 3';
+        if (route.params.view === 'student-weakness-analysis_3') return '作答弱點分析';
+        if (route.params.view === 'student-answer-analysis_3') return '學生作答分析';
+        if (route.params.view === 'manage-users_3') return '使用者管理';
         return '';
       });
 
@@ -139,13 +142,13 @@
             <router-link class="dropdown-item" to="/create-exam-bank_3" active-class="active">建立測驗題庫</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'student-weakness-analysis')">
-            <router-link class="dropdown-item" to="/student-weakness-analysis" active-class="active">作答弱點分析</router-link>
+            <router-link class="dropdown-item" to="/student-weakness-analysis_3" active-class="active">作答弱點分析</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
-            <router-link class="dropdown-item" to="/student-answer-analysis" active-class="active">學生作答分析</router-link>
+            <router-link class="dropdown-item" to="/student-answer-analysis_3" active-class="active">學生作答分析</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'users')">
-            <router-link class="dropdown-item" to="/manage-users" active-class="active">使用者管理</router-link>
+            <router-link class="dropdown-item" to="/manage-users_3" active-class="active">使用者管理</router-link>
           </li>
         </ul>
         </div>

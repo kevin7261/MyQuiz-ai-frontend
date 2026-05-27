@@ -1614,6 +1614,68 @@ div.form-control {
 }
 
 /**
+ * 分析頁 design_3：QuizCard 三子區塊（對齊 exam_3／create-exam-bank_3 題目／答案 tab + gray-2 邊框）
+ */
+.analysis-page-3-section {
+  border-bottom: 1px solid var(--my-color-gray-2);
+}
+
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block-outer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.analysis-page-3-quiz .my-design-quiz-sub-block {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.analysis-page-3-quiz .my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-2);
+}
+
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
+  background-color: var(--my-color-gray-3) !important;
+  border: 1px solid var(--my-color-gray-2);
+}
+
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-2);
+}
+
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
+  padding-top: 0 !important;
+}
+
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
+  padding-top: 0.5rem !important;
+}
+
+.analysis-page-3-quiz .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.analysis-page-3-quiz .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
+  border: 0;
+  border-top: 1px solid var(--my-color-gray-2);
+  opacity: 1;
+}
+
+.analysis-page-3-quiz .my-design-quiz-stem-sub-block-top {
+  padding-top: 0 !important;
+}
+
+/**
  * 可捲區內以 v-html 顯示之 Markdown（marked + DOMPurify 產出之 HTML；樣式對齊 EnglishExamMarkdownEditor 預覽）
  */
 .my-markdown-rendered h1,

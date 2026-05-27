@@ -6,10 +6,16 @@
  * 列表與 GET /exam/tabs、GET /rag/tabs 每筆一致；另含 count、weakness_report。題目區（QuizCard）純顯示。
  */
 import { ref, computed, watch } from 'vue';
+
+const props = defineProps({
+  hidePageHeader: { type: Boolean, default: false },
+  design3: { type: Boolean, default: false },
+});
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_QUIZZES_BY_PERSON, API_PERSON_ANALYSIS_USER_PROMPT } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
+import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 import {
   normalizeAnalysisQuizzesListResponse,
@@ -461,7 +467,10 @@ function weaknessSlotQuizBodyTrim(idx) {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div
+    class="d-flex flex-column h-100 overflow-hidden position-relative"
+    :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+  >
     <LoadingOverlay
       :is-visible="overlayBlocking"
       :loading-text="overlayLoadingText"
@@ -517,7 +526,7 @@ function weaknessSlotQuizBodyTrim(idx) {
         </div>
       </div>
     </Teleport>
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+    <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">作答弱點分析</p>
       </div>
@@ -528,13 +537,15 @@ function weaknessSlotQuizBodyTrim(idx) {
       </div>
     </div>
 
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div :class="props.design3 ? 'col-12 col-xl-10 col-xxl-8' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
             <div
               v-if="canEditWeaknessReportRules"
-              class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4"
+              :class="props.design3
+                ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section'
+                : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4'"
             >
               <div class="d-flex flex-column gap-0 min-w-0 w-100 mb-3">
                 <label
@@ -551,7 +562,7 @@ function weaknessSlotQuizBodyTrim(idx) {
               <div class="d-flex justify-content-center flex-wrap gap-3 pt-2">
                 <button
                   type="button"
-                  class="btn rounded-pill my-font-md-400 my-btn-outline-gray-1 px-4 py-2"
+                  :class="['btn rounded-pill my-font-md-400 px-4 py-2', props.design3 ? 'my-button-transparent-borderless' : 'my-btn-outline-gray-1']"
                   title="還原為上次載入或儲存後的內容"
                   aria-label="重設分析報告規則"
                   :disabled="promptSectionLoading || loading || promptSaving || !personAnalysisPromptDirty"
@@ -561,7 +572,7 @@ function weaknessSlotQuizBodyTrim(idx) {
                 </button>
                 <button
                   type="button"
-                  class="btn rounded-pill my-font-md-400 my-button-black px-4 py-2"
+                  :class="['btn rounded-pill my-font-md-400 px-4 py-2', props.design3 ? 'my-button-white' : 'my-button-black']"
                   title="儲存規則（若有修改）並開始分析"
                   aria-label="儲存並開始分析"
                   :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id"
@@ -576,11 +587,13 @@ function weaknessSlotQuizBodyTrim(idx) {
             <!-- 非開發者／管理者：無編輯區時由此啟動分析；user_type 1／2 改用上區「儲存並開始分析」 -->
             <div
               v-if="!canEditWeaknessReportRules"
-              class="d-flex justify-content-center align-items-center w-100 py-2 px-2 mb-4"
+              :class="props.design3
+                ? 'd-flex justify-content-start align-items-center w-100 py-4 analysis-page-3-section'
+                : 'd-flex justify-content-center align-items-center w-100 py-2 px-2 mb-4'"
             >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-3']"
                 title="開始弱點分析"
                 aria-label="開始弱點分析"
                 :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id"
@@ -602,13 +615,15 @@ function weaknessSlotQuizBodyTrim(idx) {
             </div>
 
             <template v-else-if="analysisLoadedOnce && !loading && (items.length > 0 || weaknessReport)">
-              <div class="text-start my-page-block-spacing">
-                <div class="d-flex flex-column gap-4 w-100 min-w-0">
+              <div class="text-start" :class="{ 'my-page-block-spacing': !props.design3 }">
+                <div :class="props.design3 ? 'd-flex flex-column w-100 min-w-0' : 'd-flex flex-column gap-4 w-100 min-w-0'">
                   <div
                     v-if="weaknessReport"
-                    class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start"
+                    :class="props.design3
+                      ? 'w-100 min-w-0 d-flex flex-column gap-4 text-start py-4 analysis-page-3-section'
+                      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start'"
                   >
-                    <div class="my-font-lg-600 my-color-black mb-0">
+                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
                       學習弱點分析報告
                     </div>
                     <template v-if="weaknessReportParsed">
@@ -656,7 +671,7 @@ function weaknessSlotQuizBodyTrim(idx) {
                     >
                       <button
                         type="button"
-                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 my-btn-outline-gray-1 px-3 py-1"
+                        :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', props.design3 ? 'my-button-transparent-borderless' : 'my-btn-outline-gray-1']"
                         title="分析報告規則（Markdown）"
                         aria-label="分析報告規則"
                         @click="openWeaknessAnalysisRulesModal"
@@ -669,9 +684,11 @@ function weaknessSlotQuizBodyTrim(idx) {
                   <div
                     v-for="(item, idx) in items"
                     :key="item.exam_quiz_id ?? item.rag_quiz_id ?? idx"
-                    class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
+                    :class="props.design3
+                      ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4 analysis-page-3-section'
+                      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
                   >
-                    <div class="my-font-lg-600 my-color-black mb-0">第 {{ idx + 1 }} 題</div>
+                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">第 {{ idx + 1 }} 題</div>
                     <div class="d-flex flex-column gap-3 w-100 min-w-0">
                       <div class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3">
                         <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
@@ -700,8 +717,13 @@ function weaknessSlotQuizBodyTrim(idx) {
                         </div>
                       </div>
                     </div>
+                    <AnalysisDesign3QuizBlocks
+                      v-if="props.design3 && weaknessSlotQuizBodyTrim(idx) !== ''"
+                      :card="quizCardUi[idx]"
+                      :slot-index="idx + 1"
+                    />
                     <QuizCard
-                      v-if="weaknessSlotQuizBodyTrim(idx) !== ''"
+                      v-else-if="!props.design3 && weaknessSlotQuizBodyTrim(idx) !== ''"
                       :card="quizCardUi[idx]"
                       :slot-index="idx + 1"
                       :current-rag-id="quizCardUi[idx]?.rag_id"

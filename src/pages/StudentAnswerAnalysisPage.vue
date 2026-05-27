@@ -6,9 +6,15 @@
  * 題目區與測驗頁（QuizCard）版面一致、純顯示；另顯示使用者 ID。
  */
 import { ref, watch, onMounted } from 'vue';
+
+const props = defineProps({
+  hidePageHeader: { type: Boolean, default: false },
+  design3: { type: Boolean, default: false },
+});
 import { API_BASE, API_COURSE_ANALYSIS_QUIZZES } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
+import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
 import {
   normalizeAnalysisQuizzesListResponse,
   mergeQuizzesWithTopLevelAnswers,
@@ -210,12 +216,15 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div
+    class="d-flex flex-column h-100 overflow-hidden position-relative"
+    :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+  >
     <LoadingOverlay
       :is-visible="loading"
       loading-text="載入作答資料中..."
     />
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+    <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">學生作答分析</p>
       </div>
@@ -226,22 +235,24 @@ onMounted(() => {
       </div>
     </div>
 
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div :class="props.design3 ? 'col-12 col-xl-10 col-xxl-8' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
             <div v-if="loading" class="text-center my-color-gray-4 py-5" />
             <div v-else-if="items.length === 0" class="my-alert-info-soft rounded my-font-sm-400 p-3 mt-0">尚無答題紀錄。</div>
 
             <template v-else>
-              <div class="text-start my-page-block-spacing">
-                <div class="d-flex flex-column gap-4 w-100 min-w-0">
+              <div class="text-start" :class="{ 'my-page-block-spacing': !props.design3 }">
+                <div :class="props.design3 ? 'd-flex flex-column w-100 min-w-0' : 'd-flex flex-column gap-4 w-100 min-w-0'">
                   <div
                     v-for="(item, idx) in items"
                     :key="`${item.exam_quiz_id ?? item.rag_quiz_id ?? idx}-${item.person_id ?? ''}`"
-                    class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
+                    :class="props.design3
+                      ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4 analysis-page-3-section'
+                      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
                   >
-                    <div class="my-font-lg-600 my-color-black mb-0">第 {{ idx + 1 }} 題</div>
+                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">第 {{ idx + 1 }} 題</div>
                     <div class="d-flex flex-column gap-3 w-100 min-w-0">
                       <div class="w-100 min-w-0">
                         <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">使用者 ID</div>
@@ -280,8 +291,13 @@ onMounted(() => {
                         </div>
                       </div>
                     </div>
+                    <AnalysisDesign3QuizBlocks
+                      v-if="props.design3 && studentSlotQuizBodyTrim(idx) !== ''"
+                      :card="quizCardUi[idx]"
+                      :slot-index="idx + 1"
+                    />
                     <QuizCard
-                      v-if="studentSlotQuizBodyTrim(idx) !== ''"
+                      v-else-if="!props.design3 && studentSlotQuizBodyTrim(idx) !== ''"
                       :card="quizCardUi[idx]"
                       :slot-index="idx + 1"
                       :current-rag-id="quizCardUi[idx]?.rag_id"
