@@ -14,7 +14,7 @@ const emit = defineEmits(['switch-exam']);
   >
     <button
       type="button"
-      class="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2"
+      class="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-color-gray-1 my-course-header-nav-btn gap-2 px-4 py-2"
       data-bs-toggle="dropdown"
       aria-expanded="false"
       aria-label="所有試卷"
@@ -61,7 +61,6 @@ const emit = defineEmits(['switch-exam']);
 }
 
 .exam-page-exam-switch .btn.dropdown-toggle.my-course-header-nav-btn {
-  color: var(--my-color-gray-1);
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
@@ -73,7 +72,6 @@ const emit = defineEmits(['switch-exam']);
 .exam-page-exam-switch .btn.dropdown-toggle:focus-visible:not(:disabled),
 .exam-page-exam-switch .btn.dropdown-toggle:active:not(:disabled),
 .exam-page-exam-switch .btn.dropdown-toggle.show {
-  color: var(--my-color-gray-1);
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
   outline: none;

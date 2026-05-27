@@ -94,6 +94,12 @@ code {
   font-weight: var(--my-font-weight-semibold);
 }
 
+/* 併 my-color-gray-1 的按鈕 hover／focus 字色加深 */
+.btn.my-color-gray-1:hover:not(:disabled),
+.btn.my-color-gray-1:focus-visible:not(:disabled) {
+  color: var(--my-color-black);
+}
+
 /* —— 字色（對應 --my-color-*） —— */
 .my-color-black {
   color: var(--my-color-black);

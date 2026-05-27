@@ -93,7 +93,7 @@
         >
           <span class="my-font-lg-600">{{ currentCourseName }}</span>
           <template v-if="pageTitle">
-            <span class="my-course-header-course-title__sep mx-2" aria-hidden="true">|</span>
+            <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
             <span class="my-font-lg-400">{{ pageTitle }}</span>
           </template>
         </p>
@@ -201,13 +201,7 @@
   line-height: 1.35;
 }
 
-.my-course-header-course-title__sep {
-  color: var(--my-color-gray-1);
-  font-weight: var(--my-font-weight-regular);
-}
-
 .my-course-header-nav-btn {
-  color: var(--my-color-gray-1);
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
@@ -221,7 +215,6 @@
 
 .my-course-header-nav-btn:hover,
 .my-course-header-nav-btn:focus-visible {
-  color: var(--my-color-gray-1);
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
   outline: none;
@@ -231,7 +224,6 @@
 .my-course-header-nav-btn--active:hover,
 .my-course-header-nav-btn--active:focus,
 .my-course-header-nav-btn--active:focus-visible {
-  color: var(--my-color-gray-1);
   background-color: var(--my-color-gray-3);
   border-color: var(--my-color-gray-2);
 }

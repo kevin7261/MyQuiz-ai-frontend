@@ -6827,7 +6827,7 @@ async function confirmAnswer(item) {
                           class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
                         >
                           <h3
-                            class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0"
+                            class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
                           >
                             出題規則
                           </h3>
@@ -7565,7 +7565,6 @@ async function confirmAnswer(item) {
 /* 建置後單元主標題：大於全站 xl（1.125rem） */
 .my-design-pack-unit-main-title {
   line-height: 1.35;
-  color: var(--my-color-black);
   white-space: nowrap;
 }
 /* 區段主標題：title → 橫線 → 內容（my-font-xl-400 + my-design-pack-unit-main-title） */
@@ -7960,9 +7959,7 @@ async function confirmAnswer(item) {
 }
 .my-design-quiz-question-prompt-block__title,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {
-  color: var(--my-color-gray-2);
   line-height: 1.35;
-  font-weight: 400;
   white-space: nowrap;
 }
 /* 稿頁區塊小標（設定單元題型、來源檔等）不換行 */

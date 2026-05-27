@@ -3972,7 +3972,6 @@ onActivated(() => {
 }
 .my-design-pack-unit-main-title {
   line-height: 1.35;
-  color: var(--my-color-black);
   white-space: nowrap;
 }
 .my-design-quiz-sub-block-outer {
@@ -4056,9 +4055,7 @@ onActivated(() => {
 }
 .my-design-quiz-question-prompt-block__title,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {
-  color: var(--my-color-gray-2);
   line-height: 1.35;
-  font-weight: 400;
   white-space: nowrap;
 }
 .my-design-quiz-question-prompt-block__edit-btn,

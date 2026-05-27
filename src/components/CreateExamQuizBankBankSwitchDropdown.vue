@@ -24,7 +24,7 @@ const emit = defineEmits(['switch-bank']);
       class="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap"
       :class="
         variant === 'course-header-nav'
-          ? 'my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2'
+          ? 'my-font-md-400 my-color-gray-1 my-course-header-nav-btn gap-2 px-4 py-2'
           : 'my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 justify-content-between text-start'
       "
       data-bs-toggle="dropdown"
@@ -88,7 +88,6 @@ const emit = defineEmits(['switch-bank']);
 }
 
 .create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle.my-course-header-nav-btn {
-  color: var(--my-color-gray-1);
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
@@ -100,7 +99,6 @@ const emit = defineEmits(['switch-bank']);
 .create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle:focus-visible:not(:disabled),
 .create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle:active:not(:disabled),
 .create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle.show {
-  color: var(--my-color-gray-1);
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
   outline: none;

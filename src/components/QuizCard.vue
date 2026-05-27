@@ -150,6 +150,14 @@ const designHistorySmallPillClass = computed(() =>
   (isWork3Design.value ? 'my-button-transparent-borderless' : 'my-button-gray-3'),
 );
 
+function designStemTabBtnClass(isActive) {
+  return {
+    'my-design-quiz-stem-tab--active': isActive,
+    'my-color-black': isActive,
+    'my-color-gray-1': !isActive,
+  };
+}
+
 const emit = defineEmits([
   'toggle-hint',
   'toggle-reference-answer',
@@ -873,7 +881,7 @@ const quizAnswerFieldDisabled = computed(
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                    :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'current' }"
+                    :class="designStemTabBtnClass(questionStemTab === 'current')"
                     :aria-selected="questionStemTab === 'current'"
                     @click="questionStemTab = 'current'"
                   >
@@ -883,7 +891,7 @@ const quizAnswerFieldDisabled = computed(
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                    :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'history' }"
+                    :class="designStemTabBtnClass(questionStemTab === 'history')"
                     :aria-selected="questionStemTab === 'history'"
                     @click="questionStemTab = 'history'"
                   >
@@ -967,7 +975,7 @@ const quizAnswerFieldDisabled = computed(
                 type="button"
                 role="tab"
                 class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'current' }"
+                :class="designStemTabBtnClass(questionStemTab === 'current')"
                 :aria-selected="questionStemTab === 'current'"
                 @click="questionStemTab = 'current'"
               >
@@ -977,7 +985,7 @@ const quizAnswerFieldDisabled = computed(
                 type="button"
                 role="tab"
                 class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                :class="{ 'my-design-quiz-stem-tab--active': questionStemTab === 'history' }"
+                :class="designStemTabBtnClass(questionStemTab === 'history')"
                 :aria-selected="questionStemTab === 'history'"
                 @click="questionStemTab = 'history'"
               >
@@ -1251,7 +1259,7 @@ const quizAnswerFieldDisabled = computed(
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                    :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'answer' }"
+                    :class="designStemTabBtnClass(answerSectionTab === 'answer')"
                     :aria-selected="answerSectionTab === 'answer'"
                     @click="answerSectionTab = 'answer'"
                   >
@@ -1262,7 +1270,7 @@ const quizAnswerFieldDisabled = computed(
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                    :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'hint' }"
+                    :class="designStemTabBtnClass(answerSectionTab === 'hint')"
                     :aria-selected="answerSectionTab === 'hint'"
                     @click="answerSectionTab = 'hint'"
                   >
@@ -1273,7 +1281,7 @@ const quizAnswerFieldDisabled = computed(
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                    :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'reference' }"
+                    :class="designStemTabBtnClass(answerSectionTab === 'reference')"
                     :aria-selected="answerSectionTab === 'reference'"
                     @click="answerSectionTab = 'reference'"
                   >
@@ -1367,7 +1375,7 @@ const quizAnswerFieldDisabled = computed(
                 type="button"
                 role="tab"
                 class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'answer' }"
+                :class="designStemTabBtnClass(answerSectionTab === 'answer')"
                 :aria-selected="answerSectionTab === 'answer'"
                 @click="answerSectionTab = 'answer'"
               >
@@ -1378,7 +1386,7 @@ const quizAnswerFieldDisabled = computed(
                 type="button"
                 role="tab"
                 class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'hint' }"
+                :class="designStemTabBtnClass(answerSectionTab === 'hint')"
                 :aria-selected="answerSectionTab === 'hint'"
                 @click="answerSectionTab = 'hint'"
               >
@@ -1389,7 +1397,7 @@ const quizAnswerFieldDisabled = computed(
                 type="button"
                 role="tab"
                 class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                :class="{ 'my-design-quiz-stem-tab--active': answerSectionTab === 'reference' }"
+                :class="designStemTabBtnClass(answerSectionTab === 'reference')"
                 :aria-selected="answerSectionTab === 'reference'"
                 @click="answerSectionTab = 'reference'"
               >
@@ -1514,7 +1522,7 @@ const quizAnswerFieldDisabled = computed(
                 <div
                   class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
                 >
-                  <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 mb-0">
+                  <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0">
                     批改規則
                   </h3>
                   <button
@@ -1586,7 +1594,7 @@ const quizAnswerFieldDisabled = computed(
                       <button
                         type="button"
                         role="tab"
-                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-design-quiz-stem-tab--active"
+                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-black my-design-quiz-stem-tab--active"
                         aria-selected="true"
                       >
                         批改結果
@@ -1774,7 +1782,7 @@ const quizAnswerFieldDisabled = computed(
                   <button
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-design-quiz-stem-tab--active"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-black my-design-quiz-stem-tab--active"
                     aria-selected="true"
                   >
                     批改結果
@@ -1864,7 +1872,6 @@ const quizAnswerFieldDisabled = computed(
   border-bottom: 2pt solid transparent;
   border-radius: 0;
   background: transparent;
-  color: var(--my-color-gray-1);
   line-height: 1.25;
   box-shadow: none;
 }
@@ -1875,13 +1882,12 @@ const quizAnswerFieldDisabled = computed(
   z-index: 1;
   padding-bottom: calc(0.5rem + 1px);
   border-bottom-color: var(--my-color-black);
-  color: var(--my-color-black);
   background-color: transparent;
   box-shadow: none;
 }
-.my-design-quiz-stem-tab:not(.my-design-quiz-stem-tab--active):hover:not(:disabled),
-.my-design-quiz-stem-tab:not(.my-design-quiz-stem-tab--active):focus-visible:not(:disabled) {
-  color: var(--my-color-black);
+.my-design-quiz-question-prompt-block__title {
+  line-height: 1.35;
+  white-space: nowrap;
 }
 .quiz-card-quiz-stem :deep(.my-markdown-rendered > :last-child) {
   margin-bottom: 0;
@@ -1933,12 +1939,6 @@ const quizAnswerFieldDisabled = computed(
   border-radius: 0.5rem;
   background-color: var(--my-color-black);
   overflow: hidden;
-}
-.my-design-quiz-question-prompt-block__title {
-  color: var(--my-color-gray-2);
-  line-height: 1.35;
-  font-weight: 400;
-  white-space: nowrap;
 }
 .my-design-quiz-question-prompt-block__edit-btn {
   box-sizing: border-box;
