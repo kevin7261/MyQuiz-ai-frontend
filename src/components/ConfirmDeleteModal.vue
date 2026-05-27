@@ -35,7 +35,7 @@ function onConfirm() {
       :aria-labelledby="'confirm-delete-modal-title'"
     >
       <div class="modal-dialog modal-dialog-centered" @click.stop>
-        <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
           <div class="modal-header border-bottom-0 p-0">
             <h5 id="confirm-delete-modal-title" class="modal-title my-color-black">
               {{ title }}

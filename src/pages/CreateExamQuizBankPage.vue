@@ -16,7 +16,7 @@
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_RESPONSE_QUIZ_CONTENT,
@@ -106,6 +106,7 @@ const props = defineProps({
 });
 
 const router = useRouter();
+const route = useRoute();
 const slots = useSlots();
 
 const pageTitle = computed(() => '建立測驗題庫');
@@ -308,6 +309,11 @@ function ragTabIdExistsInBankLists(ragTabId, list, newIds) {
   return list.some((r) => String(r?.rag_tab_id ?? r?.id ?? r) === id);
 }
 
+function routeForcedBankTabId() {
+  if (!String(props.routeDetailBase ?? '').trim()) return '';
+  return String(route.params.exam_id ?? '').trim();
+}
+
 function persistCreateBankTabUiSelection() {
   const personId = getPersonId(authStore);
   if (!personId) return;
@@ -321,11 +327,14 @@ function persistCreateBankTabUiSelection() {
     activeRow?.ragUnitDbId != null && Number(activeRow.ragUnitDbId) > 0
       ? Number(activeRow.ragUnitDbId)
       : 0;
+  const card = activeUnitQuizCard.value;
+  const rqid = card ? positiveRagQuizIdFromQuizRow(card) : null;
   writeCreateBankTabUiPersisted(personId, {
     rag_tab_id: ragTab,
     unit_tab_id: activeUid,
     quiz_type_index: Number(state.activeUnitQuizTypeIndex ?? 0) || 0,
     rag_unit_id: Number.isFinite(ru) ? ru : 0,
+    rag_quiz_id: rqid != null && rqid >= 1 ? rqid : 0,
     design_right_unit_expanded: [...designRightUnitExpandedKeys.value],
   });
 }
@@ -358,6 +367,11 @@ function resolvePersistedUnitTabId(tabs, persisted) {
 function applyPersistedUnitSubTabsIfActive(tabId) {
   const id = String(tabId ?? '').trim();
   if (!id || String(activeTabId.value ?? '').trim() !== id) return;
+  const rqRoute = Number(String(props.routeExamQuizId ?? '').trim());
+  if (Number.isFinite(rqRoute) && rqRoute >= 1) {
+    nextTick(() => applyRouteExamQuizIdSelection());
+    return;
+  }
   const personId = getPersonId(authStore);
   if (!personId) return;
   const persisted = readCreateBankTabUiPersisted(personId);
@@ -398,6 +412,10 @@ function applyPersistedUnitSubTabsIfActive(tabId) {
       ensureDesignRightUnitExpanded(slotIdx);
     }
     restoreBankTabUiDepth = Math.max(0, restoreBankTabUiDepth - 1);
+    nextTick(() => {
+      const rq = Number(String(props.routeExamQuizId ?? '').trim());
+      if (Number.isFinite(rq) && rq >= 1) applyRouteExamQuizIdSelection();
+    });
   };
 
   nextTick(finishRestore);
@@ -3775,9 +3793,14 @@ watch(
   { deep: true, immediate: true }
 );
 
-/** 有 RAG 資料時預設選第一個 tab；若 session 有合法上次選擇則還原該頂層 tab */
+/** 有 RAG 資料時預設選第一個 tab；create-exam-bank_3 深連結或 session 還原 */
 watch(ragList, (list) => {
   if (list.length === 0 || activeTabId.value != null) return;
+  const forced = routeForcedBankTabId();
+  if (forced && ragTabIdExistsInBankLists(forced, list, newTabIds.value)) {
+    activeTabId.value = forced;
+    return;
+  }
   const personId = getPersonId(authStore);
   const persisted = personId ? readCreateBankTabUiPersisted(personId) : null;
   const pick =
@@ -3787,6 +3810,21 @@ watch(ragList, (list) => {
       : null;
   activeTabId.value = pick ?? (list[0].rag_tab_id ?? list[0].id ?? list[0]);
 }, { immediate: true });
+
+watch(
+  () => [ragList.value.length, routeForcedBankTabId()],
+  () => {
+    const forced = routeForcedBankTabId();
+    if (!forced) return;
+    const list = ragList.value;
+    if (list.length === 0) return;
+    if (!ragTabIdExistsInBankLists(forced, list, newTabIds.value)) return;
+    if (String(activeTabId.value ?? '') !== forced) {
+      activeTabId.value = forced;
+    }
+  },
+  { immediate: true },
+);
 
 watch(
   [
@@ -5288,7 +5326,7 @@ async function confirmAnswer(item) {
           class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="pack-folder-pick-modal-title"
@@ -5369,7 +5407,7 @@ async function confirmAnswer(item) {
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="pack-unit-detail-modal-title"
@@ -5430,6 +5468,28 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                   <div
+                    v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_YOUTUBE"
+                    class="col-12 min-w-0"
+                  >
+                    <div
+                      v-if="bankUnitYoutubeEmbedUrl"
+                      class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                    >
+                      <iframe
+                        class="border-0"
+                        title="YouTube 影片"
+                        :src="bankUnitYoutubeEmbedUrl"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        allowfullscreen
+                      />
+                    </div>
+                    <span
+                      v-else
+                      class="my-font-md-400 my-color-black text-break"
+                    >{{ bankUnitTranscriptSection?.sourceDisplay }}</span>
+                  </div>
+                  <div
                     v-if="bankUnitMp3PlayerProps"
                     class="col-12 min-w-0"
                   >
@@ -5479,7 +5539,7 @@ async function confirmAnswer(item) {
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="bank-prompt-edit-modal-title"
@@ -5540,7 +5600,7 @@ async function confirmAnswer(item) {
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="transcript-edit-modal-title"
@@ -5598,7 +5658,7 @@ async function confirmAnswer(item) {
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="new-bank-upload-modal-title"
@@ -5693,7 +5753,7 @@ async function confirmAnswer(item) {
         @click.self="closeDeletePackUnitModal"
       >
         <div class="modal-dialog modal-dialog-centered" @click.stop>
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="delete-pack-unit-modal-title"
@@ -5744,7 +5804,7 @@ async function confirmAnswer(item) {
         @click.self="closeDeleteAllPackUnitsModal"
       >
         <div class="modal-dialog modal-dialog-centered" @click.stop>
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="delete-all-pack-units-modal-title"
@@ -5795,7 +5855,7 @@ async function confirmAnswer(item) {
         @click.self="closeDeleteUnitQuizModal"
       >
         <div class="modal-dialog modal-dialog-centered" @click.stop>
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="delete-unit-quiz-modal-title"
@@ -5848,7 +5908,7 @@ async function confirmAnswer(item) {
         aria-label="單元建立完成"
       >
         <div class="modal-dialog modal-dialog-centered" @click.stop>
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-body p-0 text-center">
               <p class="my-font-md-400 my-color-black mb-0">單元建立完成</p>
             </div>

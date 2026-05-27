@@ -22,7 +22,7 @@ import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
-import { persistCreateBankRagTabSelection } from '../utils/createBankTabUiStorage.js';
+import { persistCreateBankRagTabSelection, readCreateBankTabUiPersisted } from '../utils/createBankTabUiStorage.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -479,17 +479,47 @@ watch(
   { immediate: true },
 );
 
-onActivated(async () => {
+onActivated(() => {
+  bootstrapBankRoute();
+});
+
+onMounted(() => {
+  bootstrapBankRoute();
+});
+
+async function bootstrapBankRoute() {
   const bankId = routeBankIdFromParams.value;
   if (bankId) {
-    await fetchRagList();
+    if (ragList.value.length === 0 && !ragListLoading.value) {
+      await fetchRagList();
+    }
     applyRouteBankId();
     return;
   }
-  if (viewMode.value === 'grid') {
-    fetchRagList();
+  if (props.useExamDetailRoute) {
+    if (ragList.value.length === 0 && !ragListLoading.value) {
+      await fetchRagList();
+    }
+    const personId = getPersonId(authStore);
+    const persisted = personId ? readCreateBankTabUiPersisted(personId) : null;
+    const tabId = String(persisted?.rag_tab_id ?? '').trim();
+    if (tabId && gridItems.value.some((i) => i.tabId === tabId)) {
+      const qid = persisted?.rag_quiz_id >= 1 ? String(persisted.rag_quiz_id) : '0';
+      const target = bankDetailPath(tabId, qid);
+      if (route.path !== target) {
+        router.replace(target);
+        return;
+      }
+    }
   }
-});
+  if (viewMode.value === 'grid') {
+    if (ragList.value.length === 0 && !ragListLoading.value) {
+      fetchRagList();
+    }
+  } else {
+    applyRouteBankId();
+  }
+}
 
 watch(
   () => (props.useExamDetailRoute
@@ -689,7 +719,7 @@ watch(viewMode, (mode) => {
         class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
         @click.stop
       >
-        <div class="modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4">
+        <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
           <div class="modal-header border-bottom-0 p-0">
             <h5
               id="bank2-new-upload-modal-title"

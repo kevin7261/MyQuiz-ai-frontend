@@ -308,16 +308,6 @@ const stemToolbarLeftPills = computed(
     ),
 );
 
-const showDesignStemToolbarRow = computed(
-  () => props.showExamRating || stemToolbarLeftPills.value,
-);
-
-const designStemToolbarJustifyClass = computed(() => {
-  if (props.showExamRating && stemToolbarLeftPills.value) return 'justify-content-between';
-  if (props.showExamRating) return 'justify-content-end';
-  return 'justify-content-start';
-});
-
 function openPromptModal(kind) {
   if (!isExamDesignGradingLayout.value) {
     if (kind === 'question' && quizUserPromptSnapshotTrimmed.value === '') return;
@@ -367,15 +357,6 @@ const isDesignSubBlockFragment = computed(
   () =>
     props.createExamBankDesignLayout
     && ['question', 'answer', 'grading'].includes(String(props.designSubBlock ?? '')),
-);
-
-/** exam_design 題目子區：讚／差列內距 */
-const designStemToolbarRowPaddingClass = computed(() =>
-  isDesignSubBlockFragment.value
-  && props.designSubBlock === 'question'
-  && props.showExamRating
-    ? 'px-3 pt-2'
-    : '',
 );
 
 /** create-exam-bank_design 批改子區塊 */
@@ -518,6 +499,30 @@ const showQuestionStemBody = computed(
 
 const showQuestionHistoryBody = computed(
   () => showBankQuizHistoryTabs.value && questionStemTab.value === 'history',
+);
+
+/** 測驗頁讚／差：僅「題目」tab 顯示（「先前出題」tab 不顯示） */
+const showExamRatingVisible = computed(
+  () => props.showExamRating && showQuestionStemBody.value,
+);
+
+const showDesignStemToolbarRow = computed(
+  () => showExamRatingVisible.value || stemToolbarLeftPills.value,
+);
+
+const designStemToolbarJustifyClass = computed(() => {
+  if (showExamRatingVisible.value && stemToolbarLeftPills.value) return 'justify-content-between';
+  if (showExamRatingVisible.value) return 'justify-content-end';
+  return 'justify-content-start';
+});
+
+/** exam_design 題目子區：讚／差列內距 */
+const designStemToolbarRowPaddingClass = computed(() =>
+  isDesignSubBlockFragment.value
+  && props.designSubBlock === 'question'
+  && showExamRatingVisible.value
+    ? 'px-3 pt-2'
+    : '',
 );
 
 const bankQuizHistoryListResolved = computed(() => {
@@ -718,7 +723,7 @@ const quizAnswerFieldDisabled = computed(
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 :id="`quiz-card-prompt-modal-title-${card.id}`"
@@ -768,7 +773,7 @@ const quizAnswerFieldDisabled = computed(
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 :id="`quiz-card-hint-ref-modal-title-${card.id}`"
@@ -1043,7 +1048,7 @@ const quizAnswerFieldDisabled = computed(
               </button>
             </div>
             <div
-              v-if="showExamRating"
+              v-if="showExamRatingVisible"
               class="d-inline-flex justify-content-end align-items-center flex-shrink-0 gap-1"
               role="group"
               aria-label="題目評價"
@@ -1081,7 +1086,7 @@ const quizAnswerFieldDisabled = computed(
             </div>
           </div>
           <div
-            v-if="showExamRating && card.rateError"
+            v-if="showExamRatingVisible && card.rateError"
             class="my-font-sm-400 my-color-red text-end mb-0 w-100"
           >
             {{ card.rateError }}

@@ -23,6 +23,10 @@ export function readCreateBankTabUiPersisted(personId) {
         o.rag_unit_id != null && String(o.rag_unit_id).trim() !== ''
           ? Number(o.rag_unit_id)
           : 0,
+      rag_quiz_id:
+        o.rag_quiz_id != null && Number(o.rag_quiz_id) >= 1
+          ? Number(o.rag_quiz_id)
+          : 0,
       design_right_unit_expanded: expanded,
     };
   } catch {
@@ -40,6 +44,10 @@ export function writeCreateBankTabUiPersisted(personId, payload) {
         unit_tab_id: payload.unit_tab_id,
         quiz_type_index: payload.quiz_type_index,
         rag_unit_id: payload.rag_unit_id,
+        rag_quiz_id:
+          payload.rag_quiz_id != null && Number(payload.rag_quiz_id) >= 1
+            ? Number(payload.rag_quiz_id)
+            : 0,
         design_right_unit_expanded: Array.isArray(payload.design_right_unit_expanded)
           ? payload.design_right_unit_expanded.map((k) => String(k))
           : [],
@@ -60,6 +68,7 @@ export function persistCreateBankRagTabSelection(personId, ragTabId) {
     unit_tab_id: same ? (prev.unit_tab_id ?? '') : '',
     quiz_type_index: same ? (Number(prev.quiz_type_index) || 0) : 0,
     rag_unit_id: same ? (Number(prev.rag_unit_id) || 0) : 0,
+    rag_quiz_id: same ? (Number(prev.rag_quiz_id) || 0) : 0,
     design_right_unit_expanded: same ? (prev.design_right_unit_expanded ?? []) : [],
   });
 }

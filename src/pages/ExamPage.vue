@@ -12,7 +12,7 @@
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
 import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
   API_BASE,
@@ -66,6 +66,10 @@ import {
   normalizeFollowupHistoryItem,
 } from '../services/ragApi.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
+import {
+  readExamTabUiPersisted,
+  writeExamTabUiPersisted,
+} from '../utils/examTabUiStorage.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -79,6 +83,7 @@ const props = defineProps({
 
 const slots = useSlots();
 const router = useRouter();
+const route = useRoute();
 const showSidePanelHeader = computed(
   () => props.designSidePanelOnLeft && !!slots['side-panel-header'],
 );
@@ -792,7 +797,7 @@ function examSlotYoutubeEmbedUrl(slotIndex) {
   return youtubeEmbedUrlFromInput(raw);
 }
 
-/** 詳細資訊 Modal（unit_type=3/4，僅逐字稿）：槽位 1-based */
+/** 詳細資訊 Modal（unit_type=3/4：播放器／YouTube 嵌入 + 逐字稿）：槽位 1-based */
 const examUnitDetailModalSlotIndex = ref(null);
 
 function openExamUnitDetailModal(slotIndex) {
@@ -807,6 +812,24 @@ const examUnitDetailModalMdHtml = computed(() => {
   const idx = examUnitDetailModalSlotIndex.value;
   if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
   return examSlotUnitTranscriptMdHtml(Number(idx));
+});
+
+const examUnitDetailModalSection = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return null;
+  return examSlotUnitTranscriptSection(Number(idx));
+});
+
+const examUnitDetailModalMp3Props = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return null;
+  return examSlotMp3PlayerProps(Number(idx));
+});
+
+const examUnitDetailModalYoutubeEmbedUrl = computed(() => {
+  const idx = examUnitDetailModalSlotIndex.value;
+  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
+  return examSlotYoutubeEmbedUrl(Number(idx));
 });
 
 /**
@@ -1083,6 +1106,9 @@ const designRightQuizSubTabItems = computed(() => {
     items.push({
       key: `exam-slot-${i}`,
       label: examQuizNavDisplayLabel(i),
+      unitLabel: examSlotUnitLabelForHistoryModal(i),
+      quizTypeLabel: examSlotHeadingBreadcrumbQuizTypeName(i),
+      breadcrumb: examSlotHeadingBreadcrumb(i),
       followup: examSlotIsFollowupMode(i),
       index: i - 1,
       slotIndex: i,
@@ -1219,36 +1245,9 @@ watch(
 
 // ─── 重新整理後還原 tab／slot（sessionStorage，依使用者分鍵） ──────────────────
 
-const EXAM_TAB_UI_STORAGE_PREFIX = 'myquiz:examTabUI:v1:';
-
-function examTabUiStorageKey(personId) {
-  return `${EXAM_TAB_UI_STORAGE_PREFIX}${String(personId ?? '').trim() || 'anon'}`;
-}
-
-function readExamTabUiPersisted(personId) {
-  try {
-    const raw = sessionStorage.getItem(examTabUiStorageKey(personId));
-    if (!raw) return null;
-    const o = JSON.parse(raw);
-    if (!o || typeof o !== 'object') return null;
-    return {
-      exam_tab_id: o.exam_tab_id != null ? String(o.exam_tab_id) : '',
-      exam_slot_index: Number.isFinite(Number(o.exam_slot_index)) ? Number(o.exam_slot_index) : 0,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function writeExamTabUiPersisted(personId, payload) {
-  try {
-    sessionStorage.setItem(
-      examTabUiStorageKey(personId),
-      JSON.stringify({ v: 1, exam_tab_id: payload.exam_tab_id, exam_slot_index: payload.exam_slot_index })
-    );
-  } catch {
-    /* private mode / quota */
-  }
+function routeForcedExamTabId() {
+  if (!String(props.routeDetailBase ?? '').trim()) return '';
+  return String(route.params.exam_id ?? '').trim();
 }
 
 function persistExamTabUiSelection() {
@@ -1256,15 +1255,23 @@ function persistExamTabUiSelection() {
   if (!personId) return;
   const tid = String(activeTabId.value ?? '').trim();
   if (!tid) return;
+  const card = currentState.value.cardList?.[activeExamSlotIndex.value];
+  const eqid = card?.exam_quiz_id ?? card?.quiz_id;
   writeExamTabUiPersisted(personId, {
     exam_tab_id: tid,
     exam_slot_index: activeExamSlotIndex.value,
+    exam_quiz_id: eqid != null && Number(eqid) >= 1 ? Number(eqid) : 0,
   });
 }
 
 function applyPersistedExamSlotIfActive(tabId) {
   const id = String(tabId ?? '').trim();
   if (!id || String(activeTabId.value ?? '').trim() !== id) return;
+  const rqid = Number(String(props.routeExamQuizId ?? '').trim());
+  if (Number.isFinite(rqid) && rqid >= 1) {
+    nextTick(() => applyRouteExamQuizIdSelection());
+    return;
+  }
   const personId = getCurrentPersonId();
   if (!personId) return;
   const persisted = readExamTabUiPersisted(personId);
@@ -1279,9 +1286,14 @@ function applyPersistedExamSlotIfActive(tabId) {
   });
 }
 
-/** 有測驗列表時預設選第一個 tab；若 session 有合法上次選擇則還原 */
+/** 有測驗列表時預設選第一個 tab；exam_3 深連結或 session 還原 */
 watch(examList, (list) => {
   if (list.length === 0 || activeTabId.value != null) return;
+  const forced = routeForcedExamTabId();
+  if (forced && list.some((e) => getExamTabId(e) === forced)) {
+    activeTabId.value = forced;
+    return;
+  }
   const personId = getCurrentPersonId();
   const persisted = personId ? readExamTabUiPersisted(personId) : null;
   const pick =
@@ -1290,6 +1302,21 @@ watch(examList, (list) => {
       : null;
   activeTabId.value = pick ?? getExamTabId(list[0]) ?? list[0];
 }, { immediate: true });
+
+watch(
+  () => [examList.value.length, routeForcedExamTabId()],
+  () => {
+    const forced = routeForcedExamTabId();
+    if (!forced) return;
+    const list = examList.value;
+    if (list.length === 0) return;
+    if (!list.some((e) => getExamTabId(e) === forced)) return;
+    if (String(activeTabId.value ?? '') !== forced) {
+      activeTabId.value = forced;
+    }
+  },
+  { immediate: true },
+);
 
 watch(
   [activeTabId, activeExamSlotIndex],
@@ -3051,7 +3078,7 @@ onActivated(() => {
       @confirm="onExamAddQuestionModalConfirm"
     />
     <Teleport to="body">
-      <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube；僅逐字稿）-->
+      <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube；播放器／嵌入 + 逐字稿）-->
       <div
         v-if="examUnitDetailModalSlotIndex != null"
         class="modal fade show d-block my-modal-backdrop"
@@ -3065,7 +3092,7 @@ onActivated(() => {
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="exam-unit-detail-modal-title"
@@ -3078,14 +3105,49 @@ onActivated(() => {
                 @click="closeExamUnitDetailModal"
               />
             </div>
-            <div class="modal-body p-0 min-w-0" style="max-height: 70vh; overflow: auto;">
+            <div class="modal-body p-0 min-w-0 d-flex flex-column gap-3" style="max-height: 70vh; overflow: auto;">
+              <div
+                v-if="examUnitDetailModalSection?.unitType === UNIT_TYPE_YOUTUBE"
+                class="w-100 min-w-0"
+              >
+                <div
+                  v-if="examUnitDetailModalYoutubeEmbedUrl"
+                  class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                >
+                  <iframe
+                    class="border-0"
+                    title="YouTube 影片"
+                    :src="examUnitDetailModalYoutubeEmbedUrl"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    referrerpolicy="strict-origin-when-cross-origin"
+                    allowfullscreen
+                  />
+                </div>
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black text-break"
+                >{{ examUnitDetailModalSection?.sourceDisplay }}</span>
+              </div>
+              <RagTabUnitMp3Player
+                v-else-if="examUnitDetailModalSection?.unitType === UNIT_TYPE_MP3 && examUnitDetailModalMp3Props"
+                :rag-tab-id="examUnitDetailModalMp3Props.ragTabId"
+                :rag-unit-id="examUnitDetailModalMp3Props.ragUnitId"
+              />
               <div
                 v-if="examUnitDetailModalMdHtml"
-                class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                v-html="examUnitDetailModalMdHtml"
-              />
+                class="w-100 min-w-0"
+              >
+                <div
+                  v-if="examUnitDetailModalSection?.unitType === UNIT_TYPE_MP3 || examUnitDetailModalSection?.unitType === UNIT_TYPE_YOUTUBE"
+                  class="my-font-sm-400 my-color-gray-1 mb-2"
+                >逐字稿</div>
+                <div
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="examUnitDetailModalMdHtml"
+                />
+              </div>
               <span
-                v-else
+                v-else-if="!examUnitDetailModalMp3Props && !examUnitDetailModalYoutubeEmbedUrl"
                 class="my-font-md-400 my-color-black"
               >—</span>
             </div>
@@ -3269,7 +3331,7 @@ onActivated(() => {
                           <div
                             :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
                             class="exam-slot-heading-breadcrumb my-font-sm-400 my-color-gray-1 mb-2 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
-                            :aria-label="`單元與題型：${examSlotHeadingBreadcrumb(activeExamSlotIndex1)}`"
+                            :aria-label="`單元與題型：${examSlotHeadingBreadcrumb(activeExamSlotIndex1)}${examSlotIsFollowupMode(activeExamSlotIndex1) ? '，追問' : ''}`"
                           >
                             <span class="exam-slot-heading-breadcrumb__segment text-truncate">
                               {{ examSlotUnitLabelForHistoryModal(activeExamSlotIndex1) }}
@@ -3278,8 +3340,14 @@ onActivated(() => {
                               class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
                               aria-hidden="true"
                             />
-                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">
-                              {{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}
+                            <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
+                              <span class="exam-slot-heading-breadcrumb__segment text-truncate">
+                                {{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}
+                              </span>
+                              <span
+                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"
+                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                              >追問</span>
                             </span>
                           </div>
                           <div
@@ -3291,10 +3359,6 @@ onActivated(() => {
                               <span
                                 class="my-design-pack-unit-main-title my-test-section-heading-title text-truncate mb-0"
                               >{{ examSlotHeadingQuestionTitle(activeExamSlotIndex1) }}</span>
-                              <span
-                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"
-                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-                              >追問</span>
                             </div>
                             <button
                               v-if="examSlotDetailModalButtonVisible(activeExamSlotIndex1)"
@@ -3601,9 +3665,29 @@ onActivated(() => {
                     class="nav-link w-100 text-start text-break"
                     :class="{ active: item.active }"
                     :aria-current="item.active ? 'page' : undefined"
+                    :aria-label="`${item.label}，${item.breadcrumb}${item.followup ? '，追問' : ''}`"
                     @click="onDesignRightQuizClick(item)"
                   >
-                    {{ item.label }}<span v-if="item.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">追問</span>
+                    <span class="d-flex flex-column align-items-stretch gap-1 min-w-0 w-100">
+                      <span>{{ item.label }}</span>
+                      <span
+                        class="exam-quiz-nav-breadcrumb my-font-sm-400 my-color-gray-1 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
+                        aria-hidden="true"
+                      >
+                        <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
+                        <i
+                          class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
+                          aria-hidden="true"
+                        />
+                        <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
+                          <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.quizTypeLabel }}</span>
+                          <span
+                            v-if="item.followup"
+                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                          >追問</span>
+                        </span>
+                      </span>
+                    </span>
                   </button>
                 </div>
                 <div :class="designSidePanelOnLeft ? 'px-3 pb-3 pt-2' : 'px-3 pb-2 pt-2'">
@@ -3836,6 +3920,11 @@ onActivated(() => {
 .my-design-right-nav .nav-link:not(.active):focus-visible {
   background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
+}
+/* 左欄（gray-4 底）：hover 須用 gray-3 才看得見 */
+.my-design-right-nav--flat button.nav-link:not(.active):hover,
+.my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-3);
 }
 .my-design-right-nav .nav-link.active,
 .my-design-right-nav .nav-link.active:hover,

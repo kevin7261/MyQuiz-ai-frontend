@@ -248,7 +248,7 @@ function toggleLoading() {
 
                     <!-- 3 · gray-3 bg -->
                     <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">bank-grid-tile 背景、modal-content 背景、detail-bar title hover</p>
+                      <p class="my-font-sm-400 my-color-gray-1 mb-1">bank-grid-tile 背景、detail-bar title hover</p>
                       <div class="my-design-swatch-cell">
                         <span class="my-design-swatch-dot my-bgcolor-gray-3" aria-hidden="true"></span>
                         <div class="my-design-swatch-rows">
@@ -900,7 +900,7 @@ function toggleLoading() {
 
                   <!-- 靜態三狀態預覽 -->
                   <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);">
-                    <div class="modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4">
+                    <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
                       <div class="modal-header border-bottom-0 p-0">
                         <h5 class="modal-title my-color-black mb-0">上傳檔案（靜態預覽）</h5>
                         <button type="button" class="btn-close" aria-label="關閉"></button>
@@ -957,8 +957,8 @@ function toggleLoading() {
                       <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
                       <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-header border-bottom-0 p-0</code>
@@ -1077,7 +1077,7 @@ function toggleLoading() {
       @click.self="closeUploadModal"
     >
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" @click.stop>
-        <div class="modal-content border-0 my-bgcolor-gray-3 d-flex flex-column gap-3 p-4">
+        <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
           <div class="modal-header border-bottom-0 p-0">
             <h5 id="design2-upload-modal-title" class="modal-title my-color-black mb-0">上傳檔案</h5>
             <button type="button" class="btn-close" aria-label="關閉" @click="closeUploadModal" />

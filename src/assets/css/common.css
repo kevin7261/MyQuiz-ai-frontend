@@ -1132,6 +1132,12 @@ code {
   -webkit-backdrop-filter: blur(10px);
 }
 
+/* 所有 Modal 內容區一律白底 */
+.modal.show .modal-content,
+.my-modal-backdrop .modal-content {
+  background-color: var(--my-color-white) !important;
+}
+
 /* —— 下拉觸發箭頭：`my-dropdown-caret` 隱藏 Bootstrap ::after；FA `.my-dropdown-toggle-caret`。選單本體用 Bootstrap `.dropdown-menu`／`.dropdown-item` 預設（專案內不覆寫項目色／hover／active）。觸發鈕與 05 中號同 my-font-md-400 px-3 py-2 等 —— */
 .my-dropdown-caret.dropdown-toggle::after {
   display: none;

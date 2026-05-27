@@ -35,7 +35,7 @@ function close() {
         class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
         @click.stop
       >
-        <div class="modal-content border-0 my-bgcolor-gray-3 p-4 d-flex flex-column gap-3">
+        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
           <div class="modal-header border-bottom-0 p-0">
             <h5 :id="titleId" class="modal-title my-color-black">
               先前出題

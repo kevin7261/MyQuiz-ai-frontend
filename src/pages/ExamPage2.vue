@@ -24,6 +24,10 @@ import ExamPage from './ExamPage.vue';
 import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
+import {
+  readExamTabUiPersisted,
+  persistExamTabSelection,
+} from '../utils/examTabUiStorage.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -35,7 +39,6 @@ const props = defineProps({
   useExamDetailRoute: { type: Boolean, default: false },
 });
 
-const EXAM_TAB_UI_STORAGE_PREFIX = 'myquiz:examTabUI:v1:';
 const EXAM_NOUN = '測驗';
 
 /** exam_3 grid 入口按鈕文案（exam_2 仍為「新增測驗」） */
@@ -120,23 +123,6 @@ function isNotFoundLike(status, message) {
   const s = Number(status);
   const m = String(message ?? '').toLowerCase();
   return s === 404 || m.includes('not found') || m.includes('找不到');
-}
-
-function examTabUiStorageKey(personId) {
-  return `${EXAM_TAB_UI_STORAGE_PREFIX}${String(personId ?? '').trim() || 'anon'}`;
-}
-
-function persistExamTabSelection(examTabId) {
-  const personId = getPersonId(authStore);
-  if (!personId || !examTabId) return;
-  try {
-    sessionStorage.setItem(
-      examTabUiStorageKey(personId),
-      JSON.stringify({ v: 1, exam_tab_id: String(examTabId), exam_slot_index: 0 }),
-    );
-  } catch {
-    /* ignore */
-  }
 }
 
 function getExamTabId(exam) {
@@ -247,7 +233,7 @@ function applyRouteExamId() {
   const item = gridItems.value.find((i) => i.tabId === examId);
   const exam = findExamByTabId(examId);
   const label = item?.label ?? ((exam ? getExamTabLabel(exam) : '') || examId);
-  persistExamTabSelection(examId);
+  persistExamTabSelection(getPersonId(authStore), examId);
   selectedExamTabId.value = examId;
   selectedExamLabel.value = label;
   viewMode.value = 'detail';
@@ -273,7 +259,7 @@ function examDetailPath(examTabId, examQuizId = '0') {
 function openExamDetail(tabId, label, examQuizId = '0') {
   const id = String(tabId ?? '').trim();
   if (!id) return;
-  persistExamTabSelection(id);
+  persistExamTabSelection(getPersonId(authStore), id);
   selectedExamTabId.value = id;
   selectedExamLabel.value = label || id;
   viewMode.value = 'detail';
@@ -286,7 +272,7 @@ function openExamDetail(tabId, label, examQuizId = '0') {
 function switchExamDetail(tabId, label) {
   const id = String(tabId ?? '').trim();
   if (!id || id === String(selectedExamTabId.value ?? '')) return;
-  persistExamTabSelection(id);
+  persistExamTabSelection(getPersonId(authStore), id);
   selectedExamTabId.value = id;
   selectedExamLabel.value = label || id;
   const qid = props.useExamDetailRoute ? routeExamQuizIdFromParams.value || '0' : '';
@@ -474,17 +460,47 @@ watch(
   { immediate: true },
 );
 
-onActivated(async () => {
+onActivated(() => {
+  bootstrapExamRoute();
+});
+
+onMounted(() => {
+  bootstrapExamRoute();
+});
+
+async function bootstrapExamRoute() {
   const examId = routeExamIdFromParams.value;
   if (examId) {
-    await fetchExamList();
+    if (examList.value.length === 0 && !examListLoading.value) {
+      await fetchExamList();
+    }
     applyRouteExamId();
     return;
   }
-  if (viewMode.value === 'grid') {
-    fetchExamList();
+  if (props.useExamDetailRoute) {
+    if (examList.value.length === 0 && !examListLoading.value) {
+      await fetchExamList();
+    }
+    const personId = getPersonId(authStore);
+    const persisted = personId ? readExamTabUiPersisted(personId) : null;
+    const tabId = String(persisted?.exam_tab_id ?? '').trim();
+    if (tabId && gridItems.value.some((i) => i.tabId === tabId)) {
+      const qid = persisted?.exam_quiz_id >= 1 ? String(persisted.exam_quiz_id) : '0';
+      const target = examDetailPath(tabId, qid);
+      if (route.path !== target) {
+        router.replace(target);
+        return;
+      }
+    }
   }
-});
+  if (viewMode.value === 'grid') {
+    if (examList.value.length === 0 && !examListLoading.value) {
+      fetchExamList();
+    }
+  } else {
+    applyRouteExamId();
+  }
+}
 
 watch(
   () => (props.useExamDetailRoute
