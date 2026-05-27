@@ -20,11 +20,18 @@ import { apiUpdateExamTabName } from '../services/examApi.js';
 import { deriveRagNameFromTabId, generateTabId, normalizeExamListResponse } from '../utils/rag.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import ExamPage from './ExamPage.vue';
+import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 
-defineProps({
+const props = defineProps({
   tabId: { type: String, required: true },
+  /** 路由前綴，供 exam_2 / exam_3 共用 */
+  routeBase: { type: String, default: '/exam_2' },
+  /** true 時嵌入頁右側清單改顯示於左側（exam_3） */
+  sidePanelOnLeft: { type: Boolean, default: false },
+  /** true 時詳情路由為 /:exam_id/:exam_quiz_id（_3）；false 時為 /:exam_id（_2） */
+  useExamDetailRoute: { type: Boolean, default: false },
 });
 
 const EXAM_TAB_UI_STORAGE_PREFIX = 'myquiz:examTabUI:v1:';
@@ -207,7 +214,7 @@ function findExamByTabId(tabId) {
 }
 
 function applyRouteExamId() {
-  const examId = String(route.params.exam_id ?? '').trim();
+  const examId = routeExamIdFromParams.value;
   if (!examId) {
     viewMode.value = 'grid';
     selectedExamTabId.value = '';
@@ -223,15 +230,33 @@ function applyRouteExamId() {
   viewMode.value = 'detail';
 }
 
-function openExamDetail(tabId, label) {
+const routeExamIdFromParams = computed(() => String(route.params.exam_id ?? '').trim());
+
+const routeExamQuizIdFromParams = computed(() => {
+  if (!props.useExamDetailRoute) return '';
+  return String(route.params.exam_quiz_id ?? '').trim();
+});
+
+function examDetailPath(examTabId, examQuizId = '0') {
+  const id = String(examTabId ?? '').trim();
+  if (!id) return props.routeBase;
+  if (props.useExamDetailRoute) {
+    const qid = String(examQuizId ?? '0').trim() || '0';
+    return `${props.routeBase}/${encodeURIComponent(id)}/${encodeURIComponent(qid)}`;
+  }
+  return `${props.routeBase}/${encodeURIComponent(id)}`;
+}
+
+function openExamDetail(tabId, label, examQuizId = '0') {
   const id = String(tabId ?? '').trim();
   if (!id) return;
   persistExamTabSelection(id);
   selectedExamTabId.value = id;
   selectedExamLabel.value = label || id;
   viewMode.value = 'detail';
-  if (String(route.params.exam_id ?? '') !== id) {
-    router.push(`/exam_2/${encodeURIComponent(id)}`);
+  const target = examDetailPath(id, examQuizId);
+  if (route.path !== target) {
+    router.push(target);
   }
 }
 
@@ -241,8 +266,10 @@ function switchExamDetail(tabId, label) {
   persistExamTabSelection(id);
   selectedExamTabId.value = id;
   selectedExamLabel.value = label || id;
-  if (String(route.params.exam_id ?? '') !== id) {
-    router.push(`/exam_2/${encodeURIComponent(id)}`);
+  const qid = props.useExamDetailRoute ? routeExamQuizIdFromParams.value || '0' : '';
+  const target = examDetailPath(id, qid);
+  if (route.path !== target) {
+    router.push(target);
   }
 }
 
@@ -251,8 +278,8 @@ function backToGrid() {
   selectedExamTabId.value = '';
   selectedExamLabel.value = '';
   fetchExamList();
-  if (route.params.exam_id) {
-    router.push('/exam_2');
+  if (routeExamIdFromParams.value) {
+    router.push(props.routeBase);
   }
 }
 
@@ -389,7 +416,7 @@ async function confirmDeleteExam() {
 }
 
 onActivated(async () => {
-  const examId = String(route.params.exam_id ?? '').trim();
+  const examId = routeExamIdFromParams.value;
   if (examId) {
     await fetchExamList();
     applyRouteExamId();
@@ -415,7 +442,7 @@ watch(
 );
 
 watch(examList, () => {
-  if (route.params.exam_id) {
+  if (routeExamIdFromParams.value) {
     applyRouteExamId();
   }
 });
@@ -438,17 +465,19 @@ watch(
 
 <template>
   <div
-    class="exam-2 d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4"
-    :class="{ 'exam-2--detail': viewMode === 'detail' }"
+    class="exam-2 d-flex flex-column h-100 overflow-hidden"
+    :class="{
+      'exam-2--detail': viewMode === 'detail',
+      'exam-2--side-panel-left': sidePanelOnLeft,
+      'my-bgcolor-white': sidePanelOnLeft,
+      'my-bgcolor-gray-4': !sidePanelOnLeft,
+    }"
   >
     <template v-if="viewMode === 'grid'">
-      <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
-        <div class="container-fluid px-0 text-center">
-          <p class="my-font-xl-400 my-color-black text-break mb-0">測驗</p>
-        </div>
-      </header>
-
-      <div class="flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative d-flex flex-column">
+      <div
+        class="exam-2__grid-scroll flex-grow-1 min-h-0 overflow-auto px-3 px-md-4 py-4 position-relative d-flex flex-column"
+        :class="{ 'exam-2__grid-scroll--scrollbar': sidePanelOnLeft }"
+      >
         <LoadingOverlay
           :is-visible="showGridLoadingOverlay"
           loading-text="載入中..."
@@ -504,7 +533,8 @@ watch(
           <div class="bank-table-header">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-1 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1"
+              class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
+              :class="{ 'rounded-pill': !sidePanelOnLeft }"
               :aria-label="sortOrder === 'asc' ? '升冪排序，點擊改為降冪' : '降冪排序，點擊改為升冪'"
               @click="toggleSort"
             >
@@ -538,84 +568,44 @@ watch(
         :is-visible="deleteExamLoading"
         loading-text="刪除中..."
       />
-      <header class="exam-2-detail-bar flex-shrink-0 px-2 py-3 my-bgcolor-gray-4 border-bottom">
-        <div class="exam-2-detail-bar__start">
-          <button
-            type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0"
-            aria-label="返回主頁"
-            :disabled="detailHeaderActionsDisabled"
-            @click="backToGrid"
-          >
-            <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-            返回主頁
-          </button>
-        </div>
-        <div class="exam-2-detail-bar__center min-w-0">
-          <input
-            v-model="selectedExamLabel"
-            type="text"
-            class="exam-2-detail-bar__title my-font-lg-400 my-color-black text-truncate mb-0 text-center w-100 px-3 py-2 rounded-2"
-            maxlength="200"
-            autocomplete="off"
-            spellcheck="false"
-            aria-label="試卷名稱"
-            :disabled="detailHeaderActionsDisabled"
-            @focus="onExamTitleFocus"
-            @blur="onExamTitleBlur"
-            @keydown.enter.prevent="$event.target.blur()"
-          />
-        </div>
-        <div class="exam-2-detail-bar__end">
-          <div class="dropdown flex-shrink-0 exam-2-exam-switch">
-            <button
-              type="button"
-              class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-color-gray-1 my-button-transparent-borderless exam-2-detail-bar__menu-btn lh-1 dropdown-toggle my-dropdown-caret"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              aria-label="試卷選單"
-              :disabled="detailHeaderActionsDisabled"
-            >
-              <i class="fa-solid fa-bars" aria-hidden="true" />
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end exam-2-exam-switch-menu">
-              <li v-if="gridItems.length === 0">
-                <span class="dropdown-item disabled">尚無測驗</span>
-              </li>
-              <li v-for="item in gridItems" :key="item.tabId">
-                <button
-                  type="button"
-                  class="dropdown-item"
-                  :class="{ active: item.tabId === selectedExamTabId }"
-                  @click="switchExamDetail(item.tabId, item.label)"
-                >
-                  {{ item.label }}
-                </button>
-              </li>
-              <li>
-                <hr class="dropdown-divider" />
-              </li>
-              <li>
-                <button
-                  type="button"
-                  class="dropdown-item my-color-red"
-                  :disabled="detailHeaderActionsDisabled"
-                  :aria-busy="deleteExamLoading"
-                  @click="openDeleteExamModal"
-                >
-                  刪除此試卷
-                </button>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </header>
+      <ExamPage2DetailBar
+        v-if="!sidePanelOnLeft"
+        v-model:selected-exam-label="selectedExamLabel"
+        :detail-header-actions-disabled="detailHeaderActionsDisabled"
+        :grid-items="gridItems"
+        :selected-exam-tab-id="selectedExamTabId"
+        :delete-exam-loading="deleteExamLoading"
+        @back="backToGrid"
+        @switch-exam="switchExamDetail"
+        @delete-exam="openDeleteExamModal"
+        @title-focus="onExamTitleFocus"
+        @title-blur="onExamTitleBlur"
+      />
 
       <ExamPage
         :key="selectedExamTabId"
         :tab-id="tabId"
+        :design-side-panel-on-left="sidePanelOnLeft"
+        :route-detail-base="useExamDetailRoute ? routeBase : ''"
+        :route-exam-quiz-id="routeExamQuizIdFromParams"
         class="exam-2-embedded flex-grow-1 min-h-0"
-      />
+      >
+        <template v-if="sidePanelOnLeft" #side-panel-header>
+          <ExamPage2DetailBar
+            v-model:selected-exam-label="selectedExamLabel"
+            :detail-header-actions-disabled="detailHeaderActionsDisabled"
+            :grid-items="gridItems"
+            :selected-exam-tab-id="selectedExamTabId"
+            :delete-exam-loading="deleteExamLoading"
+            in-side-panel
+            @back="backToGrid"
+            @switch-exam="switchExamDetail"
+            @delete-exam="openDeleteExamModal"
+            @title-focus="onExamTitleFocus"
+            @title-blur="onExamTitleBlur"
+          />
+        </template>
+      </ExamPage>
     </template>
   </div>
 
@@ -640,19 +630,29 @@ watch(
   display: flex;
   justify-content: flex-end;
   padding-bottom: 0.75rem;
-  margin-inline: -1rem;
-}
-
-@media (min-width: 768px) {
-  .bank-table-actions {
-    margin-inline: -1.5rem;
-  }
 }
 
 .bank-table-header {
   display: flex;
   align-items: center;
+  gap: 0.75rem;
   padding: 0 1.25rem 0.5rem;
+}
+
+.bank-table-sort-btn {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+  font-weight: var(--my-font-weight-regular);
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.bank-table-sort-btn:hover:not(:disabled),
+.bank-table-sort-btn:focus-visible:not(:disabled),
+.bank-table-sort-btn:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  font-weight: var(--my-font-weight-semibold);
+  background-color: transparent !important;
 }
 
 .bank-list {
@@ -712,18 +712,7 @@ watch(
   opacity: 0.4;
 }
 
-
-/* ── detail bar ─────────────────────────────────────── */
-.exam-2-detail-bar {
-  display: grid;
-  grid-template-columns: 1fr minmax(0, 50%) 1fr;
-  align-items: center;
-  gap: 0.75rem;
-  border-color: var(--my-color-gray-2, #e5e5e5) !important;
-  overflow: visible;
-  position: relative;
-  z-index: 30;
-}
+/* ── detail bar styles moved to ExamPage2DetailBar.vue ── */
 
 .exam-2.exam-2--detail {
   overflow: visible;
@@ -733,76 +722,34 @@ watch(
   overflow: hidden;
 }
 
-.exam-2-detail-bar__start {
-  justify-self: start;
-  min-width: 0;
+.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
 }
 
-.exam-2-detail-bar__center {
-  justify-self: stretch;
-  width: 100%;
-  min-width: 0;
+.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
 }
 
-.exam-2-detail-bar__title {
-  display: block;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
-  margin: 0;
-  font-family: inherit;
-  line-height: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color 0.15s ease;
+.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-track {
+  background: var(--my-color-white);
+  border-radius: calc(var(--my-scrollbar-size) / 2);
 }
 
-.exam-2-detail-bar__title:hover:not(:disabled),
-.exam-2-detail-bar__title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3, #f5f5f5);
+.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--my-scrollbar-thumb);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
 }
 
-.exam-2-detail-bar__title:focus {
-  outline: none;
-  box-shadow: none;
-  border: none;
+.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-corner {
+  background: var(--my-color-white);
 }
 
-.exam-2-detail-bar__title:disabled {
-  opacity: 1;
-  color: var(--my-color-black, #000);
-  background: transparent;
-}
-
-.exam-2-detail-bar__end {
-  justify-self: end;
-  min-width: 0;
-}
-
-.exam-2-detail-bar__menu-btn {
-  width: 2.375rem;
-  height: 2.375rem;
-  min-width: 2.375rem;
-  min-height: 2.375rem;
-  padding: 0;
-}
-
-.exam-2-exam-switch-menu {
-  min-width: 10rem;
-  max-height: min(60vh, 24rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.exam-2-exam-switch-menu > li {
-  display: block;
-  width: 100%;
-}
-
-.exam-2-exam-switch-menu .dropdown-item {
-  width: 100%;
-  white-space: nowrap;
+.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-scrollbar-thumb-hover);
 }
 
 .exam-2-embedded :deep(> header) {
@@ -813,10 +760,38 @@ watch(
   display: none !important;
 }
 
-/* 嵌入原頁：子元件 pill 若仍為 px-3，與九宮格版一致改為 px-4 */
 .exam-2-embedded :deep(button.btn.rounded-pill.px-3),
 .exam-2-embedded :deep(button.btn.rounded-2.px-3) {
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
+}
+
+.exam-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
+.exam-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn)),
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn)) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.exam-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.exam-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+.exam-2--side-panel-left.exam-2--detail,
+.exam-2--side-panel-left.exam-2--detail .exam-2-embedded {
+  background-color: var(--my-color-white) !important;
+}
+
+.exam-2--side-panel-left.exam-2--detail .exam-2-embedded :deep(.my-design--side-panel-left) {
+  background-color: var(--my-color-white) !important;
 }
 </style>

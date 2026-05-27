@@ -6657,11 +6657,11 @@ async function confirmAnswer(item) {
                     {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
                 </div>
-                <!-- 子區塊：題目區（頂部 pt-2 在出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
+                <!-- 子區塊：題目區（出題規則黑區上方；產生題目按鈕與題目 title 間不加 pt-2） -->
                 <div class="my-design-quiz-sub-block-outer">
                   <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2">
                     <div
-                      class="w-100 min-w-0 pt-2 my-design-quiz-stem-sub-block-top d-flex flex-column"
+                      class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
                     <div class="my-design-quiz-question-prompt-wrap px-3 pt-2 pb-0 w-100 min-w-0">
                       <section
@@ -7695,11 +7695,11 @@ async function confirmAnswer(item) {
 }
 /*
  * 出題／批改規則黑底區外層 wrap：px-3 pt-2；標題列 px-3 py-2 → 橫線 → 內文
- * 題目／批改子區塊頂部：.my-design-quiz-stem-sub-block-top（w-100 pt-2，灰底區最上方、非題目 title 列）
+ * 題目／批改子區塊頂部：.my-design-quiz-stem-sub-block-top（灰底區最上方、非題目 title 列）
  */
 .my-design-quiz-stem-sub-block-top,
 .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-sub-block-top) {
-  padding-top: 0.5rem !important;
+  padding-top: 0 !important;
 }
 .my-design-quiz-question-prompt-block,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {

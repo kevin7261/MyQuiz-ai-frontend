@@ -35,6 +35,7 @@ const PATH_TO_VIEW = {
   'create-exam-bank_3': 'createExamQuizBank3',
   design: 'designPage',
   design_2: 'designPage2',
+  design_3: 'designPage3',
   logo: 'logoPage',
   'manage-users': 'userManagement',
   settings: 'systemSettings',
@@ -59,6 +60,7 @@ const PATH_TO_VIEW = {
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
         if (route.path === '/exam_2' || route.name === 'Exam2Detail') return 'work2';
+        if (route.path.startsWith('/exam_3') || route.name === 'Exam3Detail') return 'work3';
         if (route.path === '/create-exam-bank_2' || route.name === 'CreateExamBank2Detail') {
           return 'createExamQuizBank2';
         }
@@ -69,9 +71,14 @@ const PATH_TO_VIEW = {
       });
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
 
-      /** create-exam-bank_3：全寬版面，頂部導覽列取代左側欄 */
+      /** create-exam-bank_3 / exam_3 / design_3：全寬版面，頂部導覽列取代左側欄 */
       const useTopHeaderLayout = computed(
-        () => route.path.startsWith('/create-exam-bank_3') || route.name === 'CreateExamBank3Detail',
+        () =>
+          route.path.startsWith('/create-exam-bank_3')
+          || route.name === 'CreateExamBank3Detail'
+          || route.path.startsWith('/exam_3')
+          || route.name === 'Exam3Detail'
+          || route.params.view === 'design_3',
       );
 
       /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */
@@ -114,6 +121,10 @@ const PATH_TO_VIEW = {
         }
         if (type === 'work2') {
           if (!route.path.startsWith('/exam_2')) router.push('/exam_2');
+          return;
+        }
+        if (type === 'work3') {
+          if (!route.path.startsWith('/exam_3')) router.push('/exam_3');
           return;
         }
         if (type === 'createExamQuizBank2') {

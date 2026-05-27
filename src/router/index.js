@@ -6,6 +6,7 @@
  * - /login → 登入頁（LoginView）
  * - /exam → 測驗/工作區（HomeView，內部 currentView 為 work）
  * - /exam_2、/exam_2/:exam_id → 測驗九宮格版（work2）
+ * - /exam_3、/exam_3/:exam_id/:exam_quiz_id → 測驗 TopView 全寬版（work3，對齊 create-exam-bank_3）
  * - /create-exam-bank_2、/create-exam-bank_2/:rag_id → 建立測驗題庫九宮格版
  * - /create-exam-bank_3、/create-exam-bank_3/:exam_id/:exam_quiz_id → 建立測驗題庫九宮格版（_3 詳情含題型深連結）
  * - /:view → 主區塊各功能（student-weakness-analysis、profile、create-exam-bank、design、design_2、manage-users 等），由 HomeView 依 view 渲染
@@ -26,6 +27,7 @@ const VALID_VIEWS = [
   'create-exam-bank',
   'design',
   'design_2',
+  'design_3',
   'logo',
   'manage-users',
   'settings',
@@ -36,6 +38,7 @@ const VALID_VIEWS = [
 const VIEW_TITLES = {
   work: '測驗 - MyQuiz.ai',
   work2: '測驗 - MyQuiz.ai',
+  work3: '測驗 - MyQuiz.ai',
   'student-weakness-analysis': '作答弱點分析 - MyQuiz.ai',
   'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
   profile: '設定 - MyQuiz.ai',
@@ -44,6 +47,7 @@ const VIEW_TITLES = {
   'create-exam-bank_3': '建立測驗題庫 - MyQuiz.ai',
   design: '設計稿 - MyQuiz.ai',
   design_2: '設計稿 2 - MyQuiz.ai',
+  design_3: '設計稿 3 - MyQuiz.ai',
   logo: 'Logo 繪製 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
@@ -75,6 +79,25 @@ const routes = [
     name: 'Exam2Detail',
     component: HomeView,
     meta: { title: '測驗 - MyQuiz.ai' },
+  },
+  {
+    path: '/exam_3',
+    name: 'Exam3',
+    component: HomeView,
+    meta: { title: '測驗 - MyQuiz.ai' },
+  },
+  {
+    path: '/exam_3/:exam_id/:exam_quiz_id',
+    name: 'Exam3Detail',
+    component: HomeView,
+    meta: { title: '測驗 - MyQuiz.ai' },
+  },
+  {
+    path: '/exam_3/:exam_id',
+    redirect: (to) => ({
+      path: `/exam_3/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
+      query: to.query,
+    }),
   },
   {
     path: '/create-exam-bank_2',
