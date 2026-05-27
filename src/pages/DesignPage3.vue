@@ -1,8 +1,9 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import DesignPageSpecItem from '../components/DesignPageSpecItem.vue';
 import DesignPageSpecColorGroup from '../components/DesignPageSpecColorGroup.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
+import MessageModal from '../components/MessageModal.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
@@ -33,8 +34,8 @@ const demoBankGridItems = [
   { tabId: 'bank-b', label: '試卷用題庫', subtitle: '', isExam: true },
 ];
 
-// ── Tab 狀態 ──────────────────────────────────────────────────
-const activeTab = ref('color');
+// ── Tab 狀態（sessionStorage 還原） ─────────────────────────────
+const DESIGN3_ACTIVE_TAB_STORAGE_KEY = 'myquiz:designPage3:activeTab:v1';
 const TABS = [
   { id: 'color',      label: '顏色' },
   { id: 'type',       label: '字體' },
@@ -48,6 +49,28 @@ const TABS = [
   { id: 'header-bar', label: '頁首頂列' },
   { id: 'embed',      label: '嵌入' },
 ];
+const DESIGN3_TAB_IDS = new Set(TABS.map((tab) => tab.id));
+
+function readDesign3ActiveTab() {
+  try {
+    const id = sessionStorage.getItem(DESIGN3_ACTIVE_TAB_STORAGE_KEY);
+    if (id && DESIGN3_TAB_IDS.has(id)) return id;
+  } catch {
+    /* private mode / quota */
+  }
+  return 'color';
+}
+
+const activeTab = ref(readDesign3ActiveTab());
+
+watch(activeTab, (id) => {
+  if (!DESIGN3_TAB_IDS.has(id)) return;
+  try {
+    sessionStorage.setItem(DESIGN3_ACTIVE_TAB_STORAGE_KEY, id);
+  } catch {
+    /* private mode / quota */
+  }
+});
 
 // ── 上傳 Modal ───────────────────────────────────────────
 const uploadModalOpen   = ref(false);
@@ -82,6 +105,25 @@ async function onDeleteConfirm() {
   await new Promise(r => setTimeout(r, 1200));
   deleteModalDeleting.value = false;
   deleteModalOpen.value = false;
+}
+
+// ── 訊息 Modal（MessageModal 示範） ───────────────────────────
+const messageDemoOpen = ref(false);
+const messageDemoTitle = ref('提示');
+const messageDemoMessage = ref('');
+function openMessageDemo(title, message) {
+  messageDemoTitle.value = title;
+  messageDemoMessage.value = message;
+  messageDemoOpen.value = true;
+}
+function openListErrorDemo() {
+  openMessageDemo('無法載入列表', '請先登入以載入測驗列表');
+}
+function openTranscriptErrorDemo() {
+  openMessageDemo(
+    '無法讀取來源內容',
+    '逐字稿讀取失敗：於資料夾「2_SNA.Data」下找不到支援的音訊檔（副檔名: .aac, .flac, .m4a, .mp3, .mp4, .mpeg, .mpga, .ogg, .opus, .wav, .webm, .wma）',
+  );
 }
 
 // ── LoadingOverlay ───────────────────────────────────────
@@ -323,6 +365,8 @@ const DESIGN3_MODAL_SPECS = [
   { name: 'modal-drop-zone', usage: 'ZIP 拖放區（空／已選）', css: 'my-zip-drop-zone text-center position-relative' },
   { name: 'modal-drop-zone-over', usage: 'ZIP 拖放區拖曳中', css: 'my-zip-drop-zone my-zip-drop-zone-over' },
   { name: 'modal-footer', usage: 'Modal 底部按鈕列', css: 'modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0' },
+  { name: 'modal-message-component', usage: 'MessageModal：頁面級錯誤／警告（列表、建立、pack、出題、來源內容逐字稿等）；work3 :confirm-button-class=my-button-white', css: 'MessageModal · modal fade show d-block my-modal-backdrop · modal-dialog modal-dialog-centered · modal-title my-color-black · my-color-red my-font-sm-400 mb-0 text-break', copyText: 'MessageModal' },
+  { name: 'modal-error-text', usage: 'MessageModal 內文；上傳 Modal 內 newBankUploadError；ConfirmDeleteModal :error（取代 my-alert-warning-soft／my-alert-danger-soft 與「來源內容」下方 inline 紅字）', css: 'my-color-red my-font-sm-400 mb-0 text-break' },
 ];
 
 const DESIGN3_EMBED_SPECS = [
@@ -688,22 +732,8 @@ function design3PackUnitTypeIconCss(unitType) {
             <template v-else-if="activeTab === 'alert'">
               <section class="my-page-block-spacing mb-0">
                 <div class="rounded-4 my-design-page-section p-4">
-                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">提示訊息</div>
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">提示</div>
                   <div class="d-flex flex-column gap-4">
-                    <DesignPageSpecItem
-                      name="alert-warning"
-                      usage="ragListError／examListError 列表載入警告"
-                      css="my-alert-warning-soft my-font-sm-400 py-2"
-                    >
-                      <div class="my-alert-warning-soft my-font-sm-400 py-2">列表載入警告（示意）</div>
-                    </DesignPageSpecItem>
-                    <DesignPageSpecItem
-                      name="alert-danger"
-                      usage="createExamError／newBankUploadError 建立或上傳失敗"
-                      css="my-alert-danger-soft my-font-sm-400 py-2"
-                    >
-                      <div class="my-alert-danger-soft my-font-sm-400 py-2">建立或上傳失敗（示意）</div>
-                    </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="hint-empty-quiz-types"
                       usage="create-exam-bank_3 建置後主內容無題型：flex 居中 my-font-md-400 my-color-gray-1"
@@ -916,23 +946,11 @@ function design3PackUnitTypeIconCss(unitType) {
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       name="badge-followup"
-                      usage="UnitSelectDropdown 下拉選項列內「追問」"
-                      css="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1"
+                      usage="「追問」標籤（UnitSelectDropdown 觸發／選項、左側題型列等）"
+                      css="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded flex-shrink-0 px-2 py-1"
+                      copy-text="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded flex-shrink-0 px-2 py-1"
                     >
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="my-font-sm-400 my-color-gray-1">選項 A</span>
-                        <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1">追問</span>
-                      </div>
-                    </DesignPageSpecItem>
-                    <DesignPageSpecItem
-                      name="badge-followup-trigger"
-                      usage="觸發按鈕列內「追問」（右側 ms-2 flex-shrink-0）"
-                      css="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1"
-                    >
-                      <div class="d-flex align-items-center gap-2">
-                        <span class="my-font-sm-400 my-color-gray-1">單元名稱</span>
-                        <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded ms-2 flex-shrink-0 px-2 py-1">追問</span>
-                      </div>
+                      <span class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded flex-shrink-0 px-2 py-1">追問</span>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="badge-unit-quiz-type-count"
@@ -1079,6 +1097,99 @@ function design3PackUnitTypeIconCss(unitType) {
             <template v-else-if="activeTab === 'modal'">
               <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">訊息 Modal</div>
+                  <p class="my-font-sm-400 my-color-gray-1 mb-4">
+                    警告／錯誤一律以 <code class="my-color-black">MessageModal</code> 呈現（含列表載入、建立、pack、出題、設定單元「來源內容」逐字稿讀取失敗等）；不再使用頁面 inline
+                    <code class="my-color-black">my-alert-warning-soft</code>／<code class="my-color-black">my-alert-danger-soft</code> 或「來源內容」下方紅字。
+                    上傳 Modal 內驗證錯誤仍為 Modal 內 <code class="my-color-black">my-color-red my-font-sm-400 text-break</code>。
+                  </p>
+                  <DesignPageSpecItem
+                    name="modal-message-component"
+                    usage="MessageModal 元件；ExamPage／CreateExamQuizBankPage 經 useMessageModal 自動開啟"
+                    css="MessageModal · modal-dialog modal-dialog-centered · modal-title my-color-black · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
+                    copy-text="MessageModal"
+                  />
+                  <div class="d-flex flex-wrap gap-2 mb-4">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+                      @click="openListErrorDemo"
+                    >
+                      開啟列表錯誤示範
+                    </button>
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+                      @click="openTranscriptErrorDemo"
+                    >
+                      開啟來源內容錯誤示範
+                    </button>
+                  </div>
+                  <DesignPageSpecItem
+                    name="modal-message-list-error"
+                    usage="列表載入失敗（ragListError／examListError）、建立失敗（createExamError）、刪除失敗等"
+                    css="MessageModal · title 無法載入列表 · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
+                    copy-text="MessageModal"
+                  >
+                    <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);">
+                      <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
+                        <div class="modal-header border-bottom-0 p-0">
+                          <h5 class="modal-title my-color-black mb-0">無法載入列表</h5>
+                          <button type="button" class="btn-close" aria-label="關閉" />
+                        </div>
+                        <div class="modal-body p-0 min-w-0">
+                          <div class="my-color-red my-font-sm-400 mb-0 text-break">請先登入以載入測驗列表</div>
+                        </div>
+                        <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
+                          <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2">確定</button>
+                        </div>
+                      </div>
+                    </div>
+                  </DesignPageSpecItem>
+                  <DesignPageSpecItem
+                    name="modal-message-transcript-error"
+                    usage="設定單元「來源內容」逐字稿／MP3／YouTube 自動載入失敗（setPackUnitTranscriptErrorAt；不在預覽下方顯示紅字）"
+                    css="MessageModal · title 無法讀取來源內容 · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
+                    copy-text="MessageModal"
+                  >
+                    <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);">
+                      <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
+                        <div class="modal-header border-bottom-0 p-0">
+                          <h5 class="modal-title my-color-black mb-0">無法讀取來源內容</h5>
+                          <button type="button" class="btn-close" aria-label="關閉" />
+                        </div>
+                        <div class="modal-body p-0 min-w-0">
+                          <div class="my-color-red my-font-sm-400 mb-0 text-break">
+                            逐字稿讀取失敗：於資料夾「2_SNA.Data」下找不到支援的音訊檔（副檔名: .aac, .flac, .m4a, .mp3, .mp4, .mpeg, .mpga, .ogg, .opus, .wav, .webm, .wma）
+                          </div>
+                        </div>
+                        <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
+                          <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2">確定</button>
+                        </div>
+                      </div>
+                    </div>
+                  </DesignPageSpecItem>
+                  <div class="d-flex flex-column gap-4 mt-4">
+                    <DesignPageSpecItem
+                      v-for="spec in DESIGN3_MODAL_SPECS.filter((s) => s.name !== 'modal-message-component' && s.name !== 'modal-error-text')"
+                      :key="spec.name"
+                      :name="spec.name"
+                      :usage="spec.usage"
+                      :css="spec.css"
+                      :copy-text="spec.copyText"
+                    />
+                    <DesignPageSpecItem
+                      name="modal-error-text"
+                      usage="MessageModal 內文；上傳 Modal 內 newBankUploadError；ConfirmDeleteModal :error"
+                      css="my-color-red my-font-sm-400 mb-0 text-break"
+                      copy-text="my-color-red my-font-sm-400 mb-0 text-break"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section class="my-page-block-spacing">
+                <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-2">上傳 Modal</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-3">
                     create-exam-bank_3 新增題庫；Teleport to body；
@@ -1133,7 +1244,7 @@ function design3PackUnitTypeIconCss(unitType) {
                         </div>
                         <div>
                           <p class="my-font-sm-400 my-color-gray-1 mb-2">錯誤（newBankUploadError）</p>
-                          <div class="my-alert-danger-soft my-font-sm-400 mb-0 py-2">請選擇 .zip 檔案</div>
+                          <div class="my-color-red my-font-sm-400 mb-0 text-break">請選擇 .zip 檔案</div>
                         </div>
                       </div>
                       <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
@@ -1145,11 +1256,12 @@ function design3PackUnitTypeIconCss(unitType) {
 
                   <div class="d-flex flex-column gap-4 mt-4">
                     <DesignPageSpecItem
-                      v-for="spec in DESIGN3_MODAL_SPECS"
+                      v-for="spec in DESIGN3_MODAL_SPECS.filter((s) => !['modal-message-component', 'modal-error-text'].includes(s.name))"
                       :key="spec.name"
                       :name="spec.name"
                       :usage="spec.usage"
                       :css="spec.css"
+                      :copy-text="spec.copyText"
                     />
                   </div>
                 </div>
@@ -1268,7 +1380,7 @@ function design3PackUnitTypeIconCss(unitType) {
                 </div>
               </template>
             </div>
-            <div v-if="uploadError" class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0">{{ uploadError }}</div>
+            <div v-if="uploadError" class="my-color-red my-font-sm-400 mt-2 mb-0 text-break">{{ uploadError }}</div>
           </div>
           <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
             <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2" @click="closeUploadModal">取消</button>
@@ -1287,6 +1399,14 @@ function design3PackUnitTypeIconCss(unitType) {
     :deleting="deleteModalDeleting"
     :error="deleteModalError"
     @confirm="onDeleteConfirm"
+  />
+
+  <!-- ── 訊息 Modal（MessageModal 示範） ── -->
+  <MessageModal
+    v-model="messageDemoOpen"
+    :title="messageDemoTitle"
+    :message="messageDemoMessage"
+    confirm-button-class="my-button-white"
   />
 
   <!-- ── LoadingOverlay ── -->

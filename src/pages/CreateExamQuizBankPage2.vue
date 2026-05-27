@@ -22,7 +22,9 @@ import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
+import MessageModal from '../components/MessageModal.vue';
 import { persistCreateBankRagTabSelection } from '../utils/createBankTabUiStorage.js';
+import { useMessageModal } from '../composables/useMessageModal.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -64,6 +66,19 @@ const deleteRagLoading = ref(false);
 const deleteBankModalOpen = ref(false);
 const deleteBankModalMessage = ref('');
 const deleteBankError = ref('');
+
+const messageModal = useMessageModal();
+const {
+  open: messageModalOpen,
+  title: messageModalTitle,
+  message: messageModalMessage,
+  confirmButtonClass: messageModalConfirmClass,
+  close: closeMessageModal,
+} = messageModal;
+const messageModalOpts = {
+  confirmButtonClass: () => (props.sidePanelOnLeft ? 'my-button-white' : 'my-button-black'),
+};
+messageModal.bindErrorRef(ragListError, '無法載入列表', messageModalOpts);
 
 const newBankUploadConfirmDisabled = computed(
   () => createRagLoading.value || !newBankUploadFile.value,
@@ -554,13 +569,6 @@ watch(viewMode, (mode) => {
           loading-text="載入中..."
         />
 
-        <div
-          v-if="ragListError"
-          class="my-alert-warning-soft my-font-sm-400 py-2 mb-3"
-        >
-          {{ ragListError }}
-        </div>
-
         <!-- 清單為空：居中顯示大型新增按鈕 -->
         <div
           v-if="sortedItems.length === 0 && !ragListLoading"
@@ -758,7 +766,7 @@ watch(viewMode, (mode) => {
             </div>
             <div
               v-if="newBankUploadError"
-              class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0"
+              class="my-color-red my-font-sm-400 mt-2 mb-0 text-break"
             >
               {{ newBankUploadError }}
             </div>
@@ -794,6 +802,13 @@ watch(viewMode, (mode) => {
     :deleting="deleteRagLoading"
     :error="deleteBankError"
     @confirm="confirmDeleteBank"
+  />
+  <MessageModal
+    v-model="messageModalOpen"
+    :title="messageModalTitle"
+    :message="messageModalMessage"
+    :confirm-button-class="messageModalConfirmClass"
+    @update:model-value="(v) => { if (!v) closeMessageModal(); else messageModalOpen = v; }"
   />
 </template>
 

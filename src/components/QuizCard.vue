@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, inject } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
 import LogoGradientPillButton from './LogoGradientPillButton.vue';
 import QuizHistoryModal from './QuizHistoryModal.vue';
@@ -111,6 +111,15 @@ const props = defineProps({
     validator: (v) => ['default', 'work3'].includes(v),
   },
 });
+
+const showMessageModal = inject('showMessageModal', null);
+watch(
+  () => String(props.card?.ragQuizForExamError ?? '').trim(),
+  (msg) => {
+    if (!msg || typeof showMessageModal !== 'function') return;
+    showMessageModal('操作失敗', msg);
+  },
+);
 
 /** work3 題目／答案 tab 列：無 pt-2（區塊頂 pt-2 由父層負責） */
 function designStemTabsRowHeadClass(useTabs) {
@@ -1837,12 +1846,6 @@ const quizAnswerFieldDisabled = computed(
           >
             {{ cardMarkedForExam ? '取消設為測驗用' : '設為測驗用' }}
           </button>
-          <div
-            v-if="String(card.ragQuizForExamError ?? '').trim() !== ''"
-            class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-center"
-          >
-            {{ card.ragQuizForExamError }}
-          </div>
         </div>
         <button
           v-if="hideGradingPrompt && !hideExamRulePills"

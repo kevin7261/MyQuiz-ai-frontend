@@ -15,7 +15,7 @@
  * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，選定類型且資料夾就緒後自動載入逐字稿，完成載入前編輯區停用且不能新增單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
-import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
+import { ref, computed, watch, onActivated, reactive, nextTick, useSlots, provide } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
@@ -82,6 +82,7 @@ import {
   DEFAULT_PACK_CHUNK_OVERLAP,
 } from '../utils/rag.js';
 import { useRagList } from '../composables/useRagList.js';
+import { useMessageModal } from '../composables/useMessageModal.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
@@ -91,6 +92,7 @@ import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
 import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
+import MessageModal from '../components/MessageModal.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 import {
   readCreateBankTabUiPersisted,
@@ -131,6 +133,22 @@ const d3PackUnitAddFolderPill = computed(() => (
   props.designSidePanelOnLeft ? 'my-button-gray-3' : 'my-button-white'
 ));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
+
+const messageModal = useMessageModal();
+const {
+  open: messageModalOpen,
+  title: messageModalTitle,
+  message: messageModalMessage,
+  confirmButtonClass: messageModalConfirmClass,
+  close: closeMessageModal,
+} = messageModal;
+provide('showMessageModal', (modalTitle, text, options = {}) => {
+  messageModal.show(modalTitle, text, {
+    confirmButtonClass: () => d3ConfirmPillMd.value,
+    ...options,
+  });
+});
+const messageModalOpts = { confirmButtonClass: () => d3ConfirmPillMd.value };
 const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
 const d3SegmentSelected = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
 /** create-exam-bank_3：一般／追問 segmented 選中態（淺灰底） */
@@ -1742,11 +1760,26 @@ function preparePackUnitTranscriptCall(gi, group) {
 const PACK_UNIT_TRANSCRIPT_ERROR_FALLBACK =
   '逐字稿讀取失敗：請確認已上傳教材 ZIP／資料夾名稱與 ZIP 內二層資料夾一致，且資料夾內有可作為逐字稿的內容。';
 
-/** 將自動載入 transcript fetch 異常／空內容寫入對列（若有 Error.message 會一併顯示以利除錯） */
-function packUnitPreviewTranscriptError(gi, caught) {
+function setPackUnitTranscriptErrorAt(gi, message) {
   const s = currentState.value;
   ensurePackUnitSidecarArrays();
   const arr = [...s.packUnitTranscriptError];
+  const text = String(message ?? '').trim();
+  arr[gi] = text;
+  s.packUnitTranscriptError = arr;
+  if (!text) return;
+  messageModal.show('無法讀取來源內容', text, {
+    confirmButtonClass: () => d3ConfirmPillMd.value,
+    onClose: () => {
+      const err = [...currentState.value.packUnitTranscriptError];
+      if (String(err[gi] ?? '').trim() === text) err[gi] = '';
+      currentState.value.packUnitTranscriptError = err;
+    },
+  });
+}
+
+/** 將自動載入 transcript fetch 異常／空內容寫入對列（若有 Error.message 會一併顯示以利除錯） */
+function packUnitPreviewTranscriptError(gi, caught) {
   let detail =
     caught instanceof Error
       ? String(caught.message ?? '').trim()
@@ -1754,8 +1787,10 @@ function packUnitPreviewTranscriptError(gi, caught) {
   if (/^empty transcript$/i.test(detail))
     detail = '伺服器回傳的逐字稿為空（可能無對應 .md 或可讀欄位）；請檢查該資料夾內容。';
   if (detail && detail.length > 600) detail = `${detail.slice(0, 597)}…`;
-  arr[gi] = detail ? `逐字稿讀取失敗：${detail}` : PACK_UNIT_TRANSCRIPT_ERROR_FALLBACK;
-  s.packUnitTranscriptError = arr;
+  setPackUnitTranscriptErrorAt(
+    gi,
+    detail ? `逐字稿讀取失敗：${detail}` : PACK_UNIT_TRANSCRIPT_ERROR_FALLBACK,
+  );
 }
 
 function youtubeUrlFromUnitUrlResponse(data) {
@@ -1790,14 +1825,10 @@ async function loadPackUnitPreviewForType(gi, group) {
 
   const ctx = preparePackUnitTranscriptCall(gi, group);
   if (!ctx) {
-    const s = currentState.value;
-    ensurePackUnitSidecarArrays();
-    const err = [...s.packUnitTranscriptError];
     const folder = firstFolderNameInGroup(group);
-    if (!folder) err[gi] = '請先加入一個資料夾';
-    else if (!ragTabIdForTranscript()) err[gi] = '請先上傳教材 ZIP';
-    else if (!getPersonId(authStore)) err[gi] = '請先登入';
-    s.packUnitTranscriptError = err;
+    if (!folder) setPackUnitTranscriptErrorAt(gi, '請先加入一個資料夾');
+    else if (!ragTabIdForTranscript()) setPackUnitTranscriptErrorAt(gi, '請先上傳教材 ZIP');
+    else if (!getPersonId(authStore)) setPackUnitTranscriptErrorAt(gi, '請先登入');
     return;
   }
 
@@ -4490,6 +4521,35 @@ function getSlotFormState(slotIndex) {
   return slot;
 }
 
+messageModal.bindErrorRef(ragListError, '無法載入列表', messageModalOpts);
+messageModal.bindErrorRef(createRagError, '建立失敗', messageModalOpts);
+messageModal.bindErrorGetter(
+  () => currentState.value.packError,
+  '無法建立單元',
+  (val) => { currentState.value.packError = val; },
+  messageModalOpts,
+);
+messageModal.bindErrorGetter(
+  () => getSlotFormState(activeUnitSlotIndex.value).error,
+  '出題失敗',
+  (val) => { getSlotFormState(activeUnitSlotIndex.value).error = val; },
+  messageModalOpts,
+);
+messageModal.bindErrorGetter(
+  () => getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateError,
+  '操作失敗',
+  (val) => { getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateError = val; },
+  messageModalOpts,
+);
+messageModal.bindErrorGetter(
+  () => String(activeUnitQuizCard.value?.ragQuizFollowupError ?? ''),
+  '操作失敗',
+  (val) => {
+    if (activeUnitQuizCard.value) activeUnitQuizCard.value.ragQuizFollowupError = val;
+  },
+  messageModalOpts,
+);
+
 /** 本機草稿列（無 rag_quiz_id）：供先顯示題名／出題規則介面，待「產生題目」再 POST create。 */
 function createLocalDraftUnitQuizCard() {
   const tab = activeUnitTabItem.value;
@@ -5325,6 +5385,13 @@ async function confirmAnswer(item) {
       :confirm-button-class="d3ConfirmPillMd"
       @save="onRenameRagTabSave"
     />
+    <MessageModal
+      v-model="messageModalOpen"
+      :title="messageModalTitle"
+      :message="messageModalMessage"
+      :confirm-button-class="messageModalConfirmClass"
+      @update:model-value="(v) => { if (!v) closeMessageModal(); else messageModalOpen = v; }"
+    />
     <Teleport to="body">
       <div
         v-if="packFolderPickModalOpen"
@@ -5731,7 +5798,7 @@ async function confirmAnswer(item) {
               </div>
               <div
                 v-if="newBankUploadError"
-                class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0"
+                class="my-color-red my-font-sm-400 mt-2 mb-0 text-break"
               >
                 {{ newBankUploadError }}
               </div>
@@ -6039,12 +6106,6 @@ async function confirmAnswer(item) {
           </ul>
         </template>
       </div>
-      <div v-if="ragListError" class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ ragListError }}
-      </div>
-      <div v-if="createRagError" class="my-alert-danger-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ createRagError }}
-      </div>
     </div>
 
     <div
@@ -6341,12 +6402,6 @@ async function confirmAnswer(item) {
                           />
                         </div>
                       </div>
-                      <p
-                        v-if="currentState.packUnitTranscriptError?.[activePackUnitGi]"
-                        class="my-font-sm-400 my-color-red mt-2 mb-0"
-                      >
-                        {{ currentState.packUnitTranscriptError[activePackUnitGi] }}
-                      </p>
                     </div>
                   </div>
               </div>
@@ -6378,13 +6433,6 @@ async function confirmAnswer(item) {
                 >
                   開始建立單元
                 </button>
-                <div
-                  v-if="currentState.packError"
-                  class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0 text-break"
-                  style="white-space: pre-wrap"
-                >
-                  {{ currentState.packError }}
-                </div>
               </div>
             </div>
             </template>
@@ -6589,18 +6637,6 @@ async function confirmAnswer(item) {
               </div>
             </div>
               <div
-                v-if="getSlotFormState(activeUnitSlotIndex).unitQuizCreateError"
-                class="d-flex justify-content-center pt-2 mb-0 w-100 px-1"
-              >
-                <div
-                  class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 text-break w-100"
-                  style="max-width: 42rem"
-                  role="alert"
-                >
-                  {{ getSlotFormState(activeUnitSlotIndex).unitQuizCreateError }}
-                </div>
-              </div>
-              <div
                 v-if="activeUnitQuizCard"
                 class="w-100 min-w-0 text-start d-flex flex-column gap-3"
               >
@@ -6743,22 +6779,6 @@ async function confirmAnswer(item) {
                       </span>
                       <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
                     </button>
-                  </div>
-                  <div
-                    v-if="String(activeUnitQuizCard.ragQuizFollowupError ?? '').trim()"
-                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
-                    style="max-width: 42rem"
-                    role="alert"
-                  >
-                    {{ activeUnitQuizCard.ragQuizFollowupError }}
-                  </div>
-                  <div
-                    v-if="String(activeUnitQuizCard.ragQuizForExamError ?? '').trim()"
-                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 w-100 text-break text-center"
-                    style="max-width: 42rem"
-                    role="alert"
-                  >
-                    {{ activeUnitQuizCard.ragQuizForExamError }}
                   </div>
                 </div>
                 <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
@@ -6965,9 +6985,6 @@ async function confirmAnswer(item) {
                     >
                       儲存並產生題目
                     </button>
-                  </div>
-                  <div v-if="getSlotFormState(activeUnitSlotIndex).error" class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0">
-                    {{ getSlotFormState(activeUnitSlotIndex).error }}
                   </div>
                 </div>
               </div>
@@ -7242,13 +7259,6 @@ async function confirmAnswer(item) {
                   >
                     開始建立單元
                   </button>
-                  <div
-                    v-if="currentState.packError"
-                    class="my-alert-danger-soft my-font-sm-400 py-2 mb-0 text-break"
-                    style="white-space: pre-wrap"
-                  >
-                    {{ currentState.packError }}
-                  </div>
                 </template>
                 <button
                   type="button"
@@ -7599,6 +7609,13 @@ async function confirmAnswer(item) {
 .my-design-right-nav--flat button.nav-link:not(.active):hover,
 .my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
   background-color: var(--my-color-gray-3);
+}
+.my-design-right-nav .nav-link.active,
+.my-design-right-nav .nav-link.active:hover,
+.my-design-right-nav .nav-link.active:focus,
+.my-design-right-nav .nav-link.active:focus-visible {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
 }
 .my-design-right-unit-expand-icon {
   display: inline-flex;

@@ -11,7 +11,7 @@
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
  */
-import { ref, computed, watch, onActivated, reactive, nextTick, useSlots } from 'vue';
+import { ref, computed, watch, onActivated, reactive, nextTick, useSlots, provide } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import {
@@ -48,6 +48,7 @@ import {
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 import { youtubeEmbedUrlFromInput } from '../utils/youtubeEmbed.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
+import MessageModal from '../components/MessageModal.vue';
 import QuizCard from '../components/QuizCard.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
@@ -70,6 +71,7 @@ import {
   readExamTabUiPersisted,
   writeExamTabUiPersisted,
 } from '../utils/examTabUiStorage.js';
+import { useMessageModal } from '../composables/useMessageModal.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -108,6 +110,21 @@ const examAddQuestionConfirmLabel = computed(() => (props.designSidePanelOnLeft 
 const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
 const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
+
+const messageModal = useMessageModal();
+const {
+  open: messageModalOpen,
+  title: messageModalTitle,
+  message: messageModalMessage,
+  confirmButtonClass: messageModalConfirmClass,
+  close: closeMessageModal,
+} = messageModal;
+provide('showMessageModal', (modalTitle, text, options = {}) => {
+  messageModal.show(modalTitle, text, {
+    confirmButtonClass: () => d3ConfirmPillMd.value,
+    ...options,
+  });
+});
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
 
@@ -2499,6 +2516,18 @@ function getSlotFormState(slotIndex) {
   return slot;
 }
 
+const messageModalOpts = { confirmButtonClass: () => d3ConfirmPillMd.value };
+messageModal.bindErrorRef(forExamError, '無法載入試卷題庫', messageModalOpts);
+messageModal.bindErrorRef(examListError, '無法載入列表', messageModalOpts);
+messageModal.bindErrorRef(createExamError, '建立失敗', messageModalOpts);
+messageModal.bindErrorRef(deleteExamError, '刪除失敗', messageModalOpts);
+messageModal.bindErrorGetter(
+  () => getSlotFormState(activeExamSlotIndex1.value).error,
+  '出題失敗',
+  (val) => { getSlotFormState(activeExamSlotIndex1.value).error = val; },
+  messageModalOpts,
+);
+
 watch(examUnitSelectDropdownOptions, () => {
   const state = currentState.value;
   const n = Number(state.quizSlotsCount) || 0;
@@ -3088,6 +3117,13 @@ onActivated(() => {
       :quiz-option-follow-up="examQuizDropdownOptionIsFollowUp"
       @confirm="onExamAddQuestionModalConfirm"
     />
+    <MessageModal
+      v-model="messageModalOpen"
+      :title="messageModalTitle"
+      :message="messageModalMessage"
+      :confirm-button-class="messageModalConfirmClass"
+      @update:model-value="(v) => { if (!v) closeMessageModal(); else messageModalOpen = v; }"
+    />
     <Teleport to="body">
       <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube；播放器／嵌入 + 逐字稿）-->
       <div
@@ -3242,18 +3278,6 @@ onActivated(() => {
             </li>
           </ul>
         </template>
-      </div>
-      <div v-if="forExamError" class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ forExamError }}
-      </div>
-      <div v-if="examListError" class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ examListError }}
-      </div>
-      <div v-if="createExamError" class="my-alert-danger-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ createExamError }}
-      </div>
-      <div v-if="deleteExamError" class="my-alert-danger-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ deleteExamError }}
       </div>
     </div>
 
@@ -3563,12 +3587,6 @@ onActivated(() => {
                                   :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
                                 >
                                   <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
-                                    <div
-                                      v-if="getSlotFormState(activeExamSlotIndex1).error"
-                                      class="my-alert-danger-soft my-font-sm-400 py-2 mx-3 mb-3"
-                                    >
-                                      {{ getSlotFormState(activeExamSlotIndex1).error }}
-                                    </div>
                                     <div
                                       v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                                       class="w-100 min-w-0"

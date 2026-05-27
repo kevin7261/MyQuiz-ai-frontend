@@ -1536,17 +1536,17 @@ label[for]:not(.btn) + div {
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
-.my-zip-drop-zone:hover:not(.my-zip-drop-zone-disabled) {
-  border-color: var(--my-color-blue);
+.my-zip-drop-zone:hover:not(.my-zip-drop-zone-disabled):not(.my-zip-drop-zone-over) {
+  border-color: var(--my-color-gray-1);
   background-color: var(--my-drop-zone-hover-bg);
 }
 .my-zip-drop-zone.my-zip-drop-zone-over:not(.my-zip-drop-zone-disabled) {
   border-color: var(--my-color-black) !important;
   background-color: var(--my-drop-zone-active-bg) !important;
 }
-.my-zip-drop-zone:focus-visible {
+.my-zip-drop-zone:focus-visible:not(.my-zip-drop-zone-over) {
   outline: 0;
-  border-color: var(--my-color-blue);
+  border-color: var(--my-color-black);
 }
 .my-zip-drop-zone-disabled {
   cursor: not-allowed;

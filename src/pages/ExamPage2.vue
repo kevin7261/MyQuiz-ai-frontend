@@ -24,9 +24,11 @@ import ExamPage from './ExamPage.vue';
 import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
+import MessageModal from '../components/MessageModal.vue';
 import {
   persistExamTabSelection,
 } from '../utils/examTabUiStorage.js';
+import { useMessageModal } from '../composables/useMessageModal.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -67,6 +69,20 @@ const deleteExamLoading = ref(false);
 const deleteExamError = ref('');
 const deleteExamModalOpen = ref(false);
 const deleteExamModalMessage = ref('');
+
+const messageModal = useMessageModal();
+const {
+  open: messageModalOpen,
+  title: messageModalTitle,
+  message: messageModalMessage,
+  confirmButtonClass: messageModalConfirmClass,
+  close: closeMessageModal,
+} = messageModal;
+const messageModalOpts = {
+  confirmButtonClass: () => (props.sidePanelOnLeft ? 'my-button-white' : 'my-button-black'),
+};
+messageModal.bindErrorRef(examListError, '無法載入列表', messageModalOpts);
+messageModal.bindErrorRef(createExamError, '建立失敗', messageModalOpts);
 
 const gridItems = computed(() =>
   examList.value.map((exam) => {
@@ -542,19 +558,6 @@ watch(
           :loading-text="gridLoadingOverlayText"
         />
 
-        <div
-          v-if="examListError"
-          class="my-alert-warning-soft my-font-sm-400 py-2 mb-3"
-        >
-          {{ examListError }}
-        </div>
-        <div
-          v-if="createExamError"
-          class="my-alert-danger-soft my-font-sm-400 py-2 mb-3"
-        >
-          {{ createExamError }}
-        </div>
-
         <!-- 清單為空：居中顯示大型新增按鈕 -->
         <div
           v-if="sortedItems.length === 0 && !examListLoading"
@@ -678,6 +681,13 @@ watch(
     :deleting="deleteExamLoading"
     :error="deleteExamError"
     @confirm="confirmDeleteExam"
+  />
+  <MessageModal
+    v-model="messageModalOpen"
+    :title="messageModalTitle"
+    :message="messageModalMessage"
+    :confirm-button-class="messageModalConfirmClass"
+    @update:model-value="(v) => { if (!v) closeMessageModal(); else messageModalOpen = v; }"
   />
 </template>
 
