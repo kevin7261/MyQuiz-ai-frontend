@@ -3585,16 +3585,16 @@ onActivated(() => {
             >
               <div
                 class="my-design-right-step-block"
-                :class="designSidePanelOnLeft ? 'p-3 my-design-right-step-block--section-divide' : 'py-2'"
+                :class="designSidePanelOnLeft ? 'my-design-right-step-block--section-divide' : 'py-2'"
               >
                 <div
                   class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
-                  :class="designSidePanelOnLeft ? 'pb-2' : 'px-3 py-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pb-2' : 'px-3 py-2'"
                 >題目</div>
                 <div
                   v-for="item in designRightQuizSubTabItems"
                   :key="item.key"
-                  class="nav-item"
+                  class="nav-item w-100"
                 >
                   <button
                     type="button"
@@ -3606,7 +3606,7 @@ onActivated(() => {
                     {{ item.label }}<span v-if="item.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 ms-2">追問</span>
                   </button>
                 </div>
-                <div :class="designSidePanelOnLeft ? 'pb-2 pt-2' : 'px-3 pb-2 pt-2'">
+                <div :class="designSidePanelOnLeft ? 'px-3 pb-3 pt-2' : 'px-3 pb-2 pt-2'">
                   <button
                     type="button"
                     class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2 w-100"
@@ -3803,8 +3803,8 @@ onActivated(() => {
   border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
 }
 .my-design-right-nav--flat .my-design-right-step-block .nav-link {
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 .my-design-right-step-heading {
   line-height: 1.35;

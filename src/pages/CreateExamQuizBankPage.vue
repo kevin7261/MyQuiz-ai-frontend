@@ -6949,13 +6949,13 @@ async function confirmAnswer(item) {
               <!-- 區塊 1：上傳檔案 -->
               <div
                 class="my-design-right-step-block"
-                :class="designSidePanelOnLeft ? 'p-3 my-design-right-step-block--section-divide' : 'py-2'"
+                :class="designSidePanelOnLeft ? 'my-design-right-step-block--section-divide' : 'py-2'"
               >
                 <div
                   class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
-                  :class="designSidePanelOnLeft ? 'pb-2' : 'px-3 py-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pb-2' : 'px-3 py-2'"
                 >上傳檔案</div>
-                <div class="nav-item">
+                <div class="nav-item w-100">
                   <span
                     class="nav-link w-100 text-start text-break"
                     :class="{ active: !hasUploadedFileMetadata }"
@@ -6967,11 +6967,11 @@ async function confirmAnswer(item) {
               <div
                 v-if="hasUploadedFileMetadata"
                 class="my-design-right-step-block"
-                :class="designSidePanelOnLeft ? 'p-3' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
+                :class="designSidePanelOnLeft ? '' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
               >
                 <div
                   class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 min-w-0"
-                  :class="designSidePanelOnLeft ? 'pb-2' : 'px-3 py-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pb-2' : 'px-3 py-2'"
                 >
                   <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">{{ hasBuiltRagSummary ? '單元 / 題型' : '單元' }}</div>
                   <div
@@ -7137,7 +7137,7 @@ async function confirmAnswer(item) {
                 <div
                   v-if="!hasBuiltRagSummary && packUnitCarouselCountEffective > 0"
                   class="my-design-right-pack-build-action w-100 min-w-0"
-                  :class="designSidePanelOnLeft ? '' : 'pb-2'"
+                  :class="designSidePanelOnLeft ? 'px-3 pb-3' : 'pb-2'"
                 >
                   <button
                     type="button"
@@ -7365,14 +7365,21 @@ async function confirmAnswer(item) {
 }
 
 .my-design-right-nav--flat .my-design-right-step-block .nav-link:not(.my-design-right-unit-quiz-link) {
-  padding-left: 0;
-  padding-right: 0;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-/* 題型列：全寬列 + 僅文字內縮 */
+/* 題型列：全寬 hover + 文字內縮 */
 .my-design-right-nav--flat .my-design-right-unit-quiz-link {
   padding-left: 1.75rem;
-  padding-right: 0;
+  padding-right: 1rem;
+}
+.my-design-right-nav--flat .my-design-right-unit-row {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.my-design-right-nav--flat .my-design-right-unit-quiz-item {
+  width: 100%;
 }
 .my-design-right-nav--flat .my-design-right-unit-row-label {
   padding-left: 0;
