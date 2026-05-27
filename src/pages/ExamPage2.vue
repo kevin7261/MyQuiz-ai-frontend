@@ -25,7 +25,6 @@ import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
 import {
-  readExamTabUiPersisted,
   persistExamTabSelection,
 } from '../utils/examTabUiStorage.js';
 
@@ -429,6 +428,7 @@ onMounted(() => {
   courseHeaderStore.registerExamSwitcherHandlers({
     onSwitch: switchExamDetail,
     onDelete: openDeleteExamModal,
+    onBackToHome: backToGrid,
   });
 });
 
@@ -446,7 +446,7 @@ watch(
     deleteExamLoading.value,
   ],
   () => {
-    if (props.sidePanelOnLeft && viewMode.value === 'detail') {
+    if (props.sidePanelOnLeft) {
       courseHeaderStore.setExamSwitcherVisible(true, {
         gridItems: gridItems.value,
         selectedExamTabId: selectedExamTabId.value,
@@ -477,29 +477,10 @@ async function bootstrapExamRoute() {
     applyRouteExamId();
     return;
   }
-  if (props.useExamDetailRoute) {
-    if (examList.value.length === 0 && !examListLoading.value) {
-      await fetchExamList();
-    }
-    const personId = getPersonId(authStore);
-    const persisted = personId ? readExamTabUiPersisted(personId) : null;
-    const tabId = String(persisted?.exam_tab_id ?? '').trim();
-    if (tabId && gridItems.value.some((i) => i.tabId === tabId)) {
-      const qid = persisted?.exam_quiz_id >= 1 ? String(persisted.exam_quiz_id) : '0';
-      const target = examDetailPath(tabId, qid);
-      if (route.path !== target) {
-        router.replace(target);
-        return;
-      }
-    }
+  if (examList.value.length === 0 && !examListLoading.value) {
+    fetchExamList();
   }
-  if (viewMode.value === 'grid') {
-    if (examList.value.length === 0 && !examListLoading.value) {
-      fetchExamList();
-    }
-  } else {
-    applyRouteExamId();
-  }
+  applyRouteExamId();
 }
 
 watch(
@@ -678,8 +659,6 @@ watch(
             :selected-exam-tab-id="selectedExamTabId"
             :delete-exam-loading="deleteExamLoading"
             in-side-panel
-            back-label="測驗"
-            back-trailing-chevron
             @back="backToGrid"
             @switch-exam="switchExamDetail"
             @delete-exam="openDeleteExamModal"
@@ -768,6 +747,11 @@ watch(
 
 .bank-list-row:hover:not(:disabled) {
   background-color: var(--my-color-gray-2, #e5e5e5);
+}
+
+/* exam_3 白底主頁清單：hover 淺灰 */
+.exam-2--side-panel-left .bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-3);
 }
 
 .bank-list-row:focus-visible {

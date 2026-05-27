@@ -13,10 +13,13 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
   let onSwitchBank = null;
   /** @type {(() => void) | null} */
   let onDeleteBank = null;
+  /** @type {(() => void) | null} */
+  let onBackToPageHome = null;
 
-  function registerBankSwitcherHandlers({ onSwitch, onDelete }) {
+  function registerBankSwitcherHandlers({ onSwitch, onDelete, onBackToHome }) {
     onSwitchBank = onSwitch ?? null;
     onDeleteBank = onDelete ?? null;
+    onBackToPageHome = onBackToHome ?? null;
   }
 
   function setBankSwitcherVisible(visible, state = {}) {
@@ -51,6 +54,11 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     deleteRagLoading.value = false;
     onSwitchBank = null;
     onDeleteBank = null;
+    onBackToPageHome = null;
+  }
+
+  function backToPageHome() {
+    onBackToPageHome?.();
   }
 
   const showExamSwitcher = ref(false);
@@ -64,9 +72,10 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
   /** @type {(() => void) | null} */
   let onDeleteExam = null;
 
-  function registerExamSwitcherHandlers({ onSwitch, onDelete }) {
+  function registerExamSwitcherHandlers({ onSwitch, onDelete, onBackToHome }) {
     onSwitchExam = onSwitch ?? null;
     onDeleteExam = onDelete ?? null;
+    onBackToPageHome = onBackToHome ?? null;
   }
 
   function setExamSwitcherVisible(visible, state = {}) {
@@ -94,6 +103,7 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     deleteExamLoading.value = false;
     onSwitchExam = null;
     onDeleteExam = null;
+    onBackToPageHome = null;
   }
 
   return {
@@ -108,6 +118,7 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     switchBank,
     deleteBank,
     clearBankSwitcher,
+    backToPageHome,
     showExamSwitcher,
     examGridItems,
     selectedExamTabId,

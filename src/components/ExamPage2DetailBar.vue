@@ -7,10 +7,8 @@ defineProps({
   deleteExamLoading: { type: Boolean, default: false },
   /** 嵌入左側清單欄上方時使用垂直排版（exam_3） */
   inSidePanel: { type: Boolean, default: false },
-  /** 返回鈕文字（exam_3 為「測驗」） */
+  /** 返回鈕文字（左側清單欄預設「返回主頁」） */
   backLabel: { type: String, default: '返回主頁' },
-  /** true 時文字後顯示 chevron-right icon */
-  backTrailingChevron: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -44,12 +42,8 @@ function onTitleInput(e) {
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
         >
+          <i class="fa-solid fa-arrow-left exam-2-detail-bar__back-chevron flex-shrink-0" aria-hidden="true" />
           <span>{{ backLabel }}</span>
-          <i
-            v-if="backTrailingChevron"
-            class="fa-solid fa-chevron-right exam-2-detail-bar__back-chevron flex-shrink-0"
-            aria-hidden="true"
-          />
         </button>
       </div>
       <div class="exam-2-detail-bar__title-row w-100 min-w-0 px-3 pb-2">

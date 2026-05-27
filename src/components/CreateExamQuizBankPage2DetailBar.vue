@@ -7,10 +7,8 @@ defineProps({
   deleteRagLoading: { type: Boolean, default: false },
   /** 嵌入左側清單欄上方時使用垂直排版 */
   inSidePanel: { type: Boolean, default: false },
-  /** 返回鈕文字（create-exam-bank_3 為「建立測驗題庫」） */
+  /** 返回鈕文字（左側清單欄預設「返回主頁」） */
   backLabel: { type: String, default: '返回主頁' },
-  /** true 時文字後顯示 chevron-right icon（取代「>」） */
-  backTrailingChevron: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -44,12 +42,8 @@ function onTitleInput(e) {
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
         >
+          <i class="fa-solid fa-arrow-left create-exam-bank-2-detail-bar__back-chevron flex-shrink-0" aria-hidden="true" />
           <span>{{ backLabel }}</span>
-          <i
-            v-if="backTrailingChevron"
-            class="fa-solid fa-chevron-right create-exam-bank-2-detail-bar__back-chevron flex-shrink-0"
-            aria-hidden="true"
-          />
         </button>
       </div>
       <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0 px-3 pb-2">

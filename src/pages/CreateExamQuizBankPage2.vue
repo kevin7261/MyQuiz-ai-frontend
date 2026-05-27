@@ -22,7 +22,7 @@ import CreateExamQuizBankPage from './CreateExamQuizBankPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
-import { persistCreateBankRagTabSelection, readCreateBankTabUiPersisted } from '../utils/createBankTabUiStorage.js';
+import { persistCreateBankRagTabSelection } from '../utils/createBankTabUiStorage.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -448,6 +448,7 @@ onMounted(() => {
   courseHeaderStore.registerBankSwitcherHandlers({
     onSwitch: switchBankDetail,
     onDelete: openDeleteBankModal,
+    onBackToHome: backToGrid,
   });
 });
 
@@ -496,29 +497,10 @@ async function bootstrapBankRoute() {
     applyRouteBankId();
     return;
   }
-  if (props.useExamDetailRoute) {
-    if (ragList.value.length === 0 && !ragListLoading.value) {
-      await fetchRagList();
-    }
-    const personId = getPersonId(authStore);
-    const persisted = personId ? readCreateBankTabUiPersisted(personId) : null;
-    const tabId = String(persisted?.rag_tab_id ?? '').trim();
-    if (tabId && gridItems.value.some((i) => i.tabId === tabId)) {
-      const qid = persisted?.rag_quiz_id >= 1 ? String(persisted.rag_quiz_id) : '0';
-      const target = bankDetailPath(tabId, qid);
-      if (route.path !== target) {
-        router.replace(target);
-        return;
-      }
-    }
+  if (ragList.value.length === 0 && !ragListLoading.value) {
+    fetchRagList();
   }
-  if (viewMode.value === 'grid') {
-    if (ragList.value.length === 0 && !ragListLoading.value) {
-      fetchRagList();
-    }
-  } else {
-    applyRouteBankId();
-  }
+  applyRouteBankId();
 }
 
 watch(
@@ -691,8 +673,6 @@ watch(viewMode, (mode) => {
             :selected-bank-tab-id="selectedBankTabId"
             :delete-rag-loading="deleteRagLoading"
             in-side-panel
-            back-label="建立測驗題庫"
-            back-trailing-chevron
             @back="backToGrid"
             @switch-bank="switchBankDetail"
             @delete-bank="openDeleteBankModal"
@@ -889,6 +869,11 @@ watch(viewMode, (mode) => {
 
 .bank-list-row:hover:not(:disabled) {
   background-color: var(--my-color-gray-2, #e5e5e5);
+}
+
+/* create-exam-bank_3 白底主頁清單：hover 淺灰 */
+.create-exam-bank-2--side-panel-left .bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-3);
 }
 
 .bank-list-row:focus-visible {

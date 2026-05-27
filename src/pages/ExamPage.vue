@@ -3291,7 +3291,14 @@ onActivated(() => {
               v-if="activeTabId && !(Number(currentState.quizSlotsCount) || 0)"
               class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
             >
+              <p
+                v-if="designSidePanelOnLeft"
+                class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break"
+              >
+                目前沒有題目，請在左側選單新增題目
+              </p>
               <button
+                v-else
                 type="button"
                 class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
                 title="新增題目"

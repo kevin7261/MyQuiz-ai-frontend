@@ -2,9 +2,10 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列中央顯示課程名稱，右側為題庫切換（詳情時）與使用者下拉選單（含測驗、作答弱點分析等）。
+   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」（課程名粗體），右側為題庫／試卷切換（詳情時）與使用者下拉選單。
    */
   import { computed } from 'vue';
+  import { useRoute } from 'vue-router';
   import { storeToRefs } from 'pinia';
   import { useAuthStore } from '../stores/authStore.js';
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
@@ -21,6 +22,7 @@
     },
     setup() {
       const authStore = useAuthStore();
+      const route = useRoute();
       const courseHeaderStore = useCourseHeaderStore();
       const {
         showBankSwitcher,
@@ -40,9 +42,30 @@
         return c ? (c.course_name || `課程 ${c.course_id}`) : '選擇課程...';
       });
 
+      /** TopView 版面之頁面名稱（課程名稱 | 頁面名稱） */
+      const pageTitle = computed(() => {
+        const path = route.path;
+        if (path.startsWith('/exam_3')) return '測驗';
+        if (path.startsWith('/create-exam-bank_3')) return '建立測驗題庫';
+        if (route.params.view === 'design_3') return 'UI 元件參考 3';
+        return '';
+      });
+
+      const headerTitleGoesHome = computed(
+        () => route.name === 'Exam3Detail' || route.name === 'CreateExamBank3Detail',
+      );
+
+      function onHeaderTitleClick() {
+        if (!headerTitleGoesHome.value) return;
+        courseHeaderStore.backToPageHome();
+      }
+
       return {
         canSeeNavLink,
         currentCourseName,
+        pageTitle,
+        headerTitleGoesHome,
+        onHeaderTitleClick,
         showBankSwitcher,
         bankGridItems,
         selectedBankTabId,
@@ -66,8 +89,19 @@
   <header class="my-course-header flex-shrink-0 my-bgcolor-white border-bottom">
     <div class="my-course-header-inner px-3 min-w-0 w-100">
       <div class="my-course-header-inner__center min-w-0">
-        <p class="my-course-header-course-title my-font-lg-400 my-color-black text-truncate text-start w-100 mb-0">
-          {{ currentCourseName }}
+        <p
+          class="my-course-header-course-title my-font-lg-400 my-color-black text-truncate text-start w-100 mb-0"
+          :role="headerTitleGoesHome ? 'button' : undefined"
+          :tabindex="headerTitleGoesHome ? 0 : undefined"
+          :aria-label="headerTitleGoesHome ? '返回主頁' : undefined"
+          @click="onHeaderTitleClick"
+          @keydown.enter.prevent="onHeaderTitleClick"
+        >
+          <span class="my-font-lg-600">{{ currentCourseName }}</span>
+          <template v-if="pageTitle">
+            <span class="my-course-header-course-title__sep mx-2" aria-hidden="true">|</span>
+            <span>{{ pageTitle }}</span>
+          </template>
         </p>
       </div>
 
@@ -175,6 +209,11 @@
 
 .my-course-header-course-title {
   line-height: 1.35;
+}
+
+.my-course-header-course-title__sep {
+  color: var(--my-color-gray-1);
+  font-weight: var(--my-font-weight-regular);
 }
 
 .my-course-header-nav-btn {

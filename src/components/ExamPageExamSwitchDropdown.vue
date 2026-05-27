@@ -38,20 +38,22 @@ const emit = defineEmits(['switch-exam', 'delete-exam']);
           <span class="text-truncate">{{ item.label }}</span>
         </button>
       </li>
-      <li>
-        <hr class="dropdown-divider" />
-      </li>
-      <li>
-        <button
-          type="button"
-          class="dropdown-item my-color-red"
-          :disabled="disabled"
-          :aria-busy="deleteExamLoading"
-          @click="emit('delete-exam')"
-        >
-          刪除此試卷
-        </button>
-      </li>
+      <template v-if="selectedExamTabId">
+        <li>
+          <hr class="dropdown-divider" />
+        </li>
+        <li>
+          <button
+            type="button"
+            class="dropdown-item my-color-red"
+            :disabled="disabled"
+            :aria-busy="deleteExamLoading"
+            @click="emit('delete-exam')"
+          >
+            刪除此試卷
+          </button>
+        </li>
+      </template>
     </ul>
   </div>
 </template>
