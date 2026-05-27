@@ -13,7 +13,7 @@ const props = defineProps({
     required: true,
     validator: (v) => ['generate', 'grade'].includes(v),
   },
-  /** default＝原稿頁；work3＝exam_3／create-exam-bank_3（出題偏藍、批改偏紅） */
+  /** default＝原稿頁；work3＝exam_3／create-exam-bank_3（開始出題藍色、開始批改紅色） */
   gradientBias: {
     type: String,
     default: 'default',

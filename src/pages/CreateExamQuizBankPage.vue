@@ -6583,7 +6583,7 @@ async function confirmAnswer(item) {
                       class="d-inline-flex flex-wrap flex-shrink-0 align-self-start my-quiz-generate-mode-segment"
                       :class="
                         designSidePanelOnLeft
-                          ? 'gap-2 my-quiz-generate-mode-segment--outline'
+                          ? 'gap-2 p-1 my-quiz-generate-mode-segment--outline'
                           : 'gap-1 rounded-pill my-bgcolor-gray-3 p-1'
                       "
                       role="group"
@@ -6597,7 +6597,7 @@ async function confirmAnswer(item) {
                             ? (
                               !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                                 ? 'my-button-gray-3'
-                                : 'my-btn-outline-gray-1 my-color-black'
+                                : 'my-button-transparent-borderless my-color-black'
                             )
                             : (
                               !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
@@ -6624,7 +6624,7 @@ async function confirmAnswer(item) {
                             ? (
                               isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                                 ? 'my-button-gray-3'
-                                : 'my-btn-outline-gray-1 my-color-black'
+                                : 'my-button-transparent-borderless my-color-black'
                             )
                             : (
                               isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
@@ -6685,7 +6685,10 @@ async function confirmAnswer(item) {
                 </div>
                 <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
                 <div class="my-design-quiz-sub-block-outer">
-                  <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2">
+                  <div
+                    class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                    :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                  >
                     <div
                       class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
@@ -6773,7 +6776,6 @@ async function confirmAnswer(item) {
                     <div
                       v-if="activeUnitQuizHasGeneratedBody"
                       class="w-100 min-w-0"
-                      :class="designSidePanelOnLeft ? 'pt-2' : ''"
                     >
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
@@ -6793,13 +6795,13 @@ async function confirmAnswer(item) {
                   class="my-design-quiz-sub-block-outer"
                 >
                   <div
-                    class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
-                    :class="designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white'"
+                    class="my-design-quiz-sub-block rounded-4"
+                    :class="[
+                      designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                      designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                    ]"
                   >
-                    <div
-                      class="w-100 min-w-0"
-                      :class="designSidePanelOnLeft ? 'pt-2' : ''"
-                    >
+                    <div class="w-100 min-w-0">
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
@@ -7174,9 +7176,15 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* create-exam-bank_3：未選中 my-btn-outline-gray-1；選中 gray-3 填色＋gray-2 邊框 */
-.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-gray-3) {
+/* create-exam-bank_3：rounded-pill 雙鈕；外框在群組，內層未選無框、選中 gray-3 */
+.my-quiz-generate-mode-segment--outline {
   border: 1px solid var(--my-color-gray-2);
+  border-radius: 9999px;
+  box-sizing: border-box;
+}
+.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-gray-3),
+.my-quiz-generate-mode-segment--outline :deep(> .btn.my-button-transparent-borderless) {
+  border: none !important;
   box-shadow: none;
 }
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
@@ -7198,8 +7206,8 @@ async function confirmAnswer(item) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)) {
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)) {
   color: var(--my-color-gray-1);
 }
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),
@@ -7277,8 +7285,20 @@ async function confirmAnswer(item) {
 }
 /* create-exam-bank_3：題目／答案內文（標題列 hr 下方）pt-2 pb-2 */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2) {
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
   padding-top: 0.5rem !important;
+}
+/* create-exam-bank_3：出題／批改規則黑底區 hr 下方文字 pt-2 */
+.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.75rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 .my-design-right-nav {
   flex-wrap: nowrap;
@@ -7723,15 +7743,18 @@ async function confirmAnswer(item) {
 /* 出題／答案／批改規則：標題列統一 px-3 py-2（頁內 + QuizCard 子區塊） */
 .my-design-quiz-question-prompt-block__title-row,
 .my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row),
-.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3) {
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3:not(.my-design-quiz-stem-tabs-row)) {
   padding-top: 0.5rem !important;
   padding-bottom: 0.5rem !important;
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-/* 題目／先前出題 tab：底線貼齊下方 hr，標題列不留 pb */
+/* 題目／先前出題 tab：底線貼齊下方 hr，標題列不留 pt／pb */
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
 .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
+  padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 /* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-2 pb-2 */

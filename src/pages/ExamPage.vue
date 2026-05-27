@@ -3008,6 +3008,7 @@ onActivated(() => {
       :blocked="examAddQuestionModalLoading"
       :error="examAddQuestionModalError"
       :confirm-button-label="examAddQuestionConfirmLabel"
+      :confirm-uses-logo-gradient="designSidePanelOnLeft"
       :unit-options="examUnitSelectDropdownOptions"
       :unit-select-value="examUnitSelectValue"
       :unit-option-label="(u) => String(u.label ?? '').trim() || '—'"
@@ -3367,12 +3368,12 @@ onActivated(() => {
                                   :key="roundCard._roundId"
                                 >
                                   <div class="my-design-quiz-sub-block-outer">
-                                    <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2">
+                                    <div
+                                      class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                                      :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                                    >
                                       <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
-                                        <div
-                                          class="w-100 min-w-0"
-                                          :class="designSidePanelOnLeft ? 'pt-2' : ''"
-                                        >
+                                        <div class="w-100 min-w-0">
                                         <QuizCard
                                           :card="roundCard"
                                           create-exam-bank-design-layout
@@ -3392,13 +3393,13 @@ onActivated(() => {
                                   <!-- 子區塊：答案 + 批改（合併） -->
                                   <div class="my-design-quiz-sub-block-outer">
                                     <div
-                                      class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
-                                      :class="designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white'"
+                                      class="my-design-quiz-sub-block rounded-4"
+                                      :class="[
+                                        designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                                        designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                                      ]"
                                     >
-                                      <div
-                                        class="w-100 min-w-0"
-                                        :class="designSidePanelOnLeft ? 'pt-2' : ''"
-                                      >
+                                      <div class="w-100 min-w-0">
                                         <QuizCard
                                           :card="roundCard"
                                           create-exam-bank-design-layout
@@ -3430,10 +3431,11 @@ onActivated(() => {
                                   <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
                                 </template>
                               </template>
-                              <!-- 子區塊：題目（exam_3 頂部 pt-2 對齊 create-exam-bank_3） -->
+                              <!-- 子區塊：題目（exam_3 外層 py-2，對齊答案區塊） -->
                               <div class="my-design-quiz-sub-block-outer">
                                 <div
-                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0 pb-2"
+                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                                  :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
                                 >
                                   <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
                                     <div
@@ -3445,7 +3447,6 @@ onActivated(() => {
                                     <div
                                       v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                                       class="w-100 min-w-0"
-                                      :class="designSidePanelOnLeft ? 'pt-2' : ''"
                                     >
                                       <QuizCard
                                         v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
@@ -3466,13 +3467,13 @@ onActivated(() => {
                                 class="my-design-quiz-sub-block-outer"
                               >
                                 <div
-                                  class="my-design-quiz-sub-block rounded-4 p-0 pb-2"
-                                  :class="designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white'"
+                                  class="my-design-quiz-sub-block rounded-4"
+                                  :class="[
+                                    designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                                    designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                                  ]"
                                 >
-                                  <div
-                                    class="w-100 min-w-0"
-                                    :class="designSidePanelOnLeft ? 'pt-2' : ''"
-                                  >
+                                  <div class="w-100 min-w-0">
                                     <QuizCard
                                       v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
                                       create-exam-bank-design-layout
@@ -3606,8 +3607,8 @@ onActivated(() => {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue)) {
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)) {
   color: var(--my-color-gray-1);
 }
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),
@@ -3664,15 +3665,29 @@ onActivated(() => {
   background-color: var(--my-color-white) !important;
   border: 1px solid var(--my-color-gray-2);
 }
-/* exam_3：題目／答案 tab 列不加 pt-2（區塊頂 pt-2 在父層 wrap） */
+/* exam_3：題目／答案 tab 列不加 pt-2 */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-tabs-row) {
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-tabs-row),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
   padding-top: 0 !important;
 }
 /* exam_3：題目／答案內文（標題列 hr 下方）pt-2 pb-2（對齊 create-exam-bank_3） */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2) {
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
   padding-top: 0.5rem !important;
+}
+/* exam_3：出題／批改規則黑底區 hr 下方文字 pt-2 */
+.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.75rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 .my-design-right-nav {
   flex-wrap: nowrap;
@@ -3827,7 +3842,7 @@ onActivated(() => {
 }
 .my-design-quiz-question-prompt-block__title-row,
 .my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row),
-.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3) {
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3:not(.my-design-quiz-stem-tabs-row)) {
   padding-top: 0.5rem !important;
   padding-bottom: 0.5rem !important;
   padding-left: 1rem !important;
@@ -3835,6 +3850,7 @@ onActivated(() => {
 }
 .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
+  padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 .my-design-quiz-field-inset__rule,
@@ -3843,7 +3859,7 @@ onActivated(() => {
   border-top: 1px solid var(--my-color-gray-2);
   opacity: 1;
 }
-/* 題目子區塊頂部容器（exam_3 題目區頂 pt-2 加於內層，非題目／先前出題列） */
+/* 題目子區塊頂部容器不留 pt */
 .my-design-quiz-stem-sub-block-top,
 .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-sub-block-top) {
   padding-top: 0 !important;

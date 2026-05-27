@@ -500,6 +500,11 @@ code {
 
 /* Logo 隨機漸層 pill（產生題目／開始批改；與 TopView 品牌 icon 同色票機制） */
 .btn.my-button-logo-gradient {
+  --bs-btn-bg: transparent;
+  --bs-btn-hover-bg: transparent;
+  --bs-btn-active-bg: transparent;
+  --bs-btn-disabled-bg: transparent;
+  background-color: transparent !important;
   color: var(--my-color-white) !important;
   border-color: transparent !important;
   box-shadow: none;

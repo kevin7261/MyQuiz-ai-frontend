@@ -645,7 +645,7 @@ function toggleLoading() {
                           </div>
                         </div>
                         <div>
-                          <p class="my-font-sm-400 my-color-black mb-2">開始出題／開始批改（Logo 隨機漸層 pill，work3 偏藍／偏紅）</p>
+                          <p class="my-font-sm-400 my-color-black mb-2">開始出題／開始批改（Logo 隨機漸層 pill，work3 藍色／紅色）</p>
                           <div class="design-page-3-btn-spec d-flex flex-wrap align-items-center gap-3 w-100">
                             <LogoGradientPillButton
                               id-prefix="design-page-3-generate"

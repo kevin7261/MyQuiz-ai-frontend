@@ -21,6 +21,7 @@
  */
 import { ref, watch, computed } from 'vue';
 import UnitSelectDropdown from './UnitSelectDropdown.vue';
+import LogoGradientPillButton from './LogoGradientPillButton.vue';
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -36,6 +37,8 @@ const props = defineProps({
   quizOptionFollowUp: { type: Function, default: null },
   /** 確認按鈕文字（exam_3 為「開始出題」） */
   confirmButtonLabel: { type: String, default: '產生題目' },
+  /** exam_3：確認鈕改為藍色 Logo 漸層 pill（開始出題） */
+  confirmUsesLogoGradient: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['update:modelValue', 'confirm']);
@@ -174,7 +177,20 @@ function onConfirm() {
             >
               取消
             </button>
+            <LogoGradientPillButton
+              v-if="confirmUsesLogoGradient"
+              id-prefix="exam-add-question-confirm"
+              tone="generate"
+              gradient-bias="work3"
+              :disabled="confirmDisabled"
+              :aria-busy="submitting"
+              :aria-label="confirmButtonLabel"
+              @click="onConfirm"
+            >
+              {{ confirmButtonLabel }}
+            </LogoGradientPillButton>
             <button
+              v-else
               type="button"
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-black px-4 py-2"
               :disabled="confirmDisabled"

@@ -120,6 +120,15 @@ function designStemTabsRowHeadClass(useTabs) {
     : 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0';
 }
 
+/** exam_3／create-exam-bank_3：hr 下方內文 pt-2 */
+const designFieldInsetBodyClass = computed(() => {
+  const base = 'min-w-0 lh-base';
+  if (props.logoGradientBias === 'work3') {
+    return `${base} px-3 pt-2 pb-2`;
+  }
+  return `${base} px-3 pb-2`;
+});
+
 const emit = defineEmits([
   'toggle-hint',
   'toggle-reference-answer',
@@ -892,7 +901,8 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body px-3 pb-2 min-w-0 lh-base quiz-card-quiz-stem"
+              class="my-design-quiz-field-inset-body quiz-card-quiz-stem"
+              :class="designFieldInsetBodyClass"
             >
               <template v-if="showQuestionStemBody">
                 <div
@@ -1256,7 +1266,8 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body my-design-quiz-answer-inset-body px-3 pb-2 min-w-0 lh-base"
+              class="my-design-quiz-field-inset-body my-design-quiz-answer-inset-body"
+              :class="designFieldInsetBodyClass"
             >
               <template v-if="showAnswerSectionBody">
                 <template v-if="showDesignAnswerPlainDisplay">
@@ -1579,7 +1590,8 @@ const quizAnswerFieldDisabled = computed(
                   </div>
                 </header>
                 <div
-                  class="my-design-quiz-field-inset-body px-3 py-2 min-w-0 lh-base"
+                  class="my-design-quiz-field-inset-body"
+                  :class="designFieldInsetBodyClass"
                   style="white-space: pre-wrap;"
                 >
                   <div class="my-font-md-400 my-color-black text-break">
@@ -1751,7 +1763,8 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body px-3 py-2 min-w-0 lh-base"
+              class="my-design-quiz-field-inset-body"
+              :class="designFieldInsetBodyClass"
               style="white-space: pre-wrap;"
             >
               <div class="my-font-md-400 my-color-black text-break">
