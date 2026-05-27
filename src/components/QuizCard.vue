@@ -132,6 +132,12 @@ const designFieldInsetBodyClass = computed(() => {
 /** exam_3／create-exam-bank_3：子區塊標題列下方不顯示橫線 */
 const showDesignSectionRule = computed(() => props.logoGradientBias !== 'work3');
 
+/** exam_3／create-exam-bank_3：題目／答案／批改 tab 間距（較 gap-3 放大） */
+const designStemTabsClass = computed(() => {
+  const base = 'my-design-quiz-stem-tabs d-inline-flex align-items-stretch flex-shrink-0';
+  return props.logoGradientBias === 'work3' ? `${base} gap-4` : `${base} gap-3`;
+});
+
 const emit = defineEmits([
   'toggle-hint',
   'toggle-reference-answer',
@@ -842,7 +848,7 @@ const quizAnswerFieldDisabled = computed(
               >
                 <div
                   v-if="showBankQuizHistoryTabs"
-                  class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+                  :class="designStemTabsClass"
                   role="tablist"
                   aria-label="題目與先前出題"
                 >
@@ -939,7 +945,7 @@ const quizAnswerFieldDisabled = computed(
           >
             <div
               v-if="showBankQuizHistoryTabs"
-              class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+              :class="designStemTabsClass"
               role="tablist"
               aria-label="題目與先前出題"
             >
@@ -1223,7 +1229,7 @@ const quizAnswerFieldDisabled = computed(
               >
                 <div
                   v-if="showAnswerHintRefTabs"
-                  class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+                  :class="designStemTabsClass"
                   role="tablist"
                   aria-label="答案、提示與參考答案"
                 >
@@ -1342,7 +1348,7 @@ const quizAnswerFieldDisabled = computed(
           >
             <div
               v-if="showAnswerHintRefTabs && designUi"
-              class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch gap-3 flex-shrink-0"
+              :class="designStemTabsClass"
               role="tablist"
               aria-label="答案、提示與參考答案"
             >
@@ -1562,7 +1568,7 @@ const quizAnswerFieldDisabled = computed(
                   >
                     <div
                       v-if="showGradingResultInsetTabs"
-                      class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch flex-shrink-0"
+                      :class="designStemTabsClass"
                       role="tablist"
                       aria-label="批改結果"
                     >
@@ -1753,7 +1759,7 @@ const quizAnswerFieldDisabled = computed(
               >
                 <div
                   v-if="showGradingResultInsetTabs"
-                  class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch flex-shrink-0"
+                  :class="designStemTabsClass"
                   role="tablist"
                   aria-label="批改結果"
                 >
