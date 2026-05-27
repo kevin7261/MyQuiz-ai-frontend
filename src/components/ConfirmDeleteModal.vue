@@ -67,7 +67,7 @@ function onConfirm() {
             </button>
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
               :disabled="deleting"
               :aria-busy="deleting"
               @click="onConfirm"

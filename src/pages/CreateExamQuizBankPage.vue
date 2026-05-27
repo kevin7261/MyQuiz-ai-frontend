@@ -5783,7 +5783,7 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
                 @click="confirmDeletePackUnit"
               >
                 刪除
@@ -5834,7 +5834,7 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
                 @click="confirmDeleteAllPackUnits"
               >
                 刪除
@@ -5886,7 +5886,7 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
                 :disabled="deleteUnitQuizLoading"
                 :aria-busy="deleteUnitQuizLoading"
                 @click="confirmDeleteUnitQuiz"
@@ -7272,8 +7272,8 @@ async function confirmAnswer(item) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)) {
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient)) {
   color: var(--my-color-gray-1);
 }
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled)),

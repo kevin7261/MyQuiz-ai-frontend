@@ -1446,7 +1446,7 @@ div.form-control {
 }
 
 /* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（black 與 white 皆黑底白字，黑稿內 white 例外）；描邊 .my-button-white-border／.my-btn-outline-gray-1／.my-btn-outline-*-hollow；transparent-borderless 為黑無框（黑稿內例外淺字） —— */
-.btn.rounded-pill:not(.my-button-white-border):not(.my-btn-outline-gray-1):not(.my-btn-outline-blue-hollow):not(.my-btn-outline-green-hollow),
+.btn.rounded-pill:not(.my-button-white-border):not(.my-btn-outline-gray-1):not(.my-btn-outline-blue-hollow):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow),
 .btn.rounded-circle:not(.my-button-white-border):not(.my-btn-on-design-dark-preview) {
   border: none;
 }

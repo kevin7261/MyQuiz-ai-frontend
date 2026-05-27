@@ -708,12 +708,12 @@ function toggleLoading() {
                         <div>
                           <p class="my-font-sm-400 my-color-black mb-2">刪除確認</p>
                           <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2 align-self-start">
+                            <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2 align-self-start">
                               刪除
                             </button>
                             <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-red px-4 py-2" :on-light-bg="false" />
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2" :on-light-bg="false" />
                             </div>
                           </div>
                         </div>
@@ -1025,8 +1025,7 @@ function toggleLoading() {
                   </p>
                   <button
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-color-red my-button-transparent-borderless px-4 py-2"
-                    style="border: 1px solid var(--my-color-red, #e53935);"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                     @click="openDeleteModal"
                   >
                     <i class="fa-solid fa-trash" aria-hidden="true" />
