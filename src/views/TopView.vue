@@ -10,10 +10,11 @@
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import CreateExamQuizBankBankSwitchDropdown from '../components/CreateExamQuizBankBankSwitchDropdown.vue';
+  import ExamPageExamSwitchDropdown from '../components/ExamPageExamSwitchDropdown.vue';
 
   export default {
     name: 'TopView',
-    components: { CreateExamQuizBankBankSwitchDropdown },
+    components: { CreateExamQuizBankBankSwitchDropdown, ExamPageExamSwitchDropdown },
     props: {
       userName: { type: String, default: '' },
       userType: { type: [Number, String], default: undefined },
@@ -27,6 +28,11 @@
         selectedBankTabId,
         actionsDisabled: bankActionsDisabled,
         deleteRagLoading: bankDeleteRagLoading,
+        showExamSwitcher,
+        examGridItems,
+        selectedExamTabId,
+        examActionsDisabled,
+        deleteExamLoading,
       } = storeToRefs(courseHeaderStore);
 
       const currentCourseName = computed(() => {
@@ -44,6 +50,13 @@
         bankDeleteRagLoading,
         onBankSwitch: courseHeaderStore.switchBank,
         onBankDelete: courseHeaderStore.deleteBank,
+        showExamSwitcher,
+        examGridItems,
+        selectedExamTabId,
+        examActionsDisabled,
+        deleteExamLoading,
+        onExamSwitch: courseHeaderStore.switchExam,
+        onExamDelete: courseHeaderStore.deleteExam,
       };
     },
   };
@@ -71,6 +84,15 @@
             variant="course-header-nav"
             @switch-bank="onBankSwitch"
             @delete-bank="onBankDelete"
+          />
+          <ExamPageExamSwitchDropdown
+            v-if="showExamSwitcher"
+            :grid-items="examGridItems"
+            :selected-exam-tab-id="selectedExamTabId"
+            :disabled="examActionsDisabled"
+            :delete-exam-loading="deleteExamLoading"
+            @switch-exam="onExamSwitch"
+            @delete-exam="onExamDelete"
           />
         </nav>
 

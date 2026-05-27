@@ -7,6 +7,10 @@ defineProps({
   deleteExamLoading: { type: Boolean, default: false },
   /** 嵌入左側清單欄上方時使用垂直排版（exam_3） */
   inSidePanel: { type: Boolean, default: false },
+  /** 返回鈕文字（exam_3 為「測驗」） */
+  backLabel: { type: String, default: '返回主頁' },
+  /** true 時文字後顯示 chevron-right icon */
+  backTrailingChevron: { type: Boolean, default: false },
 });
 
 const emit = defineEmits([
@@ -28,63 +32,25 @@ function onTitleInput(e) {
     class="exam-2-detail-bar flex-shrink-0"
     :class="[
       inSidePanel ? 'p-3 my-bgcolor-gray-4' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
-      { 'exam-2-detail-bar--in-side-panel gap-2': inSidePanel },
+      { 'exam-2-detail-bar--in-side-panel': inSidePanel },
     ]"
   >
     <template v-if="inSidePanel">
-      <div class="exam-2-detail-bar__top-row d-flex align-items-start justify-content-between gap-2 w-100 min-w-0">
+      <div class="exam-2-detail-bar__top-row d-flex align-items-start w-100 min-w-0">
         <button
           type="button"
-          class="exam-2-detail-bar__back-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
-          aria-label="返回主頁"
+          class="exam-2-detail-bar__back-btn exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 pt-0 pb-2 flex-shrink-0"
+          :aria-label="backLabel"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
         >
-          <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-          返回主頁
+          <span>{{ backLabel }}</span>
+          <i
+            v-if="backTrailingChevron"
+            class="fa-solid fa-chevron-right exam-2-detail-bar__back-chevron flex-shrink-0"
+            aria-hidden="true"
+          />
         </button>
-        <div class="dropdown flex-shrink-0 exam-2-exam-switch">
-          <button
-            type="button"
-            class="btn rounded-pill d-inline-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 flex-shrink-0 text-start"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            aria-label="所有試卷"
-            :disabled="detailHeaderActionsDisabled"
-          >
-            <span class="text-nowrap pe-2">所有試卷</span>
-            <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end exam-2-exam-switch-menu">
-            <li v-if="gridItems.length === 0">
-              <span class="dropdown-item disabled">尚無測驗</span>
-            </li>
-            <li v-for="item in gridItems" :key="item.tabId">
-              <button
-                type="button"
-                class="dropdown-item"
-                :class="{ active: item.tabId === selectedExamTabId }"
-                @click="emit('switch-exam', item.tabId, item.label)"
-              >
-                <span class="text-truncate">{{ item.label }}</span>
-              </button>
-            </li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-            <li>
-              <button
-                type="button"
-                class="dropdown-item my-color-red"
-                :disabled="detailHeaderActionsDisabled"
-                :aria-busy="deleteExamLoading"
-                @click="emit('delete-exam')"
-              >
-                刪除此試卷
-              </button>
-            </li>
-          </ul>
-        </div>
       </div>
       <div class="exam-2-detail-bar__title-row w-100 min-w-0">
         <input
@@ -108,13 +74,12 @@ function onTitleInput(e) {
       <div class="exam-2-detail-bar__start">
         <button
           type="button"
-          class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-4 py-1 flex-shrink-0"
-          aria-label="返回主頁"
+          class="exam-2-detail-bar__back-btn btn rounded-pill d-inline-flex align-items-center my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
+          :aria-label="backLabel"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
         >
-          <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-          返回主頁
+          {{ backLabel }}
         </button>
       </div>
       <div class="exam-2-detail-bar__center min-w-0">
@@ -196,6 +161,7 @@ function onTitleInput(e) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  gap: 0;
 }
 
 .exam-2-detail-bar__top-row {
@@ -206,8 +172,9 @@ function onTitleInput(e) {
   min-width: 0;
 }
 
-.exam-2-detail-bar--in-side-panel .exam-2-exam-switch .btn.dropdown-toggle {
-  white-space: nowrap;
+.exam-2-detail-bar__back-chevron {
+  font-size: 1em;
+  line-height: 1;
 }
 
 .exam-2-detail-bar__back-btn {
@@ -255,6 +222,12 @@ function onTitleInput(e) {
 .exam-2-detail-bar__title:hover:not(:disabled),
 .exam-2-detail-bar__title:focus:not(:disabled) {
   background-color: var(--my-color-gray-3, #f5f5f5);
+}
+
+.exam-2-detail-bar__title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
 }
 
 .exam-2-detail-bar__title:disabled {

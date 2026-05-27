@@ -5,9 +5,10 @@
  * 首屏以九宮格顯示各測驗；點方塊進入測驗內容（複用 ExamPage，隱藏分頁列）。
  * 不修改 ExamPage.vue。
  */
-import { ref, computed, watch, onActivated } from 'vue';
+import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
+import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
 import {
   API_BASE,
   API_EXAM_TESTS,
@@ -43,6 +44,7 @@ const addExamEntryLabel = computed(() => (
 ));
 
 const authStore = useAuthStore();
+const courseHeaderStore = useCourseHeaderStore();
 const router = useRouter();
 const route = useRoute();
 const viewMode = ref('grid');
@@ -436,6 +438,42 @@ async function confirmDeleteExam() {
   }
 }
 
+onMounted(() => {
+  courseHeaderStore.clearBankSwitcher();
+  courseHeaderStore.registerExamSwitcherHandlers({
+    onSwitch: switchExamDetail,
+    onDelete: openDeleteExamModal,
+  });
+});
+
+onUnmounted(() => {
+  courseHeaderStore.clearExamSwitcher();
+});
+
+watch(
+  () => [
+    props.sidePanelOnLeft,
+    viewMode.value,
+    gridItems.value,
+    selectedExamTabId.value,
+    detailHeaderActionsDisabled.value,
+    deleteExamLoading.value,
+  ],
+  () => {
+    if (props.sidePanelOnLeft && viewMode.value === 'detail') {
+      courseHeaderStore.setExamSwitcherVisible(true, {
+        gridItems: gridItems.value,
+        selectedExamTabId: selectedExamTabId.value,
+        actionsDisabled: detailHeaderActionsDisabled.value,
+        deleteExamLoading: deleteExamLoading.value,
+      });
+    } else {
+      courseHeaderStore.setExamSwitcherVisible(false);
+    }
+  },
+  { immediate: true },
+);
+
 onActivated(async () => {
   const examId = routeExamIdFromParams.value;
   if (examId) {
@@ -449,9 +487,14 @@ onActivated(async () => {
 });
 
 watch(
-  () => route.params.exam_id,
-  async (examId) => {
-    if (String(examId ?? '').trim()) {
+  () => (props.useExamDetailRoute
+    ? [route.params.exam_id, route.params.exam_quiz_id]
+    : route.params.exam_id),
+  async (params) => {
+    const examId = props.useExamDetailRoute
+      ? String(params?.[0] ?? '').trim()
+      : String(params ?? '').trim();
+    if (examId) {
       if (examList.value.length === 0 && !examListLoading.value) {
         await fetchExamList();
       }
@@ -540,7 +583,7 @@ watch(
           <div class="bank-table-actions">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
               :disabled="createExamLoading"
               :aria-busy="createExamLoading"
               @click="addNewExam"
@@ -619,6 +662,8 @@ watch(
             :selected-exam-tab-id="selectedExamTabId"
             :delete-exam-loading="deleteExamLoading"
             in-side-panel
+            back-label="測驗"
+            back-trailing-chevron
             @back="backToGrid"
             @switch-exam="switchExamDetail"
             @delete-exam="openDeleteExamModal"

@@ -1056,11 +1056,15 @@ function examQuizNavDisplayLabel(slotIndex) {
   return examSlotHeadingQuestionTitle(slotIndex);
 }
 
-/** 稿頁題目區標題：小字 breadcrumb「單元 > 題型」（不含出題模式） */
-function examSlotHeadingBreadcrumb(slotIndex) {
+/** 稿頁題目區 breadcrumb 題型名（不含出題模式括號） */
+function examSlotHeadingBreadcrumbQuizTypeName(slotIndex) {
   const fullLabel = examSlotQuizTypeLabelForHistoryModal(slotIndex);
-  const nameOnly = fullLabel.replace(/ \((?:一般出題|追問出題)\)$/, '');
-  return `${examSlotUnitLabelForHistoryModal(slotIndex)} > ${nameOnly}`;
+  return fullLabel.replace(/ \((?:一般出題|追問出題)\)$/, '');
+}
+
+/** 稿頁題目區標題：小字 breadcrumb「單元 > 題型」（aria 用文字；畫面用 icon 分隔） */
+function examSlotHeadingBreadcrumb(slotIndex) {
+  return `${examSlotUnitLabelForHistoryModal(slotIndex)} > ${examSlotHeadingBreadcrumbQuizTypeName(slotIndex)}`;
 }
 
 /** 稿頁題目區主標題：第 1 題、第 2 題… */
@@ -3264,10 +3268,19 @@ onActivated(() => {
                         >
                           <div
                             :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
-                            class="my-font-sm-400 my-color-gray-1 mb-2"
+                            class="exam-slot-heading-breadcrumb my-font-sm-400 my-color-gray-1 mb-2 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
                             :aria-label="`單元與題型：${examSlotHeadingBreadcrumb(activeExamSlotIndex1)}`"
                           >
-                            {{ examSlotHeadingBreadcrumb(activeExamSlotIndex1) }}
+                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">
+                              {{ examSlotUnitLabelForHistoryModal(activeExamSlotIndex1) }}
+                            </span>
+                            <i
+                              class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
+                              aria-hidden="true"
+                            />
+                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">
+                              {{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}
+                            </span>
                           </div>
                           <div
                             class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
@@ -3617,6 +3630,16 @@ onActivated(() => {
 </template>
 
 <style scoped>
+.exam-slot-heading-breadcrumb__chevron {
+  font-size: 0.625rem;
+  line-height: 1;
+  color: inherit;
+}
+
+.exam-slot-heading-breadcrumb__segment {
+  min-width: 0;
+}
+
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
 :deep(button.btn.rounded-pill.px-3),
 :deep(button.btn.rounded-2.px-3) {

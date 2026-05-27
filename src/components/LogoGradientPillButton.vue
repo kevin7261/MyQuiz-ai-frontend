@@ -1,9 +1,6 @@
 <script setup>
 import LogoCenterMark from './LogoCenterMark.vue';
-import {
-  createRandomLogoDiamondGradient,
-  logoDiamondGradientToCssLinear,
-} from '../utils/logoDiamondGradient.js';
+import { createRandomLogoGradientCss } from '../utils/logoDiamondGradient.js';
 
 const props = defineProps({
   idPrefix: { type: String, required: true },
@@ -30,9 +27,7 @@ defineEmits(['click']);
 
 /** 每顆按鈕各一組隨機漸層（色域依 tone；機制同 TopView logo） */
 const buttonStyle = {
-  background: logoDiamondGradientToCssLinear(
-    createRandomLogoDiamondGradient({ tone: props.tone, bias: props.gradientBias }),
-  ),
+  background: createRandomLogoGradientCss({ tone: props.tone, bias: props.gradientBias }),
 };
 </script>
 

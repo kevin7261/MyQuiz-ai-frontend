@@ -444,6 +444,7 @@ async function confirmNewBankUpload() {
 }
 
 onMounted(() => {
+  courseHeaderStore.clearExamSwitcher();
   courseHeaderStore.registerBankSwitcherHandlers({
     onSwitch: switchBankDetail,
     onDelete: openDeleteBankModal,

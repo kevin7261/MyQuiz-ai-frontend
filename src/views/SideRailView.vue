@@ -3,7 +3,7 @@
    * SideRailView - 系統 header（create-exam-bank_3 等全寬版面左側直立欄）
    *
    * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
-   * 頂部 64×64：僅白色菱形 logo（點擊重繪頂部隨機漸層）；15% 高度左右各 50% 隨機漸層淡出。
+   * 頂部 64×64：僅白色菱形 logo（點擊重繪頂部隨機漸層）；15% 高度左右各 50% 獨立隨機漸層（線性／徑向／錐形／多點分布）淡出。
    * 底部 64×64 icon：課程、設定、使用者。
    */
   import { ref } from 'vue';
@@ -23,13 +23,13 @@
     },
     emits: ['logout', 'open-course-modal'],
     setup(props, { emit }) {
-      const systemHeaderGradientLeftStyle = ref({ background: 'transparent' });
-      const systemHeaderGradientRightStyle = ref({ background: 'transparent' });
+      const systemHeaderGradientLeftStyle = ref({});
+      const systemHeaderGradientRightStyle = ref({});
 
       function applyLogoGradients() {
         const split = createRandomLogoDiamondSplitHorizontalGradients();
-        systemHeaderGradientLeftStyle.value = { background: split.left };
-        systemHeaderGradientRightStyle.value = { background: split.right };
+        systemHeaderGradientLeftStyle.value = split.left;
+        systemHeaderGradientRightStyle.value = split.right;
       }
 
       applyLogoGradients();
@@ -179,6 +179,7 @@
   width: 50%;
   height: 100%;
   min-width: 0;
+  overflow: hidden;
 }
 
 .my-system-header__logo {
