@@ -5,9 +5,10 @@
  * 首屏以九宮格顯示各題庫；點方塊進入題庫內容（複用 CreateExamQuizBankPage，隱藏分頁列）。
  * 不修改 CreateExamQuizBankPage.vue。
  */
-import { ref, computed, watch, onActivated } from 'vue';
+import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
+import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
 import { useRagList } from '../composables/useRagList.js';
 import {
   getPersonId,
@@ -39,6 +40,7 @@ const UPLOAD_MAX_FILE_BYTES = 50 * 1000 * 1000;
 const QUIZ_BANK_NOUN = '測驗題庫';
 
 const authStore = useAuthStore();
+const courseHeaderStore = useCourseHeaderStore();
 const router = useRouter();
 const route = useRoute();
 const viewMode = ref('grid');
@@ -441,6 +443,41 @@ async function confirmNewBankUpload() {
   }
 }
 
+onMounted(() => {
+  courseHeaderStore.registerBankSwitcherHandlers({
+    onSwitch: switchBankDetail,
+    onDelete: openDeleteBankModal,
+  });
+});
+
+onUnmounted(() => {
+  courseHeaderStore.clearBankSwitcher();
+});
+
+watch(
+  () => [
+    props.sidePanelOnLeft,
+    viewMode.value,
+    gridItems.value,
+    selectedBankTabId.value,
+    detailHeaderActionsDisabled.value,
+    deleteRagLoading.value,
+  ],
+  () => {
+    if (props.sidePanelOnLeft && viewMode.value === 'detail') {
+      courseHeaderStore.setBankSwitcherVisible(true, {
+        gridItems: gridItems.value,
+        selectedBankTabId: selectedBankTabId.value,
+        actionsDisabled: detailHeaderActionsDisabled.value,
+        deleteRagLoading: deleteRagLoading.value,
+      });
+    } else {
+      courseHeaderStore.setBankSwitcherVisible(false);
+    }
+  },
+  { immediate: true },
+);
+
 onActivated(async () => {
   const bankId = routeBankIdFromParams.value;
   if (bankId) {
@@ -623,6 +660,8 @@ watch(viewMode, (mode) => {
             :selected-bank-tab-id="selectedBankTabId"
             :delete-rag-loading="deleteRagLoading"
             in-side-panel
+            back-label="建立測驗題庫"
+            back-trailing-chevron
             @back="backToGrid"
             @switch-bank="switchBankDetail"
             @delete-bank="openDeleteBankModal"

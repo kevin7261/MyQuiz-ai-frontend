@@ -208,8 +208,6 @@ const PATH_TO_VIEW = {
         <TopView
           :user-name="userName"
           :user-type="authStore.user?.user_type"
-          @logout="onLogout"
-          @open-course-modal="openCourseModal"
         />
         <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
           <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />

@@ -7,6 +7,8 @@ defineProps({
   deleteRagLoading: { type: Boolean, default: false },
   /** 嵌入左側清單欄上方時使用垂直排版 */
   inSidePanel: { type: Boolean, default: false },
+  /** 返回鈕文字（create-exam-bank_3 為「建立測驗題庫 >」） */
+  backLabel: { type: String, default: '返回主頁' },
 });
 
 const emit = defineEmits([
@@ -28,72 +30,25 @@ function onTitleInput(e) {
     class="create-exam-bank-2-detail-bar flex-shrink-0"
     :class="[
       inSidePanel ? 'p-3 my-bgcolor-gray-4' : 'px-2 py-3 border-bottom my-bgcolor-gray-4',
-      { 'create-exam-bank-2-detail-bar--in-side-panel gap-2': inSidePanel },
+      { 'create-exam-bank-2-detail-bar--in-side-panel': inSidePanel },
     ]"
   >
     <template v-if="inSidePanel">
-      <div class="create-exam-bank-2-detail-bar__top-row d-flex align-items-start justify-content-between gap-2 w-100 min-w-0">
+      <div class="create-exam-bank-2-detail-bar__top-row d-flex align-items-start w-100 min-w-0">
         <button
           type="button"
-          class="create-exam-bank-2-detail-bar__back-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
-          aria-label="返回主頁"
+          class="create-exam-bank-2-detail-bar__back-btn create-exam-bank-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 pt-0 pb-2 flex-shrink-0"
+          :aria-label="backLabel"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
         >
-          <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-          返回主頁
+          <span>{{ backLabel }}</span>
+          <i
+            v-if="backTrailingChevron"
+            class="fa-solid fa-chevron-right create-exam-bank-2-detail-bar__back-chevron flex-shrink-0"
+            aria-hidden="true"
+          />
         </button>
-        <div class="dropdown flex-shrink-0 create-exam-bank-2-bank-switch">
-          <button
-            type="button"
-            class="btn rounded-pill d-inline-flex align-items-center justify-content-between dropdown-toggle my-dropdown-caret my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 flex-shrink-0 text-start"
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            aria-label="所有題庫"
-            :disabled="detailHeaderActionsDisabled"
-          >
-            <span class="text-nowrap pe-2">所有題庫</span>
-            <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
-          </button>
-          <ul class="dropdown-menu dropdown-menu-end create-exam-bank-2-bank-switch-menu">
-            <li v-if="gridItems.length === 0">
-              <span class="dropdown-item disabled">尚無題庫</span>
-            </li>
-            <li v-for="item in gridItems" :key="item.tabId">
-              <button
-                type="button"
-                class="dropdown-item"
-                :class="{ active: item.tabId === selectedBankTabId }"
-                @click="emit('switch-bank', item.tabId, item.label)"
-              >
-                <span class="d-flex align-items-center gap-2">
-                  <span
-                    v-if="item.isExam"
-                    class="rounded-circle d-inline-block flex-shrink-0 my-bgcolor-green"
-                    style="width: 0.5rem; height: 0.5rem"
-                    title="試卷用題庫"
-                    aria-label="試卷用題庫"
-                  />
-                  <span class="text-truncate">{{ item.label }}</span>
-                </span>
-              </button>
-            </li>
-            <li>
-              <hr class="dropdown-divider" />
-            </li>
-            <li>
-              <button
-                type="button"
-                class="dropdown-item my-color-red"
-                :disabled="detailHeaderActionsDisabled"
-                :aria-busy="deleteRagLoading"
-                @click="emit('delete-bank')"
-              >
-                刪除此題庫
-              </button>
-            </li>
-          </ul>
-        </div>
       </div>
       <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0">
         <input
@@ -117,13 +72,12 @@ function onTitleInput(e) {
       <div class="create-exam-bank-2-detail-bar__start">
         <button
           type="button"
-          class="create-exam-bank-2-detail-bar__back-btn btn rounded-pill d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
-          aria-label="返回主頁"
+          class="create-exam-bank-2-detail-bar__back-btn btn rounded-pill d-inline-flex align-items-center my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
+          :aria-label="backLabel"
           :disabled="detailHeaderActionsDisabled"
           @click="emit('back')"
         >
-          <i class="fa-solid fa-arrow-left" aria-hidden="true" />
-          返回主頁
+          {{ backLabel }}
         </button>
       </div>
       <div class="create-exam-bank-2-detail-bar__center min-w-0">
@@ -214,6 +168,7 @@ function onTitleInput(e) {
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  gap: 0;
 }
 
 .create-exam-bank-2-detail-bar__top-row,
@@ -225,14 +180,15 @@ function onTitleInput(e) {
   min-width: 0;
 }
 
-.create-exam-bank-2-detail-bar--in-side-panel .create-exam-bank-2-bank-switch .btn.dropdown-toggle {
-  white-space: nowrap;
-}
-
 .create-exam-bank-2-detail-bar__back-btn {
   color: var(--my-color-gray-1) !important;
   background-color: transparent !important;
   font-weight: var(--my-font-weight-regular);
+}
+
+.create-exam-bank-2-detail-bar__back-chevron {
+  font-size: 1em;
+  line-height: 1;
 }
 .create-exam-bank-2-detail-bar__back-btn:hover:not(:disabled),
 .create-exam-bank-2-detail-bar__back-btn:focus-visible:not(:disabled),
