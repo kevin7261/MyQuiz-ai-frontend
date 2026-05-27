@@ -37,6 +37,11 @@ const props = defineProps({
 const EXAM_TAB_UI_STORAGE_PREFIX = 'myquiz:examTabUI:v1:';
 const EXAM_NOUN = '測驗';
 
+/** exam_3 grid 入口按鈕文案（exam_2 仍為「新增測驗」） */
+const addExamEntryLabel = computed(() => (
+  props.routeBase === '/exam_3' ? '新增試卷' : `新增${EXAM_NOUN}`
+));
+
 const authStore = useAuthStore();
 const router = useRouter();
 const route = useRoute();
@@ -525,7 +530,7 @@ watch(
             @click="addNewExam"
           >
             <i class="fa-solid fa-plus" aria-hidden="true" />
-            新增{{ EXAM_NOUN }}
+            {{ addExamEntryLabel }}
           </button>
         </div>
 
@@ -541,7 +546,7 @@ watch(
               @click="addNewExam"
             >
               <i class="fa-solid fa-plus" aria-hidden="true" />
-              新增{{ EXAM_NOUN }}
+              {{ addExamEntryLabel }}
             </button>
           </div>
 
