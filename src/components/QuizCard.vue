@@ -129,8 +129,8 @@ const designFieldInsetBodyClass = computed(() => {
   return `${base} px-3 pb-2`;
 });
 
-/** exam_3／create-exam-bank_3：子區塊標題列下方不顯示橫線 */
-const showDesignSectionRule = computed(() => props.logoGradientBias !== 'work3');
+/** exam_3／create-exam-bank_3：出題／批改規則黑底區標題列下方不顯示橫線 */
+const showDesignPromptBlockRule = computed(() => props.logoGradientBias !== 'work3');
 
 /** exam_3／create-exam-bank_3：題目／答案／批改 tab 間距（較 gap-3 放大） */
 const designStemTabsClass = computed(() => {
@@ -905,10 +905,7 @@ const quizAnswerFieldDisabled = computed(
                   </button>
                 </div>
               </div>
-              <div
-                v-if="showDesignSectionRule"
-                class="px-3 py-0"
-              >
+              <div class="px-3 py-0">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
@@ -1273,10 +1270,7 @@ const quizAnswerFieldDisabled = computed(
                   答案
                 </h3>
               </div>
-              <div
-                v-if="showDesignSectionRule"
-                class="px-3 py-0"
-              >
+              <div class="px-3 py-0">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
@@ -1518,7 +1512,7 @@ const quizAnswerFieldDisabled = computed(
                   </button>
                 </div>
                 <div
-                  v-if="showDesignSectionRule"
+                  v-if="showDesignPromptBlockRule"
                   class="px-3 py-0"
                 >
                   <hr class="my-design-quiz-question-prompt-block__rule m-0">
@@ -1603,10 +1597,7 @@ const quizAnswerFieldDisabled = computed(
                       </button>
                     </div>
                   </div>
-                  <div
-                    v-if="showDesignSectionRule"
-                    class="px-3 py-0"
-                  >
+                  <div class="px-3 py-0">
                     <hr class="my-design-quiz-field-inset__rule m-0">
                   </div>
                 </header>
@@ -1779,10 +1770,7 @@ const quizAnswerFieldDisabled = computed(
                   批改結果
                 </h3>
               </div>
-              <div
-                v-if="showDesignSectionRule"
-                class="px-3 py-0"
-              >
+              <div class="px-3 py-0">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
