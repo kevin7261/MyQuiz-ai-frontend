@@ -7286,7 +7286,7 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-tabs-row) {
   padding-top: 0 !important;
 }
-/* create-exam-bank_3：題目／答案內文（標題列 hr 下方）pt-2 pb-2 */
+/* create-exam-bank_3：題目／答案內文 pt-2 pb-2 */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2),
 .my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2),

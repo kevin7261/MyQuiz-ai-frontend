@@ -129,6 +129,9 @@ const designFieldInsetBodyClass = computed(() => {
   return `${base} px-3 pb-2`;
 });
 
+/** exam_3／create-exam-bank_3：子區塊標題列下方不顯示橫線 */
+const showDesignSectionRule = computed(() => props.logoGradientBias !== 'work3');
+
 const emit = defineEmits([
   'toggle-hint',
   'toggle-reference-answer',
@@ -896,7 +899,10 @@ const quizAnswerFieldDisabled = computed(
                   </button>
                 </div>
               </div>
-              <div class="px-3 py-0">
+              <div
+                v-if="showDesignSectionRule"
+                class="px-3 py-0"
+              >
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
@@ -1261,7 +1267,10 @@ const quizAnswerFieldDisabled = computed(
                   答案
                 </h3>
               </div>
-              <div class="px-3 py-0">
+              <div
+                v-if="showDesignSectionRule"
+                class="px-3 py-0"
+              >
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
@@ -1503,7 +1512,7 @@ const quizAnswerFieldDisabled = computed(
                   </button>
                 </div>
                 <div
-                  v-if="logoGradientBias !== 'work3'"
+                  v-if="showDesignSectionRule"
                   class="px-3 py-0"
                 >
                   <hr class="my-design-quiz-question-prompt-block__rule m-0">
@@ -1588,7 +1597,10 @@ const quizAnswerFieldDisabled = computed(
                       </button>
                     </div>
                   </div>
-                  <div class="px-3 py-0">
+                  <div
+                    v-if="showDesignSectionRule"
+                    class="px-3 py-0"
+                  >
                     <hr class="my-design-quiz-field-inset__rule m-0">
                   </div>
                 </header>
@@ -1761,7 +1773,10 @@ const quizAnswerFieldDisabled = computed(
                   批改結果
                 </h3>
               </div>
-              <div class="px-3 py-0">
+              <div
+                v-if="showDesignSectionRule"
+                class="px-3 py-0"
+              >
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
