@@ -663,7 +663,10 @@ watch(viewMode, (mode) => {
         :design-side-panel-on-left="sidePanelOnLeft"
         :route-detail-base="useExamDetailRoute ? routeBase : ''"
         :route-exam-quiz-id="routeExamQuizIdFromParams"
+        :side-panel-delete-bank-disabled="detailHeaderActionsDisabled"
+        :side-panel-delete-rag-loading="deleteRagLoading"
         class="create-exam-bank-2-embedded flex-grow-1 min-h-0"
+        @delete-bank="openDeleteBankModal"
       >
         <template v-if="sidePanelOnLeft" #side-panel-header>
           <CreateExamQuizBankPage2DetailBar

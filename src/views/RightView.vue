@@ -70,9 +70,13 @@
         }
         return {};
       },
-      /** create-exam-bank_3 / exam_3：主內容區顯示捲軸（與左側清單一致） */
+      /** create-exam-bank_3 / exam_3 / design_3：主內容區顯示捲軸（與左側清單一致） */
       showMainScrollbar() {
-        return this.currentView === 'createExamQuizBank3' || this.currentView === 'work3';
+        return (
+          this.currentView === 'createExamQuizBank3'
+          || this.currentView === 'work3'
+          || this.currentView === 'designPage3'
+        );
       },
     },
   };

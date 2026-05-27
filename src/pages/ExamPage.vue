@@ -79,7 +79,13 @@ const props = defineProps({
   routeDetailBase: { type: String, default: '' },
   /** exam_3 URL 之 exam_quiz_id（對應 Exam_Quiz；0 或未指定則不強制選取） */
   routeExamQuizId: { type: String, default: '' },
+  /** exam_3：左側清單「刪除此試卷」是否停用 */
+  sidePanelDeleteExamDisabled: { type: Boolean, default: false },
+  /** exam_3：刪除試卷進行中（由 ExamPage2 傳入） */
+  sidePanelDeleteExamLoading: { type: Boolean, default: false },
 });
+
+const emit = defineEmits(['delete-exam']);
 
 const slots = useSlots();
 const router = useRouter();
@@ -3655,8 +3661,8 @@ onActivated(() => {
               aria-label="題目清單"
             >
               <div
-                class="my-design-right-step-block"
-                :class="designSidePanelOnLeft ? 'my-design-right-step-block--section-divide' : 'py-2'"
+                class="my-design-right-step-block my-design-right-step-block--section-divide"
+                :class="designSidePanelOnLeft ? '' : 'py-2'"
               >
                 <div
                   class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
@@ -3713,6 +3719,22 @@ onActivated(() => {
                 </div>
               </div>
             </nav>
+            <div
+              v-if="designSidePanelOnLeft"
+              class="my-design-side-nav-delete"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex align-items-center my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2"
+                title="刪除此試卷"
+                aria-label="刪除此試卷"
+                :disabled="sidePanelDeleteExamDisabled || sidePanelDeleteExamLoading"
+                :aria-busy="sidePanelDeleteExamLoading"
+                @click="emit('delete-exam')"
+              >
+                刪除此試卷
+              </button>
+            </div>
           </aside>
         </div>
       </div>

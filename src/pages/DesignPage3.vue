@@ -82,24 +82,114 @@ function toggleLoading() {
   loadingVisible.value = true;
   loadingTimer = setTimeout(() => { loadingVisible.value = false; }, 3000);
 }
+
+/** 權杖 hex → rgb(…)；my-color-gray-4 為黑 46%＋白混色 */
+function hexToRgb(hex) {
+  const raw = String(hex).replace('#', '').trim();
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  if (!/^[0-9a-f]{6}$/i.test(full)) return '';
+  const n = parseInt(full, 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
+
+function mixBlackWhiteRgb(blackPct) {
+  const t = blackPct / 100;
+  const b = { r: 51, g: 51, b: 51 };
+  const w = { r: 255, g: 255, b: 255 };
+  return `rgb(${Math.round(b.r * t + w.r * (1 - t))}, ${Math.round(b.g * t + w.g * (1 - t))}, ${Math.round(b.b * t + w.b * (1 - t))})`;
+}
+
+const DESIGN3_CLASS_RGB = {
+  'my-bgcolor-black': hexToRgb('#333333'),
+  'my-color-black': hexToRgb('#333333'),
+  'my-bgcolor-gray-1': hexToRgb('#888888'),
+  'my-color-gray-1': hexToRgb('#888888'),
+  'my-bgcolor-gray-2': hexToRgb('#e2e2e2'),
+  'my-color-gray-2': hexToRgb('#e2e2e2'),
+  'my-bgcolor-gray-3': hexToRgb('#f0f0f0'),
+  'my-color-gray-3': hexToRgb('#f0f0f0'),
+  'my-bgcolor-gray-4': hexToRgb('#fafafa'),
+  'my-color-gray-4': mixBlackWhiteRgb(46),
+  'my-bgcolor-surface': hexToRgb('#ffffff'),
+  'my-bgcolor-green': hexToRgb('#25b17c'),
+  'my-color-green': hexToRgb('#25b17c'),
+  'my-bgcolor-red': hexToRgb('#e84136'),
+  'my-color-red': hexToRgb('#e84136'),
+};
+
+function design3ClassRgb(className) {
+  return DESIGN3_CLASS_RGB[className] ?? '';
+}
+
+const DESIGN3_COLORS_GRAY = [
+  {
+    desc: '主要文字、標題、方塊標題、Modal 標題、已選檔名',
+    dotClass: 'my-bgcolor-black',
+    dotBorder: false,
+    rows: [{ className: 'my-bgcolor-black' }, { className: 'my-color-black' }],
+  },
+  {
+    desc: '次要文字、返回按鈕、圓形選單鈕、取消按鈕、方塊副標題',
+    dotClass: 'my-bgcolor-gray-1',
+    dotBorder: false,
+    rows: [{ className: 'my-bgcolor-gray-1' }, { className: 'my-color-gray-1' }],
+  },
+  {
+    desc: '邊線、表頭分隔、列表列框線（gray-2）',
+    dotClass: 'my-bgcolor-gray-2',
+    dotBorder: false,
+    rows: [{ className: 'my-bgcolor-gray-2' }, { className: 'my-color-gray-2' }],
+  },
+  {
+    desc: 'Design 參考區塊底、drop zone 底（gray-3）',
+    dotClass: 'my-bgcolor-gray-3',
+    dotBorder: false,
+    rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-black' }],
+  },
+  {
+    desc: '左側清單 detail bar 背景（exam_3／create-exam-bank_3 in-side-panel）',
+    dotClass: 'my-bgcolor-gray-4',
+    dotBorder: true,
+    rows: [{ className: 'my-bgcolor-gray-4' }, { className: 'my-color-black' }],
+  },
+  {
+    desc: 'drop zone 提示文字、說明 ul（最淡輔助色）',
+    dotClass: 'my-bgcolor-gray-4',
+    dotBorder: true,
+    rows: [{ className: 'my-color-gray-4' }],
+  },
+  {
+    desc: 'Badge 背景（白底）',
+    dotClass: 'my-bgcolor-surface',
+    dotBorder: true,
+    rows: [{ className: 'my-bgcolor-surface' }, { className: 'my-color-black' }],
+  },
+];
+
+const DESIGN3_COLORS_ACCENT = [
+  {
+    desc: '試卷用題庫：列表綠點、下拉選單列小圓點',
+    dotClass: 'my-bgcolor-green',
+    dotBorder: false,
+    rows: [{ className: 'my-bgcolor-green' }, { className: 'my-color-green' }],
+  },
+  {
+    desc: '下拉選單刪除項（兩頁共用）',
+    dotClass: 'my-bgcolor-red',
+    dotBorder: false,
+    rows: [{ className: 'my-bgcolor-red' }, { className: 'my-color-red' }],
+  },
+];
 </script>
 
 <template>
   <!--
     DesignPage3｜exam_3、create-exam-bank_3 專用 UI 元件參考（TopView 全寬、白底主內容、左側清單欄）
-    13 個 Tab：每個區塊獨立一頁
+    版面對齊 ExamPage2／CreateExamQuizBankPage2（sidePanelOnLeft）；頁名由 TopView 顯示
   -->
   <div class="design-page-3 d-flex flex-column h-100 overflow-hidden my-bgcolor-white">
-
-    <!-- 頁首 -->
-    <header class="flex-shrink-0 my-bgcolor-white p-4">
-      <div class="container-fluid px-0 text-center">
-        <p class="my-font-xl-400 my-color-black text-break mb-0">UI 元件參考 3</p>
-      </div>
-    </header>
-
-    <!-- Tab 列（置中；底線隨 tab 寬度，不 w-100 滿版） -->
-    <div class="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-white">
+    <!-- Tab 列（置中；底線隨 tab 寬度） -->
+    <div class="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-white pt-3">
       <div class="d-flex justify-content-center w-100 align-items-center">
         <ul class="nav nav-tabs">
           <li v-for="tab in TABS" :key="tab.id" class="nav-item">
@@ -118,11 +208,11 @@ function toggleLoading() {
       </div>
     </div>
 
-    <!-- 主內文 -->
-    <div class="flex-grow-1 overflow-auto my-bgcolor-white min-h-0">
-      <div class="container-fluid px-3 px-md-4 py-4">
-        <div class="row justify-content-center">
-          <div class="col-12 col-lg-11 col-xl-10">
+    <div
+      class="design-page-3__scroll flex-grow-1 min-h-0 overflow-auto position-relative d-flex flex-column design-page-3__scroll--scrollbar px-3 px-md-4 py-4"
+    >
+      <div class="design-page-3__content flex-grow-1 w-100">
+        <div class="design-page-3__sections mx-auto w-100">
 
             <!-- ══════════════════════════════════════════════════
                  字階
@@ -225,111 +315,37 @@ function toggleLoading() {
                 <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">灰階</div>
                   <div class="row g-3">
-
-                    <!-- 1 · black — 最深 -->
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">主要文字、標題、方塊標題、Modal 標題、已選檔名</p>
+                    <div
+                      v-for="(item, itemIdx) in DESIGN3_COLORS_GRAY"
+                      :key="'design3-gray-' + itemIdx"
+                      class="col-12"
+                    >
+                      <p class="my-font-sm-400 my-color-gray-1 mb-1">{{ item.desc }}</p>
                       <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-black" aria-hidden="true"></span>
+                        <span
+                          class="my-design-swatch-dot"
+                          :class="item.dotClass"
+                          :style="item.dotBorder ? { border: '1px solid var(--my-color-gray-2, #e2e2e2)' } : undefined"
+                          aria-hidden="true"
+                        />
                         <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-black" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-black" :on-light-bg="false" />
+                          <div
+                            v-for="row in item.rows"
+                            :key="row.className"
+                            class="my-design-swatch-row my-bgcolor-black min-w-0"
+                          >
+                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">
+                              {{ row.className }} · {{ design3ClassRgb(row.className) }}
+                            </code>
+                            <DesignPageCopyBtn
+                              class="flex-shrink-0 ms-auto"
+                              :text="row.className"
+                              :on-light-bg="false"
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
-
-                    <!-- 2 · gray-1 -->
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">次要文字、返回按鈕、圓形選單鈕、取消按鈕、方塊副標題</p>
-                      <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-gray-2" aria-hidden="true"></span>
-                        <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-gray-1</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-gray-1" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-gray-1</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-gray-1" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 3 · gray-3 bg -->
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">左側清單欄底、detail bar 底；drop zone 底（gray-3）</p>
-                      <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-gray-3" aria-hidden="true"></span>
-                        <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-gray-3</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-gray-3" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 4 · gray-4 bg -->
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">左側清單欄（side panel）；detail bar 背景</p>
-                      <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-gray-4" aria-hidden="true" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);"></span>
-                        <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-gray-4</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-gray-4" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 5 · gray-4 text -->
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">drop zone 提示文字、說明 ul（最淡輔助色）</p>
-                      <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-gray-4" aria-hidden="true" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);"></span>
-                        <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-gray-4</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-gray-4" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <!-- 6 · surface / white — 最淺 -->
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">Badge 背景（白底）</p>
-                      <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-surface" aria-hidden="true" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);"></span>
-                        <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-surface</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-surface" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-black</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-black" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               </section>
@@ -339,41 +355,36 @@ function toggleLoading() {
                 <div class="rounded-4 my-bgcolor-gray-3 p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">彩色</div>
                   <div class="row g-3">
-
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">試卷用題庫：列表綠點、下拉選單列小圓點</p>
+                    <div
+                      v-for="(item, itemIdx) in DESIGN3_COLORS_ACCENT"
+                      :key="'design3-accent-' + itemIdx"
+                      class="col-12"
+                    >
+                      <p class="my-font-sm-400 my-color-gray-1 mb-1">{{ item.desc }}</p>
                       <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-green" aria-hidden="true"></span>
+                        <span
+                          class="my-design-swatch-dot"
+                          :class="item.dotClass"
+                          aria-hidden="true"
+                        />
                         <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-green</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-green" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-green</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-green" :on-light-bg="false" />
+                          <div
+                            v-for="row in item.rows"
+                            :key="row.className"
+                            class="my-design-swatch-row my-bgcolor-black min-w-0"
+                          >
+                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">
+                              {{ row.className }} · {{ design3ClassRgb(row.className) }}
+                            </code>
+                            <DesignPageCopyBtn
+                              class="flex-shrink-0 ms-auto"
+                              :text="row.className"
+                              :on-light-bg="false"
+                            />
                           </div>
                         </div>
                       </div>
                     </div>
-
-                    <div class="col-12">
-                      <p class="my-font-sm-400 my-color-gray-1 mb-1">下拉選單刪除項（兩頁共用）</p>
-                      <div class="my-design-swatch-cell">
-                        <span class="my-design-swatch-dot my-bgcolor-red" aria-hidden="true"></span>
-                        <div class="my-design-swatch-rows">
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-bgcolor-red</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-bgcolor-red" :on-light-bg="false" />
-                          </div>
-                          <div class="my-design-swatch-row my-bgcolor-black min-w-0">
-                            <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">my-color-red</code>
-                            <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-color-red" :on-light-bg="false" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                   </div>
                 </div>
               </section>
@@ -390,8 +401,8 @@ function toggleLoading() {
                     <code class="my-color-black">SideRailView</code>（64px）＋
                     <code class="my-color-black">TopView</code>（64px 高、白底）；
                     中央「<strong>課程名稱</strong> | 頁面名稱」（課程名 my-font-lg-600）；
-                    右側 <code class="my-color-black">ExamPageExamSwitchDropdown</code>（exam_3 列表／詳情皆顯示）或
-                    <code class="my-color-black">CreateExamQuizBankBankSwitchDropdown</code>（create-exam-bank_3 詳情）
+                    右側 <code class="my-color-black">ExamPageExamSwitchDropdown</code>（所有試卷，觸發鈕 <code class="my-color-black">px-4 py-2</code>；exam_3 列表／詳情皆顯示）或
+                    <code class="my-color-black">CreateExamQuizBankBankSwitchDropdown</code>（所有題庫，<code class="my-color-black">variant=course-header-nav</code> 同 <code class="my-color-black">px-4 py-2</code>；create-exam-bank_3 詳情）
                   </p>
                   <header class="design-page-3-topview-preview my-course-header flex-shrink-0 my-bgcolor-white border rounded-3">
                     <div class="my-course-header-inner px-3 min-w-0 w-100">
@@ -406,6 +417,10 @@ function toggleLoading() {
                         <ExamPageExamSwitchDropdown
                           :grid-items="demoExamGridItems"
                           selected-exam-tab-id="exam-a"
+                        />
+                        <CreateExamQuizBankBankSwitchDropdown
+                          :grid-items="demoBankGridItems"
+                          selected-bank-tab-id="bank-b"
                         />
                       </div>
                     </div>
@@ -467,36 +482,36 @@ function toggleLoading() {
                     <code class="my-color-black">CreateExamQuizBankPage2</code> grid 主頁（白底）；
                     class 前綴 <code class="my-color-black">bank-*</code>（ExamPage2.vue／CreateExamQuizBankPage2.vue scoped）；
                     表頭排序用 <code class="my-color-black">bank-table-sort-btn</code>（px-0，無 rounded-pill）；
-                    hover → gray-2
+                    hover → gray-3（白底主頁，對齊 exam-2--side-panel-left）
                   </p>
 
                   <p class="my-font-sm-400 my-color-black mb-2">exam_3（無綠點欄）</p>
-                  <div class="my-bgcolor-white rounded-3 p-3 mb-4 border">
-                    <div class="dp3-bank-list-wrap mx-auto">
-                      <div class="dp3-bank-table-actions">
+                  <div class="design-page-3__list-preview design-page-3__list-preview--work3 mb-4">
+                    <div class="bank-list-wrap mx-auto">
+                      <div class="bank-table-actions">
                         <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
                           新增試卷
                         </button>
                       </div>
-                      <div class="dp3-bank-table-header">
-                        <button type="button" class="dp3-bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0">
+                      <div class="bank-table-header">
+                        <button type="button" class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0">
                           名稱
                           <i class="fa-solid fa-chevron-up" aria-hidden="true" />
                         </button>
                       </div>
-                      <ul class="dp3-bank-list">
+                      <ul class="bank-list">
                         <li>
-                          <button type="button" class="dp3-bank-list-row">
-                            <span class="dp3-bank-list-row__label my-font-md-400 my-color-black">範例試卷 A</span>
-                            <span class="dp3-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
-                            <i class="fa-solid fa-chevron-right dp3-bank-list-row__chevron" aria-hidden="true" />
+                          <button type="button" class="bank-list-row">
+                            <span class="bank-list-row__label my-font-md-400 my-color-black">範例試卷 A</span>
+                            <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
+                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                         <li>
-                          <button type="button" class="dp3-bank-list-row">
-                            <span class="dp3-bank-list-row__label my-font-md-400 my-color-black">未命名試卷</span>
-                            <i class="fa-solid fa-chevron-right dp3-bank-list-row__chevron" aria-hidden="true" />
+                          <button type="button" class="bank-list-row">
+                            <span class="bank-list-row__label my-font-md-400 my-color-black">未命名試卷</span>
+                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                       </ul>
@@ -504,37 +519,37 @@ function toggleLoading() {
                   </div>
 
                   <p class="my-font-sm-400 my-color-black mb-2">create-exam-bank_3（含綠點欄）</p>
-                  <div class="my-bgcolor-white rounded-3 p-3 mb-3 border">
-                    <div class="dp3-bank-list-wrap mx-auto">
-                      <div class="dp3-bank-table-actions">
+                  <div class="design-page-3__list-preview design-page-3__list-preview--work3 mb-3">
+                    <div class="bank-list-wrap mx-auto">
+                      <div class="bank-table-actions">
                         <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
                           新增測驗題庫
                         </button>
                       </div>
-                      <div class="dp3-bank-table-header">
-                        <span class="dp3-bank-table-header__dot-spacer" aria-hidden="true" />
-                        <button type="button" class="dp3-bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0">
+                      <div class="bank-table-header">
+                        <span class="bank-table-header__dot-spacer" aria-hidden="true" />
+                        <button type="button" class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0">
                           名稱
                           <i class="fa-solid fa-chevron-up" aria-hidden="true" />
                         </button>
                       </div>
-                      <ul class="dp3-bank-list">
+                      <ul class="bank-list">
                         <li>
-                          <button type="button" class="dp3-bank-list-row">
-                            <span class="dp3-bank-list-row__dot-col" aria-label="試卷用題庫">
-                              <span class="rounded-circle d-inline-block my-bgcolor-green dp3-bank-list-row__exam-dot" />
+                          <button type="button" class="bank-list-row">
+                            <span class="bank-list-row__dot-col" aria-label="試卷用題庫">
+                              <span class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot" />
                             </span>
-                            <span class="dp3-bank-list-row__label my-font-md-400 my-color-black">試卷用題庫</span>
-                            <span class="dp3-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">3 個單元</span>
-                            <i class="fa-solid fa-chevron-right dp3-bank-list-row__chevron" aria-hidden="true" />
+                            <span class="bank-list-row__label my-font-md-400 my-color-black">試卷用題庫</span>
+                            <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">3 個單元</span>
+                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                         <li>
-                          <button type="button" class="dp3-bank-list-row">
-                            <span class="dp3-bank-list-row__dot-col" />
-                            <span class="dp3-bank-list-row__label my-font-md-400 my-color-black">範例題庫 B</span>
-                            <i class="fa-solid fa-chevron-right dp3-bank-list-row__chevron" aria-hidden="true" />
+                          <button type="button" class="bank-list-row">
+                            <span class="bank-list-row__dot-col" />
+                            <span class="bank-list-row__label my-font-md-400 my-color-black">範例題庫 B</span>
+                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                       </ul>
@@ -596,7 +611,7 @@ function toggleLoading() {
                         <div>
                           <p class="my-font-sm-400 my-color-black mb-2">表頭排序</p>
                           <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100">
-                            <button type="button" class="dp3-bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 align-self-start">
+                            <button type="button" class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 align-self-start">
                               名稱
                               <i class="fa-solid fa-chevron-up" aria-hidden="true" />
                             </button>
@@ -747,18 +762,18 @@ function toggleLoading() {
                               selected-exam-tab-id="exam-a"
                             />
                             <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">ExamPageExamSwitchDropdown · my-course-header-nav-btn</code>
-                              <DesignPageCopyBtn class="flex-shrink-0" text="ExamPageExamSwitchDropdown" :on-light-bg="false" />
+                              <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2</code>
+                              <DesignPageCopyBtn class="flex-shrink-0" text="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2" :on-light-bg="false" />
                             </div>
                           </div>
                         </div>
                         <div>
                           <p class="my-font-sm-400 my-color-black mb-2">列表列</p>
                           <div class="design-page-3-btn-spec d-flex flex-column gap-2 w-100" style="max-width: 28rem;">
-                            <button type="button" class="dp3-bank-list-row w-100">
-                              <span class="dp3-bank-list-row__label my-font-md-400 my-color-black">範例試卷</span>
-                              <span class="dp3-bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
-                              <i class="fa-solid fa-chevron-right dp3-bank-list-row__chevron" aria-hidden="true" />
+                            <button type="button" class="bank-list-row w-100">
+                              <span class="bank-list-row__label my-font-md-400 my-color-black">範例試卷</span>
+                              <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
+                              <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                             </button>
                             <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
                               <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">bank-list-row</code>
@@ -834,9 +849,9 @@ function toggleLoading() {
                   <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-2">切換下拉選單</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">
                     exam_3 TopView 右側（列表／詳情）：
-                    <code class="my-color-black">ExamPageExamSwitchDropdown</code>（所有試卷）；
+                    <code class="my-color-black">ExamPageExamSwitchDropdown</code>（所有試卷，觸發鈕 <code class="my-color-black">px-4 py-2</code>）；
                     create-exam-bank_3 詳情：
-                    <code class="my-color-black">CreateExamQuizBankBankSwitchDropdown</code>（所有題庫，variant=course-header-nav）；
+                    <code class="my-color-black">CreateExamQuizBankBankSwitchDropdown</code>（所有題庫，<code class="my-color-black">variant=course-header-nav</code> 同 <code class="my-color-black">px-4 py-2</code>）；
                     dropdown-menu-end；active／disabled；my-color-red = 刪除
                   </p>
                   <div class="d-flex flex-wrap gap-4 align-items-start mb-3">
@@ -861,8 +876,8 @@ function toggleLoading() {
                       <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="exam-page-exam-switch-menu" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-course-header-nav-btn（TopView 觸發鈕）</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-course-header-nav-btn" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-course-header-nav-btn · 觸發鈕置末 px-4 py-2（所有試卷／所有題庫）</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
                       <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">dropdown-item active · dropdown-item disabled · dropdown-item my-color-red</code>
@@ -901,7 +916,7 @@ function toggleLoading() {
                         <h5 class="modal-title my-color-black mb-0">上傳檔案（靜態預覽）</h5>
                         <button type="button" class="btn-close" aria-label="關閉"></button>
                       </div>
-                      <div class="modal-body min-w-0 d-flex flex-column gap-4 p-0">
+                      <div class="modal-body p-0 min-w-0 d-flex flex-column gap-4">
                         <div>
                           <p class="my-font-sm-400 my-color-gray-1 mb-2">狀態 A · 空</p>
                           <div class="my-zip-drop-zone text-center position-relative">
@@ -965,8 +980,8 @@ function toggleLoading() {
                       <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-title my-color-black" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
-                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-body min-w-0 d-flex flex-column gap-4 p-0</code>
-                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-body min-w-0 d-flex flex-column gap-4 p-0" :on-light-bg="false" />
+                      <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">modal-body p-0 min-w-0</code>
+                      <DesignPageCopyBtn class="flex-shrink-0 ms-auto" text="modal-body p-0 min-w-0" :on-light-bg="false" />
                     </div>
                     <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100">
                       <code class="user-select-all my-font-sm-400 font-monospace text-break flex-grow-1 min-w-0 px-1 my-color-white">my-zip-drop-zone text-center position-relative</code>
@@ -1058,7 +1073,6 @@ function toggleLoading() {
               </section>
             </template>
 
-          </div>
         </div>
       </div>
     </div>
@@ -1081,7 +1095,7 @@ function toggleLoading() {
             <h5 id="design3-upload-modal-title" class="modal-title my-color-black mb-0">上傳檔案</h5>
             <button type="button" class="btn-close" aria-label="關閉" @click="closeUploadModal" />
           </div>
-          <div class="modal-body min-w-0 d-flex flex-column gap-3 p-0">
+          <div class="modal-body p-0 min-w-0">
             <input type="file" accept=".zip" class="d-none" @change="onUploadFileChange">
             <div
               class="my-zip-drop-zone text-center position-relative"
@@ -1110,7 +1124,7 @@ function toggleLoading() {
                 </div>
               </template>
             </div>
-            <div v-if="uploadError" class="my-alert-danger-soft my-font-sm-400 mb-0 py-2">{{ uploadError }}</div>
+            <div v-if="uploadError" class="my-alert-danger-soft my-font-sm-400 py-2 mt-2 mb-0">{{ uploadError }}</div>
           </div>
           <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
             <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2" @click="closeUploadModal">取消</button>
@@ -1136,6 +1150,41 @@ function toggleLoading() {
 </template>
 
 <style scoped>
+/* ── 捲動區（對齊 exam-2__grid-scroll--scrollbar） ───────────── */
+.design-page-3__scroll--scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
+}
+
+.design-page-3__scroll--scrollbar::-webkit-scrollbar {
+  width: var(--my-scrollbar-size);
+  height: var(--my-scrollbar-size);
+}
+
+.design-page-3__scroll--scrollbar::-webkit-scrollbar-track {
+  background: var(--my-color-white);
+  border-radius: calc(var(--my-scrollbar-size) / 2);
+}
+
+.design-page-3__scroll--scrollbar::-webkit-scrollbar-thumb {
+  background-color: var(--my-scrollbar-thumb);
+  background-clip: padding-box;
+  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
+  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
+}
+
+.design-page-3__scroll--scrollbar::-webkit-scrollbar-corner {
+  background: var(--my-color-white);
+}
+
+.design-page-3__scroll--scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: var(--my-scrollbar-thumb-hover);
+}
+
+.design-page-3__sections {
+  max-width: 52rem;
+}
+
 /* ── TopView 預覽（對齊 TopView.vue） ───────────────────────── */
 .design-page-3-topview-preview.my-course-header {
   position: relative;
@@ -1187,6 +1236,8 @@ function toggleLoading() {
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
   text-decoration: none;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 .design-page-3-topview-preview :deep(.my-course-header-nav-btn:hover),
@@ -1197,58 +1248,60 @@ function toggleLoading() {
   outline: none;
 }
 
-/* ── list 入口預覽（dp3- 前綴，對齊 ExamPage2／CreateExamQuizBankPage2 scoped bank-*） ── */
-.dp3-bank-list-wrap {
+/* ── list 入口預覽（對齊 ExamPage2／CreateExamQuizBankPage2 scoped bank-*） ── */
+.bank-list-wrap {
   width: 100%;
   max-width: 40rem;
 }
 
-.dp3-bank-table-actions {
+.bank-table-actions {
   display: flex;
   justify-content: flex-end;
   padding-bottom: 0.75rem;
 }
 
-.dp3-bank-table-header {
+.bank-table-header {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0 1.25rem 0.5rem;
 }
 
-.dp3-bank-table-sort-btn {
+.bank-table-sort-btn {
   color: var(--my-color-gray-1) !important;
   background-color: transparent !important;
   font-weight: var(--my-font-weight-regular);
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-.dp3-bank-table-sort-btn:hover:not(:disabled),
-.dp3-bank-table-sort-btn:focus-visible:not(:disabled),
-.dp3-bank-table-sort-btn:active:not(:disabled) {
+.bank-table-sort-btn:hover:not(:disabled),
+.bank-table-sort-btn:focus-visible:not(:disabled),
+.bank-table-sort-btn:active:not(:disabled) {
   color: var(--my-color-black) !important;
   font-weight: var(--my-font-weight-semibold);
   background-color: transparent !important;
 }
 
-.dp3-bank-table-header__dot-spacer {
+.bank-table-header__dot-spacer {
   display: inline-block;
   width: calc(0.5rem + 0.75rem);
   flex-shrink: 0;
 }
 
-.dp3-bank-list {
+.bank-list {
   list-style: none;
   padding: 0;
   margin: 0;
   border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
 }
 
-.dp3-bank-list > li {
+.bank-list > li {
   display: block;
   border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
 }
 
-.dp3-bank-list-row {
+.bank-list-row {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -1262,16 +1315,20 @@ function toggleLoading() {
   transition: background-color 0.12s ease;
 }
 
-.dp3-bank-list-row:hover:not(:disabled) {
+.bank-list-row:hover:not(:disabled) {
   background-color: var(--my-color-gray-2, #e5e5e5);
 }
 
-.dp3-bank-list-row:focus-visible {
+.design-page-3__list-preview--work3 .bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-3);
+}
+
+.bank-list-row:focus-visible {
   outline: 2px solid var(--my-color-black, #000);
   outline-offset: -2px;
 }
 
-.dp3-bank-list-row__dot-col {
+.bank-list-row__dot-col {
   flex-shrink: 0;
   width: 0.5rem;
   display: flex;
@@ -1279,12 +1336,12 @@ function toggleLoading() {
   justify-content: center;
 }
 
-.dp3-bank-list-row__exam-dot {
+.bank-list-row__exam-dot {
   width: 0.5rem;
   height: 0.5rem;
 }
 
-.dp3-bank-list-row__label {
+.bank-list-row__label {
   flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
@@ -1292,12 +1349,12 @@ function toggleLoading() {
   white-space: nowrap;
 }
 
-.dp3-bank-list-row__subtitle {
+.bank-list-row__subtitle {
   flex-shrink: 0;
   white-space: nowrap;
 }
 
-.dp3-bank-list-row__chevron {
+.bank-list-row__chevron {
   flex-shrink: 0;
   font-size: 0.625rem;
   opacity: 0.4;

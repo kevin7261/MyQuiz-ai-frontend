@@ -1637,3 +1637,32 @@ div.form-control {
   max-width: 12rem;
 }
 
+/* 左欄清單底部刪除（exam_3／create-exam-bank_3）：固定於 list 下方；併 my-btn-outline-red-hollow，灰底上透明＋hover 淡紅 */
+.my-design-side-nav-delete {
+  flex-shrink: 0;
+  border-top: 1px solid var(--my-color-gray-2);
+  padding: 0.75rem 1rem;
+  background-color: transparent;
+}
+.my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow {
+  background-color: transparent;
+  box-shadow: none;
+}
+.my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow:hover:not(:disabled),
+.my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow:focus-visible:not(:disabled) {
+  color: var(--my-color-red-hover);
+  background-color: color-mix(in srgb, var(--my-color-red) 12%, var(--my-color-gray-4));
+  border-color: var(--my-color-red-hover) !important;
+  box-shadow: none;
+}
+.my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow:active:not(:disabled) {
+  color: var(--my-color-red-hover);
+  background-color: color-mix(in srgb, var(--my-color-red) 16%, var(--my-color-gray-4));
+  border-color: var(--my-color-red-hover) !important;
+  box-shadow: none;
+}
+.my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow:disabled {
+  background-color: transparent;
+  opacity: 0.45;
+}
+

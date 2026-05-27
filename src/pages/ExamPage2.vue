@@ -649,7 +649,10 @@ watch(
         :design-side-panel-on-left="sidePanelOnLeft"
         :route-detail-base="useExamDetailRoute ? routeBase : ''"
         :route-exam-quiz-id="routeExamQuizIdFromParams"
+        :side-panel-delete-exam-disabled="detailHeaderActionsDisabled"
+        :side-panel-delete-exam-loading="deleteExamLoading"
         class="exam-2-embedded flex-grow-1 min-h-0"
+        @delete-exam="openDeleteExamModal"
       >
         <template v-if="sidePanelOnLeft" #side-panel-header>
           <ExamPage2DetailBar

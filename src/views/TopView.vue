@@ -29,12 +29,10 @@
         gridItems: bankGridItems,
         selectedBankTabId,
         actionsDisabled: bankActionsDisabled,
-        deleteRagLoading: bankDeleteRagLoading,
         showExamSwitcher,
         examGridItems,
         selectedExamTabId,
         examActionsDisabled,
-        deleteExamLoading,
       } = storeToRefs(courseHeaderStore);
 
       const currentCourseName = computed(() => {
@@ -70,16 +68,12 @@
         bankGridItems,
         selectedBankTabId,
         bankActionsDisabled,
-        bankDeleteRagLoading,
         onBankSwitch: courseHeaderStore.switchBank,
-        onBankDelete: courseHeaderStore.deleteBank,
         showExamSwitcher,
         examGridItems,
         selectedExamTabId,
         examActionsDisabled,
-        deleteExamLoading,
         onExamSwitch: courseHeaderStore.switchExam,
-        onExamDelete: courseHeaderStore.deleteExam,
       };
     },
   };
@@ -114,19 +108,15 @@
             :grid-items="bankGridItems"
             :selected-bank-tab-id="selectedBankTabId"
             :disabled="bankActionsDisabled"
-            :delete-rag-loading="bankDeleteRagLoading"
             variant="course-header-nav"
             @switch-bank="onBankSwitch"
-            @delete-bank="onBankDelete"
           />
           <ExamPageExamSwitchDropdown
             v-if="showExamSwitcher"
             :grid-items="examGridItems"
             :selected-exam-tab-id="selectedExamTabId"
             :disabled="examActionsDisabled"
-            :delete-exam-loading="deleteExamLoading"
             @switch-exam="onExamSwitch"
-            @delete-exam="onExamDelete"
           />
         </nav>
 
@@ -222,6 +212,11 @@
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
   text-decoration: none;
+}
+
+.my-course-header-nav-btn.btn.rounded-pill {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 .my-course-header-nav-btn:hover,

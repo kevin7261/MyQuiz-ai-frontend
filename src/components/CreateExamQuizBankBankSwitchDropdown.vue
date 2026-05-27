@@ -3,7 +3,6 @@ defineProps({
   gridItems: { type: Array, default: () => [] },
   selectedBankTabId: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
-  deleteRagLoading: { type: Boolean, default: false },
   /** course-header-nav＝課程 header；detail-bar＝左側 detail bar（_2） */
   variant: {
     type: String,
@@ -12,7 +11,7 @@ defineProps({
   },
 });
 
-const emit = defineEmits(['switch-bank', 'delete-bank']);
+const emit = defineEmits(['switch-bank']);
 </script>
 
 <template>
@@ -25,7 +24,7 @@ const emit = defineEmits(['switch-bank', 'delete-bank']);
       class="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap"
       :class="
         variant === 'course-header-nav'
-          ? 'my-font-md-400 px-3 py-2 my-course-header-nav-btn gap-2'
+          ? 'my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2'
           : 'my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 justify-content-between text-start'
       "
       data-bs-toggle="dropdown"
@@ -62,20 +61,6 @@ const emit = defineEmits(['switch-bank', 'delete-bank']);
           </span>
         </button>
       </li>
-      <li>
-        <hr class="dropdown-divider" />
-      </li>
-      <li>
-        <button
-          type="button"
-          class="dropdown-item my-color-red"
-          :disabled="disabled"
-          :aria-busy="deleteRagLoading"
-          @click="emit('delete-bank')"
-        >
-          刪除此題庫
-        </button>
-      </li>
     </ul>
   </div>
 </template>
@@ -102,11 +87,13 @@ const emit = defineEmits(['switch-bank', 'delete-bank']);
   white-space: nowrap;
 }
 
-.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle {
+.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle.my-course-header-nav-btn {
   color: var(--my-color-gray-1);
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 .create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle:hover:not(:disabled),

@@ -103,7 +103,13 @@ const props = defineProps({
   routeDetailBase: { type: String, default: '' },
   /** create-exam-bank_3：URL 之 exam_quiz_id（對應 rag_quiz_id；0 或未指定則不強制選取） */
   routeExamQuizId: { type: String, default: '' },
+  /** create-exam-bank_3：左側清單「刪除此題庫」是否停用 */
+  sidePanelDeleteBankDisabled: { type: Boolean, default: false },
+  /** create-exam-bank_3：刪除題庫進行中（由 Page2 傳入） */
+  sidePanelDeleteRagLoading: { type: Boolean, default: false },
 });
+
+const emit = defineEmits(['delete-bank']);
 
 const router = useRouter();
 const route = useRoute();
@@ -2536,6 +2542,16 @@ function unitQuizCardsAtUnitIndex(unitIndex) {
 }
 
 const activeUnitQuizCards = computed(() => unitQuizCardsAtUnitIndex(activeUnitSlotIndex.value - 1));
+
+/** create-exam-bank_3：目前單元尚無題型時，主內容區置中提示 */
+const bankWork3NoQuizTypesEmpty = computed(
+  () =>
+    props.designSidePanelOnLeft
+    && showCreateBankMainForm.value
+    && hasBuiltRagSummary.value
+    && hasUnitSubTabs.value
+    && !activeUnitQuizCards.value.length,
+);
 
 /** 右側欄：設定單元子分頁；建置完成後各單元下嵌套「設定單元題型」之題型列 */
 const designRightUnitSubTabItems = computed(() => {
@@ -6073,7 +6089,10 @@ async function confirmAnswer(item) {
       <div
         v-else
         class="container-fluid px-3 px-md-4 py-4 d-flex flex-column flex-grow-1 min-h-0"
-        :class="{ 'my-pack-empty-start-layout': isPackEmptyStartView }"
+        :class="{
+          'my-pack-empty-start-layout': isPackEmptyStartView,
+          'min-h-0': designSidePanelOnLeft && bankWork3NoQuizTypesEmpty,
+        }"
       >
         <div class="row justify-content-center">
           <div
@@ -6413,10 +6432,16 @@ async function confirmAnswer(item) {
       <section
         v-if="hasBuiltRagSummary"
         class="text-start my-page-block-spacing"
+        :class="{
+          'flex-grow-1 d-flex flex-column min-h-0 mb-0': bankWork3NoQuizTypesEmpty,
+        }"
       >
-        <div class="my-design-pack-unit-blocks w-100 min-w-0">
         <div
-          class="w-100 min-w-0 text-start"
+          class="my-design-pack-unit-blocks w-100 min-w-0"
+          :class="{ 'flex-grow-1 d-flex flex-column min-h-0': bankWork3NoQuizTypesEmpty }"
+        >
+        <div
+          class="w-100 min-w-0 text-start flex-shrink-0"
           role="group"
           aria-labelledby="design-pack-unit-quiz-section-label"
         >
@@ -6427,7 +6452,8 @@ async function confirmAnswer(item) {
             設定單元題型
           </div>
           <div
-            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
+            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0"
+            :class="bankWork3NoQuizTypesEmpty ? 'mb-0' : 'mb-4'"
             role="heading"
             aria-level="2"
           >
@@ -6452,7 +6478,19 @@ async function confirmAnswer(item) {
             v-if="!packUnitCarouselCountEffective"
             class="my-font-md-400 my-color-black"
           >—</span>
-          <template v-else>
+        </div>
+        <div
+          v-if="bankWork3NoQuizTypesEmpty"
+          class="my-design-main-step-block my-design-main-step-block--section-divide flex-grow-1 d-flex flex-column min-h-0 w-100"
+          aria-label="題型"
+        >
+          <div class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100">
+            <p class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break">
+              目前沒有題型，請在左側選單的單元按 + 新增題型
+            </p>
+          </div>
+        </div>
+        <template v-else-if="packUnitCarouselCountEffective">
             <section
               v-if="bankShowUnitTranscriptUi"
               class="w-100 min-w-0 mb-3"
@@ -6547,11 +6585,11 @@ async function confirmAnswer(item) {
               :class="{ 'my-color-gray-4': ragGenerateDisabled }"
             >
           <template v-if="hasUnitSubTabs">
-            <div class="my-pack-unit-field">
-              <div
-                v-if="!activeUnitQuizCards.length"
-                class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0"
-              >
+            <div
+              v-if="!activeUnitQuizCards.length && !designSidePanelOnLeft"
+              class="my-pack-unit-field"
+            >
+              <div class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0">
                 <button
                   type="button"
                   class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
@@ -6974,7 +7012,6 @@ async function confirmAnswer(item) {
           </div>
           </template>
         </div>
-        </div>
       </section>
       </template>
           </div>
@@ -7030,7 +7067,7 @@ async function confirmAnswer(item) {
               <div
                 v-if="hasUploadedFileMetadata"
                 class="my-design-right-step-block"
-                :class="designSidePanelOnLeft ? '' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
+                :class="designSidePanelOnLeft ? 'pb-2' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
               >
                 <div
                   class="my-design-right-step-block-head d-flex align-items-center justify-content-between gap-2 min-w-0"
@@ -7222,6 +7259,22 @@ async function confirmAnswer(item) {
                 </div>
               </div>
             </nav>
+            <div
+              v-if="designSidePanelOnLeft && hasUploadedFileMetadata"
+              class="my-design-side-nav-delete"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex align-items-center my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2"
+                title="刪除此題庫"
+                aria-label="刪除此題庫"
+                :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
+                :aria-busy="sidePanelDeleteRagLoading"
+                @click="emit('delete-bank')"
+              >
+                刪除此題庫
+              </button>
+            </div>
           </aside>
         </div>
       </div>
@@ -7333,6 +7386,11 @@ async function confirmAnswer(item) {
 .my-design-tab-left-view--white-canvas {
   background-color: var(--my-color-white) !important;
 }
+
+.my-design-main-step-block--section-divide {
+  border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
+}
+
 .my-design--side-panel-left .my-pack-unit-attrs-panel {
   background-color: var(--my-color-white) !important;
 }

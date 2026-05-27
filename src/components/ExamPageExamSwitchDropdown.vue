@@ -3,10 +3,9 @@ defineProps({
   gridItems: { type: Array, default: () => [] },
   selectedExamTabId: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
-  deleteExamLoading: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['switch-exam', 'delete-exam']);
+const emit = defineEmits(['switch-exam']);
 </script>
 
 <template>
@@ -15,7 +14,7 @@ const emit = defineEmits(['switch-exam', 'delete-exam']);
   >
     <button
       type="button"
-      class="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 px-3 py-2 my-course-header-nav-btn gap-2"
+      class="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2"
       data-bs-toggle="dropdown"
       aria-expanded="false"
       aria-label="所有試卷"
@@ -38,22 +37,6 @@ const emit = defineEmits(['switch-exam', 'delete-exam']);
           <span class="text-truncate">{{ item.label }}</span>
         </button>
       </li>
-      <template v-if="selectedExamTabId">
-        <li>
-          <hr class="dropdown-divider" />
-        </li>
-        <li>
-          <button
-            type="button"
-            class="dropdown-item my-color-red"
-            :disabled="disabled"
-            :aria-busy="deleteExamLoading"
-            @click="emit('delete-exam')"
-          >
-            刪除此試卷
-          </button>
-        </li>
-      </template>
     </ul>
   </div>
 </template>
@@ -77,11 +60,13 @@ const emit = defineEmits(['switch-exam', 'delete-exam']);
   white-space: nowrap;
 }
 
-.exam-page-exam-switch .btn.dropdown-toggle {
+.exam-page-exam-switch .btn.dropdown-toggle.my-course-header-nav-btn {
   color: var(--my-color-gray-1);
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 .exam-page-exam-switch .btn.dropdown-toggle:hover:not(:disabled),
