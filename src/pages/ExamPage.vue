@@ -1036,6 +1036,8 @@ const showSidePanelColumn = computed(() => {
 
 /** 題目 Carousel：一次只顯示一題，由右側清單切換 */
 const activeExamSlotIndex = ref(0);
+/** 程式選題（如新增題目）時暫停 URL exam_quiz_id 還原，避免蓋掉新題 */
+let suppressRouteExamQuizSelectionDepth = 0;
 
 const examSlotCarouselCount = computed(
   () => Number(currentState.value.quizSlotsCount) || 0,
@@ -1099,6 +1101,24 @@ function selectExamSlot(index) {
   }
 }
 
+/** 依 exam_quiz_id 選取槽位（新增題目成功後對齊左欄與主內容） */
+function selectExamSlotByCard(card) {
+  if (!card || typeof card !== 'object') return;
+  const qid = Number(card.exam_quiz_id ?? card.quiz_id);
+  const list = currentState.value.cardList;
+  if (Number.isFinite(qid) && qid >= 1 && Array.isArray(list)) {
+    for (let i = 0; i < list.length; i++) {
+      const cid = Number(list[i]?.exam_quiz_id ?? list[i]?.quiz_id);
+      if (cid === qid) {
+        selectExamSlot(i);
+        return;
+      }
+    }
+  }
+  const n = examSlotCarouselCount.value;
+  if (n > 0) selectExamSlot(n - 1);
+}
+
 function syncDetailRouteExamQuizId(card) {
   const base = String(props.routeDetailBase ?? '').trim();
   const tab = String(activeTabId.value ?? '').trim();
@@ -1112,6 +1132,7 @@ function syncDetailRouteExamQuizId(card) {
 }
 
 function applyRouteExamQuizIdSelection() {
+  if (suppressRouteExamQuizSelectionDepth > 0) return;
   const rqid = Number(String(props.routeExamQuizId ?? '').trim());
   if (!Number.isFinite(rqid) || rqid < 1) return;
   const list = currentState.value.cardList;
@@ -2477,45 +2498,52 @@ watch(
  * @returns {Promise<{ ok: boolean, error: string }>}
  */
 async function openNextQuizSlot(picks) {
-  const state = currentState.value;
-  state.showQuizGeneratorBlock = true;
-  state.quizSlotsCount = (state.quizSlotsCount || 0) + 1;
-  const idx = state.quizSlotsCount;
-  activeExamSlotIndex.value = idx - 1;
-  while (state.cardList.length < idx) {
-    state.cardList.push(null);
-  }
-  const slot = getSlotFormState(idx);
-  slot.examQuizNamePick = String(picks?.examQuizNamePick ?? '').trim();
-  slot.draftExamQuizId = null;
-  slot.error = '';
-  slot.examUnitSelectId = String(picks?.examUnitSelectId ?? '').trim();
-  slot.quizGenerateMode = 'normal';
-  slot.loading = false;
-  await nextTick();
-  const unitItem = findExamUnitDropdownItemBySelectId(slot.examUnitSelectId);
-  const ragRow = findExamRagQuizRowBySelectedPick(unitItem, slot.examQuizNamePick);
-  const modalFollowUp = !!(ragRow && examQuizApiRowIsFollowUp(ragRow));
-  if (modalFollowUp) slot.quizGenerateMode = 'followup';
-  await generateQuiz(idx, {
-    createAndGenerate: true,
-    fromAddQuestionModal: true,
-    modalFollowUp,
-  });
-  syncAllExamSlotQuizHistoryLists();
-  const success = !slot.error && examSlotQuizBodyTrim(idx) !== '';
-  const errMsg = slot.error || '';
-  if (!success) {
-    state.quizSlotsCount = Math.max(0, (state.quizSlotsCount || 0) - 1);
-    if (state.cardList.length >= idx) {
-      state.cardList.splice(idx - 1, 1);
+  suppressRouteExamQuizSelectionDepth += 1;
+  try {
+    const state = currentState.value;
+    state.showQuizGeneratorBlock = true;
+    state.quizSlotsCount = (state.quizSlotsCount || 0) + 1;
+    const idx = state.quizSlotsCount;
+    activeExamSlotIndex.value = idx - 1;
+    while (state.cardList.length < idx) {
+      state.cardList.push(null);
     }
-    if (activeExamSlotIndex.value >= state.quizSlotsCount) {
-      activeExamSlotIndex.value = Math.max(0, state.quizSlotsCount - 1);
+    const slot = getSlotFormState(idx);
+    slot.examQuizNamePick = String(picks?.examQuizNamePick ?? '').trim();
+    slot.draftExamQuizId = null;
+    slot.error = '';
+    slot.examUnitSelectId = String(picks?.examUnitSelectId ?? '').trim();
+    slot.quizGenerateMode = 'normal';
+    slot.loading = false;
+    await nextTick();
+    const unitItem = findExamUnitDropdownItemBySelectId(slot.examUnitSelectId);
+    const ragRow = findExamRagQuizRowBySelectedPick(unitItem, slot.examQuizNamePick);
+    const modalFollowUp = !!(ragRow && examQuizApiRowIsFollowUp(ragRow));
+    if (modalFollowUp) slot.quizGenerateMode = 'followup';
+    await generateQuiz(idx, {
+      createAndGenerate: true,
+      fromAddQuestionModal: true,
+      modalFollowUp,
+    });
+    syncAllExamSlotQuizHistoryLists();
+    const success = !slot.error && examSlotQuizBodyTrim(idx) !== '';
+    const errMsg = slot.error || '';
+    if (!success) {
+      state.quizSlotsCount = Math.max(0, (state.quizSlotsCount || 0) - 1);
+      if (state.cardList.length >= idx) {
+        state.cardList.splice(idx - 1, 1);
+      }
+      if (activeExamSlotIndex.value >= state.quizSlotsCount) {
+        activeExamSlotIndex.value = Math.max(0, state.quizSlotsCount - 1);
+      }
+      return { ok: false, error: errMsg || '產生題目失敗' };
     }
-    return { ok: false, error: errMsg || '產生題目失敗' };
+    const newCard = state.cardList[idx - 1];
+    selectExamSlotByCard(newCard);
+    return { ok: true, error: '' };
+  } finally {
+    suppressRouteExamQuizSelectionDepth = Math.max(0, suppressRouteExamQuizSelectionDepth - 1);
   }
-  return { ok: true, error: '' };
 }
 
 function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAnswer, ragName, generateQuizResponseJson, quizId, ragId) {

@@ -4,6 +4,7 @@
  */
 import { computed } from 'vue';
 import { normalizeFollowupHistoryItem } from '../services/ragApi.js';
+import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 const props = defineProps({
   unitLabel: { type: String, default: '—' },
@@ -31,6 +32,20 @@ const stemList = computed(() => {
     .map((s) => String(s ?? '').trim())
     .filter((s) => s !== '');
 });
+
+/** 與 QuizCard 題幹相同：marked + DOMPurify */
+const stemHtmlList = computed(() => stemList.value.map((stem) => ({
+  stem,
+  html: renderMarkdownToSafeHtml(stem),
+})));
+
+const followupEntriesDisplay = computed(() => followupEntries.value.map((entry) => ({
+  ...entry,
+  quizContentHtml: renderMarkdownToSafeHtml(entry.quiz_content),
+  referenceHtml: renderMarkdownToSafeHtml(entry.quiz_answer_reference),
+  answerHtml: renderMarkdownToSafeHtml(entry.answer_content),
+  critiqueHtml: renderMarkdownToSafeHtml(entry.answer_critique),
+})));
 </script>
 
 <template>
@@ -59,34 +74,68 @@ const stemList = computed(() => {
       </div>
     </div>
     <ol
-      v-if="isFollowup && followupEntries.length > 0"
+      v-if="isFollowup && followupEntriesDisplay.length > 0"
       class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-4"
     >
       <li
-        v-for="(entry, hi) in followupEntries"
+        v-for="(entry, hi) in followupEntriesDisplay"
         :key="`quiz-followup-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
         class="pe-2"
       >
         <div class="d-flex flex-column gap-2">
           <div>
             <div class="my-color-gray-1 my-font-sm-400">題目</div>
-            <div class="my-color-black lh-base text-break mt-1">{{ entry.quiz_content }}</div>
+            <div
+              v-if="entry.quizContentHtml"
+              class="my-markdown-rendered my-color-black lh-base text-break mt-1"
+              v-html="entry.quizContentHtml"
+            />
+            <div
+              v-else
+              class="my-color-black lh-base text-break mt-1"
+            >
+              {{ entry.quiz_content }}
+            </div>
           </div>
           <div>
             <div class="my-color-gray-1 my-font-sm-400">參考答案</div>
-            <div class="my-color-black lh-base text-break mt-1">
+            <div
+              v-if="entry.referenceHtml"
+              class="my-markdown-rendered my-color-black lh-base text-break mt-1"
+              v-html="entry.referenceHtml"
+            />
+            <div
+              v-else
+              class="my-color-black lh-base text-break mt-1"
+            >
               {{ entry.quiz_answer_reference || '—' }}
             </div>
           </div>
           <div>
             <div class="my-color-gray-1 my-font-sm-400">回答</div>
-            <div class="my-color-black lh-base text-break mt-1">
+            <div
+              v-if="entry.answerHtml"
+              class="my-markdown-rendered my-color-black lh-base text-break mt-1"
+              v-html="entry.answerHtml"
+            />
+            <div
+              v-else
+              class="my-color-black lh-base text-break mt-1"
+            >
               {{ entry.answer_content || '—' }}
             </div>
           </div>
           <div>
             <div class="my-color-gray-1 my-font-sm-400">評閱</div>
-            <div class="my-color-black lh-base text-break mt-1">
+            <div
+              v-if="entry.critiqueHtml"
+              class="my-markdown-rendered my-color-black lh-base text-break mt-1"
+              v-html="entry.critiqueHtml"
+            />
+            <div
+              v-else
+              class="my-color-black lh-base text-break mt-1"
+            >
               {{ entry.answer_critique || '—' }}
             </div>
           </div>
@@ -94,15 +143,23 @@ const stemList = computed(() => {
       </li>
     </ol>
     <ol
-      v-else-if="!isFollowup && stemList.length > 0"
+      v-else-if="!isFollowup && stemHtmlList.length > 0"
       class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
     >
       <li
-        v-for="(stem, hi) in stemList"
-        :key="`quiz-history-stem-${hi}-${stem.slice(0, 32)}`"
+        v-for="(item, hi) in stemHtmlList"
+        :key="`quiz-history-stem-${hi}-${item.stem.slice(0, 32)}`"
         class="pe-2"
       >
-        {{ stem }}
+        <div
+          v-if="item.html"
+          class="my-markdown-rendered lh-base text-break"
+          v-html="item.html"
+        />
+        <span
+          v-else
+          class="lh-base text-break"
+        >{{ item.stem }}</span>
       </li>
     </ol>
     <p

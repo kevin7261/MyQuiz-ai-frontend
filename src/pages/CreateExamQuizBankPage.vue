@@ -7555,11 +7555,14 @@ async function confirmAnswer(item) {
   border-color: color-mix(in srgb, var(--my-color-gray-1) 55%, transparent);
   color: var(--my-color-black);
 }
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled) {
+/* 單元／題型區圓形 +、選單：預設 gray-1；hover 改 black（列上「新增題型」見 .my-design-right-unit-add-quiz-btn） */
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle {
   color: var(--my-color-gray-1);
+}
+.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
+.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
+.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled) {
+  color: var(--my-color-black);
 }
 .my-design-right-unit-quiz-for-exam-slot {
   width: 0.5rem;
