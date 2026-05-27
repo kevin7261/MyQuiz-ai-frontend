@@ -1,19 +1,16 @@
 <script>
   /**
-   * TopView - 頂部導覽列（create-exam-bank_3 等全寬版面）
+   * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 職責與 LeftView 相同，改為水平排列於頁面頂部。
+   * 職責與 LeftView 相同，改為水平排列；左側系統 header 由 SideRailView 負責。
    */
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
-  import LogoGridSvg from '../components/LogoGridSvg.vue';
-  import { createRandomLogoDiamondGradient } from '../utils/logoDiamondGradient.js';
 
   export default {
     name: 'TopView',
-    components: { LogoGridSvg },
     props: {
       userName: { type: String, default: '' },
       userType: { type: [Number, String], default: undefined },
@@ -51,92 +48,56 @@
         );
       });
 
-      function buildTopViewLogoColors() {
-        return {
-          primary: 'var(--my-color-white)',
-          secondary: 'var(--my-color-gray-3)',
-          backgroundGradient: createRandomLogoDiamondGradient(),
-        };
-      }
-
-      const topViewLogoColors = ref(buildTopViewLogoColors());
-      const topViewLogoIdSuffix = ref(0);
-
-      function onLogoClick() {
-        topViewLogoColors.value = buildTopViewLogoColors();
-        topViewLogoIdSuffix.value += 1;
-      }
-
       return {
         onLogout,
         onOpenCourseModal,
-        onLogoClick,
         canSeeNavLink,
         showDividerBeforeProfile,
         currentCourseName,
         hasMultipleCourses,
         currentPageTitle,
-        topViewLogoColors,
-        topViewLogoIdSuffix,
       };
     },
   };
 </script>
 
 <template>
-  <header class="my-top-view flex-shrink-0 my-bgcolor-white border-bottom">
-    <button
-      type="button"
-      class="my-top-view-brand flex-shrink-0"
-      aria-label="MyQuiz.ai，點擊變更 logo 配色"
-      @click="onLogoClick"
-    >
-      <LogoGridSvg
-        :key="topViewLogoIdSuffix"
-        :show-grid="false"
-        :show-background="false"
-        center-cells-only
-        size-to-container
-        :id-prefix="`top-view-brand-${topViewLogoIdSuffix}`"
-        :colors="topViewLogoColors"
-      />
-    </button>
-
-    <div class="my-top-view-inner px-3 py-2 min-w-0 flex-grow-1">
-      <div class="my-top-view-inner__start d-flex align-items-center min-w-0">
+  <header class="my-course-header flex-shrink-0 my-bgcolor-white border-bottom">
+    <div class="my-course-header-inner px-3 min-w-0 w-100">
+      <div class="my-course-header-inner__start d-flex align-items-center min-w-0">
         <button
           v-if="hasMultipleCourses"
           type="button"
-          class="my-top-view-course-btn d-inline-flex align-items-center gap-2 p-2 flex-shrink-0"
+          class="my-course-header-course-btn d-inline-flex align-items-center gap-2 p-2 flex-shrink-0"
           @click="onOpenCourseModal"
         >
           <span class="overflow-hidden text-truncate">{{ currentCourseName }}</span>
-          <i class="fa-solid fa-chevron-down my-top-view-course-caret flex-shrink-0" aria-hidden="true" />
+          <i class="fa-solid fa-chevron-down my-course-header-course-caret flex-shrink-0" aria-hidden="true" />
         </button>
-        <span v-else class="my-top-view-course-label py-2 flex-shrink-0">{{ currentCourseName }}</span>
+        <span v-else class="my-course-header-course-label flex-shrink-0">{{ currentCourseName }}</span>
       </div>
 
-      <div class="my-top-view-inner__center min-w-0">
-        <p class="my-top-view-page-title my-font-xl-400 my-color-black text-truncate text-center w-100 mb-0 px-3 py-2">
+      <div class="my-course-header-inner__center min-w-0">
+        <p class="my-course-header-page-title my-font-xl-400 my-color-black text-truncate text-center w-100 mb-0 px-3">
           {{ currentPageTitle }}
         </p>
       </div>
 
-      <div class="my-top-view-inner__end d-flex align-items-center justify-content-end gap-2 gap-md-3 min-w-0 flex-shrink-0">
+      <div class="my-course-header-inner__end d-flex align-items-center justify-content-end gap-2 gap-md-3 min-w-0 flex-shrink-0">
         <nav
-          class="my-top-view-nav d-flex flex-row flex-shrink-0 gap-2 min-w-0 overflow-auto"
+          class="my-course-header-nav d-flex flex-row flex-shrink-0 gap-2 min-w-0 overflow-auto"
         >
           <router-link
             v-if="canSeeNavLink(userType, 'work')"
             to="/exam"
-            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-top-view-nav-btn"
-            active-class="my-top-view-nav-btn--active"
+            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-course-header-nav-btn"
+            active-class="my-course-header-nav-btn--active"
           >測驗</router-link>
           <router-link
             v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
             to="/student-weakness-analysis"
-            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-top-view-nav-btn"
-            active-class="my-top-view-nav-btn--active"
+            class="btn rounded-pill my-font-md-400 px-3 py-2 text-nowrap my-course-header-nav-btn"
+            active-class="my-course-header-nav-btn--active"
           >作答弱點分析</router-link>
         </nav>
 
@@ -199,61 +160,48 @@
 </template>
 
 <style scoped>
-.my-top-view {
+.my-course-header {
   z-index: 40;
   display: flex;
   align-items: stretch;
+  box-sizing: border-box;
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+  overflow: hidden;
 }
 
-.my-top-view-inner {
+.my-course-header-inner {
   display: grid;
   grid-template-columns: 1fr minmax(0, 50%) 1fr;
   align-items: center;
   gap: 0.75rem;
-  min-height: 3.25rem;
+  height: 100%;
+  min-height: 0;
 }
 
-.my-top-view-inner__start {
+.my-course-header-inner__start {
   justify-self: start;
   min-width: 0;
 }
 
-.my-top-view-inner__center {
+.my-course-header-inner__center {
   justify-self: stretch;
   width: 100%;
   min-width: 0;
 }
 
-.my-top-view-inner__end {
+.my-course-header-inner__end {
   justify-self: end;
   min-width: 0;
 }
 
-.my-top-view-page-title {
+.my-course-header-page-title {
   line-height: 1.35;
 }
 
-.my-top-view-brand {
-  display: flex;
-  align-self: stretch;
-  flex-shrink: 0;
-  height: 100%;
-  line-height: 0;
-  margin: 0;
-  padding: 0;
-  border: none;
-  background-color: var(--my-color-gray-3);
-  cursor: pointer;
-}
-
-.my-top-view-brand:hover,
-.my-top-view-brand:focus-visible {
-  outline: none;
-  opacity: 0.92;
-}
-
-.my-top-view-course-btn,
-.my-top-view-course-label {
+.my-course-header-course-btn,
+.my-course-header-course-label {
   max-width: 12rem;
   margin: 0;
   font-size: var(--my-font-size-md, 1rem);
@@ -262,7 +210,7 @@
   color: var(--my-color-black);
 }
 
-.my-top-view-course-btn {
+.my-course-header-course-btn {
   border: none;
   border-radius: 0.375rem;
   background: transparent;
@@ -270,25 +218,25 @@
   min-width: 0;
 }
 
-.my-top-view-course-label {
+.my-course-header-course-label {
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.my-top-view-course-caret {
+.my-course-header-course-caret {
   font-size: var(--my-font-size-sm);
   line-height: 1;
 }
 
-.my-top-view-course-btn:hover,
-.my-top-view-course-btn:focus-visible {
+.my-course-header-course-btn:hover,
+.my-course-header-course-btn:focus-visible {
   background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
   outline: none;
 }
 
-.my-top-view-nav-btn {
+.my-course-header-nav-btn {
   color: var(--my-color-gray-1);
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
@@ -296,24 +244,24 @@
   text-decoration: none;
 }
 
-.my-top-view-nav-btn:hover,
-.my-top-view-nav-btn:focus-visible {
+.my-course-header-nav-btn:hover,
+.my-course-header-nav-btn:focus-visible {
   color: var(--my-color-gray-1);
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
   outline: none;
 }
 
-.my-top-view-nav-btn--active,
-.my-top-view-nav-btn--active:hover,
-.my-top-view-nav-btn--active:focus,
-.my-top-view-nav-btn--active:focus-visible {
+.my-course-header-nav-btn--active,
+.my-course-header-nav-btn--active:hover,
+.my-course-header-nav-btn--active:focus,
+.my-course-header-nav-btn--active:focus-visible {
   color: var(--my-color-gray-1);
   background-color: var(--my-color-gray-3);
   border-color: var(--my-color-gray-2);
 }
 
-.my-top-view .my-design-08-dropdown .btn.my-button-white {
+.my-course-header .my-design-08-dropdown .btn.my-button-white {
   min-width: 0;
   max-width: 10rem;
   width: auto;
@@ -323,10 +271,10 @@
   box-shadow: none;
 }
 
-.my-top-view .my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
-.my-top-view .my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
-.my-top-view .my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
-.my-top-view .my-design-08-dropdown .btn.my-button-white.show {
+.my-course-header .my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white.show {
   color: var(--my-color-black) !important;
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white)) !important;
   border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2)) !important;

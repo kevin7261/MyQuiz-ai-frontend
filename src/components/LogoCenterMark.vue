@@ -7,11 +7,11 @@ let logoCenterMarkSeq = 0;
 const props = defineProps({
   /** 圖示高度（pt）；51–54 為正方形 */
   sizePt: { type: Number, default: 16 },
-  /** 黑底按鈕：灰／白透明、菱形白；default 為淺底黑灰 logo */
+  /** 黑底按鈕：灰／白透明、菱形白；white-diamond-only：僅白菱形；default 為淺底黑灰 logo */
   variant: {
     type: String,
     default: 'on-dark-button',
-    validator: (v) => ['on-dark-button', 'default'].includes(v),
+    validator: (v) => ['on-dark-button', 'white-diamond-only', 'default'].includes(v),
   },
   idPrefix: { type: String, default: '' },
 });
@@ -24,8 +24,10 @@ const resolvedIdPrefix = computed(() => {
   return autoIdPrefix;
 });
 
+const diamondOnly = computed(() => props.variant === 'white-diamond-only');
+
 const markColors = computed(() => {
-  if (props.variant === 'on-dark-button') {
+  if (props.variant === 'on-dark-button' || props.variant === 'white-diamond-only') {
     return {
       /** 原 logo 白（52＋54）→ 透明 */
       primary: 'transparent',
@@ -56,6 +58,7 @@ const wrapStyle = computed(() => ({
   >
     <LogoGridSvg
       center-quad-only
+      :diamond-only="diamondOnly"
       :show-grid="false"
       :show-background="false"
       size-to-container

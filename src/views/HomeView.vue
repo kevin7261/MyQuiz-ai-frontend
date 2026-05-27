@@ -16,6 +16,7 @@
   import CourseSelectModal from '../components/CourseSelectModal.vue';
   import LeftView from './LeftView.vue';
   import TopView from './TopView.vue';
+  import SideRailView from './SideRailView.vue';
   import RightView from './RightView.vue';
   import { useDataStore } from '../stores/dataStore.js';
   import { useAuthStore } from '../stores/authStore.js';
@@ -45,7 +46,7 @@ const PATH_TO_VIEW = {
 
   export default {
     name: 'HomeView',
-    components: { LoadingOverlay, CourseSelectModal, LeftView, TopView, RightView },
+    components: { LoadingOverlay, CourseSelectModal, LeftView, TopView, SideRailView, RightView },
 
     setup() {
       const router = useRouter();
@@ -71,7 +72,7 @@ const PATH_TO_VIEW = {
       });
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
 
-      /** create-exam-bank_3 / exam_3 / design_3：全寬版面，頂部導覽列取代左側欄 */
+      /** create-exam-bank_3 / exam_3 / design_3：系統 header + 課程 header + 主內容 */
       const useTopHeaderLayout = computed(
         () =>
           route.path.startsWith('/create-exam-bank_3')
@@ -196,15 +197,18 @@ const PATH_TO_VIEW = {
       @close="onCourseModalClose"
     />
 
-    <div v-if="useTopHeaderLayout" class="d-flex flex-column h-100 g-0 my-home-layout">
-      <TopView
-        :user-name="userName"
-        :user-type="authStore.user?.user_type"
-        @logout="onLogout"
-        @open-course-modal="openCourseModal"
-      />
-      <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
-        <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
+    <div v-if="useTopHeaderLayout" class="d-flex flex-row h-100 g-0 my-home-layout my-home-layout--top-header">
+      <SideRailView />
+      <div class="d-flex flex-column flex-grow-1 min-w-0 min-h-0">
+        <TopView
+          :user-name="userName"
+          :user-type="authStore.user?.user_type"
+          @logout="onLogout"
+          @open-course-modal="openCourseModal"
+        />
+        <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
+          <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
+        </div>
       </div>
     </div>
 
@@ -228,5 +232,9 @@ const PATH_TO_VIEW = {
 .my-home-layout {
   min-height: 0;
   flex: 1 1 0;
+}
+
+.my-home-layout--top-header {
+  align-items: stretch;
 }
 </style>

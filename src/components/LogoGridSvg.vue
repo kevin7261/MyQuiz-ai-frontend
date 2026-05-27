@@ -39,6 +39,8 @@ const props = defineProps({
   showBackground: { type: Boolean, default: true },
   /** true：height 100%、width auto，由外層容器決定尺寸並維持 viewBox 比例 */
   sizeToContainer: { type: Boolean, default: false },
+  /** true：centerQuadOnly 時僅繪白色菱形，其餘區域透明 */
+  diamondOnly: { type: Boolean, default: false },
 });
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
@@ -281,6 +283,12 @@ const svgStyle = computed(() => {
       <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
     </template>
     <g v-else>
+      <path
+        v-if="diamondOnly && useCenterQuadOnly"
+        :d="CENTER_DIAMOND_PATH"
+        :fill="backgroundPaint"
+      />
+      <template v-else>
       <template v-if="!useCenterCellsOnly && !useCenterQuadOnly">
         <!-- 格 1／2／3／4／6：弧線 -->
         <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
@@ -340,6 +348,7 @@ const svgStyle = computed(() => {
         height="100"
         :fill="secondaryPaint"
       />
+      </template>
     </g>
     <!-- 格線 -->
     <template v-if="showGrid && useSplitLayerGrid">

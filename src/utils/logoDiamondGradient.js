@@ -1,4 +1,4 @@
-/** 中央菱形：隨機鮮豔二色線性漸層（TopView 品牌 icon、按鈕 LogoCenterMark 共用） */
+/** 中央菱形：隨機鮮豔二色線性漸層（系統 header、按鈕 LogoCenterMark 共用） */
 export function createRandomLogoDiamondGradient(options = {}) {
   const { tone } = options;
   const sat = 96 + Math.floor(Math.random() * 4);
