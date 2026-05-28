@@ -64,11 +64,17 @@
         loginPageBgGradientCss.value = createRandomLogoGradientCss(LOGIN_GRADIENT_OPTIONS);
       }
 
-      const loginBrandPrimaryCss = computed(() =>
-        logoDiamondGradientToCssLinear(loginLogoColors.value.secondaryGradient),
+      /** 51、53（secondary 左半）— 與 SVG 漸層向量一致 */
+      const loginBrandMyquizCss = computed(() =>
+        logoDiamondGradientToCssLinear(loginLogoColors.value.secondaryGradient, {
+          useStopsOnly: true,
+        }),
       );
-      const loginBrandSecondaryCss = computed(() =>
-        logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient),
+      /** 52、54（primary 右半）— 與 SVG 漸層向量一致 */
+      const loginBrandAiCss = computed(() =>
+        logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient, {
+          useStopsOnly: true,
+        }),
       );
 
       const onLogin = async () => {
@@ -116,8 +122,8 @@
         onLogin,
         loginLogoColors,
         refreshLoginLogoGradient,
-        loginBrandPrimaryCss,
-        loginBrandSecondaryCss,
+        loginBrandMyquizCss,
+        loginBrandAiCss,
         loginPageBgGradientCss,
       };
     },
@@ -138,7 +144,7 @@
         class="container-fluid px-3 px-md-4 py-4 flex-grow-1 d-flex align-items-center justify-content-center"
       >
         <div class="my-login-view-card w-100 min-w-0">
-          <div class="d-flex flex-column align-items-center text-center mb-4">
+          <div class="d-flex flex-column align-items-center text-center mb-5">
             <button
               type="button"
               class="my-login-view-logo flex-shrink-0"
@@ -158,10 +164,10 @@
             <p class="my-login-view-brand my-font-xl-600 text-break mb-0 mt-3">
               <span
                 class="my-login-view-brand-part"
-                :style="{ backgroundImage: loginBrandPrimaryCss }"
+                :style="{ backgroundImage: loginBrandMyquizCss }"
               >MYQUIZ</span><span
                 class="my-login-view-brand-part"
-                :style="{ backgroundImage: loginBrandSecondaryCss }"
+                :style="{ backgroundImage: loginBrandAiCss }"
               >.ai</span>
             </p>
           </div>
@@ -217,7 +223,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.2;
+  opacity: 0.1;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;

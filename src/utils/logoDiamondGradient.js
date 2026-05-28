@@ -173,20 +173,37 @@ function createRandomGradientDirection() {
   };
 }
 
+function directionAndStopsToCssLinear(stops, dir) {
+  const parsePct = (v) => Number.parseFloat(String(v ?? '0').replace('%', '')) || 0;
+  const x1 = parsePct(dir.x1);
+  const y1 = parsePct(dir.y1);
+  const x2 = parsePct(dir.x2);
+  const y2 = parsePct(dir.y2);
+  const angle = Math.round((Math.atan2(x2 - x1, -(y2 - y1)) * 180) / Math.PI);
+  return `linear-gradient(${angle}deg, ${stopsToCssList(stops)})`;
+}
+
 /** 中央菱形：隨機鮮豔漸層（含 css 字串；系統 header、按鈕共用） */
 export function createRandomLogoDiamondGradient(options = {}) {
   const colors = pickRandomGradientColors(options);
   const dir = createRandomGradientDirection();
+  const css = options.linearOnly
+    ? directionAndStopsToCssLinear(colors.stops, dir)
+    : createRandomLogoGradientCss(options);
   return {
     ...dir,
     stops: colors.stops,
-    css: createRandomLogoGradientCss(options),
+    css,
   };
 }
 
-/** 將漸層物件轉為 CSS background（優先使用預先產生的 css） */
-export function logoDiamondGradientToCssLinear(gradient) {
-  if (gradient?.css) return gradient.css;
+/**
+ * 將漸層物件轉為 CSS linear-gradient
+ * @param {object} [gradient]
+ * @param {{ useStopsOnly?: boolean }} [options] useStopsOnly：依 x1–y2 與 stops（與 SVG 一致），忽略 css
+ */
+export function logoDiamondGradientToCssLinear(gradient, options = {}) {
+  if (!options.useStopsOnly && gradient?.css) return gradient.css;
   if (!gradient?.stops?.length) return 'transparent';
   const parsePct = (v) => Number.parseFloat(String(v ?? '0').replace('%', '')) || 0;
   const x1 = parsePct(gradient.x1);
