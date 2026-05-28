@@ -183,7 +183,11 @@ export const API_RAG_FOR_EXAM = '/rag/tab/for-exam';
  */
 export const API_RAG_FOR_EXAMS = '/exam/rag-for-exams';
 
-/** 個人答題分析：GET /person-analysis/quizzes/{person_id}；僅含作答有對應之題；列表格式與 GET /exam/tabs、GET /rag/tabs 每筆一致（含 units→quizzes 或扁平 quizzes；頂層 answers／內嵌 answer_*）；另帶 count、weakness_report（有 LLM Key 時） */
+/**
+ * 個人答題分析：GET /person-analysis/quizzes/{person_id}
+ * Query `person_id`、`course_id` 必填（loggedFetch 自 authStore 帶入）；弱點報告依該課程之 person_analysis_user_prompt_text。
+ * 僅含作答有對應之題；列表格式與 GET /exam/tabs、GET /rag/tabs 每筆一致；另帶 count、weakness_report（有 LLM Key 時）。
+ */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
 /** 學生作答分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
@@ -238,14 +242,14 @@ export const API_EXAM_RATE_QUIZ = '/exam/tab/quiz/rate';
  * 系統設定 system-settings
  * - GET  /system-settings/llm-api-key  Get Llm Api Key
  * - PUT  /system-settings/llm-api-key  Put Llm Api Key
- * - GET /system-settings/person_analysis_user_prompt_text  Get Person Analysis User Prompt（有效登入使用者皆可；PUT 僅 user_type 1／2）
- * - PUT /system-settings/person_analysis_user_prompt_text  Put 同上；body { person_analysis_user_prompt_text }
+ * - GET /system-settings/person_analysis_user_prompt_text  Get Person Analysis User Prompt（query course_id 必填；依 course_id+key；有效登入使用者皆可；PUT 僅 user_type 1／2）
+ * - PUT /system-settings/person_analysis_user_prompt_text  Put 同上；query course_id 必填；upsert 依 course_id+key；權限依該課程 User_Course_Relation.user_type（僅 1／2 可寫）
  */
 /** GET：取得 LLM API Key。若尚無資料，回傳 llm_api_key_id 等皆為 null。 */
 export const API_GET_LLM_API_KEY = '/system-settings/llm-api-key';
 /** PUT：寫入或更新系統預設 LLM API Key（表 key=llm_api_key）；body 僅傳 { llm_api_key }，空字串表示清除。 */
 export const API_PUT_SYSTEM_SETTING_LLM_API_KEY = '/system-settings/llm-api-key';
-/** GET／PUT：作答弱點「分析規則」Prompt（person_analysis_user_prompt_text）；GET 凡有效使用者；PUT 僅 user_type 1／2；loggedFetch 自動帶 query person_id。 */
+/** GET／PUT：作答弱點「分析規則」Prompt（person_analysis_user_prompt_text）；query person_id、course_id 必填（loggedFetch）；GET 凡有效使用者；PUT 僅該課程 user_type 1／2。 */
 export const API_PERSON_ANALYSIS_USER_PROMPT = '/system-settings/person_analysis_user_prompt_text';
 
 /**

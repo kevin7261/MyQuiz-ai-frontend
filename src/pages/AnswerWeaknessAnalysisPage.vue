@@ -2,8 +2,8 @@
 /**
  * AnswerWeaknessAnalysisPage - 作答弱點分析頁面
  *
- * 登入後即 GET `person_analysis_user_prompt_text` 供「分析規則」與 Modal 使用（全 user_type）；僅 1／2 顯示編輯區，主按鈕為「儲存並開始分析」（先儲存規則再跑分析）；其餘角色僅見下方大膠囊「開始弱點分析」。
- * 列表與 GET /exam/tabs、GET /rag/tabs 每筆一致；另含 count、weakness_report。題目區（QuizCard）純顯示。
+ * 登入且已選課程後 GET `person_analysis_user_prompt_text`（query course_id，依課程各一筆）供「分析規則」與 Modal；僅 1／2 顯示編輯區，主按鈕為「儲存並開始分析」；其餘角色僅見「開始弱點分析」。
+ * GET /person-analysis/quizzes/{person_id} 亦須 course_id；列表與 GET /exam/tabs 每筆一致；另含 count、weakness_report。題目區（QuizCard）純顯示。
  */
 import { ref, computed, watch } from 'vue';
 
@@ -87,9 +87,31 @@ function parsePersonAnalysisPromptFromBody(data) {
   return v != null ? String(v) : '';
 }
 
+const COURSE_REQUIRED_MSG = '請先於左側選單選擇課程，再進行弱點分析。';
+
+async function parseFetchErrorMessage(res, fallback) {
+  let msg = fallback;
+  try {
+    const body = await res.json();
+    if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+  } catch {
+    /* ignore */
+  }
+  return msg;
+}
+
+function hasSelectedCourse() {
+  return authStore.currentCourse?.course_id != null;
+}
+
 async function fetchPersonAnalysisPromptSetting() {
   const personId = authStore.user?.person_id;
   if (!personId) return;
+  if (!hasSelectedCourse()) {
+    personAnalysisPromptText.value = '';
+    personAnalysisPromptBaseline.value = '';
+    return;
+  }
   promptSectionLoading.value = true;
   try {
     const url = `${API_BASE}${API_PERSON_ANALYSIS_USER_PROMPT}`;
@@ -114,6 +136,10 @@ async function runPersonAnalysisQuizFetch({ manageLoading = true } = {}) {
     error.value = '請先登入以查看作答弱點分析';
     return;
   }
+  if (!hasSelectedCourse()) {
+    error.value = COURSE_REQUIRED_MSG;
+    return;
+  }
   if (manageLoading) {
     loading.value = true;
   }
@@ -123,7 +149,9 @@ async function runPersonAnalysisQuizFetch({ manageLoading = true } = {}) {
     const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}`;
     const headers = { 'X-Person-Id': String(personId) };
     const res = await loggedFetch(url, { method: 'GET', headers });
-    if (!res.ok) throw new Error(res.statusText || '無法載入答題資料');
+    if (!res.ok) {
+      throw new Error(await parseFetchErrorMessage(res, res.statusText || '無法載入答題資料'));
+    }
     const data = await res.json();
     const exams = normalizeAnalysisQuizzesListResponse(data);
     items.value = exams.flatMap((parent) => {
@@ -168,6 +196,10 @@ async function startWeaknessAnalysisFromRulesEditor() {
     error.value = '請先登入';
     return;
   }
+  if (!hasSelectedCourse()) {
+    error.value = COURSE_REQUIRED_MSG;
+    return;
+  }
   error.value = '';
   if (personAnalysisPromptDirty.value) {
     promptSaving.value = true;
@@ -182,14 +214,7 @@ async function startWeaknessAnalysisFromRulesEditor() {
         body: JSON.stringify({ person_analysis_user_prompt_text: personAnalysisPromptText.value ?? '' }),
       });
       if (!res.ok) {
-        let msg = '儲存分析規則失敗';
-        try {
-          const body = await res.json();
-          if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
-        } catch {
-          /* ignore */
-        }
-        error.value = msg;
+        error.value = await parseFetchErrorMessage(res, '儲存分析規則失敗');
         return;
       }
       personAnalysisPromptBaseline.value = String(personAnalysisPromptText.value ?? '');
@@ -219,7 +244,7 @@ const analysisRulesModalHtml = computed(() => {
 
 async function fetchAnalysisRulesForModal() {
   const personId = authStore.user?.person_id;
-  if (!personId) {
+  if (!personId || !hasSelectedCourse()) {
     analysisRulesModalRaw.value = '';
     return;
   }
@@ -258,6 +283,7 @@ const canStartWeaknessAnalysisFromSavedRules = computed(
   () =>
     !personAnalysisPromptDirty.value
     && !!authStore.user?.person_id
+    && hasSelectedCourse()
     && !promptSectionLoading.value
     && !loading.value
     && !promptSaving.value,
@@ -268,6 +294,7 @@ const canSaveAndStartWeaknessAnalysis = computed(
   () =>
     personAnalysisPromptDirty.value
     && !!authStore.user?.person_id
+    && hasSelectedCourse()
     && !promptSectionLoading.value
     && !loading.value
     && !promptSaving.value,
@@ -329,10 +356,16 @@ function applyAnalysisPromptEditModal() {
 }
 
 watch(
-  () => authStore.user?.person_id,
-  (pid) => {
-    if (pid) fetchPersonAnalysisPromptSetting();
-    else {
+  () => [authStore.user?.person_id, authStore.currentCourse?.course_id],
+  ([pid, courseId]) => {
+    analysisLoadedOnce.value = false;
+    items.value = [];
+    count.value = 0;
+    weaknessReport.value = '';
+    error.value = '';
+    if (pid && courseId != null) {
+      fetchPersonAnalysisPromptSetting();
+    } else {
       personAnalysisPromptText.value = '';
       personAnalysisPromptBaseline.value = '';
     }
@@ -780,7 +813,7 @@ function weaknessSlotQuizBodyTrim(idx) {
                     class="btn rounded-pill my-font-md-400 px-4 py-2 my-button-black"
                     title="儲存規則（若有修改）並開始分析"
                     aria-label="儲存並開始分析"
-                    :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id"
+                    :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
                     :aria-busy="loading || promptSaving"
                     @click="startWeaknessAnalysisFromRulesEditor"
                   >
@@ -802,7 +835,7 @@ function weaknessSlotQuizBodyTrim(idx) {
                 :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-3']"
                 title="開始弱點分析"
                 aria-label="開始弱點分析"
-                :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id"
+                :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
                 :aria-busy="loading"
                 @click="fetchWeaknessAnalysisOnly"
               >
