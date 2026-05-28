@@ -46,6 +46,11 @@ const props = defineProps({
    * （userSpaceOnUse + mask），用於登入頁等需一體漸層的場景
    */
   unifiedPrimaryGradient: { type: Boolean, default: false },
+  /**
+   * true：於格 1、2、3、4、6 疊加 60% 白色（不含格 5 中央區）
+   * 僅適用完整 logo（非 mergeCell5／裁切模式）
+   */
+  outerCellsWhiteOverlay: { type: Boolean, default: false },
 });
 
 function parsePctCoord(val) {
@@ -85,6 +90,16 @@ const PRIMARY_SPLIT_GRID = [
   { x: 0, y: 80, w: 80, h: 80, label: '3', fontSize: 20 },
   { x: 80, y: 80, w: 80, h: 80, label: '4', fontSize: 20 },
   { x: 120, y: 160, w: 40, h: 20, label: '5', fontSize: 10 },
+];
+
+/** 完整 logo 格 1、2、3、4、6 的矩形範圍（格 5 中央區不疊白） */
+const OUTER_CELL_WHITE_OVERLAY_RECTS = [
+  { x: 0, y: 0, w: 80, h: 80 },
+  { x: 80, y: 0, w: 80, h: 80 },
+  { x: 160, y: 0, w: 80, h: 80 },
+  { x: 0, y: 80, w: 80, h: 80 },
+  { x: 160, y: 80, w: 80, h: 80 },
+  { x: 200, y: 160, w: 40, h: 20 },
 ];
 
 const SECONDARY_SPLIT_GRID = [
@@ -198,6 +213,15 @@ const drawPrimaryStrokes = computed(() => showPrimary.value && !useUnifiedPrimar
 const drawPrimaryFills = computed(() => showPrimary.value && !useUnifiedPrimary.value);
 const drawSecondaryStrokes = computed(() => showSecondary.value && !useUnifiedSecondary.value);
 const drawSecondaryFills = computed(() => showSecondary.value && !useUnifiedSecondary.value);
+
+const showOuterCellsWhiteOverlay = computed(
+  () =>
+    props.outerCellsWhiteOverlay
+    && props.layer === 'full'
+    && !props.mergeCell5
+    && !props.centerCellsOnly
+    && !props.centerQuadOnly,
+);
 
 const svgStyle = computed(() => {
   if (props.sizeToContainer) {
@@ -509,6 +533,18 @@ const svgStyle = computed(() => {
         :fill="secondaryPaint"
       />
       </template>
+    </g>
+    <g v-if="showOuterCellsWhiteOverlay" pointer-events="none">
+      <rect
+        v-for="(cell, i) in OUTER_CELL_WHITE_OVERLAY_RECTS"
+        :key="`outer-white-${i}`"
+        :x="cell.x"
+        :y="cell.y"
+        :width="cell.w"
+        :height="cell.h"
+        fill="#ffffff"
+        fill-opacity="0.6"
+      />
     </g>
     <!-- 格線 -->
     <template v-if="showGrid && useSplitLayerGrid">

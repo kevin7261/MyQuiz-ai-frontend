@@ -121,6 +121,7 @@
               <LogoGridSvg
                 :show-grid="false"
                 unified-primary-gradient
+                outer-cells-white-overlay
                 size-to-container
                 id-prefix="login"
                 :colors="loginLogoColors"

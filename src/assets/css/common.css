@@ -53,11 +53,6 @@ code {
   height: 2rem;
   color: var(--my-color-blue);
 }
-.spinner-border.my-app-spinner--sm {
-  width: 1rem;
-  height: 1rem;
-  border-width: 0.2em;
-}
 
 /* —— 字階：五級 × 字重 400／600；class 第三段為字重數字（勿用 regular／semibold 等別名） —— */
 .my-font-xl-400 {
@@ -166,33 +161,6 @@ code {
   background-color: var(--my-color-blue);
 }
 
-.my-border-color-red {
-  border-color: var(--my-color-red);
-}
-.my-border-color-green {
-  border-color: var(--my-color-green);
-}
-.my-border-color-blue {
-  border-color: var(--my-color-blue);
-}
-
-/* 深底區塊頂部分隔、淺底底線（勿用 Bootstrap border-secondary／secondary-subtle） */
-.my-border-top-gray-4-muted {
-  border-top: 1px solid color-mix(in srgb, var(--my-color-gray-3) 38%, transparent);
-}
-.my-border-bottom-border-muted {
-  border-bottom: 1px solid var(--my-color-gray-2);
-}
-
-/* 四邊 1px 邊線（--my-color-gray-1；欄位外框請用 .my-border-gray-2／my-input-md） */
-.my-border-gray-1 {
-  border: 1px solid var(--my-color-gray-1);
-}
-
-/* 四邊 1px 邊線（--my-color-gray-2；勿用 Bootstrap .border 預設 secondary 色） */
-.my-border-gray-2 {
-  border: 1px solid var(--my-color-gray-2);
-}
 
 /* 四邊輕描邊（--my-border-muted；勿用 Bootstrap border-secondary／border-opacity-*） */
 .my-border-muted {
@@ -204,10 +172,6 @@ code {
   --bs-btn-close-bg: var(--my-btn-close-bg-svg);
 }
 
-/* 直向分隔（側欄等；勿用 Bootstrap .border-end 預設色） */
-.my-border-end-gray-2 {
-  border-inline-end: 1px solid var(--my-color-gray-2);
-}
 
 /* 一般資訊提示（勿用 Bootstrap alert-info） */
 .my-alert-info-soft {
@@ -216,12 +180,6 @@ code {
   border: 1px solid color-mix(in srgb, var(--my-color-blue) 32%, transparent);
 }
 
-/* btn-check ＋ 權杖藍描邊（勿用 btn-outline-primary） */
-.btn-check:checked + .btn.my-btn-outline-blue-hollow {
-  color: var(--my-color-white);
-  background-color: var(--my-color-blue);
-  border-color: var(--my-color-blue);
-}
 
 /* 淺底分頁列：連結圖示鈕（勿用 text-muted） */
 .btn.btn-link.my-tab-nav-action-btn {
@@ -235,9 +193,6 @@ code {
 /* 淺底表面／微調灰（勿用 Bootstrap bg-body／body-tertiary／body-secondary） */
 .my-bgcolor-surface {
   background-color: var(--my-color-white);
-}
-.my-bgcolor-surface-tint {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
 }
 /* 淺灰底：提示等次級內容；淺底為白混灰中；題目提示等 input 疊 .my-bgcolor-light-gray 時底略亮於稿灰 */
 .my-bgcolor-light-gray {
@@ -278,23 +233,6 @@ code {
   background-color: color-mix(in srgb, var(--my-color-gray-1) 14%, transparent);
 }
 
-/* 32×32 圓形：疊在黑底規則預覽角上（父層多為 gray-3，白字無框） */
-.btn.my-btn-on-design-dark-preview.my-btn-circle {
-  color: var(--my-color-white);
-  background-color: transparent;
-  border: none;
-  box-shadow: none;
-}
-.btn.my-btn-on-design-dark-preview.my-btn-circle:hover:not(:disabled),
-.btn.my-btn-on-design-dark-preview.my-btn-circle:active:not(:disabled),
-.btn.my-btn-on-design-dark-preview.my-btn-circle:focus-visible:not(:disabled) {
-  color: var(--my-color-white);
-  border: none;
-  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
-}
-.btn.my-btn-on-design-dark-preview.my-btn-circle:disabled {
-  opacity: 0.55;
-}
 
 /* 線框按鈕（灰深邊線；勿用 Bootstrap btn-outline-*） */
 .btn.my-btn-outline-gray-2 {
@@ -305,16 +243,6 @@ code {
 .btn.my-btn-outline-gray-2:hover {
   border-color: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-gray-2));
   background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
-}
-.btn.my-btn-outline-blue-hollow {
-  color: var(--my-color-blue);
-  background-color: transparent;
-  border: 1px solid var(--my-color-blue);
-}
-.btn.my-btn-outline-blue-hollow:hover {
-  color: var(--my-color-white);
-  background-color: var(--my-color-blue);
-  border-color: var(--my-color-blue);
 }
 
 /* 線框綠字（透明底）；建立測驗題庫「取消設為測驗用」等 */
@@ -371,17 +299,6 @@ code {
 }
 
 /* 填色膠囊一鍵：底／字／hover·active；併 .btn 提高權重，避免 Bootstrap .btn:active 蓋掉 */
-.btn.my-button-red {
-  background-color: var(--my-color-red);
-  color: var(--my-color-white);
-  border-color: transparent;
-}
-.btn.my-button-red:hover,
-.btn.my-button-red:active {
-  background-color: var(--my-color-red-hover);
-  color: var(--my-color-white);
-}
-
 .btn.my-button-green {
   background-color: var(--my-color-green);
   color: var(--my-color-white);
@@ -419,22 +336,6 @@ code {
   opacity: 0.55;
 }
 
-/* 中灰填色膠囊（併 .btn）：底 --my-color-gray-1、白字、無邊；出題單元操作列等 */
-.btn.my-button-gray-1 {
-  background-color: var(--my-color-gray-1);
-  color: var(--my-color-white);
-  border-color: transparent;
-  box-shadow: none;
-}
-.btn.my-button-gray-1:hover,
-.btn.my-button-gray-1:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 14%, var(--my-color-gray-1));
-  color: var(--my-color-white);
-  box-shadow: none;
-}
-.btn.my-button-gray-1:disabled {
-  opacity: 0.55;
-}
 
 /* 淺灰填色膠囊（併 .btn）：未選／非 highlight；底同 my-bgcolor-gray-2（字面 --my-color-gray-2）、字 --my-color-black。併 my-btn-group-pill 時分段線見該段 border */
 .btn.my-button-gray-2 {
@@ -470,22 +371,6 @@ code {
   opacity: 0.55;
 }
 
-/* 最淺填色膠囊（併 .btn）：底同 my-bgcolor-gray-4；字 --my-color-gray-1；無邊（出題單元資料夾批次按鈕等） */
-.btn.my-button-gray-4 {
-  background-color: var(--my-color-gray-3);
-  color: var(--my-color-gray-1);
-  border-color: transparent;
-  box-shadow: none;
-}
-.btn.my-button-gray-4:hover,
-.btn.my-button-gray-4:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-gray-3));
-  color: var(--my-color-gray-1);
-  box-shadow: none;
-}
-.btn.my-button-gray-4:disabled {
-  opacity: 0.55;
-}
 
 /* 填色「白」膠囊（併 .btn）：視覺為黑底白字（與 .my-button-black 同）；黑底稿頁內回淺底深字以免與底同色 */
 .btn.my-button-white {
@@ -584,63 +469,6 @@ code {
   border-color: transparent;
 }
 
-/* 描邊膠囊（併 .btn）：深底用 --my-color-white 邊＋字；淺底（surface／白／gray-2／gray-3／page-block）字與邊皆 --my-color-gray-1（hover 邊略加深） */
-.btn.my-button-white-border {
-  color: var(--my-color-white);
-  background-color: transparent;
-  border: 1px solid var(--my-color-white);
-}
-.btn.my-button-white-border:hover,
-.btn.my-button-white-border:active:not(:disabled) {
-  color: var(--my-color-white);
-  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
-  border-color: var(--my-color-white);
-}
-.bg-white .btn.my-button-white-border,
-.my-bgcolor-surface .btn.my-button-white-border,
-.my-bgcolor-white .btn.my-button-white-border {
-  color: var(--my-color-gray-1);
-  border-color: var(--my-color-gray-1);
-  background-color: transparent;
-}
-.bg-white .btn.my-button-white-border:hover,
-.bg-white .btn.my-button-white-border:active:not(:disabled),
-.my-bgcolor-surface .btn.my-button-white-border:hover,
-.my-bgcolor-surface .btn.my-button-white-border:active:not(:disabled),
-.my-bgcolor-white .btn.my-button-white-border:hover,
-.my-bgcolor-white .btn.my-button-white-border:active:not(:disabled) {
-  color: var(--my-color-gray-1);
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, transparent);
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-1));
-}
-.my-bgcolor-gray-2 .btn.my-button-white-border {
-  color: var(--my-color-gray-1);
-  border-color: var(--my-color-gray-1);
-  background-color: transparent;
-}
-.my-bgcolor-gray-2 .btn.my-button-white-border:hover,
-.my-bgcolor-gray-2 .btn.my-button-white-border:active:not(:disabled) {
-  color: var(--my-color-gray-1);
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, transparent);
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-1));
-}
-.my-bgcolor-gray-3 .btn.my-button-white-border,
-.my-bgcolor-page-block .btn.my-button-white-border {
-  color: var(--my-color-gray-1);
-  background-color: transparent;
-  border-color: var(--my-color-gray-1);
-}
-.my-bgcolor-gray-3 .btn.my-button-white-border:hover,
-.my-bgcolor-gray-3 .btn.my-button-white-border:active:not(:disabled),
-.my-bgcolor-page-block .btn.my-button-white-border:hover,
-.my-bgcolor-page-block .btn.my-button-white-border:active:not(:disabled) {
-  color: var(--my-color-gray-1);
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, transparent);
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-1));
-}
-.btn.my-button-white-border:disabled {
-  opacity: 0.55;
-}
 
 /* 無框膠囊（併 .btn）：黑無框（深字＋透明底）；黑底分頁列內回淺字 */
 .btn.my-button-transparent-borderless {
@@ -1098,15 +926,6 @@ code {
   min-height: 0;
 }
 
-.my-callout-primary-soft {
-  border: 1px solid
-    color-mix(
-      in srgb,
-      var(--my-color-blue) 42%,
-      color-mix(in srgb, var(--my-color-gray-2) 40%, transparent)
-    );
-  background-color: color-mix(in srgb, var(--my-color-blue) 12%, var(--my-color-white));
-}
 
 /* Modal／Teleport 外層半透明底（與 Bootstrap .modal.show 併用；backdrop-filter 霧化） */
 .my-modal-backdrop {
@@ -1178,57 +997,6 @@ code {
   background-color: color-mix(in srgb, var(--my-color-white) 8%, var(--my-color-gray-2));
 }
 
-/* —— 原生下拉 select；箭頭用 Font Awesome，勿用內嵌 SVG —— */
-.my-form-select-wrap {
-  position: relative;
-  display: block;
-  width: 100%;
-  max-width: min(22rem, 100%);
-}
-
-.my-form-select {
-  display: block;
-  width: 100%;
-  padding: 0.5rem 2.25rem 0.5rem 0.8rem;
-  font-family: inherit;
-  font-size: var(--my-font-size-md);
-  font-weight: var(--my-font-weight-regular);
-  color: var(--my-color-black);
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
-  border-radius: 0.375rem;
-  appearance: none;
-  cursor: pointer;
-}
-
-.my-form-select-wrap .my-form-select-caret {
-  position: absolute;
-  top: 50%;
-  inset-inline-end: 0.75rem;
-  transform: translateY(-50%);
-  pointer-events: none;
-  color: var(--my-color-gray-2);
-  font-size: var(--my-font-size-sm);
-}
-
-.my-form-select-wrap:has(.my-form-select:disabled) .my-form-select-caret {
-  color: color-mix(in srgb, var(--my-color-gray-2) 50%, var(--my-color-white));
-}
-
-.my-form-select:focus {
-  border-color: color-mix(in srgb, var(--my-color-black) 38%, var(--my-color-gray-2));
-  outline: 0;
-  box-shadow: none;
-}
-
-.my-form-select:disabled {
-  cursor: not-allowed;
-  color: var(--my-color-black);
-  -webkit-text-fill-color: var(--my-color-black);
-  background-color: color-mix(in srgb, var(--my-color-white) 92%, var(--my-color-gray-3));
-  border-color: color-mix(in srgb, var(--my-color-gray-2) 72%, var(--my-color-white));
-  opacity: 1;
-}
 
 /* Design 頁章節外層（UI 元件參考 1／2／3）：白底 + gray-2 邊線；圓角併 HTML .rounded-4 */
 .my-design-page-section {
@@ -1327,7 +1095,7 @@ code {
 }
 
 /* Design：黑底示範列內程式碼用 Google Sans Code（覆蓋 Bootstrap .font-monospace 之 !important） */
-.my-design-swatch-row:not(.my-design-swatch-row--light) :is(code, span.user-select-all) {
+.my-design-swatch-row :is(code, span.user-select-all) {
   font-family: var(--my-font-family-code) !important;
 }
 
@@ -1344,12 +1112,6 @@ code {
   font-family: var(--my-font-family-code) !important;
 }
 
-/* Design 08 下拉等：class 示範列淺灰底深字（勿再疊 my-bgcolor-black） */
-.my-design-swatch-row.my-design-swatch-row--light {
-  color: var(--my-color-black);
-  background-color: var(--my-color-gray-3);
-  border-color: var(--my-color-gray-2);
-}
 
 /* 與 .my-btn-circle 同 32×32；併 .my-bgcolor-* 呈色；無邊線／陰影外圈 */
 .my-design-swatch-dot {
@@ -1481,8 +1243,8 @@ div.form-control {
 }
 
 /* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（black 與 white 皆黑底白字，黑稿內 white 例外）；描邊 .my-button-white-border／.my-btn-outline-gray-1／.my-btn-outline-*-hollow；transparent-borderless 為黑無框（黑稿內例外淺字） —— */
-.btn.rounded-pill:not(.my-button-white-border):not(.my-btn-outline-gray-1):not(.my-btn-outline-blue-hollow):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow),
-.btn.rounded-circle:not(.my-button-white-border):not(.my-btn-on-design-dark-preview) {
+.btn.rounded-pill:not(.my-btn-outline-gray-1):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow),
+.btn.rounded-circle {
   border: none;
 }
 
