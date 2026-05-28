@@ -17,6 +17,7 @@ import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
 import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
+import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import {
   normalizeAnalysisQuizzesListResponse,
   mergeQuizzesWithTopLevelAnswers,
@@ -27,7 +28,7 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 const authStore = useAuthStore();
 
-/** 分析報告規則：僅開發者（1）／管理者（2）；與設定頁 LLM API 金鑰可見範圍一致 */
+/** 分析規則：僅開發者（1）／管理者（2）；與設定頁 LLM API 金鑰可見範圍一致 */
 const canEditWeaknessReportRules = computed(() => {
   const t = Number(authStore.user?.user_type);
   return t === 1 || t === 2;
@@ -65,14 +66,14 @@ const promptSectionLoading = ref(false);
 /** 編輯區先 PUT 規則時由全螢幕 overlay 顯示進度 */
 const promptSaving = ref(false);
 
-/** 全螢幕 LoadingOverlay：答題載入、GET／PUT 分析報告規則 */
+/** 全螢幕 LoadingOverlay：答題載入、GET／PUT 分析規則 */
 const overlayBlocking = computed(
   () => loading.value || promptSectionLoading.value || promptSaving.value,
 );
 const overlayLoadingText = computed(() => {
   if (loading.value) return '載入作答與弱點分析中...';
-  if (promptSaving.value) return '儲存分析報告規則中...';
-  if (promptSectionLoading.value) return '載入分析報告規則中...';
+  if (promptSaving.value) return '儲存分析規則中...';
+  if (promptSectionLoading.value) return '載入分析規則中...';
   return '載入中...';
 });
 
@@ -106,14 +107,8 @@ async function fetchPersonAnalysisPromptSetting() {
   }
 }
 
-/**
- * 僅抓答題與弱點報告；manageLoading 為 false 時由呼叫端負責 loading。
- * generateWeaknessReport 為 true 時 query 帶 generate_weakness_report=true（後端才會呼叫 LLM）。
- */
-async function runPersonAnalysisQuizFetch({
-  manageLoading = true,
-  generateWeaknessReport = false,
-} = {}) {
+/** 抓答題與弱點報告；manageLoading 為 false 時由呼叫端負責 loading。 */
+async function runPersonAnalysisQuizFetch({ manageLoading = true } = {}) {
   const personId = authStore.user?.person_id;
   if (!personId) {
     error.value = '請先登入以查看作答弱點分析';
@@ -125,8 +120,7 @@ async function runPersonAnalysisQuizFetch({
   error.value = '';
   analysisLoadedOnce.value = true;
   try {
-    const qs = generateWeaknessReport ? '?generate_weakness_report=true' : '';
-    const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}${qs}`;
+    const url = `${API_BASE}${API_QUIZZES_BY_PERSON}/${encodeURIComponent(personId)}`;
     const headers = { 'X-Person-Id': String(personId) };
     const res = await loggedFetch(url, { method: 'GET', headers });
     if (!res.ok) throw new Error(res.statusText || '無法載入答題資料');
@@ -188,7 +182,7 @@ async function startWeaknessAnalysisFromRulesEditor() {
         body: JSON.stringify({ person_analysis_user_prompt_text: personAnalysisPromptText.value ?? '' }),
       });
       if (!res.ok) {
-        let msg = '儲存分析報告規則失敗';
+        let msg = '儲存分析規則失敗';
         try {
           const body = await res.json();
           if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
@@ -206,11 +200,11 @@ async function startWeaknessAnalysisFromRulesEditor() {
       promptSaving.value = false;
     }
   }
-  await runPersonAnalysisQuizFetch({ manageLoading: true, generateWeaknessReport: true });
+  await runPersonAnalysisQuizFetch({ manageLoading: true });
 }
 
 async function fetchWeaknessAnalysisOnly() {
-  await runPersonAnalysisQuizFetch({ manageLoading: true, generateWeaknessReport: true });
+  await runPersonAnalysisQuizFetch({ manageLoading: true });
 }
 
 /** Modal：與測驗頁 QuizCard「出題規則」同源（Bootstrap modal-lg、Markdown、`my-modal-backdrop`） */
@@ -259,6 +253,26 @@ const personAnalysisPromptDirty = computed(
     !== String(personAnalysisPromptBaseline.value ?? ''),
 );
 
+/** design_3：「開始分析」— 使用後端已儲存之分析規則（未在編輯器改動） */
+const canStartWeaknessAnalysisFromSavedRules = computed(
+  () =>
+    !personAnalysisPromptDirty.value
+    && !!authStore.user?.person_id
+    && !promptSectionLoading.value
+    && !loading.value
+    && !promptSaving.value,
+);
+
+/** design_3：「儲存並開始分析」— 分析規則已編輯（對齊「儲存並產生題目」） */
+const canSaveAndStartWeaknessAnalysis = computed(
+  () =>
+    personAnalysisPromptDirty.value
+    && !!authStore.user?.person_id
+    && !promptSectionLoading.value
+    && !loading.value
+    && !promptSaving.value,
+);
+
 function resetPersonAnalysisPromptToBaseline() {
   personAnalysisPromptText.value = String(personAnalysisPromptBaseline.value ?? '');
 }
@@ -276,6 +290,42 @@ async function openWeaknessAnalysisRulesModal() {
 
 function closeWeaknessAnalysisRulesModal() {
   analysisRulesModalOpen.value = false;
+}
+
+/** design_3：黑底預覽 + Modal 編輯（對齊 create-exam-bank_3 出題規則） */
+const analysisPromptEditModalOpen = ref(false);
+const analysisPromptEditModalDraft = ref('');
+
+const analysisPromptEditModalSavingDisabled = computed(
+  () => promptSectionLoading.value || loading.value || promptSaving.value,
+);
+
+const analysisPromptEditModalResetDisabled = computed(() => {
+  if (analysisPromptEditModalSavingDisabled.value) return true;
+  return (
+    String(analysisPromptEditModalDraft.value ?? '')
+    === String(personAnalysisPromptBaseline.value ?? '')
+  );
+});
+
+function openAnalysisPromptEditModal() {
+  if (analysisPromptEditModalSavingDisabled.value) return;
+  analysisPromptEditModalDraft.value = String(personAnalysisPromptText.value ?? '');
+  analysisPromptEditModalOpen.value = true;
+}
+
+function closeAnalysisPromptEditModal() {
+  analysisPromptEditModalOpen.value = false;
+  analysisPromptEditModalDraft.value = '';
+}
+
+function resetAnalysisPromptEditModalDraft() {
+  analysisPromptEditModalDraft.value = String(personAnalysisPromptBaseline.value ?? '');
+}
+
+function applyAnalysisPromptEditModal() {
+  personAnalysisPromptText.value = analysisPromptEditModalDraft.value;
+  closeAnalysisPromptEditModal();
 }
 
 watch(
@@ -494,7 +544,7 @@ function weaknessSlotQuizBodyTrim(idx) {
                 id="weakness-analysis-rules-modal-title"
                 class="modal-title my-color-black"
               >
-                分析報告規則
+                分析規則
               </h5>
               <button
                 type="button"
@@ -526,6 +576,68 @@ function weaknessSlotQuizBodyTrim(idx) {
         </div>
       </div>
     </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="analysisPromptEditModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="weakness-analysis-prompt-edit-modal-title"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="weakness-analysis-prompt-edit-modal-title"
+                class="modal-title my-color-black"
+              >
+                分析規則
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeAnalysisPromptEditModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <EnglishExamMarkdownEditor
+                v-model="analysisPromptEditModalDraft"
+                textarea-id="weakness-analysis-rules-edit-md"
+                :disabled="analysisPromptEditModalSavingDisabled"
+                prompt-code-font
+              />
+            </div>
+            <div
+              class="modal-footer border-top-0 p-0 d-flex justify-content-end align-items-center flex-nowrap gap-2 w-100"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                title="還原為上次載入或儲存後的內容"
+                aria-label="重設"
+                :disabled="analysisPromptEditModalResetDisabled"
+                @click="resetAnalysisPromptEditModalDraft"
+              >
+                重設
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2"
+                :disabled="analysisPromptEditModalSavingDisabled"
+                @click="applyAnalysisPromptEditModal"
+              >
+                確定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
     <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">作答弱點分析</p>
@@ -544,44 +656,138 @@ function weaknessSlotQuizBodyTrim(idx) {
             <div
               v-if="canEditWeaknessReportRules"
               :class="props.design3
-                ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section'
+                ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section analysis-page-3-rules my-design--side-panel-left'
                 : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4'"
             >
-              <div class="d-flex flex-column gap-0 min-w-0 w-100 mb-3">
-                <label
-                  class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                  for="weakness-analysis-report-rules-md"
-                >分析報告規則</label>
-                <EnglishExamMarkdownEditor
-                  v-model="personAnalysisPromptText"
-                  textarea-id="weakness-analysis-report-rules-md"
-                  placeholder=""
-                  :disabled="promptSectionLoading || loading || promptSaving"
-                />
-              </div>
-              <div class="d-flex justify-content-center flex-wrap gap-3 pt-2">
-                <button
-                  type="button"
-                  :class="['btn rounded-pill my-font-md-400 px-4 py-2', props.design3 ? 'my-button-transparent-borderless' : 'my-btn-outline-gray-1']"
-                  title="還原為上次載入或儲存後的內容"
-                  aria-label="重設分析報告規則"
-                  :disabled="promptSectionLoading || loading || promptSaving || !personAnalysisPromptDirty"
-                  @click="resetPersonAnalysisPromptToBaseline"
-                >
-                  重設
-                </button>
-                <button
-                  type="button"
-                  :class="['btn rounded-pill my-font-md-400 px-4 py-2', props.design3 ? 'my-button-white' : 'my-button-black']"
-                  title="儲存規則（若有修改）並開始分析"
-                  aria-label="儲存並開始分析"
-                  :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id"
-                  :aria-busy="loading || promptSaving"
-                  @click="startWeaknessAnalysisFromRulesEditor"
-                >
-                  儲存並開始分析
-                </button>
-              </div>
+              <template v-if="props.design3">
+                <div class="my-design-quiz-sub-block-outer">
+                  <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 py-2">
+                    <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
+                      <div class="my-design-quiz-question-prompt-wrap px-3 pt-2 pb-0 w-100 min-w-0">
+                        <section
+                          class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                          aria-label="分析規則"
+                        >
+                          <header class="my-design-quiz-question-prompt-block__head">
+                            <div
+                              class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                            >
+                              <h3
+                                class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
+                              >
+                                分析規則
+                              </h3>
+                              <div class="d-flex align-items-center gap-3 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
+                                  title="編輯分析規則"
+                                  aria-label="編輯分析規則"
+                                  :disabled="analysisPromptEditModalSavingDisabled"
+                                  @click="openAnalysisPromptEditModal"
+                                >
+                                  <i class="fa-solid fa-pen" aria-hidden="true" />
+                                </button>
+                              </div>
+                            </div>
+                          </header>
+                          <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                            <EnglishExamMarkdownEditor
+                              :model-value="personAnalysisPromptText"
+                              preview-only
+                              preview-design-dark
+                              preview-design-dark-embedded
+                              textarea-id="weakness-analysis-rules-preview"
+                              :disabled="analysisPromptEditModalSavingDisabled"
+                            />
+                          </div>
+                        </section>
+                      </div>
+                      <div
+                        class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
+                      >
+                        <LogoGradientPillButton
+                          v-if="canStartWeaknessAnalysisFromSavedRules"
+                          id-prefix="weakness-analysis-start"
+                          tone="generate"
+                          gradient-bias="work3"
+                          extra-class="my-design-quiz-generate-btn"
+                          title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存並開始分析」，或於編輯 Modal 內重設"
+                          aria-label="開始分析"
+                          :aria-busy="loading || promptSaving"
+                          @click="fetchWeaknessAnalysisOnly"
+                        >
+                          開始分析
+                        </LogoGradientPillButton>
+                        <LogoGradientPillButton
+                          v-if="canSaveAndStartWeaknessAnalysis"
+                          id-prefix="weakness-analysis-save-start"
+                          tone="generate"
+                          gradient-bias="work3"
+                          extra-class="my-design-quiz-generate-btn"
+                          title="儲存分析規則並開始分析"
+                          aria-label="儲存並開始分析"
+                          :aria-busy="loading || promptSaving"
+                          @click="startWeaknessAnalysisFromRulesEditor"
+                        >
+                          儲存並開始分析
+                        </LogoGradientPillButton>
+                        <LogoGradientPillButton
+                          v-if="
+                            !canStartWeaknessAnalysisFromSavedRules
+                            && !canSaveAndStartWeaknessAnalysis
+                          "
+                          id-prefix="weakness-analysis-save-start-disabled"
+                          tone="generate"
+                          gradient-bias="work3"
+                          extra-class="my-design-quiz-generate-btn"
+                          aria-label="儲存並開始分析"
+                          disabled
+                        >
+                          儲存並開始分析
+                        </LogoGradientPillButton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="d-flex flex-column gap-0 min-w-0 w-100 mb-3">
+                  <label
+                    class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                    for="weakness-analysis-report-rules-md"
+                  >分析規則</label>
+                  <EnglishExamMarkdownEditor
+                    v-model="personAnalysisPromptText"
+                    textarea-id="weakness-analysis-report-rules-md"
+                    placeholder=""
+                    :disabled="promptSectionLoading || loading || promptSaving"
+                  />
+                </div>
+                <div class="d-flex justify-content-center flex-wrap gap-3 pt-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill my-font-md-400 px-4 py-2 my-btn-outline-gray-1"
+                    title="還原為上次載入或儲存後的內容"
+                    aria-label="重設分析規則"
+                    :disabled="promptSectionLoading || loading || promptSaving || !personAnalysisPromptDirty"
+                    @click="resetPersonAnalysisPromptToBaseline"
+                  >
+                    重設
+                  </button>
+                  <button
+                    type="button"
+                    class="btn rounded-pill my-font-md-400 px-4 py-2 my-button-black"
+                    title="儲存規則（若有修改）並開始分析"
+                    aria-label="儲存並開始分析"
+                    :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id"
+                    :aria-busy="loading || promptSaving"
+                    @click="startWeaknessAnalysisFromRulesEditor"
+                  >
+                    儲存並開始分析
+                  </button>
+                </div>
+              </template>
             </div>
 
             <!-- 非開發者／管理者：無編輯區時由此啟動分析；user_type 1／2 改用上區「儲存並開始分析」 -->
@@ -666,18 +872,50 @@ function weaknessSlotQuizBodyTrim(idx) {
                       v-html="md(weaknessReport)"
                     />
                     <div
-                      v-if="analysisRulesSnapshotTrimmed"
+                      v-if="analysisRulesSnapshotTrimmed && !props.design3"
                       class="d-flex justify-content-start align-items-center w-100 pt-3"
                     >
                       <button
                         type="button"
-                        :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', props.design3 ? 'my-button-transparent-borderless' : 'my-btn-outline-gray-1']"
-                        title="分析報告規則（Markdown）"
-                        aria-label="分析報告規則"
+                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1 my-btn-outline-gray-1"
+                        title="分析規則（Markdown）"
+                        aria-label="分析規則"
                         @click="openWeaknessAnalysisRulesModal"
                       >
-                        分析報告規則
+                        分析規則
                       </button>
+                    </div>
+                    <div
+                      v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditWeaknessReportRules"
+                      class="w-100 min-w-0 pt-3 analysis-page-3-rules my-design--side-panel-left"
+                    >
+                      <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
+                        <section
+                          class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                          aria-label="分析規則"
+                        >
+                          <header class="my-design-quiz-question-prompt-block__head">
+                            <div
+                              class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                            >
+                              <h3
+                                class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
+                              >
+                                分析規則
+                              </h3>
+                            </div>
+                          </header>
+                          <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                            <EnglishExamMarkdownEditor
+                              :model-value="personAnalysisPromptText"
+                              preview-only
+                              preview-design-dark
+                              preview-design-dark-embedded
+                              :textarea-id="`weakness-analysis-rules-report-ro`"
+                            />
+                          </div>
+                        </section>
+                      </div>
                     </div>
                   </div>
 

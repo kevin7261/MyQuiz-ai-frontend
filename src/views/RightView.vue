@@ -124,32 +124,5 @@
 
 .my-right-view-scroll--visible {
   overflow: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
-}
-
-.my-right-view-scroll--visible::-webkit-scrollbar {
-  width: var(--my-scrollbar-size);
-  height: var(--my-scrollbar-size);
-}
-
-.my-right-view-scroll--visible::-webkit-scrollbar-track {
-  background: var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2);
-}
-
-.my-right-view-scroll--visible::-webkit-scrollbar-thumb {
-  background-color: var(--my-scrollbar-thumb);
-  background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-}
-
-.my-right-view-scroll--visible::-webkit-scrollbar-corner {
-  background: var(--my-color-white);
-}
-
-.my-right-view-scroll--visible::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-scrollbar-thumb-hover);
 }
 </style>

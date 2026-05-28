@@ -245,7 +245,7 @@ export const API_EXAM_RATE_QUIZ = '/exam/tab/quiz/rate';
 export const API_GET_LLM_API_KEY = '/system-settings/llm-api-key';
 /** PUT：寫入或更新系統預設 LLM API Key（表 key=llm_api_key）；body 僅傳 { llm_api_key }，空字串表示清除。 */
 export const API_PUT_SYSTEM_SETTING_LLM_API_KEY = '/system-settings/llm-api-key';
-/** GET／PUT：作答弱點「分析報告規則」Prompt（person_analysis_user_prompt_text）；GET 凡有效使用者；PUT 僅 user_type 1／2；loggedFetch 自動帶 query person_id。 */
+/** GET／PUT：作答弱點「分析規則」Prompt（person_analysis_user_prompt_text）；GET 凡有效使用者；PUT 僅 user_type 1／2；loggedFetch 自動帶 query person_id。 */
 export const API_PERSON_ANALYSIS_USER_PROMPT = '/system-settings/person_analysis_user_prompt_text';
 
 /**

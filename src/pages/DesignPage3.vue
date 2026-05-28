@@ -1414,37 +1414,6 @@ function design3PackUnitTypeIconCss(unitType) {
 </template>
 
 <style scoped>
-/* ── 捲動區（對齊 exam-2__grid-scroll--scrollbar） ───────────── */
-.design-page-3__scroll--scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
-}
-
-.design-page-3__scroll--scrollbar::-webkit-scrollbar {
-  width: var(--my-scrollbar-size);
-  height: var(--my-scrollbar-size);
-}
-
-.design-page-3__scroll--scrollbar::-webkit-scrollbar-track {
-  background: var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2);
-}
-
-.design-page-3__scroll--scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--my-scrollbar-thumb);
-  background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-}
-
-.design-page-3__scroll--scrollbar::-webkit-scrollbar-corner {
-  background: var(--my-color-white);
-}
-
-.design-page-3__scroll--scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-scrollbar-thumb-hover);
-}
-
 .design-page-3__sections {
   max-width: 52rem;
 }

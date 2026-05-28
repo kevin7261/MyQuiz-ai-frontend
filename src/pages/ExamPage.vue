@@ -3894,33 +3894,6 @@ onActivated(() => {
 .my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar)::-webkit-scrollbar {
   display: none;
 }
-/* 右側欄捲軸：對齊全站 gray-2 滑塊 */
-.my-design-tab-right-view,
-.my-design-right-nav {
-  scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-scrollbar-track);
-}
-.my-design-tab-right-view::-webkit-scrollbar,
-.my-design-right-nav::-webkit-scrollbar {
-  width: var(--my-scrollbar-size);
-  height: var(--my-scrollbar-size);
-}
-.my-design-tab-right-view::-webkit-scrollbar-track,
-.my-design-right-nav::-webkit-scrollbar-track {
-  background: var(--my-scrollbar-track);
-  border-radius: calc(var(--my-scrollbar-size) / 2);
-}
-.my-design-tab-right-view::-webkit-scrollbar-thumb,
-.my-design-right-nav::-webkit-scrollbar-thumb {
-  background-color: var(--my-scrollbar-thumb);
-  background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-scrollbar-track);
-  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-}
-.my-design-tab-right-view::-webkit-scrollbar-thumb:hover,
-.my-design-right-nav::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-scrollbar-thumb-hover);
-}
 .my-design-right-step-block {
   display: flex;
   flex-direction: column;

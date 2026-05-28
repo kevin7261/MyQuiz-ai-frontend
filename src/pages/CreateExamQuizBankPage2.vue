@@ -942,36 +942,6 @@ watch(viewMode, (mode) => {
   overflow: hidden;
 }
 
-.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
-}
-
-.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar {
-  width: var(--my-scrollbar-size);
-  height: var(--my-scrollbar-size);
-}
-
-.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-track {
-  background: var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2);
-}
-
-.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--my-scrollbar-thumb);
-  background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-}
-
-.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-corner {
-  background: var(--my-color-white);
-}
-
-.create-exam-bank-2--side-panel-left .create-exam-bank-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-scrollbar-thumb-hover);
-}
-
 /* 嵌入原頁：隱藏「建立測驗題庫」標題列與分頁列 */
 .create-exam-bank-2-embedded :deep(> header) {
   display: none;

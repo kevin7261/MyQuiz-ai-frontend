@@ -801,36 +801,6 @@ watch(
   overflow: hidden;
 }
 
-.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar {
-  scrollbar-width: thin;
-  scrollbar-color: var(--my-scrollbar-thumb) var(--my-color-white);
-}
-
-.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar {
-  width: var(--my-scrollbar-size);
-  height: var(--my-scrollbar-size);
-}
-
-.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-track {
-  background: var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2);
-}
-
-.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb {
-  background-color: var(--my-scrollbar-thumb);
-  background-clip: padding-box;
-  border: var(--my-scrollbar-thumb-inset) solid var(--my-color-white);
-  border-radius: calc(var(--my-scrollbar-size) / 2 - var(--my-scrollbar-thumb-inset));
-}
-
-.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-corner {
-  background: var(--my-color-white);
-}
-
-.exam-2--side-panel-left .exam-2__grid-scroll--scrollbar::-webkit-scrollbar-thumb:hover {
-  background-color: var(--my-scrollbar-thumb-hover);
-}
-
 .exam-2-embedded :deep(> header) {
   display: none;
 }
