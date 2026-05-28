@@ -2,31 +2,403 @@
 /**
  * StudentAnswerAnalysisPage - 學生作答分析頁面
  *
- * 讀取 GET /course-analysis/quizzes；列表格式與 GET /exam/tabs、GET /rag/tabs 每筆一致（mergeQuizzesWithTopLevelAnswers）。
- * 題目區與測驗頁（QuizCard）版面一致、純顯示；另顯示使用者 ID。
+ * 登入且已選課程後 GET `course_analysis_user_prompt_text`（query course_id）供「分析規則」與 Modal；僅 1／2 顯示編輯區，主按鈕為「儲存並開始分析」；其餘角色僅見「開始作答分析」。
+ * GET /course-analysis/quizzes 須 course_id；已作答 Exam_Quiz 依 exam 分群；列表與 GET /exam/tabs 一致；另含 count、weakness_report。題目區（QuizCard）純顯示，並顯示各題使用者 ID。
  */
-import { ref, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 
 const props = defineProps({
   hidePageHeader: { type: Boolean, default: false },
   design3: { type: Boolean, default: false },
 });
-import { API_BASE, API_COURSE_ANALYSIS_QUIZZES } from '../constants/api.js';
+import { useAuthStore } from '../stores/authStore.js';
+import { API_BASE, API_COURSE_ANALYSIS_QUIZZES, API_COURSE_ANALYSIS_USER_PROMPT } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
 import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
+import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
+import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import {
   normalizeAnalysisQuizzesListResponse,
   mergeQuizzesWithTopLevelAnswers,
 } from '../utils/rag.js';
 import { formatGradingResult } from '../utils/grading.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
+import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
+
+const authStore = useAuthStore();
+
+/** 分析規則：僅開發者（1）／管理者（2）；與設定頁 LLM API 金鑰可見範圍一致 */
+const canEditCourseAnalysisRules = computed(() => {
+  const t = Number(authStore.user?.user_type);
+  return t === 1 || t === 2;
+});
+
+function md(s) {
+  return renderMarkdownToSafeHtml(s);
+}
+
+/** JSON 區塊內非陣列值：字串當 md；其餘以 fenced JSON 顯示 */
+function weaknessScalarToMdHtml(val) {
+  if (val == null) return '';
+  if (typeof val === 'string') return renderMarkdownToSafeHtml(val);
+  try {
+    return renderMarkdownToSafeHtml('```json\n' + JSON.stringify(val, null, 2) + '\n```');
+  } catch {
+    return renderMarkdownToSafeHtml(String(val));
+  }
+}
 
 const items = ref([]);
 /** 與 items 同序；供 QuizCard（與測驗頁同一題目區 UI） */
 const quizCardUi = ref([]);
+const count = ref(0);
+const weaknessReport = ref('');
 const loading = ref(false);
 const error = ref('');
+/** 尚未按「開始分析」前不請求 GET /course-analysis/quizzes */
+const analysisLoadedOnce = ref(false);
+
+const courseAnalysisPromptText = ref('');
+/** GET／儲存成功後對齊；重設還原至此 */
+const courseAnalysisPromptBaseline = ref('');
+const promptSectionLoading = ref(false);
+/** 編輯區先 PUT 規則時由全螢幕 overlay 顯示進度 */
+const promptSaving = ref(false);
+
+/** 全螢幕 LoadingOverlay：答題載入、GET／PUT 分析規則 */
+const overlayBlocking = computed(
+  () => loading.value || promptSectionLoading.value || promptSaving.value,
+);
+const overlayLoadingText = computed(() => {
+  if (loading.value) return '載入學生作答與分析報告中...';
+  if (promptSaving.value) return '儲存分析規則中...';
+  if (promptSectionLoading.value) return '載入分析規則中...';
+  return '載入中...';
+});
+
+function parseCourseAnalysisPromptFromBody(data) {
+  if (!data || typeof data !== 'object') return '';
+  const v =
+    data.course_analysis_user_prompt_text ??
+    data.courseAnalysisUserPromptText ??
+    data.value ??
+    data.prompt_text;
+  return v != null ? String(v) : '';
+}
+
+const COURSE_REQUIRED_MSG = '請先於左側選單選擇課程，再進行學生作答分析。';
+
+async function parseFetchErrorMessage(res, fallback) {
+  let msg = fallback;
+  try {
+    const body = await res.json();
+    if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+  } catch {
+    /* ignore */
+  }
+  return msg;
+}
+
+function hasSelectedCourse() {
+  return authStore.currentCourse?.course_id != null;
+}
+
+async function fetchCourseAnalysisPromptSetting() {
+  const personId = authStore.user?.person_id;
+  if (!personId) return;
+  if (!hasSelectedCourse()) {
+    courseAnalysisPromptText.value = '';
+    courseAnalysisPromptBaseline.value = '';
+    return;
+  }
+  promptSectionLoading.value = true;
+  try {
+    const url = `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`;
+    const res = await loggedFetch(url, { method: 'GET', headers: { 'X-Person-Id': String(personId) } });
+    if (res.ok) {
+      const data = await res.json();
+      const next = parseCourseAnalysisPromptFromBody(data);
+      courseAnalysisPromptText.value = next;
+      courseAnalysisPromptBaseline.value = next;
+    }
+  } catch {
+    // 保留編輯框空白
+  } finally {
+    promptSectionLoading.value = false;
+  }
+}
+
+/** 抓答題與課程分析報告；manageLoading 為 false 時由呼叫端負責 loading。 */
+async function runCourseAnalysisQuizFetch({ manageLoading = true } = {}) {
+  const personId = authStore.user?.person_id;
+  if (!personId) {
+    error.value = '請先登入以查看學生作答分析';
+    return;
+  }
+  if (!hasSelectedCourse()) {
+    error.value = COURSE_REQUIRED_MSG;
+    return;
+  }
+  if (manageLoading) {
+    loading.value = true;
+  }
+  error.value = '';
+  analysisLoadedOnce.value = true;
+  try {
+    const url = `${API_BASE}${API_COURSE_ANALYSIS_QUIZZES}`;
+    const headers = { 'X-Person-Id': String(personId) };
+    const res = await loggedFetch(url, { method: 'GET', headers });
+    if (!res.ok) {
+      throw new Error(await parseFetchErrorMessage(res, res.statusText || '無法載入答題資料'));
+    }
+    const data = await res.json();
+    const exams = normalizeAnalysisQuizzesListResponse(data);
+    items.value = exams.flatMap((parent) => {
+      const quizzes = mergeQuizzesWithTopLevelAnswers(parent);
+      const examLabel =
+        parent.tab_name ?? parent.exam_name ?? parent.rag_name ?? parent.exam_tab_id ?? '';
+      const examTabId = parent.exam_tab_id ?? parent.test_tab_id;
+      const examId = parent.exam_id ?? parent.test_id;
+      const ragTabId = parent.rag_tab_id;
+      const ragId = parent.rag_id ?? parent.id;
+      return quizzes.map((q) => ({
+        ...q,
+        exam_name: q.exam_name ?? examLabel,
+        exam_tab_id: q.exam_tab_id ?? examTabId,
+        exam_id: q.exam_id ?? examId,
+        rag_tab_id: q.rag_tab_id ?? ragTabId,
+        rag_id: q.rag_id ?? q.ragId ?? ragId,
+      }));
+    });
+    count.value = data?.count ?? items.value.length;
+    weaknessReport.value =
+      data?.weakness_report != null && String(data.weakness_report).trim() !== ''
+        ? String(data.weakness_report).trim()
+        : '';
+  } catch (err) {
+    error.value = err.message || '無法載入學生作答分析';
+    items.value = [];
+    count.value = 0;
+    weaknessReport.value = '';
+  } finally {
+    if (manageLoading) {
+      loading.value = false;
+    }
+  }
+}
+
+/** 開發者／管理者：規則有改時先 PUT，再 GET 並觸發分析報告 */
+async function startCourseAnalysisFromRulesEditor() {
+  if (!canEditCourseAnalysisRules.value) return;
+  const personId = authStore.user?.person_id;
+  if (!personId) {
+    error.value = '請先登入';
+    return;
+  }
+  if (!hasSelectedCourse()) {
+    error.value = COURSE_REQUIRED_MSG;
+    return;
+  }
+  error.value = '';
+  if (courseAnalysisPromptDirty.value) {
+    promptSaving.value = true;
+    try {
+      const url = `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`;
+      const res = await loggedFetch(url, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Person-Id': String(personId),
+        },
+        body: JSON.stringify({ course_analysis_user_prompt_text: courseAnalysisPromptText.value ?? '' }),
+      });
+      if (!res.ok) {
+        error.value = await parseFetchErrorMessage(res, '儲存分析規則失敗');
+        return;
+      }
+      courseAnalysisPromptBaseline.value = String(courseAnalysisPromptText.value ?? '');
+    } catch (e) {
+      error.value = e?.message ?? '無法連線';
+      return;
+    } finally {
+      promptSaving.value = false;
+    }
+  }
+  await runCourseAnalysisQuizFetch({ manageLoading: true });
+}
+
+async function fetchCourseAnalysisOnly() {
+  await runCourseAnalysisQuizFetch({ manageLoading: true });
+}
+
+/** Modal：與測驗頁 QuizCard「出題規則」同源（Bootstrap modal-lg、Markdown、`my-modal-backdrop`） */
+const analysisRulesModalOpen = ref(false);
+const analysisRulesModalLoading = ref(false);
+const analysisRulesModalRaw = ref('');
+
+const analysisRulesModalHtml = computed(() => {
+  const raw = String(analysisRulesModalRaw.value ?? '');
+  return raw.trim() !== '' ? renderMarkdownToSafeHtml(raw) : '';
+});
+
+async function fetchAnalysisRulesForModal() {
+  const personId = authStore.user?.person_id;
+  if (!personId || !hasSelectedCourse()) {
+    analysisRulesModalRaw.value = '';
+    return;
+  }
+  analysisRulesModalLoading.value = true;
+  promptSectionLoading.value = true;
+  try {
+    const url = `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`;
+    const res = await loggedFetch(url, { method: 'GET', headers: { 'X-Person-Id': String(personId) } });
+    if (res.ok) {
+      const data = await res.json();
+      analysisRulesModalRaw.value = parseCourseAnalysisPromptFromBody(data);
+    } else {
+      analysisRulesModalRaw.value = '';
+    }
+  } catch {
+    analysisRulesModalRaw.value = '';
+  } finally {
+    analysisRulesModalLoading.value = false;
+    promptSectionLoading.value = false;
+  }
+}
+
+/** 與 QuizCard「出題規則」：僅在非空白提示文字時顯示按鈕（GET 後寫入 courseAnalysisPromptText，含全 user_type） */
+const analysisRulesSnapshotTrimmed = computed(() =>
+  String(courseAnalysisPromptText.value ?? '').trim(),
+);
+
+const courseAnalysisPromptDirty = computed(
+  () =>
+    String(courseAnalysisPromptText.value ?? '')
+    !== String(courseAnalysisPromptBaseline.value ?? ''),
+);
+
+/** design_3：「開始分析」— 使用後端已儲存之分析規則（未在編輯器改動） */
+const canStartCourseAnalysisFromSavedRules = computed(
+  () =>
+    !courseAnalysisPromptDirty.value
+    && !!authStore.user?.person_id
+    && hasSelectedCourse()
+    && !promptSectionLoading.value
+    && !loading.value
+    && !promptSaving.value,
+);
+
+/** design_3：「儲存並開始分析」— 分析規則已編輯 */
+const canSaveAndStartCourseAnalysis = computed(
+  () =>
+    courseAnalysisPromptDirty.value
+    && !!authStore.user?.person_id
+    && hasSelectedCourse()
+    && !promptSectionLoading.value
+    && !loading.value
+    && !promptSaving.value,
+);
+
+function resetCourseAnalysisPromptToBaseline() {
+  courseAnalysisPromptText.value = String(courseAnalysisPromptBaseline.value ?? '');
+}
+
+async function openCourseAnalysisRulesModal() {
+  analysisRulesModalOpen.value = true;
+  const local = analysisRulesSnapshotTrimmed.value;
+  if (local !== '') {
+    analysisRulesModalRaw.value = courseAnalysisPromptText.value;
+    analysisRulesModalLoading.value = false;
+    return;
+  }
+  await fetchAnalysisRulesForModal();
+}
+
+function closeCourseAnalysisRulesModal() {
+  analysisRulesModalOpen.value = false;
+}
+
+/** design_3：黑底預覽 + Modal 編輯（對齊 create-exam-bank_3 出題規則） */
+const analysisPromptEditModalOpen = ref(false);
+const analysisPromptEditModalDraft = ref('');
+
+const analysisPromptEditModalSavingDisabled = computed(
+  () => promptSectionLoading.value || loading.value || promptSaving.value,
+);
+
+const analysisPromptEditModalResetDisabled = computed(() => {
+  if (analysisPromptEditModalSavingDisabled.value) return true;
+  return (
+    String(analysisPromptEditModalDraft.value ?? '')
+    === String(courseAnalysisPromptBaseline.value ?? '')
+  );
+});
+
+function openAnalysisPromptEditModal() {
+  if (analysisPromptEditModalSavingDisabled.value) return;
+  analysisPromptEditModalDraft.value = String(courseAnalysisPromptText.value ?? '');
+  analysisPromptEditModalOpen.value = true;
+}
+
+function closeAnalysisPromptEditModal() {
+  analysisPromptEditModalOpen.value = false;
+  analysisPromptEditModalDraft.value = '';
+}
+
+function resetAnalysisPromptEditModalDraft() {
+  analysisPromptEditModalDraft.value = String(courseAnalysisPromptBaseline.value ?? '');
+}
+
+function applyAnalysisPromptEditModal() {
+  courseAnalysisPromptText.value = analysisPromptEditModalDraft.value;
+  closeAnalysisPromptEditModal();
+}
+
+watch(
+  () => [authStore.user?.person_id, authStore.currentCourse?.course_id],
+  ([pid, courseId]) => {
+    analysisLoadedOnce.value = false;
+    items.value = [];
+    count.value = 0;
+    weaknessReport.value = '';
+    error.value = '';
+    if (pid && courseId != null) {
+      fetchCourseAnalysisPromptSetting();
+    } else {
+      courseAnalysisPromptText.value = '';
+      courseAnalysisPromptBaseline.value = '';
+    }
+  },
+  { immediate: true },
+);
+
+/** 學習弱點分析報告：後端可能回傳純 JSON 或 ```json ... ```，key 為區塊標題、value 為字串陣列 */
+function extractJsonFromWeaknessReport(text) {
+  if (!text || typeof text !== 'string') return null;
+  let t = text.trim();
+  if (t.startsWith('```')) {
+    const endFence = t.indexOf('\n```');
+    const body = endFence >= 0 ? t.slice(t.indexOf('\n') + 1, endFence) : t.replace(/^```\w*\n?/, '').replace(/\n?```\s*$/, '');
+    t = body.trim();
+  }
+  if (!t.startsWith('{')) return null;
+  try {
+    const obj = JSON.parse(t);
+    return obj && typeof obj === 'object' ? obj : null;
+  } catch {
+    return null;
+  }
+}
+
+const weaknessReportParsed = computed(() => extractJsonFromWeaknessReport(weaknessReport.value));
+
+/** 依 JSON 的 key 順序產生的區塊列表 */
+const weaknessReportSections = computed(() => {
+  const obj = weaknessReportParsed.value;
+  if (!obj) return [];
+  return Object.keys(obj);
+});
 
 /** 與 ExamPage normalizeExamQuizRate 一致 */
 function normalizeExamQuizRate(v) {
@@ -175,44 +547,6 @@ function studentSlotQuizBodyTrim(idx) {
   const c = quizCardUi.value[idx];
   return String(c?.quiz ?? '').trim();
 }
-
-async function fetchQuizAnswers() {
-  loading.value = true;
-  error.value = '';
-  try {
-    const url = `${API_BASE}${API_COURSE_ANALYSIS_QUIZZES}`;
-    const res = await loggedFetch(url, { method: 'GET' });
-    if (!res.ok) throw new Error(res.statusText || '無法載入作答資料');
-    const data = await res.json();
-    const exams = normalizeAnalysisQuizzesListResponse(data);
-    items.value = exams.flatMap((parent) => {
-      const quizzes = mergeQuizzesWithTopLevelAnswers(parent);
-      const examLabel =
-        parent.tab_name ?? parent.exam_name ?? parent.rag_name ?? parent.exam_tab_id ?? '';
-      const examTabId = parent.exam_tab_id ?? parent.test_tab_id;
-      const examId = parent.exam_id ?? parent.test_id;
-      const ragTabId = parent.rag_tab_id;
-      const ragId = parent.rag_id ?? parent.id;
-      return quizzes.map((q) => ({
-        ...q,
-        exam_name: q.exam_name ?? examLabel,
-        exam_tab_id: q.exam_tab_id ?? examTabId,
-        exam_id: q.exam_id ?? examId,
-        rag_tab_id: q.rag_tab_id ?? ragTabId,
-        rag_id: q.rag_id ?? q.ragId ?? ragId,
-      }));
-    });
-  } catch (err) {
-    error.value = err.message || '無法載入學生作答分析';
-    items.value = [];
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(() => {
-  fetchQuizAnswers();
-});
 </script>
 
 <template>
@@ -221,9 +555,122 @@ onMounted(() => {
     :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
   >
     <LoadingOverlay
-      :is-visible="loading"
-      loading-text="載入作答資料中..."
+      :is-visible="overlayBlocking"
+      :loading-text="overlayLoadingText"
     />
+    <Teleport to="body">
+      <div
+        v-if="analysisRulesModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-analysis-rules-modal-title"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="student-analysis-rules-modal-title"
+                class="modal-title my-color-black"
+              >
+                分析規則
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeCourseAnalysisRulesModal"
+              />
+            </div>
+            <div class="modal-body p-0 lh-base" style="max-height: 70vh; overflow: auto;">
+              <div
+                v-if="analysisRulesModalLoading"
+                class="my-font-md-400 my-color-gray-4"
+              >
+                載入中…
+              </div>
+              <template v-else>
+                <div
+                  v-if="analysisRulesModalHtml"
+                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                  v-html="analysisRulesModalHtml"
+                />
+                <span
+                  v-else
+                  class="my-font-md-400 my-color-black"
+                >—</span>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="analysisPromptEditModalOpen"
+        class="modal fade show d-block my-modal-backdrop"
+        tabindex="-1"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="student-analysis-prompt-edit-modal-title"
+      >
+        <div
+          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
+          @click.stop
+        >
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+            <div class="modal-header border-bottom-0 p-0">
+              <h5
+                id="student-analysis-prompt-edit-modal-title"
+                class="modal-title my-color-black"
+              >
+                分析規則
+              </h5>
+              <button
+                type="button"
+                class="btn-close"
+                aria-label="關閉"
+                @click="closeAnalysisPromptEditModal"
+              />
+            </div>
+            <div class="modal-body p-0 min-w-0">
+              <EnglishExamMarkdownEditor
+                v-model="analysisPromptEditModalDraft"
+                textarea-id="student-analysis-rules-edit-md"
+                :disabled="analysisPromptEditModalSavingDisabled"
+                prompt-code-font
+              />
+            </div>
+            <div
+              class="modal-footer border-top-0 p-0 d-flex justify-content-end align-items-center flex-nowrap gap-2 w-100"
+            >
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                title="還原為上次載入或儲存後的內容"
+                aria-label="重設"
+                :disabled="analysisPromptEditModalResetDisabled"
+                @click="resetAnalysisPromptEditModalDraft"
+              >
+                重設
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2"
+                :disabled="analysisPromptEditModalSavingDisabled"
+                @click="applyAnalysisPromptEditModal"
+              >
+                確定
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
     <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">學生作答分析</p>
@@ -239,12 +686,272 @@ onMounted(() => {
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
           <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
-            <div v-if="loading" class="text-center my-color-gray-4 py-5" />
-            <div v-else-if="items.length === 0" class="my-alert-info-soft rounded my-font-sm-400 p-3 mt-0">尚無答題紀錄。</div>
+            <div
+              v-if="canEditCourseAnalysisRules"
+              :class="props.design3
+                ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section analysis-page-3-rules my-design--side-panel-left'
+                : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4'"
+            >
+              <template v-if="props.design3">
+                <div class="my-design-quiz-sub-block-outer">
+                  <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 py-2">
+                    <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
+                      <div class="my-design-quiz-question-prompt-wrap px-3 pt-2 pb-0 w-100 min-w-0">
+                        <section
+                          class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                          aria-label="分析規則"
+                        >
+                          <header class="my-design-quiz-question-prompt-block__head">
+                            <div
+                              class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                            >
+                              <h3
+                                class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
+                              >
+                                分析規則
+                              </h3>
+                              <div class="d-flex align-items-center gap-3 flex-shrink-0">
+                                <button
+                                  type="button"
+                                  class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
+                                  title="編輯分析規則"
+                                  aria-label="編輯分析規則"
+                                  :disabled="analysisPromptEditModalSavingDisabled"
+                                  @click="openAnalysisPromptEditModal"
+                                >
+                                  <i class="fa-solid fa-pen" aria-hidden="true" />
+                                </button>
+                              </div>
+                            </div>
+                          </header>
+                          <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                            <EnglishExamMarkdownEditor
+                              :model-value="courseAnalysisPromptText"
+                              preview-only
+                              preview-design-dark
+                              preview-design-dark-embedded
+                              textarea-id="student-analysis-rules-preview"
+                              :disabled="analysisPromptEditModalSavingDisabled"
+                            />
+                          </div>
+                        </section>
+                      </div>
+                      <div
+                        class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
+                      >
+                        <LogoGradientPillButton
+                          v-if="canStartCourseAnalysisFromSavedRules"
+                          id-prefix="student-analysis-start"
+                          tone="generate"
+                          gradient-bias="work3"
+                          extra-class="my-design-quiz-generate-btn"
+                          title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存並開始分析」，或於編輯 Modal 內重設"
+                          aria-label="開始分析"
+                          :aria-busy="loading || promptSaving"
+                          @click="fetchCourseAnalysisOnly"
+                        >
+                          開始分析
+                        </LogoGradientPillButton>
+                        <LogoGradientPillButton
+                          v-if="canSaveAndStartCourseAnalysis"
+                          id-prefix="student-analysis-save-start"
+                          tone="generate"
+                          gradient-bias="work3"
+                          extra-class="my-design-quiz-generate-btn"
+                          title="儲存分析規則並開始分析"
+                          aria-label="儲存並開始分析"
+                          :aria-busy="loading || promptSaving"
+                          @click="startCourseAnalysisFromRulesEditor"
+                        >
+                          儲存並開始分析
+                        </LogoGradientPillButton>
+                        <LogoGradientPillButton
+                          v-if="
+                            !canStartCourseAnalysisFromSavedRules
+                            && !canSaveAndStartCourseAnalysis
+                          "
+                          id-prefix="student-analysis-save-start-disabled"
+                          tone="generate"
+                          gradient-bias="work3"
+                          extra-class="my-design-quiz-generate-btn"
+                          aria-label="儲存並開始分析"
+                          disabled
+                        >
+                          儲存並開始分析
+                        </LogoGradientPillButton>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <div class="d-flex flex-column gap-0 min-w-0 w-100 mb-3">
+                  <label
+                    class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
+                    for="student-analysis-report-rules-md"
+                  >分析規則</label>
+                  <EnglishExamMarkdownEditor
+                    v-model="courseAnalysisPromptText"
+                    textarea-id="student-analysis-report-rules-md"
+                    placeholder=""
+                    :disabled="promptSectionLoading || loading || promptSaving"
+                  />
+                </div>
+                <div class="d-flex justify-content-center flex-wrap gap-3 pt-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill my-font-md-400 px-4 py-2 my-btn-outline-gray-1"
+                    title="還原為上次載入或儲存後的內容"
+                    aria-label="重設分析規則"
+                    :disabled="promptSectionLoading || loading || promptSaving || !courseAnalysisPromptDirty"
+                    @click="resetCourseAnalysisPromptToBaseline"
+                  >
+                    重設
+                  </button>
+                  <button
+                    type="button"
+                    class="btn rounded-pill my-font-md-400 px-4 py-2 my-button-black"
+                    title="儲存規則（若有修改）並開始分析"
+                    aria-label="儲存並開始分析"
+                    :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
+                    :aria-busy="loading || promptSaving"
+                    @click="startCourseAnalysisFromRulesEditor"
+                  >
+                    儲存並開始分析
+                  </button>
+                </div>
+              </template>
+            </div>
 
-            <template v-else>
+            <!-- 非開發者／管理者：無編輯區時由此啟動分析；user_type 1／2 改用上區「儲存並開始分析」 -->
+            <div
+              v-if="!canEditCourseAnalysisRules"
+              :class="props.design3
+                ? 'd-flex justify-content-start align-items-center w-100 py-4 analysis-page-3-section'
+                : 'd-flex justify-content-center align-items-center w-100 py-2 px-2 mb-4'"
+            >
+              <button
+                type="button"
+                :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-3']"
+                title="開始作答分析"
+                aria-label="開始作答分析"
+                :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
+                :aria-busy="loading"
+                @click="fetchCourseAnalysisOnly"
+              >
+                <i class="fa-solid fa-play" aria-hidden="true" />
+                開始作答分析
+              </button>
+            </div>
+
+            <div v-if="loading" class="text-center my-color-gray-4 py-5" />
+
+            <div
+              v-else-if="analysisLoadedOnce && !error && items.length === 0 && !weaknessReport"
+              class="my-alert-info-soft rounded my-font-sm-400 p-3 mt-0"
+            >
+              尚無答題紀錄。
+            </div>
+
+            <template v-else-if="analysisLoadedOnce && !loading && (items.length > 0 || weaknessReport)">
               <div class="text-start" :class="{ 'my-page-block-spacing': !props.design3 }">
                 <div :class="props.design3 ? 'd-flex flex-column w-100 min-w-0' : 'd-flex flex-column gap-4 w-100 min-w-0'">
+                  <div
+                    v-if="weaknessReport"
+                    :class="props.design3
+                      ? 'w-100 min-w-0 d-flex flex-column gap-4 text-start py-4 analysis-page-3-section'
+                      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start'"
+                  >
+                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
+                      課程作答分析報告
+                    </div>
+                    <template v-if="weaknessReportParsed">
+                      <div
+                        v-for="sectionKey in weaknessReportSections"
+                        :key="sectionKey"
+                        class="d-flex flex-column gap-2 mb-0"
+                      >
+                        <div
+                          class="my-weakness-report-md my-weakness-report-md--section-title my-font-md-400 text-break mb-0"
+                          v-html="md(sectionKey)"
+                        />
+                        <ul
+                          v-if="Array.isArray(weaknessReportParsed[sectionKey]) && weaknessReportParsed[sectionKey].length"
+                          class="my-weakness-report-md-list my-font-md-400 lh-base ps-3 mb-0"
+                        >
+                          <li
+                            v-for="(line, i) in weaknessReportParsed[sectionKey]"
+                            :key="i"
+                            class="my-weakness-report-md my-font-md-400 my-color-black text-break"
+                            v-html="md(line)"
+                          />
+                        </ul>
+                        <div
+                          v-else-if="Array.isArray(weaknessReportParsed[sectionKey]) && weaknessReportParsed[sectionKey].length === 0"
+                          class="my-font-md-400 my-color-gray-4 mb-0"
+                        >
+                          —
+                        </div>
+                        <div
+                          v-else
+                          class="my-weakness-report-md my-font-md-400 lh-base my-color-black text-break mb-0"
+                          v-html="weaknessScalarToMdHtml(weaknessReportParsed[sectionKey])"
+                        />
+                      </div>
+                    </template>
+                    <div
+                      v-else
+                      class="my-weakness-report-md my-font-md-400 lh-base my-color-black text-break mb-0"
+                      v-html="md(weaknessReport)"
+                    />
+                    <div
+                      v-if="analysisRulesSnapshotTrimmed && !props.design3"
+                      class="d-flex justify-content-start align-items-center w-100 pt-3"
+                    >
+                      <button
+                        type="button"
+                        class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1 my-btn-outline-gray-1"
+                        title="分析規則（Markdown）"
+                        aria-label="分析規則"
+                        @click="openCourseAnalysisRulesModal"
+                      >
+                        分析規則
+                      </button>
+                    </div>
+                    <div
+                      v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditCourseAnalysisRules"
+                      class="w-100 min-w-0 pt-3 analysis-page-3-rules my-design--side-panel-left"
+                    >
+                      <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
+                        <section
+                          class="my-design-quiz-question-prompt-block w-100 min-w-0"
+                          aria-label="分析規則"
+                        >
+                          <header class="my-design-quiz-question-prompt-block__head">
+                            <div
+                              class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
+                            >
+                              <h3
+                                class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
+                              >
+                                分析規則
+                              </h3>
+                            </div>
+                          </header>
+                          <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                            <EnglishExamMarkdownEditor
+                              :model-value="courseAnalysisPromptText"
+                              preview-only
+                              preview-design-dark
+                              preview-design-dark-embedded
+                              :textarea-id="`student-analysis-rules-report-ro`"
+                            />
+                          </div>
+                        </section>
+                      </div>
+                    </div>
+                  </div>
+
                   <div
                     v-for="(item, idx) in items"
                     :key="`${item.exam_quiz_id ?? item.rag_quiz_id ?? idx}-${item.person_id ?? ''}`"
@@ -321,3 +1028,95 @@ onMounted(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.my-weakness-report-md :deep(p) {
+  margin-bottom: 0.5em;
+}
+.my-weakness-report-md :deep(p:last-child) {
+  margin-bottom: 0;
+}
+.my-weakness-report-md :deep(h1),
+.my-weakness-report-md :deep(h2),
+.my-weakness-report-md :deep(h3),
+.my-weakness-report-md :deep(h4),
+.my-weakness-report-md :deep(h5),
+.my-weakness-report-md :deep(h6) {
+  color: var(--my-color-black);
+  font-size: var(--my-font-size-md);
+  font-weight: var(--my-font-weight-semibold);
+  margin-bottom: 0.35em;
+  margin-top: 0.5em;
+}
+.my-weakness-report-md :deep(h1:first-child),
+.my-weakness-report-md :deep(h2:first-child),
+.my-weakness-report-md :deep(h3:first-child) {
+  margin-top: 0;
+}
+.my-weakness-report-md--section-title :deep(p),
+.my-weakness-report-md--section-title :deep(h1),
+.my-weakness-report-md--section-title :deep(h2),
+.my-weakness-report-md--section-title :deep(h3),
+.my-weakness-report-md--section-title :deep(h4),
+.my-weakness-report-md--section-title :deep(h5),
+.my-weakness-report-md--section-title :deep(h6),
+.my-weakness-report-md--section-title :deep(li),
+.my-weakness-report-md--section-title :deep(strong),
+.my-weakness-report-md--section-title :deep(em) {
+  color: var(--my-color-gray-1);
+}
+.my-weakness-report-md :deep(ul),
+.my-weakness-report-md :deep(ol) {
+  margin-bottom: 0.5em;
+  padding-left: 1.25rem;
+}
+.my-weakness-report-md :deep(li) {
+  margin-bottom: 0.15em;
+}
+.my-weakness-report-md :deep(a) {
+  color: var(--my-color-blue);
+}
+.my-weakness-report-md :deep(code) {
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-white));
+}
+.my-weakness-report-md :deep(pre) {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--my-color-gray-3);
+  overflow-x: auto;
+  margin-bottom: 0.5em;
+}
+.my-weakness-report-md :deep(pre code) {
+  padding: 0;
+  background: none;
+}
+.my-weakness-report-md :deep(blockquote) {
+  margin: 0 0 0.5em;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--my-color-gray-2);
+  color: var(--my-color-gray-1);
+}
+.my-weakness-report-md :deep(table) {
+  width: 100%;
+  margin-bottom: 0.5em;
+  border-collapse: collapse;
+  font-size: inherit;
+}
+.my-weakness-report-md :deep(th),
+.my-weakness-report-md :deep(td) {
+  border: 1px solid var(--my-color-gray-2);
+  padding: 0.35rem 0.5rem;
+  text-align: start;
+}
+.my-weakness-report-md :deep(hr) {
+  margin: 0.75em 0;
+  border: 0;
+  border-top: 1px solid var(--my-color-gray-2);
+}
+.my-weakness-report-md-list > li :deep(p:last-child) {
+  margin-bottom: 0;
+}
+</style>

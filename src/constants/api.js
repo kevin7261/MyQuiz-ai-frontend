@@ -189,8 +189,14 @@ export const API_RAG_FOR_EXAMS = '/exam/rag-for-exams';
  * 僅含作答有對應之題；列表格式與 GET /exam/tabs、GET /rag/tabs 每筆一致；另帶 count、weakness_report（有 LLM Key 時）。
  */
 export const API_QUIZZES_BY_PERSON = '/person-analysis/quizzes';
-/** 學生作答分析：GET /course-analysis/quizzes；全部 Exam_Quiz，格式同上；weakness_report 固定 null */
+/**
+ * 學生作答分析：GET /course-analysis/quizzes
+ * Query `person_id`、`course_id` 必填（loggedFetch）；僅含 answer_content 非空之 Exam_Quiz，依 exam_tab_id 分群；
+ * 列表格式與 GET /exam/tabs 一致；另帶 count、weakness_report（每次請求嘗試 LLM，併入 course_analysis_user_prompt_text）。
+ */
 export const API_COURSE_ANALYSIS_QUIZZES = '/course-analysis/quizzes';
+/** GET／PUT：學生作答分析「分析規則」Prompt（course_analysis_user_prompt_text）；query person_id、course_id 必填；GET 凡有效使用者；PUT 僅該課程 user_type 1／2。 */
+export const API_COURSE_ANALYSIS_USER_PROMPT = '/system-settings/course_analysis_user_prompt_text';
 
 /** Exam API：GET /exam/tabs List Exams（deleted=false；person_id／course_id／local 篩選；course_id 由 loggedFetch 自 currentCourse 帶入；未傳 local 時後端依連線判定）。每筆含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz，含 follow_up），題列可內嵌 answer_content／quiz_score／answer_critique */
 export const API_EXAM_TESTS = '/exam/tabs';
