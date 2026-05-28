@@ -43,6 +43,7 @@ export const STUDENT_ALLOWED_VIEWS = new Set([
   'create-exam-bank_2',
   'create-exam-bank_3',
   'profile',
+  'profile_3',
 ]);
 
 /**

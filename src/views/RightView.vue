@@ -15,6 +15,7 @@
   import StudentAnswerAnalysisPage from '../pages/StudentAnswerAnalysisPage.vue';
   import StudentAnswerAnalysisPage3 from '../pages/StudentAnswerAnalysisPage3.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
+  import ProfilePage3 from '../pages/ProfilePage3.vue';
   import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
   import CreateExamQuizBankPage2 from '../pages/CreateExamQuizBankPage2.vue';
   import CreateExamQuizBankPage3 from '../pages/CreateExamQuizBankPage3.vue';
@@ -25,6 +26,7 @@
   import UserManagementPage from '../pages/UserManagementPage.vue';
   import UserManagementPage3 from '../pages/UserManagementPage3.vue';
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
+  import SystemSettingsPage3 from '../pages/SystemSettingsPage3.vue';
   import LogListPage from '../pages/LogListPage.vue';
 
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
@@ -37,6 +39,7 @@
     studentAnswerAnalysis: markRaw(StudentAnswerAnalysisPage),
     studentAnswerAnalysis3: markRaw(StudentAnswerAnalysisPage3),
     profile: markRaw(ProfilePage),
+    profile3: markRaw(ProfilePage3),
     createExamQuizBank: markRaw(CreateExamQuizBankPage),
     createExamQuizBank2: markRaw(CreateExamQuizBankPage2),
     createExamQuizBank3: markRaw(CreateExamQuizBankPage3),
@@ -47,6 +50,7 @@
     userManagement: markRaw(UserManagementPage),
     userManagement3: markRaw(UserManagementPage3),
     systemSettings: markRaw(SystemSettingsPage),
+    systemSettings3: markRaw(SystemSettingsPage3),
     logList: markRaw(LogListPage),
   };
 
@@ -61,7 +65,7 @@
 
   export default {
     name: 'RightView',
-    components: { ExamPage, ExamPage2, ExamPage3, AnswerWeaknessAnalysisPage, AnswerWeaknessAnalysisPage3, StudentAnswerAnalysisPage, StudentAnswerAnalysisPage3, ProfilePage, CreateExamQuizBankPage, CreateExamQuizBankPage2, CreateExamQuizBankPage3, DesignPage, DesignPage2, DesignPage3, LogoPage, UserManagementPage, UserManagementPage3, SystemSettingsPage, LogListPage },
+    components: { ExamPage, ExamPage2, ExamPage3, AnswerWeaknessAnalysisPage, AnswerWeaknessAnalysisPage3, StudentAnswerAnalysisPage, StudentAnswerAnalysisPage3, ProfilePage, ProfilePage3, CreateExamQuizBankPage, CreateExamQuizBankPage2, CreateExamQuizBankPage3, DesignPage, DesignPage2, DesignPage3, LogoPage, UserManagementPage, UserManagementPage3, SystemSettingsPage, SystemSettingsPage3, LogListPage },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },
@@ -85,6 +89,8 @@
           || this.currentView === 'studentWeaknessAnalysis3'
           || this.currentView === 'studentAnswerAnalysis3'
           || this.currentView === 'userManagement3'
+          || this.currentView === 'systemSettings3'
+          || this.currentView === 'profile3'
         );
       },
     },

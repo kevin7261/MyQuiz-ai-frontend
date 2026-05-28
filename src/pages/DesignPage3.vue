@@ -18,6 +18,7 @@ import {
   UNIT_TYPE_YOUTUBE,
   packUnitTypeIconClasses,
 } from '../utils/rag.js';
+import { API_BASE } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, default: '' },
@@ -45,6 +46,7 @@ const TABS = [
   { id: 'alert',      label: '提示' },
   { id: 'dropdown',   label: '下拉' },
   { id: 'list',       label: '列表' },
+  { id: 'page',       label: '頁面' },
   { id: 'modal',      label: 'modal overlay' },
   { id: 'header-bar', label: '頁首頂列' },
   { id: 'embed',      label: '嵌入' },
@@ -1092,6 +1094,82 @@ function design3PackUnitTypeIconCss(unitType) {
             </template>
 
             <!-- ══════════════════════════════════════════════════
+                 頁面（settings_3 等）
+            ══════════════════════════════════════════════════ -->
+            <template v-else-if="activeTab === 'page'">
+              <section class="my-page-block-spacing mb-0">
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">頁面</div>
+                  <DesignPageSpecItem
+                    name="page-system-settings-readonly-field"
+                    usage="settings_3 系統設定：白底主內容；label + 唯讀 input（form-control my-input-md my-form-control-static）"
+                    css="form-label my-font-sm-400 my-color-gray-1 · form-control my-input-md rounded-2 my-form-control-static font-monospace"
+                    copy-text="form-control my-input-md my-form-control-static"
+                  >
+                    <div class="design-page-3__page-preview design-page-3__page-preview--work3 mx-auto w-100">
+                      <div class="d-flex flex-column gap-4 w-100 min-w-0 text-start py-4">
+                        <div class="mb-0">
+                          <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">服務位址（僅供查閱）</label>
+                          <input
+                            type="text"
+                            class="form-control my-input-md rounded-2 my-form-control-static font-monospace text-break w-100 px-3 py-2"
+                            :value="API_BASE"
+                            readonly
+                            aria-label="服務位址"
+                          >
+                        </div>
+                      </div>
+                    </div>
+                  </DesignPageSpecItem>
+
+                  <DesignPageSpecItem
+                    name="page-profile-fields"
+                    usage="profile_3 個人設定：label + input；帳號／名稱唯讀；1／2 可編輯 API 金鑰 + my-button-white 儲存"
+                    css="form-label my-font-sm-400 my-color-gray-1 · form-control my-input-md rounded-2 · btn my-button-white rounded-pill"
+                    copy-text="form-control my-input-md"
+                    class="mt-4"
+                  >
+                    <div class="design-page-3__page-preview design-page-3__page-preview--work3 mx-auto w-100">
+                      <div class="d-flex flex-column gap-4 w-100 min-w-0 text-start py-4">
+                        <div class="mb-0">
+                          <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">帳號</label>
+                          <input
+                            type="text"
+                            class="form-control my-input-md rounded-2 my-form-control-static w-100 px-3 py-2"
+                            value="teacher001"
+                            readonly
+                          >
+                        </div>
+                        <div class="mb-0">
+                          <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">名稱</label>
+                          <input
+                            type="text"
+                            class="form-control my-input-md rounded-2 my-form-control-static w-100 px-3 py-2"
+                            value="王小明"
+                            readonly
+                          >
+                        </div>
+                        <div class="mb-0">
+                          <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">建立測驗題庫用的 AI 服務 API 金鑰</label>
+                          <input
+                            type="text"
+                            class="form-control my-input-md rounded-2 w-100 px-3 py-2"
+                            value="sk-••••••••"
+                            readonly
+                            aria-label="API 金鑰（示意）"
+                          >
+                          <div class="d-flex justify-content-start mt-3">
+                            <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 flex-shrink-0">儲存</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </DesignPageSpecItem>
+                </div>
+              </section>
+            </template>
+
+            <!-- ══════════════════════════════════════════════════
                  上傳 Modal ＋ 刪除確認 Modal ＋ LoadingOverlay
             ══════════════════════════════════════════════════ -->
             <template v-else-if="activeTab === 'modal'">
@@ -1543,6 +1621,11 @@ function design3PackUnitTypeIconCss(unitType) {
 
 .design-page-3__list-preview--work3 .bank-list-row:hover:not(:disabled) {
   background-color: var(--my-color-gray-3);
+}
+
+.design-page-3__page-preview--work3 {
+  width: 100%;
+  max-width: 40rem;
 }
 
 .bank-list-row:focus-visible {

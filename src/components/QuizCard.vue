@@ -540,11 +540,7 @@ const showDesignStemToolbarRow = computed(
   () => showExamRatingVisible.value || stemToolbarLeftPills.value,
 );
 
-const designStemToolbarJustifyClass = computed(() => {
-  if (showExamRatingVisible.value && stemToolbarLeftPills.value) return 'justify-content-between';
-  if (showExamRatingVisible.value) return 'justify-content-end';
-  return 'justify-content-start';
-});
+const designStemToolbarJustifyClass = computed(() => 'justify-content-start');
 
 /** exam_design 題目子區：讚／差列內距 */
 const designStemToolbarRowPaddingClass = computed(() =>
@@ -1049,37 +1045,8 @@ const quizAnswerFieldDisabled = computed(
             :class="[designStemToolbarJustifyClass, designStemToolbarRowPaddingClass]"
           >
             <div
-              v-if="stemToolbarLeftPills"
-              class="d-inline-flex flex-nowrap align-items-center gap-2 min-w-0"
-            >
-              <button
-                v-if="hideGradingPrompt && !hideExamRulePills && quizUserPromptSnapshotTrimmed !== ''"
-                type="button"
-                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
-                @click="openPromptModal('question')"
-              >
-                出題規則
-              </button>
-              <button
-                v-if="hasHintText && !hintReferenceInModal"
-                type="button"
-                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
-                @click="emit('toggle-hint', card)"
-              >
-                {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
-              </button>
-              <button
-                v-if="!questionHintOnly && hasReferenceAnswerText && !hintReferenceInModal"
-                type="button"
-                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
-                @click="emit('toggle-reference-answer', card)"
-              >
-                {{ card.referenceAnswerVisible ? '隱藏參考答案' : '顯示參考答案' }}
-              </button>
-            </div>
-            <div
               v-if="showExamRatingVisible"
-              class="d-inline-flex justify-content-end align-items-center flex-shrink-0 gap-1"
+              class="d-inline-flex justify-content-start align-items-center flex-shrink-0 gap-1"
               role="group"
               aria-label="題目評價"
             >
@@ -1114,10 +1081,39 @@ const quizAnswerFieldDisabled = computed(
                 <span class="visually-hidden">差</span>
               </button>
             </div>
+            <div
+              v-if="stemToolbarLeftPills"
+              class="d-inline-flex flex-nowrap align-items-center gap-2 min-w-0"
+            >
+              <button
+                v-if="hideGradingPrompt && !hideExamRulePills && quizUserPromptSnapshotTrimmed !== ''"
+                type="button"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
+                @click="openPromptModal('question')"
+              >
+                出題規則
+              </button>
+              <button
+                v-if="hasHintText && !hintReferenceInModal"
+                type="button"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
+                @click="emit('toggle-hint', card)"
+              >
+                {{ card.hintVisible ? '隱藏提示' : '顯示提示' }}
+              </button>
+              <button
+                v-if="!questionHintOnly && hasReferenceAnswerText && !hintReferenceInModal"
+                type="button"
+                :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1', designSecondarySmallPillClass]"
+                @click="emit('toggle-reference-answer', card)"
+              >
+                {{ card.referenceAnswerVisible ? '隱藏參考答案' : '顯示參考答案' }}
+              </button>
+            </div>
           </div>
           <div
             v-if="showExamRatingVisible && card.rateError"
-            class="my-font-sm-400 my-color-red text-end mb-0 w-100"
+            class="my-font-sm-400 my-color-red text-start mb-0 w-100"
           >
             {{ card.rateError }}
           </div>

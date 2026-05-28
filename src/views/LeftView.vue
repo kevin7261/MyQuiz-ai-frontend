@@ -136,7 +136,7 @@
             <hr class="dropdown-divider" />
           </li>
           <li v-if="canSeeNavLink(userType, 'profile')">
-            <router-link class="dropdown-item" to="/profile" active-class="active">設定</router-link>
+            <router-link class="dropdown-item" to="/profile" active-class="active">個人設定</router-link>
           </li>
           <li>
             <hr class="dropdown-divider" />

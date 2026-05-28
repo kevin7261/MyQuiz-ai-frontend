@@ -1,18 +1,26 @@
 <script setup>
 /**
- * ProfilePage - 設定頁面（使用者 profile）
+ * ProfilePage - 個人設定頁面（使用者 profile）
  *
  * 以 PATCH /user/profile 更新 llm_api_key（以 person_id 識別，Header X-Person-Id）。
  * 帳號、名稱僅供檢視，不可於此頁修改。建立測驗題庫使用的 llm_api_key 僅 user_type 1／2 可見與變更。
  * 可從 GET /system-settings/llm-api-key 取得系統預設 Key 顯示（僅 1／2）。
+ * design3：白底主內容、TopView 頁名；表單欄位為 label + input（對齊 design_3）。
  */
 import { ref, computed, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_UPDATE_PROFILE, API_GET_LLM_API_KEY } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { loggedFetch } from '../utils/loggedFetch.js';
 
+const props = defineProps({
+  hidePageHeader: { type: Boolean, default: false },
+  design3: { type: Boolean, default: false },
+});
+
 const authStore = useAuthStore();
+const router = useRouter();
 
 const llmApiKey = ref('');
 const loading = ref(false);
@@ -69,7 +77,7 @@ async function saveProfile() {
   const u = authStore.user;
   const payload = {};
   if ((llmApiKey.value ?? '') !== (u?.llm_api_key ?? '')) {
-    payload.llm_api_key = llmApiKey.value ?? ''; // 空字串表示清除
+    payload.llm_api_key = llmApiKey.value ?? '';
   }
   if (Object.keys(payload).length === 0) {
     message.value = '未變更任何欄位';
@@ -113,62 +121,146 @@ async function saveProfile() {
     loading.value = false;
   }
 }
+
+function onLogout() {
+  authStore.logout();
+  router.push('/login');
+}
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div
+    class="d-flex flex-column h-100 overflow-hidden position-relative"
+    :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+  >
     <LoadingOverlay
       :is-visible="loading"
       loading-text="儲存設定中..."
     />
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+    <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">設定</p>
       </div>
     </header>
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
-            <div class="text-start my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0">
-            <div class="mb-4">
-              <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">帳號</label>
-              <input :value="account" type="text" class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" placeholder="帳號" readonly>
-            </div>
-            <div class="mb-4">
-              <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">名稱</label>
-              <input :value="displayName" type="text" class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2" placeholder="名稱" readonly>
-            </div>
-            <div v-if="canEditLlmApiKey" class="mb-4">
-              <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">建立測驗題庫用的 AI 服務 API 金鑰</label>
-              <div class="d-flex flex-wrap align-items-center gap-2">
-                <div class="flex-grow-1" style="min-width: 0">
+          <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
+            <template v-if="props.design3">
+              <div class="d-flex flex-column gap-4 w-100 min-w-0 text-start py-4">
+                <div class="mb-0">
+                  <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">帳號</label>
+                  <input
+                    :value="account"
+                    type="text"
+                    class="form-control my-input-md rounded-2 my-form-control-static w-100 px-3 py-2"
+                    placeholder="帳號"
+                    readonly
+                  >
+                </div>
+                <div class="mb-0">
+                  <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">名稱</label>
+                  <input
+                    :value="displayName"
+                    type="text"
+                    class="form-control my-input-md rounded-2 my-form-control-static w-100 px-3 py-2"
+                    placeholder="名稱"
+                    readonly
+                  >
+                </div>
+                <div v-if="canEditLlmApiKey" class="mb-0">
+                  <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">建立測驗題庫用的 AI 服務 API 金鑰</label>
                   <input
                     v-model="llmApiKey"
                     type="text"
-                    class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
+                    class="form-control my-input-md rounded-2 w-100 px-3 py-2"
                     placeholder="選填，建立測驗題庫時由系統呼叫 AI 使用"
                     autocomplete="off"
                   >
+                  <div class="d-flex justify-content-start mt-3">
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
+                      :disabled="loading"
+                      @click="saveProfile"
+                    >
+                      儲存
+                    </button>
+                  </div>
                 </div>
-                <button
-                  type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2 flex-shrink-0"
-                  :disabled="loading"
-                  @click="saveProfile"
+                <div
+                  v-if="message"
+                  :class="[
+                    'mx-0 mb-0 py-2 px-3 rounded my-font-sm-400',
+                    messageType === 'success' ? 'my-alert-info-soft' : 'my-alert-danger-soft',
+                  ]"
+                  role="alert"
                 >
-                  儲存
-                </button>
+                  {{ message }}
+                </div>
+                <div class="d-flex justify-content-start mt-2 pt-2">
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-red my-button-transparent-borderless px-4 py-2"
+                    @click="onLogout"
+                  >
+                    登出
+                  </button>
+                </div>
               </div>
-            </div>
-            <div
-              v-if="message"
-              :class="['alert', messageType === 'success' ? 'alert-success' : 'alert-danger', 'py-2', 'mb-4']"
-              role="alert"
-            >
-              {{ message }}
-            </div>
+            </template>
+
+            <div v-else class="text-start my-page-block-spacing">
+              <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0">
+                <div class="mb-4">
+                  <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">帳號</label>
+                  <input
+                    :value="account"
+                    type="text"
+                    class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2"
+                    placeholder="帳號"
+                    readonly
+                  >
+                </div>
+                <div class="mb-4">
+                  <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">名稱</label>
+                  <input
+                    :value="displayName"
+                    type="text"
+                    class="form-control my-input-md my-input-md--on-dark rounded-2 my-form-control-static w-100 px-3 py-2"
+                    placeholder="名稱"
+                    readonly
+                  >
+                </div>
+                <div v-if="canEditLlmApiKey" class="mb-4">
+                  <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">建立測驗題庫用的 AI 服務 API 金鑰</label>
+                  <div class="d-flex flex-wrap align-items-center gap-2">
+                    <div class="flex-grow-1" style="min-width: 0">
+                      <input
+                        v-model="llmApiKey"
+                        type="text"
+                        class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
+                        placeholder="選填，建立測驗題庫時由系統呼叫 AI 使用"
+                        autocomplete="off"
+                      >
+                    </div>
+                    <button
+                      type="button"
+                      class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-black px-4 py-2 flex-shrink-0"
+                      :disabled="loading"
+                      @click="saveProfile"
+                    >
+                      儲存
+                    </button>
+                  </div>
+                </div>
+                <div
+                  v-if="message"
+                  :class="['alert', messageType === 'success' ? 'alert-success' : 'alert-danger', 'py-2', 'mb-4']"
+                  role="alert"
+                >
+                  {{ message }}
+                </div>
               </div>
             </div>
           </div>

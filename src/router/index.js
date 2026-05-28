@@ -26,6 +26,7 @@ const VALID_VIEWS = [
   'student-answer-analysis',
   'student-answer-analysis_3',
   'profile',
+  'profile_3',
   'create-exam-bank',
   'design',
   'design_2',
@@ -34,6 +35,7 @@ const VALID_VIEWS = [
   'manage-users',
   'manage-users_3',
   'settings',
+  'settings_3',
   'logs',
 ];
 
@@ -47,6 +49,7 @@ const VIEW_TITLES = {
   'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
   'student-answer-analysis_3': '學生作答分析 - MyQuiz.ai',
   profile: '設定 - MyQuiz.ai',
+  profile_3: '個人設定 - MyQuiz.ai',
   'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
   'create-exam-bank_2': '建立測驗題庫 - MyQuiz.ai',
   'create-exam-bank_3': '建立測驗題庫 - MyQuiz.ai',
@@ -57,6 +60,7 @@ const VIEW_TITLES = {
   'manage-users': '使用者管理 - MyQuiz.ai',
   'manage-users_3': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
+  settings_3: '系統設定 - MyQuiz.ai',
   logs: '系統 Log - MyQuiz.ai',
 };
 

@@ -33,6 +33,7 @@ const PATH_TO_VIEW = {
   'student-answer-analysis': 'studentAnswerAnalysis',
   'student-answer-analysis_3': 'studentAnswerAnalysis3',
   profile: 'profile',
+  profile_3: 'profile3',
   'create-exam-bank': 'createExamQuizBank',
   'create-exam-bank_2': 'createExamQuizBank2',
   'create-exam-bank_3': 'createExamQuizBank3',
@@ -43,6 +44,7 @@ const PATH_TO_VIEW = {
   'manage-users': 'userManagement',
   'manage-users_3': 'userManagement3',
   settings: 'systemSettings',
+  settings_3: 'systemSettings3',
   logs: 'logList',
 };
   const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
@@ -85,7 +87,11 @@ const PATH_TO_VIEW = {
           || route.params.view === 'design_3'
           || route.params.view === 'student-weakness-analysis_3'
           || route.params.view === 'student-answer-analysis_3'
-          || route.params.view === 'manage-users_3',
+          || route.params.view === 'manage-users_3'
+          || route.params.view === 'profile'
+          || route.params.view === 'profile_3'
+          || route.params.view === 'settings'
+          || route.params.view === 'settings_3',
       );
 
       /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */
@@ -207,12 +213,10 @@ const PATH_TO_VIEW = {
       <SideRailView
         :user-name="userName"
         :user-type="authStore.user?.user_type"
-        @logout="onLogout"
         @open-course-modal="openCourseModal"
       />
       <div class="d-flex flex-column flex-grow-1 min-w-0 min-h-0">
         <TopView
-          :user-name="userName"
           :user-type="authStore.user?.user_type"
         />
         <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
