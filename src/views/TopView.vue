@@ -5,7 +5,7 @@
    * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
    */
   import { computed } from 'vue';
-  import { useRoute } from 'vue-router';
+  import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
   import { useAuthStore } from '../stores/authStore.js';
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
@@ -23,6 +23,7 @@
     setup() {
       const authStore = useAuthStore();
       const route = useRoute();
+      const router = useRouter();
       const courseHeaderStore = useCourseHeaderStore();
       const {
         showBankSwitcher,
@@ -57,20 +58,14 @@
         return '';
       });
 
-      const headerTitleGoesHome = computed(
-        () => route.name === 'ExamDetail' || route.name === 'CreateExamBankDetail',
-      );
-
       function onHeaderTitleClick() {
-        if (!headerTitleGoesHome.value) return;
-        courseHeaderStore.backToPageHome();
+        router.push('/exam');
       }
 
       return {
         canSeeNavLink,
         currentCourseName,
         pageTitle,
-        headerTitleGoesHome,
         onHeaderTitleClick,
         showBankSwitcher,
         bankGridItems,
@@ -91,15 +86,14 @@
   <header class="my-course-header flex-shrink-0 my-bgcolor-white border-bottom">
     <div class="my-course-header-inner px-3 min-w-0 w-100">
       <div class="my-course-header-inner__center min-w-0">
-        <p
-          class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0"
-          :role="headerTitleGoesHome ? 'button' : undefined"
-          :tabindex="headerTitleGoesHome ? 0 : undefined"
-          :aria-label="headerTitleGoesHome ? '返回主頁' : undefined"
-          @click="onHeaderTitleClick"
-          @keydown.enter.prevent="onHeaderTitleClick"
-        >
-          <span class="my-font-lg-600">{{ currentCourseName }}</span>
+        <p class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0">
+          <span
+            class="my-course-header-course-name my-font-lg-600"
+            role="button"
+            tabindex="0"
+            @click="onHeaderTitleClick"
+            @keydown.enter.prevent="onHeaderTitleClick"
+          >{{ currentCourseName }}</span>
           <template v-if="pageTitle">
             <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
             <span class="my-font-lg-400">{{ pageTitle }}</span>
@@ -218,6 +212,10 @@
 
 .my-course-header-course-title {
   line-height: 1.35;
+}
+
+.my-course-header-course-name {
+  cursor: pointer;
 }
 
 .my-course-header-nav-btn {

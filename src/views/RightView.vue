@@ -7,11 +7,11 @@
    * - 使用 KeepAlive + 動態元件：切換左側選單時保留各頁 DOM／狀態（捲動、表單、分頁內容），避免 v-if 卸載導致重設
   */
   import { markRaw } from 'vue';
-  import ExamPage2 from '../pages/ExamPage2.vue';
+  import ExamPage from '../pages/ExamPage.vue';
   import AnswerWeaknessAnalysisPage from '../pages/AnswerWeaknessAnalysisPage.vue';
   import StudentAnswerAnalysisPage from '../pages/StudentAnswerAnalysisPage.vue';
   import ProfilePage from '../pages/ProfilePage.vue';
-  import CreateExamQuizBankPage2 from '../pages/CreateExamQuizBankPage2.vue';
+  import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
   import DesignPage from '../pages/DesignPage.vue';
   import LogoPage from '../pages/LogoPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
@@ -20,11 +20,11 @@
 
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
-    work: markRaw(ExamPage2),
+    work: markRaw(ExamPage),
     personAnalysis: markRaw(AnswerWeaknessAnalysisPage),
     courseAnalysis: markRaw(StudentAnswerAnalysisPage),
     profile: markRaw(ProfilePage),
-    createExamQuizBank: markRaw(CreateExamQuizBankPage2),
+    createExamQuizBank: markRaw(CreateExamQuizBankPage),
     designPage: markRaw(DesignPage),
     logoPage: markRaw(LogoPage),
     userManagement: markRaw(UserManagementPage),
@@ -40,7 +40,7 @@
     },
     computed: {
       activePageComponent() {
-        return VIEW_COMPONENTS[this.currentView] ?? ExamPage2;
+        return VIEW_COMPONENTS[this.currentView] ?? ExamPage;
       },
       activePageProps() {
         if (this.currentView === 'work') {
