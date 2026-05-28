@@ -4,12 +4,14 @@ import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
 import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
-import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
+import AnalysisRulesViewModal from '../components/AnalysisRulesViewModal.vue';
+import AnalysisEditModal from '../components/AnalysisEditModal.vue';
+import AnalysisRulesBlock from '../components/AnalysisRulesBlock.vue';
 import { useAnalysisPage } from '../composables/useAnalysisPage.js';
 
 const props = defineProps({
   hidePageHeader: { type: Boolean, default: false },
-  design3: { type: Boolean, default: false },
+  design3:        { type: Boolean, default: false },
 });
 
 function parsePromptFromBody(data) {
@@ -82,270 +84,69 @@ const {
     class="d-flex flex-column h-100 overflow-hidden position-relative"
     :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
   >
-    <LoadingOverlay
-      :is-visible="overlayBlocking"
-      :loading-text="overlayLoadingText"
+    <LoadingOverlay :is-visible="overlayBlocking" :loading-text="overlayLoadingText" />
+
+    <!-- 查看規則 Modal -->
+    <AnalysisRulesViewModal
+      :open="analysisRulesModalOpen"
+      title-id="student-analysis-rules-modal-title"
+      :loading="analysisRulesModalLoading"
+      :html="analysisRulesModalHtml"
+      @close="closeRulesModal"
     />
-    <Teleport to="body">
-      <div
-        v-if="analysisRulesModalOpen"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="student-analysis-rules-modal-title"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5
-                id="student-analysis-rules-modal-title"
-                class="modal-title my-color-black"
-              >
-                分析規則
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeRulesModal"
-              />
-            </div>
-            <div class="modal-body p-0 lh-base" style="max-height: 70vh; overflow: auto;">
-              <div
-                v-if="analysisRulesModalLoading"
-                class="my-font-md-400 my-color-gray-4"
-              >
-                載入中…
-              </div>
-              <template v-else>
-                <div
-                  v-if="analysisRulesModalHtml"
-                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                  v-html="analysisRulesModalHtml"
-                />
-                <span v-else class="my-font-md-400 my-color-black">—</span>
-              </template>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
-    <Teleport to="body">
-      <div
-        v-if="editModalOpen"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="student-analysis-prompt-edit-modal-title"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5
-                id="student-analysis-prompt-edit-modal-title"
-                class="modal-title my-color-black"
-              >
-                分析規則
-              </h5>
-              <button
-                type="button"
-                class="btn-close"
-                aria-label="關閉"
-                @click="closeEditModal"
-              />
-            </div>
-            <div class="modal-body p-0 min-w-0">
-              <EnglishExamMarkdownEditor
-                v-model="editModalDraft"
-                textarea-id="student-analysis-rules-edit-md"
-                :disabled="editModalSavingDisabled"
-                prompt-code-font
-              />
-            </div>
-            <div
-              class="modal-footer border-top-0 p-0 d-flex justify-content-end align-items-center flex-nowrap gap-2 w-100"
-            >
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
-                title="還原為上次載入或儲存後的內容"
-                aria-label="重設"
-                :disabled="editModalResetDisabled"
-                @click="resetEditModalDraft"
-              >
-                重設
-              </button>
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2"
-                :disabled="editModalSavingDisabled"
-                @click="applyEditModal"
-              >
-                確定
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
+
+    <!-- 編輯規則 Modal -->
+    <AnalysisEditModal
+      :open="editModalOpen"
+      title-id="student-analysis-prompt-edit-modal-title"
+      textarea-id="student-analysis-rules-edit-md"
+      v-model="editModalDraft"
+      :saving-disabled="editModalSavingDisabled"
+      :reset-disabled="editModalResetDisabled"
+      @reset="resetEditModalDraft"
+      @apply="applyEditModal"
+      @close="closeEditModal"
+    />
+
     <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">學生作答分析</p>
       </div>
     </header>
+
     <div v-if="error" class="flex-shrink-0">
-      <div class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3">
-        {{ error }}
-      </div>
+      <div class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3">{{ error }}</div>
     </div>
 
-    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
+    <div
+      class="flex-grow-1 overflow-auto d-flex flex-column min-h-0"
+      :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+    >
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
           <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
-            <div
-              v-if="canEditRules"
-              :class="props.design3
-                ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section analysis-page-3-rules my-design--side-panel-left'
-                : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4'"
-            >
-              <template v-if="props.design3">
-                <div class="my-design-quiz-sub-block-outer">
-                  <div class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 py-2">
-                    <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
-                      <div class="my-design-quiz-question-prompt-wrap px-3 pt-2 pb-0 w-100 min-w-0">
-                        <section
-                          class="my-design-quiz-question-prompt-block w-100 min-w-0"
-                          aria-label="分析規則"
-                        >
-                          <header class="my-design-quiz-question-prompt-block__head">
-                            <div
-                              class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
-                            >
-                              <h3
-                                class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
-                              >
-                                分析規則
-                              </h3>
-                              <div class="d-flex align-items-center gap-3 flex-shrink-0">
-                                <button
-                                  type="button"
-                                  class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
-                                  title="編輯分析規則"
-                                  aria-label="編輯分析規則"
-                                  :disabled="editModalSavingDisabled"
-                                  @click="openEditModal"
-                                >
-                                  <i class="fa-solid fa-pen" aria-hidden="true" />
-                                </button>
-                              </div>
-                            </div>
-                          </header>
-                          <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
-                            <EnglishExamMarkdownEditor
-                              :model-value="promptText"
-                              preview-only
-                              preview-design-dark
-                              preview-design-dark-embedded
-                              textarea-id="student-analysis-rules-preview"
-                              :disabled="editModalSavingDisabled"
-                            />
-                          </div>
-                        </section>
-                      </div>
-                      <div
-                        class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
-                      >
-                        <LogoGradientPillButton
-                          v-if="canStartFromSavedRules"
-                          id-prefix="student-analysis-start"
-                          tone="generate"
-                          gradient-bias="work3"
-                          extra-class="my-design-quiz-generate-btn"
-                          title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存並開始分析」，或於編輯 Modal 內重設"
-                          aria-label="開始分析"
-                          :aria-busy="loading || promptSaving"
-                          @click="fetchAnalysisOnly"
-                        >
-                          開始分析
-                        </LogoGradientPillButton>
-                        <LogoGradientPillButton
-                          v-if="canSaveAndStart"
-                          id-prefix="student-analysis-save-start"
-                          tone="generate"
-                          gradient-bias="work3"
-                          extra-class="my-design-quiz-generate-btn"
-                          title="儲存分析規則並開始分析"
-                          aria-label="儲存並開始分析"
-                          :aria-busy="loading || promptSaving"
-                          @click="startAnalysisFromRulesEditor"
-                        >
-                          儲存並開始分析
-                        </LogoGradientPillButton>
-                        <LogoGradientPillButton
-                          v-if="!canStartFromSavedRules && !canSaveAndStart"
-                          id-prefix="student-analysis-save-start-disabled"
-                          tone="generate"
-                          gradient-bias="work3"
-                          extra-class="my-design-quiz-generate-btn"
-                          aria-label="儲存並開始分析"
-                          disabled
-                        >
-                          儲存並開始分析
-                        </LogoGradientPillButton>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <template v-else>
-                <div class="d-flex flex-column gap-0 min-w-0 w-100 mb-3">
-                  <label
-                    class="form-label my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0"
-                    for="student-analysis-report-rules-md"
-                  >分析規則</label>
-                  <EnglishExamMarkdownEditor
-                    v-model="promptText"
-                    textarea-id="student-analysis-report-rules-md"
-                    placeholder=""
-                    :disabled="promptSectionLoading || loading || promptSaving"
-                  />
-                </div>
-                <div class="d-flex justify-content-center flex-wrap gap-3 pt-2">
-                  <button
-                    type="button"
-                    class="btn rounded-pill my-font-md-400 px-4 py-2 my-btn-outline-gray-1"
-                    title="還原為上次載入或儲存後的內容"
-                    aria-label="重設分析規則"
-                    :disabled="promptSectionLoading || loading || promptSaving || !promptDirty"
-                    @click="resetPromptToBaseline"
-                  >
-                    重設
-                  </button>
-                  <button
-                    type="button"
-                    class="btn rounded-pill my-font-md-400 px-4 py-2 my-button-black"
-                    title="儲存規則（若有修改）並開始分析"
-                    aria-label="儲存並開始分析"
-                    :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
-                    :aria-busy="loading || promptSaving"
-                    @click="startAnalysisFromRulesEditor"
-                  >
-                    儲存並開始分析
-                  </button>
-                </div>
-              </template>
-            </div>
 
-            <!-- 非開發者／管理者：無編輯區時由此啟動分析 -->
+            <!-- 分析規則區塊（管理員／開發者可見） -->
+            <AnalysisRulesBlock
+              v-if="canEditRules"
+              :design3="props.design3"
+              id-prefix="student-analysis"
+              v-model="promptText"
+              :edit-modal-saving-disabled="editModalSavingDisabled"
+              :prompt-section-loading="promptSectionLoading"
+              :loading="loading"
+              :prompt-saving="promptSaving"
+              :prompt-dirty="promptDirty"
+              :can-start-from-saved-rules="canStartFromSavedRules"
+              :can-save-and-start="canSaveAndStart"
+              :can-start="!!authStore.user?.person_id && hasSelectedCourse()"
+              @open-edit-modal="openEditModal"
+              @fetch-analysis-only="fetchAnalysisOnly"
+              @start-analysis="startAnalysisFromRulesEditor"
+              @reset-prompt="resetPromptToBaseline"
+            />
+
+            <!-- 開始分析按鈕（一般使用者，無規則編輯區） -->
             <div
               v-if="!canEditRules"
               :class="props.design3
@@ -378,6 +179,8 @@ const {
             <template v-else-if="analysisLoadedOnce && !loading && (items.length > 0 || weaknessReport)">
               <div class="text-start" :class="{ 'my-page-block-spacing': !props.design3 }">
                 <div :class="props.design3 ? 'd-flex flex-column w-100 min-w-0' : 'd-flex flex-column gap-4 w-100 min-w-0'">
+
+                  <!-- 分析報告 -->
                   <div
                     v-if="weaknessReport"
                     :class="props.design3
@@ -426,6 +229,8 @@ const {
                       class="my-weakness-report-md my-font-md-400 lh-base my-color-black text-break mb-0"
                       v-html="md(weaknessReport)"
                     />
+
+                    <!-- 查看規則按鈕（舊版） -->
                     <div
                       v-if="analysisRulesSnapshotTrimmed && !props.design3"
                       class="d-flex justify-content-start align-items-center w-100 pt-3"
@@ -440,22 +245,17 @@ const {
                         分析規則
                       </button>
                     </div>
+
+                    <!-- 規則唯讀預覽（design3，一般使用者） -->
                     <div
                       v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditRules"
                       class="w-100 min-w-0 pt-3 analysis-page-3-rules my-design--side-panel-left"
                     >
                       <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
-                        <section
-                          class="my-design-quiz-question-prompt-block w-100 min-w-0"
-                          aria-label="分析規則"
-                        >
+                        <section class="my-design-quiz-question-prompt-block w-100 min-w-0" aria-label="分析規則">
                           <header class="my-design-quiz-question-prompt-block__head">
-                            <div
-                              class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
-                            >
-                              <h3
-                                class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
-                              >
+                            <div class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2">
+                              <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0">
                                 分析規則
                               </h3>
                             </div>
@@ -463,10 +263,10 @@ const {
                           <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
                             <EnglishExamMarkdownEditor
                               :model-value="promptText"
+                              textarea-id="student-analysis-rules-report-ro"
                               preview-only
                               preview-design-dark
                               preview-design-dark-embedded
-                              textarea-id="student-analysis-rules-report-ro"
                             />
                           </div>
                         </section>
@@ -474,6 +274,7 @@ const {
                     </div>
                   </div>
 
+                  <!-- 逐題結果（學生頁多顯示「使用者 ID」） -->
                   <div
                     v-for="(item, idx) in items"
                     :key="`${item.exam_quiz_id ?? item.rag_quiz_id ?? idx}-${item.person_id ?? ''}`"
@@ -481,7 +282,9 @@ const {
                       ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4 analysis-page-3-section'
                       : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
                   >
-                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">第 {{ idx + 1 }} 題</div>
+                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
+                      第 {{ idx + 1 }} 題
+                    </div>
                     <div class="d-flex flex-column gap-3 w-100 min-w-0">
                       <div class="w-100 min-w-0">
                         <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">使用者 ID</div>
@@ -541,104 +344,14 @@ const {
                       @toggle-reference-answer="toggleReferenceAnswer"
                     />
                   </div>
+
                 </div>
               </div>
             </template>
+
           </div>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.my-weakness-report-md :deep(p) {
-  margin-bottom: 0.5em;
-}
-.my-weakness-report-md :deep(p:last-child) {
-  margin-bottom: 0;
-}
-.my-weakness-report-md :deep(h1),
-.my-weakness-report-md :deep(h2),
-.my-weakness-report-md :deep(h3),
-.my-weakness-report-md :deep(h4),
-.my-weakness-report-md :deep(h5),
-.my-weakness-report-md :deep(h6) {
-  color: var(--my-color-black);
-  font-size: var(--my-font-size-md);
-  font-weight: var(--my-font-weight-semibold);
-  margin-bottom: 0.35em;
-  margin-top: 0.5em;
-}
-.my-weakness-report-md :deep(h1:first-child),
-.my-weakness-report-md :deep(h2:first-child),
-.my-weakness-report-md :deep(h3:first-child) {
-  margin-top: 0;
-}
-.my-weakness-report-md--section-title :deep(p),
-.my-weakness-report-md--section-title :deep(h1),
-.my-weakness-report-md--section-title :deep(h2),
-.my-weakness-report-md--section-title :deep(h3),
-.my-weakness-report-md--section-title :deep(h4),
-.my-weakness-report-md--section-title :deep(h5),
-.my-weakness-report-md--section-title :deep(h6),
-.my-weakness-report-md--section-title :deep(li),
-.my-weakness-report-md--section-title :deep(strong),
-.my-weakness-report-md--section-title :deep(em) {
-  color: var(--my-color-gray-1);
-}
-.my-weakness-report-md :deep(ul),
-.my-weakness-report-md :deep(ol) {
-  margin-bottom: 0.5em;
-  padding-left: 1.25rem;
-}
-.my-weakness-report-md :deep(li) {
-  margin-bottom: 0.15em;
-}
-.my-weakness-report-md :deep(a) {
-  color: var(--my-color-blue);
-}
-.my-weakness-report-md :deep(code) {
-  font-size: 0.92em;
-  padding: 0.1em 0.35em;
-  border-radius: 0.25rem;
-  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-white));
-}
-.my-weakness-report-md :deep(pre) {
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  background-color: var(--my-color-gray-3);
-  overflow-x: auto;
-  margin-bottom: 0.5em;
-}
-.my-weakness-report-md :deep(pre code) {
-  padding: 0;
-  background: none;
-}
-.my-weakness-report-md :deep(blockquote) {
-  margin: 0 0 0.5em;
-  padding-left: 0.75rem;
-  border-left: 3px solid var(--my-color-gray-2);
-  color: var(--my-color-gray-1);
-}
-.my-weakness-report-md :deep(table) {
-  width: 100%;
-  margin-bottom: 0.5em;
-  border-collapse: collapse;
-  font-size: inherit;
-}
-.my-weakness-report-md :deep(th),
-.my-weakness-report-md :deep(td) {
-  border: 1px solid var(--my-color-gray-2);
-  padding: 0.35rem 0.5rem;
-  text-align: start;
-}
-.my-weakness-report-md :deep(hr) {
-  margin: 0.75em 0;
-  border: 0;
-  border-top: 1px solid var(--my-color-gray-2);
-}
-.my-weakness-report-md-list > li :deep(p:last-child) {
-  margin-bottom: 0;
-}
-</style>

@@ -2,10 +2,8 @@
   /**
    * LoginView - 登入頁
    *
+   * 版面對齊 DesignPage profile_3（白底、label + input、my-button-white）。
    * 以 person_id（使用者 ID）與 password 呼叫 POST /user/login。
-   * 成功時：解析回傳的 user 物件、寫入 authStore.setUser、導向 /exam。
-   * 失敗時：顯示後端 detail 或錯誤訊息於 error。
-   * 載入中：全螢幕 LoadingOverlay，並停用送出。
    */
   import { ref } from 'vue';
   import { useRouter } from 'vue-router';
@@ -13,10 +11,11 @@
   import { API_BASE } from '../constants/api.js';
   import { loggedFetch } from '../utils/loggedFetch.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
+  import LogoGridSvg from '../components/LogoGridSvg.vue';
 
   export default {
     name: 'LoginView',
-    components: { LoadingOverlay },
+    components: { LoadingOverlay, LogoGridSvg },
     setup() {
       const router = useRouter();
       const authStore = useAuthStore();
@@ -51,7 +50,6 @@
             return;
           }
           const data = JSON.parse(text);
-          // 後端可能回傳 { user: {...}, courses: [...] } 或直接回傳使用者物件
           const userData = data.user != null ? data.user : data;
           authStore.setUser(userData);
           authStore.setCourses(data.courses ?? []);
@@ -69,45 +67,54 @@
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-white position-relative">
     <LoadingOverlay :is-visible="loading" loading-text="登入中..." />
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0 my-bgcolor-white">
       <div
         class="container-fluid px-3 px-md-4 py-4 flex-grow-1 d-flex align-items-center justify-content-center"
       >
-        <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 my-login-view-card my-color-black">
-          <p class="my-font-xl-600 my-color-black text-break text-center mb-4 mb-md-3">
-            MyQuiz.ai 登入
-          </p>
-          <form @submit.prevent="onLogin">
-            <div class="mb-3 d-flex flex-column gap-0">
+        <div class="my-login-view-card w-100 min-w-0">
+          <div class="d-flex flex-column align-items-center text-center mb-4">
+            <div class="my-login-view-logo flex-shrink-0" aria-hidden="true">
+              <LogoGridSvg
+                :show-grid="false"
+                size-to-container
+                id-prefix="login"
+              />
+            </div>
+            <p class="my-login-view-brand my-font-xl-400 my-color-black text-break mb-0 mt-3">
+              MyQuiz.ai
+            </p>
+          </div>
+          <form class="d-flex flex-column gap-4 w-100 min-w-0 text-start" @submit.prevent="onLogin">
+            <div class="d-flex flex-column gap-0 mb-0">
               <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者 ID</label>
               <input
                 id="login-person-id"
                 v-model="personId"
                 type="text"
-                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
+                class="form-control my-input-md rounded-2 w-100 px-3 py-2"
                 placeholder="請輸入使用者 ID"
                 autocomplete="username"
                 :disabled="loading"
-              />
+              >
             </div>
-            <div class="mb-3 d-flex flex-column gap-0">
+            <div class="d-flex flex-column gap-0 mb-0">
               <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-password">密碼</label>
               <input
                 id="login-password"
                 v-model="password"
                 type="text"
-                class="form-control my-input-md my-input-md--on-dark rounded-2 w-100 px-3 py-2"
+                class="form-control my-input-md rounded-2 w-100 px-3 py-2"
                 placeholder="請輸入密碼"
                 autocomplete="current-password"
                 :disabled="loading"
-              />
+              >
             </div>
-            <div v-if="error" class="my-alert-danger-soft py-2 mb-3" role="alert">{{ error }}</div>
+            <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break" role="alert">{{ error }}</p>
             <button
               type="submit"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-blue px-4 py-2 w-100"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
               :disabled="loading"
               :aria-busy="loading"
             >
@@ -124,5 +131,18 @@
 .my-login-view-card {
   width: 100%;
   max-width: 360px;
+}
+
+.my-login-view-logo {
+  width: calc(128pt * 4 / 3);
+  height: 128pt;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.my-login-view-brand {
+  line-height: 1.35;
 }
 </style>

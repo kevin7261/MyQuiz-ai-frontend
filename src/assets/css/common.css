@@ -1928,3 +1928,61 @@ div.form-control {
   opacity: 0.45;
 }
 
+/* ── 分析報告 Markdown 樣式（AnalysisWeaknessPage / StudentAnswerAnalysisPage 共用） ── */
+.my-weakness-report-md p { margin-bottom: 0.5em; }
+.my-weakness-report-md p:last-child { margin-bottom: 0; }
+.my-weakness-report-md h1,
+.my-weakness-report-md h2,
+.my-weakness-report-md h3,
+.my-weakness-report-md h4,
+.my-weakness-report-md h5,
+.my-weakness-report-md h6 {
+  color: var(--my-color-black);
+  font-size: var(--my-font-size-md);
+  font-weight: var(--my-font-weight-semibold);
+  margin-bottom: 0.35em;
+  margin-top: 0.5em;
+}
+.my-weakness-report-md h1:first-child,
+.my-weakness-report-md h2:first-child,
+.my-weakness-report-md h3:first-child { margin-top: 0; }
+.my-weakness-report-md--section-title p,
+.my-weakness-report-md--section-title h1,
+.my-weakness-report-md--section-title h2,
+.my-weakness-report-md--section-title h3,
+.my-weakness-report-md--section-title h4,
+.my-weakness-report-md--section-title h5,
+.my-weakness-report-md--section-title h6,
+.my-weakness-report-md--section-title li,
+.my-weakness-report-md--section-title strong,
+.my-weakness-report-md--section-title em { color: var(--my-color-gray-1); }
+.my-weakness-report-md ul,
+.my-weakness-report-md ol { margin-bottom: 0.5em; padding-left: 1.25rem; }
+.my-weakness-report-md li { margin-bottom: 0.15em; }
+.my-weakness-report-md a { color: var(--my-color-blue); }
+.my-weakness-report-md code {
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-white));
+}
+.my-weakness-report-md pre {
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--my-color-gray-3);
+  overflow-x: auto;
+  margin-bottom: 0.5em;
+}
+.my-weakness-report-md pre code { padding: 0; background: none; }
+.my-weakness-report-md blockquote {
+  margin: 0 0 0.5em;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--my-color-gray-2);
+  color: var(--my-color-gray-1);
+}
+.my-weakness-report-md table { width: 100%; margin-bottom: 0.5em; border-collapse: collapse; font-size: inherit; }
+.my-weakness-report-md th,
+.my-weakness-report-md td { border: 1px solid var(--my-color-gray-2); padding: 0.35rem 0.5rem; text-align: start; }
+.my-weakness-report-md hr { margin: 0.75em 0; border: 0; border-top: 1px solid var(--my-color-gray-2); }
+.my-weakness-report-md-list > li p:last-child { margin-bottom: 0; }
+
