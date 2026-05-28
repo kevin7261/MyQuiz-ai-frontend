@@ -12,22 +12,28 @@
   import { loggedFetch } from '../utils/loggedFetch.js';
   import {
     createRandomLogoDiamondGradient,
+    createRandomLogoGradientCss,
     logoDiamondGradientToCssLinear,
   } from '../utils/logoDiamondGradient.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
 
+  /** 登入頁漸層僅線性（不用徑向／錐形／mesh） */
+  const LOGIN_GRADIENT_OPTIONS = { linearOnly: true };
+
   function buildLoginLogoColors() {
-    const primaryGrad = createRandomLogoDiamondGradient();
-    const secondaryGrad = createRandomLogoDiamondGradient();
+    const primaryGrad = createRandomLogoDiamondGradient(LOGIN_GRADIENT_OPTIONS);
+    const secondaryGrad = createRandomLogoDiamondGradient(LOGIN_GRADIENT_OPTIONS);
     return {
-      background: '#ffffff',
+      background: 'transparent',
+      diamondFill: '#ffffff',
       primaryGradient: {
         x1: primaryGrad.x1,
         y1: primaryGrad.y1,
         x2: primaryGrad.x2,
         y2: primaryGrad.y2,
         stops: primaryGrad.stops,
+        css: primaryGrad.css,
       },
       secondaryGradient: {
         x1: secondaryGrad.x1,
@@ -35,6 +41,7 @@
         x2: secondaryGrad.x2,
         y2: secondaryGrad.y2,
         stops: secondaryGrad.stops,
+        css: secondaryGrad.css,
       },
     };
   }
@@ -50,16 +57,18 @@
       const loading = ref(false);
       const error = ref('');
       const loginLogoColors = ref(buildLoginLogoColors());
+      const loginPageBgGradientCss = ref(createRandomLogoGradientCss(LOGIN_GRADIENT_OPTIONS));
 
       function refreshLoginLogoGradient() {
         loginLogoColors.value = buildLoginLogoColors();
+        loginPageBgGradientCss.value = createRandomLogoGradientCss(LOGIN_GRADIENT_OPTIONS);
       }
 
       const loginBrandPrimaryCss = computed(() =>
-        logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient),
+        logoDiamondGradientToCssLinear(loginLogoColors.value.secondaryGradient),
       );
       const loginBrandSecondaryCss = computed(() =>
-        logoDiamondGradientToCssLinear(loginLogoColors.value.secondaryGradient),
+        logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient),
       );
 
       const onLogin = async () => {
@@ -109,15 +118,22 @@
         refreshLoginLogoGradient,
         loginBrandPrimaryCss,
         loginBrandSecondaryCss,
+        loginPageBgGradientCss,
       };
     },
   };
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-white position-relative">
+  <div class="my-login-view-shell d-flex flex-column h-100 overflow-hidden position-relative">
+    <div
+      class="my-login-view-page-gradient"
+      aria-hidden="true"
+      :style="{ backgroundImage: loginPageBgGradientCss }"
+    />
+    <div class="my-login-view-content d-flex flex-column h-100 flex-grow-1 min-h-0">
     <LoadingOverlay :is-visible="loading" loading-text="登入中..." />
-    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0 my-bgcolor-white">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0">
       <div
         class="container-fluid px-3 px-md-4 py-4 flex-grow-1 d-flex align-items-center justify-content-center"
       >
@@ -187,10 +203,31 @@
         </div>
       </div>
     </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+.my-login-view-shell {
+  background-color: #ffffff;
+}
+
+.my-login-view-page-gradient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.my-login-view-content {
+  position: relative;
+  z-index: 1;
+}
+
 .my-login-view-card {
   width: 100%;
   max-width: 360px;

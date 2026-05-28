@@ -47,7 +47,7 @@ const props = defineProps({
    */
   unifiedPrimaryGradient: { type: Boolean, default: false },
   /**
-   * true：於格 1、2、3、4、6 疊加 60% 白色（不含格 5 中央區）
+   * true：於格 1、2、3、4、6 的 logo 圖形上疊加 60% 白（不含空白／格 5）
    * 僅適用完整 logo（非 mergeCell5／裁切模式）
    */
   outerCellsWhiteOverlay: { type: Boolean, default: false },
@@ -73,6 +73,25 @@ const backgroundPaint = computed(() =>
   (c.value.backgroundGradient ? `url(#${backgroundGradientId.value})` : c.value.background),
 );
 
+/** 中央菱形填色；底透明時仍預設白菱形 */
+const diamondPaint = computed(() => {
+  const explicit = c.value.diamondFill;
+  if (explicit != null && String(explicit).trim() !== '') return explicit;
+  const bg = String(c.value.background ?? '').trim().toLowerCase();
+  if (bg && bg !== 'transparent' && bg !== 'none') {
+    return c.value.backgroundGradient
+      ? `url(#${backgroundGradientId.value})`
+      : c.value.background;
+  }
+  return '#ffffff';
+});
+
+const drawBackgroundFill = computed(() => {
+  if (!props.showBackground) return false;
+  const bg = String(c.value.background ?? '').trim().toLowerCase();
+  return bg !== 'transparent' && bg !== 'none';
+});
+
 const showPrimary   = computed(() => props.layer === 'full' || props.layer === 'primary');
 const showSecondary = computed(() => props.layer === 'full' || props.layer === 'secondary');
 
@@ -90,16 +109,6 @@ const PRIMARY_SPLIT_GRID = [
   { x: 0, y: 80, w: 80, h: 80, label: '3', fontSize: 20 },
   { x: 80, y: 80, w: 80, h: 80, label: '4', fontSize: 20 },
   { x: 120, y: 160, w: 40, h: 20, label: '5', fontSize: 10 },
-];
-
-/** 完整 logo 格 1、2、3、4、6 的矩形範圍（格 5 中央區不疊白） */
-const OUTER_CELL_WHITE_OVERLAY_RECTS = [
-  { x: 0, y: 0, w: 80, h: 80 },
-  { x: 80, y: 0, w: 80, h: 80 },
-  { x: 160, y: 0, w: 80, h: 80 },
-  { x: 0, y: 80, w: 80, h: 80 },
-  { x: 160, y: 80, w: 80, h: 80 },
-  { x: 200, y: 160, w: 40, h: 20 },
 ];
 
 const SECONDARY_SPLIT_GRID = [
@@ -147,6 +156,7 @@ const useCenterDiamondCutout = computed(
 const centerDiamondMaskId = computed(() => `${props.idPrefix}-center-diamond-mask`);
 const primaryUnifiedMaskId = computed(() => `${props.idPrefix}-primary-unified-mask`);
 const secondaryUnifiedMaskId = computed(() => `${props.idPrefix}-secondary-unified-mask`);
+const outerCellsWhiteOverlayMaskId = computed(() => `${props.idPrefix}-outer-white-overlay-mask`);
 
 const viewBox = computed(() => {
   if (useCenterQuadOnly.value) return '80 80 80 80';
@@ -332,6 +342,22 @@ const svgStyle = computed(() => {
           />
         </template>
       </mask>
+      <mask
+        v-if="showOuterCellsWhiteOverlay"
+        :id="outerCellsWhiteOverlayMaskId"
+        maskUnits="userSpaceOnUse"
+        maskContentUnits="userSpaceOnUse"
+      >
+        <!-- 黑：格 1、2、4 弧（不含格 5 直條） -->
+        <path d="M 20 80 A 60 60 0 0 1 80 20" fill="none" stroke="white" stroke-width="40" />
+        <path d="M 80 20 A 60 60 0 0 1 140 80" fill="none" stroke="white" stroke-width="40" />
+        <path d="M 20 80 A 60 60 0 0 0 80 140" fill="none" stroke="white" stroke-width="40" />
+        <!-- 灰：格 2、3、6 弧＋62／81 方塊（不含格 5 左直條） -->
+        <path d="M 100 80 A 60 60 0 0 1 160 20" fill="none" stroke="white" stroke-width="40" />
+        <path d="M 160 20 A 60 60 0 0 1 220 80" fill="none" stroke="white" stroke-width="40" />
+        <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" stroke="white" stroke-width="40" />
+        <rect x="200" y="80" width="40" height="100" fill="white" />
+      </mask>
       <linearGradient
         v-if="c.primaryGradient"
         :id="primaryGradientId"
@@ -401,17 +427,17 @@ const svgStyle = computed(() => {
       </clipPath>
     </defs>
     <rect
-      v-if="showBackground && useCenterQuadOnly"
+      v-if="drawBackgroundFill && useCenterQuadOnly"
       x="80" y="80" width="80" height="80"
       :fill="backgroundPaint"
     />
     <rect
-      v-else-if="showBackground && useCenterCellsOnly"
+      v-else-if="drawBackgroundFill && useCenterCellsOnly"
       x="80" y="80" width="80" height="100"
       :fill="backgroundPaint"
     />
     <rect
-      v-else-if="showBackground"
+      v-else-if="drawBackgroundFill"
       x="0" y="0" width="240" height="160"
       :fill="backgroundPaint"
     />
@@ -470,7 +496,7 @@ const svgStyle = computed(() => {
       <path
         v-if="diamondOnly && useCenterQuadOnly"
         :d="CENTER_DIAMOND_PATH"
-        :fill="backgroundPaint"
+        :fill="diamondPaint"
       />
       <template v-else>
       <template v-if="!useCenterCellsOnly && !useCenterQuadOnly">
@@ -520,7 +546,7 @@ const svgStyle = computed(() => {
         <path
           v-if="showPrimary || showSecondary"
           :d="CENTER_DIAMOND_PATH"
-          :fill="backgroundPaint"
+          :fill="diamondPaint"
         />
       </template>
       <!-- 62＋81 灰方塊 -->
@@ -534,18 +560,17 @@ const svgStyle = computed(() => {
       />
       </template>
     </g>
-    <g v-if="showOuterCellsWhiteOverlay" pointer-events="none">
-      <rect
-        v-for="(cell, i) in OUTER_CELL_WHITE_OVERLAY_RECTS"
-        :key="`outer-white-${i}`"
-        :x="cell.x"
-        :y="cell.y"
-        :width="cell.w"
-        :height="cell.h"
-        fill="#ffffff"
-        fill-opacity="0.6"
-      />
-    </g>
+    <rect
+      v-if="showOuterCellsWhiteOverlay"
+      :x="unifiedLayerMaskBounds.x"
+      :y="unifiedLayerMaskBounds.y"
+      :width="unifiedLayerMaskBounds.width"
+      :height="unifiedLayerMaskBounds.height"
+      fill="#ffffff"
+      fill-opacity="0.6"
+      pointer-events="none"
+      :mask="`url(#${outerCellsWhiteOverlayMaskId})`"
+    />
     <!-- 格線 -->
     <template v-if="showGrid && useSplitLayerGrid">
       <rect
