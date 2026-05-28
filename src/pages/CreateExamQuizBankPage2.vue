@@ -28,8 +28,8 @@ import { useMessageModal } from '../composables/useMessageModal.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
-  /** 路由前綴（/create-exam-bank_3） */
-  routeBase: { type: String, default: '/create-exam-bank_3' },
+  /** 路由前綴（/create-exam-bank） */
+  routeBase: { type: String, default: '/create-exam-bank' },
   /** true 時嵌入頁右側清單改顯示於左側 */
   sidePanelOnLeft: { type: Boolean, default: false },
   /** 詳情路由為 /:exam_id/:exam_quiz_id */

@@ -1,8 +1,8 @@
 /**
  * 依 user_type 限制可進入的路由（與側邊欄顯示）
  *
- * 1=開發者、2=管理者：除「系統 Log」外之全部頁面（含 /design、/design_3）
- * 3=學生：測驗（/exam）、作答弱點分析（/student-weakness-analysis）、建立測驗題庫（/create-exam-bank）、設定（/profile）
+ * 1=開發者、2=管理者：除「系統 Log」外之全部頁面（含 /design）
+ * 3=學生：測驗（/exam）、作答弱點分析（/person-analysis）、建立測驗題庫（/create-exam-bank）、設定（/profile）
  * 「系統 Log」（/logs）：僅 user_type=1
  */
 
@@ -35,13 +35,10 @@ export function userTypeLabel(userType) {
 /** 學生可進入的 view 參數（/:view）以及測驗對應的內部鍵 work */
 export const STUDENT_ALLOWED_VIEWS = new Set([
   'work',
-  'work3',
-  'student-weakness-analysis',
-  'student-weakness-analysis_3',
+  'person-analysis',
+  'course-analysis',
   'create-exam-bank',
-  'create-exam-bank_3',
   'profile',
-  'profile_3',
 ]);
 
 /**
@@ -49,9 +46,9 @@ export const STUDENT_ALLOWED_VIEWS = new Set([
  * @returns {string | null} 權限判斷用的 view 鍵；非 Exam/Main 則 null
  */
 export function routeViewKey(to) {
-  if (to.name === 'Exam') return 'work';
-  if (to.name === 'Exam3' || to.name === 'Exam3Detail') return 'work3';
-  if (to.name === 'CreateExamBank3' || to.name === 'CreateExamBank3Detail') return 'create-exam-bank_3';
+  if (to.name === 'Exam' || to.name === 'ExamDetail') return 'work';
+  if (to.name === 'CreateExamBank' || to.name === 'CreateExamBankDetail') return 'create-exam-bank';
+  if (to.name === 'Design') return 'design';
   if (to.name === 'Main' && to.params.view) return String(to.params.view);
   return null;
 }
@@ -63,7 +60,7 @@ export function routeViewKey(to) {
 export function userMayAccessRoute(user, to) {
   if (!user) return false;
   const key = routeViewKey(to);
-  if ((key === 'logs' || key === 'logs_3' || key === 'design' || key === 'design_3' || key === 'logo') && Number(user.user_type) !== DEVELOPER_USER_TYPE) return false;
+  if ((key === 'logs' || key === 'logs_3' || key === 'design' || key === 'logo') && Number(user.user_type) !== DEVELOPER_USER_TYPE) return false;
   if (Number(user.user_type) !== RESTRICTED_USER_TYPE) return true;
   if (key == null) return true;
   return STUDENT_ALLOWED_VIEWS.has(key);
@@ -72,10 +69,10 @@ export function userMayAccessRoute(user, to) {
 /**
  * 側邊欄單一連結是否顯示（與 route 權限一致）
  * @param {number | string | undefined | null} userType
- * @param {string} viewKey — work | student-weakness-analysis | create-exam-bank 等（與 URL 片段相同）
+ * @param {string} viewKey — work | person-analysis | create-exam-bank 等（與 URL 片段相同）
  */
 export function canSeeNavLink(userType, viewKey) {
-  if (viewKey === 'logs' || viewKey === 'logs_3' || viewKey === 'design' || viewKey === 'design_3' || viewKey === 'logo') return Number(userType) === DEVELOPER_USER_TYPE;
+  if (viewKey === 'logs' || viewKey === 'logs_3' || viewKey === 'design' || viewKey === 'logo') return Number(userType) === DEVELOPER_USER_TYPE;
   if (Number(userType) !== RESTRICTED_USER_TYPE) return true;
   return STUDENT_ALLOWED_VIEWS.has(viewKey);
 }

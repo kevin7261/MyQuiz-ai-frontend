@@ -4,10 +4,9 @@
  * 路由結構：
  * - / → 重導向至 /login
  * - /login → 登入頁（LoginView）
- * - /exam → 測驗/工作區（HomeView，內部 currentView 為 work）
- * - /exam_3、/exam_3/:exam_id/:exam_quiz_id → 測驗 TopView 全寬版（work3，對齊 create-exam-bank_3）
- * - /create-exam-bank_3、/create-exam-bank_3/:exam_id/:exam_quiz_id → 建立測驗題庫九宮格版（_3 詳情含題型深連結）
- * - /:view → 主區塊各功能（student-weakness-analysis、profile、create-exam-bank、design、manage-users 等），由 HomeView 依 view 渲染
+ * - /exam、/exam/:exam_id/:exam_quiz_id → 測驗 TopView 全寬版（work）
+ * - /create-exam-bank、/create-exam-bank/:exam_id/:exam_quiz_id → 建立測驗題庫九宮格版（詳情含題型深連結）
+ * - /:view → 主區塊各功能（person-analysis、course-analysis、profile、design、manage-users 等），由 HomeView 依 view 渲染
  * - /main、/main/:view → 舊網址相容，重導向至 /exam 或 /:view
  *
  * 主區塊與 /exam 需登入、依 user_type 限制路由（/logs 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
@@ -19,20 +18,12 @@ import HomeView from '../views/HomeView.vue';
 /** 允許的 view 參數（對應 /:view 的網址片段，用於側邊選單） */
 const VALID_VIEWS = [
   'work',
-  'student-weakness-analysis',
-  'student-weakness-analysis_3',
-  'student-answer-analysis',
-  'student-answer-analysis_3',
+  'person-analysis',
+  'course-analysis',
   'profile',
-  'profile_3',
-  'create-exam-bank',
-  'design',
-  'design_3',
   'logo',
   'manage-users',
-  'manage-users_3',
   'settings',
-  'settings_3',
   'logs',
   'logs_3',
 ];
@@ -40,22 +31,14 @@ const VALID_VIEWS = [
 /** 各 view 對應的瀏覽器頁籤標題 */
 const VIEW_TITLES = {
   work: '測驗 - MyQuiz.ai',
-  work3: '測驗 - MyQuiz.ai',
-  'student-weakness-analysis': '作答弱點分析 - MyQuiz.ai',
-  'student-weakness-analysis_3': '作答弱點分析 - MyQuiz.ai',
-  'student-answer-analysis': '學生作答分析 - MyQuiz.ai',
-  'student-answer-analysis_3': '學生作答分析 - MyQuiz.ai',
-  profile: '設定 - MyQuiz.ai',
-  profile_3: '個人設定 - MyQuiz.ai',
+  'person-analysis': '作答弱點分析 - MyQuiz.ai',
+  'course-analysis': '學生作答分析 - MyQuiz.ai',
+  profile: '個人設定 - MyQuiz.ai',
   'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
-  'create-exam-bank_3': '建立測驗題庫 - MyQuiz.ai',
-  design: '設計稿 - MyQuiz.ai',
-  design_3: '設計稿 3 - MyQuiz.ai',
+  design: 'UI 元件參考 - MyQuiz.ai',
   logo: 'Logo 繪製 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
-  'manage-users_3': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
-  settings_3: '系統設定 - MyQuiz.ai',
   logs: '系統 Log - MyQuiz.ai',
   logs_3: '系統紀錄 - MyQuiz.ai',
 };
@@ -75,64 +58,98 @@ const routes = [
     meta: { title: '測驗 - MyQuiz.ai' },
   },
   {
+    path: '/exam/:exam_id/:exam_quiz_id',
+    name: 'ExamDetail',
+    component: HomeView,
+    meta: { title: '測驗 - MyQuiz.ai' },
+  },
+  {
+    path: '/exam/:exam_id',
+    redirect: (to) => ({
+      path: `/exam/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
+      query: to.query,
+    }),
+  },
+  {
     path: '/exam_2',
-    redirect: '/exam_3',
+    redirect: '/exam',
   },
   {
     path: '/exam_2/:exam_id',
     redirect: (to) => ({
-      path: `/exam_3/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
+      path: `/exam/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
       query: to.query,
     }),
   },
   {
     path: '/exam_3',
-    name: 'Exam3',
-    component: HomeView,
-    meta: { title: '測驗 - MyQuiz.ai' },
+    redirect: '/exam',
   },
   {
     path: '/exam_3/:exam_id/:exam_quiz_id',
-    name: 'Exam3Detail',
-    component: HomeView,
-    meta: { title: '測驗 - MyQuiz.ai' },
+    redirect: (to) => ({
+      path: `/exam/${encodeURIComponent(String(to.params.exam_id ?? ''))}/${encodeURIComponent(String(to.params.exam_quiz_id ?? '0'))}`,
+      query: to.query,
+    }),
   },
   {
     path: '/exam_3/:exam_id',
     redirect: (to) => ({
-      path: `/exam_3/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
+      path: `/exam/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
+      query: to.query,
+    }),
+  },
+  {
+    path: '/create-exam-bank',
+    name: 'CreateExamBank',
+    component: HomeView,
+    meta: { title: '建立測驗題庫 - MyQuiz.ai' },
+  },
+  {
+    path: '/create-exam-bank/:exam_id/:exam_quiz_id',
+    name: 'CreateExamBankDetail',
+    component: HomeView,
+    meta: { title: '建立測驗題庫 - MyQuiz.ai' },
+  },
+  {
+    path: '/create-exam-bank/:rag_id',
+    redirect: (to) => ({
+      path: `/create-exam-bank/${encodeURIComponent(String(to.params.rag_id ?? ''))}/0`,
       query: to.query,
     }),
   },
   {
     path: '/create-exam-bank_2',
-    redirect: '/create-exam-bank_3',
+    redirect: '/create-exam-bank',
   },
   {
     path: '/create-exam-bank_2/:rag_id',
     redirect: (to) => ({
-      path: `/create-exam-bank_3/${encodeURIComponent(String(to.params.rag_id ?? ''))}/0`,
+      path: `/create-exam-bank/${encodeURIComponent(String(to.params.rag_id ?? ''))}/0`,
       query: to.query,
     }),
   },
   {
     path: '/create-exam-bank_3',
-    name: 'CreateExamBank3',
-    component: HomeView,
-    meta: { title: '建立測驗題庫 - MyQuiz.ai' },
+    redirect: '/create-exam-bank',
   },
   {
     path: '/create-exam-bank_3/:exam_id/:exam_quiz_id',
-    name: 'CreateExamBank3Detail',
-    component: HomeView,
-    meta: { title: '建立測驗題庫 - MyQuiz.ai' },
+    redirect: (to) => ({
+      path: `/create-exam-bank/${encodeURIComponent(String(to.params.exam_id ?? ''))}/${encodeURIComponent(String(to.params.exam_quiz_id ?? '0'))}`,
+      query: to.query,
+    }),
   },
   {
     path: '/create-exam-bank_3/:rag_id',
     redirect: (to) => ({
-      path: `/create-exam-bank_3/${encodeURIComponent(String(to.params.rag_id ?? ''))}/0`,
+      path: `/create-exam-bank/${encodeURIComponent(String(to.params.rag_id ?? ''))}/0`,
       query: to.query,
     }),
+  },
+  {
+    path: '/work',
+    redirect: '/exam',
   },
   // 舊網址相容（書籤）：/main/... → 新路徑
   {
@@ -141,7 +158,7 @@ const routes = [
   },
   {
     path: '/main/analysis',
-    redirect: '/student-weakness-analysis',
+    redirect: '/person-analysis',
   },
   {
     path: '/main/create-unit',
@@ -153,7 +170,7 @@ const routes = [
   },
   {
     path: '/main/course-analysis',
-    redirect: '/student-answer-analysis',
+    redirect: '/course-analysis',
   },
   {
     path: '/main/:view',
@@ -161,7 +178,7 @@ const routes = [
   },
   {
     path: '/analysis',
-    redirect: '/student-weakness-analysis',
+    redirect: '/person-analysis',
   },
   {
     path: '/create-unit',
@@ -180,12 +197,46 @@ const routes = [
     redirect: '/create-exam-bank',
   },
   {
-    path: '/design_2',
-    redirect: '/design_3',
+    path: '/design',
+    name: 'Design',
+    component: HomeView,
+    meta: { title: 'UI 元件參考 - MyQuiz.ai' },
   },
   {
-    path: '/course-analysis',
-    redirect: '/student-answer-analysis',
+    path: '/design_2',
+    redirect: '/design',
+  },
+  {
+    path: '/design_3',
+    redirect: '/design',
+  },
+  {
+    path: '/student-weakness-analysis',
+    redirect: '/person-analysis',
+  },
+  {
+    path: '/student-weakness-analysis_3',
+    redirect: '/person-analysis',
+  },
+  {
+    path: '/student-answer-analysis',
+    redirect: '/course-analysis',
+  },
+  {
+    path: '/student-answer-analysis_3',
+    redirect: '/course-analysis',
+  },
+  {
+    path: '/manage-users_3',
+    redirect: '/manage-users',
+  },
+  {
+    path: '/settings_3',
+    redirect: '/settings',
+  },
+  {
+    path: '/profile_3',
+    redirect: '/profile',
   },
   {
     path: '/users',

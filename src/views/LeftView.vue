@@ -37,7 +37,7 @@
         const t = props.userType;
         if (!canSeeNavLink(t, 'profile')) return false;
         return (
-          canSeeNavLink(t, 'student-answer-analysis') ||
+          canSeeNavLink(t, 'course-analysis') ||
           canSeeNavLink(t, 'users') ||
           canSeeNavLink(t, 'settings') ||
           canSeeNavLink(t, 'logs')
@@ -83,8 +83,8 @@
         >測驗</router-link
       >
       <router-link
-        v-if="canSeeNavLink(userType, 'student-weakness-analysis')"
-        to="/student-weakness-analysis"
+        v-if="canSeeNavLink(userType, 'person-analysis')"
+        to="/person-analysis"
         class="nav-link"
         active-class="active"
         >作答弱點分析</router-link
@@ -109,14 +109,11 @@
           <li v-if="canSeeNavLink(userType, 'design')">
             <router-link class="dropdown-item" to="/design" active-class="active">UI 元件參考</router-link>
           </li>
-          <li v-if="canSeeNavLink(userType, 'design_3')">
-            <router-link class="dropdown-item" to="/design_3" active-class="active">UI 元件參考 3</router-link>
-          </li>
           <li v-if="canSeeNavLink(userType, 'logo')">
             <router-link class="dropdown-item" to="/logo" active-class="active">Logo 繪製</router-link>
           </li>
-          <li v-if="canSeeNavLink(userType, 'student-answer-analysis')">
-            <router-link class="dropdown-item" to="/student-answer-analysis" active-class="active"
+          <li v-if="canSeeNavLink(userType, 'course-analysis')">
+            <router-link class="dropdown-item" to="/course-analysis" active-class="active"
               >學生作答分析</router-link
             >
           </li>

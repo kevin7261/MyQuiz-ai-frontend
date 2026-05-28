@@ -36,7 +36,7 @@ const demoBankGridItems = [
 ];
 
 // ── Tab 狀態（sessionStorage 還原） ─────────────────────────────
-const DESIGN3_ACTIVE_TAB_STORAGE_KEY = 'myquiz:designPage3:activeTab:v1';
+const DESIGN3_ACTIVE_TAB_STORAGE_KEY = 'myquiz:designPage:activeTab:v1';
 const TABS = [
   { id: 'color',      label: '顏色' },
   { id: 'type',       label: '字體' },
@@ -408,7 +408,7 @@ function design3PackUnitTypeIconCss(unitType) {
 
 <template>
   <!--
-    DesignPage3｜exam_3、create-exam-bank_3 專用 UI 元件參考（TopView 全寬、白底主內容、左側清單欄）
+    DesignPage3｜測驗、建立測驗題庫專用 UI 元件參考（TopView 全寬、白底主內容、左側清單欄）
     版面對齊 ExamPage2／CreateExamQuizBankPage2（sidePanelOnLeft）；頁名由 TopView 顯示
   -->
   <div class="design-page-3 d-flex flex-column h-100 overflow-hidden my-bgcolor-white">

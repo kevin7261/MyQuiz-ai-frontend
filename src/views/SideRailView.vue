@@ -4,8 +4,8 @@
    *
    * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
    * 頂部 64×64：僅白色菱形 logo（點擊重繪頂部隨機漸層）。
-   * 中段：功能選單（dropend 下拉，三 icon 上方）。
-   * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 profile_3）。
+   * 中段：開發者功能選單（dropend；測驗等四項僅在 TopView 右上角姓名下拉）。
+   * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）。
    */
   import { computed, ref } from 'vue';
   import { useRoute } from 'vue-router';
@@ -16,15 +16,10 @@
   /** 64×64 方塊內圖示撐滿（48pt ≈ 64px） */
   const SYSTEM_HEADER_LOGO_MARK_SIZE_PT = 48;
 
-  /** 功能選單項目；perm 為 null 表示一律顯示 */
+  /** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
   const SIDE_RAIL_MENU_ITEMS = [
-    { perm: 'work', to: '/exam_3', label: '測驗' },
-    { perm: null, to: '/create-exam-bank_3', label: '建立測驗題庫' },
-    { perm: 'student-weakness-analysis', to: '/student-weakness-analysis_3', label: '作答弱點分析' },
-    { perm: 'student-answer-analysis', to: '/student-answer-analysis_3', label: '學生作答分析' },
-    { perm: 'users', to: '/manage-users_3', label: '使用者管理' },
+    { perm: 'users', to: '/manage-users', label: '使用者管理' },
     { perm: 'design', to: '/design', label: 'UI 元件參考' },
-    { perm: 'design_3', to: '/design_3', label: 'UI 元件參考 3' },
     { perm: 'logo', to: '/logo', label: 'Logo 繪製' },
     { perm: 'logs', to: '/logs_3', label: '系統紀錄' },
   ];
@@ -147,7 +142,7 @@
 
       <router-link
         v-if="canSeeNavLink(userType, 'settings')"
-        to="/settings_3"
+        to="/settings"
         class="my-system-header__action-btn"
         active-class="my-system-header__action-btn--active"
         aria-label="系統設定"
@@ -158,7 +153,7 @@
 
       <router-link
         v-if="canSeeNavLink(userType, 'profile')"
-        to="/profile_3"
+        to="/profile"
         class="my-system-header__action-btn"
         active-class="my-system-header__action-btn--active"
         aria-label="個人設定"

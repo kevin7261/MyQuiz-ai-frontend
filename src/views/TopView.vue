@@ -2,19 +2,24 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」，右側為題庫／試卷切換（詳情時）。
+   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
    */
   import { computed } from 'vue';
   import { useRoute } from 'vue-router';
   import { storeToRefs } from 'pinia';
   import { useAuthStore } from '../stores/authStore.js';
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
+  import { canSeeNavLink } from '../router/permissions.js';
   import CreateExamQuizBankBankSwitchDropdown from '../components/CreateExamQuizBankBankSwitchDropdown.vue';
   import ExamPageExamSwitchDropdown from '../components/ExamPageExamSwitchDropdown.vue';
 
   export default {
     name: 'TopView',
     components: { CreateExamQuizBankBankSwitchDropdown, ExamPageExamSwitchDropdown },
+    props: {
+      userName: { type: String, default: '' },
+      userType: { type: [Number, String], default: undefined },
+    },
     setup() {
       const authStore = useAuthStore();
       const route = useRoute();
@@ -37,21 +42,22 @@
 
       /** TopView 版面之頁面名稱（課程名稱 | 頁面名稱） */
       const pageTitle = computed(() => {
-        const path = route.path;
-        if (path.startsWith('/exam_3')) return '測驗';
-        if (path.startsWith('/create-exam-bank_3')) return '建立測驗題庫';
-        if (route.params.view === 'design_3') return 'UI 元件參考 3';
-        if (route.params.view === 'student-weakness-analysis_3') return '作答弱點分析';
-        if (route.params.view === 'student-answer-analysis_3') return '學生作答分析';
-        if (route.params.view === 'manage-users_3') return '使用者管理';
-        if (route.params.view === 'profile' || route.params.view === 'profile_3') return '個人設定';
-        if (route.params.view === 'settings' || route.params.view === 'settings_3') return '系統設定';
+        if (route.name === 'Exam' || route.name === 'ExamDetail') return '測驗';
+        if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') {
+          return '建立測驗題庫';
+        }
+        if (route.name === 'Design') return 'UI 元件參考';
+        if (route.params.view === 'person-analysis') return '作答弱點分析';
+        if (route.params.view === 'course-analysis') return '學生作答分析';
+        if (route.params.view === 'manage-users') return '使用者管理';
+        if (route.params.view === 'profile') return '個人設定';
+        if (route.params.view === 'settings') return '系統設定';
         if (route.params.view === 'logs' || route.params.view === 'logs_3') return '系統紀錄';
         return '';
       });
 
       const headerTitleGoesHome = computed(
-        () => route.name === 'Exam3Detail' || route.name === 'CreateExamBank3Detail',
+        () => route.name === 'ExamDetail' || route.name === 'CreateExamBankDetail',
       );
 
       function onHeaderTitleClick() {
@@ -60,6 +66,7 @@
       }
 
       return {
+        canSeeNavLink,
         currentCourseName,
         pageTitle,
         headerTitleGoesHome,
@@ -119,6 +126,47 @@
             @switch-exam="onExamSwitch"
           />
         </nav>
+
+        <div class="my-course-header__user-dropdown my-design-08-dropdown dropdown flex-shrink-0 position-static">
+          <button
+            type="button"
+            class="btn rounded-pill d-inline-flex align-items-center gap-3 dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white min-w-0 px-4 py-2 text-start"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            aria-haspopup="true"
+          >
+            <span class="overflow-hidden text-truncate text-start">{{ userName || '—' }}</span>
+            <i class="fa-solid fa-bars my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end my-course-header__user-menu">
+            <li v-if="canSeeNavLink(userType, 'work')">
+              <router-link class="dropdown-item" to="/exam" active-class="active">測驗</router-link>
+            </li>
+            <li>
+              <router-link class="dropdown-item" to="/create-exam-bank" active-class="active">
+                建立測驗題庫
+              </router-link>
+            </li>
+            <li v-if="canSeeNavLink(userType, 'person-analysis')">
+              <router-link
+                class="dropdown-item"
+                to="/person-analysis"
+                active-class="active"
+              >
+                作答弱點分析
+              </router-link>
+            </li>
+            <li v-if="canSeeNavLink(userType, 'course-analysis')">
+              <router-link
+                class="dropdown-item"
+                to="/course-analysis"
+                active-class="active"
+              >
+                學生作答分析
+              </router-link>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </header>
@@ -159,6 +207,14 @@
   overflow: visible;
 }
 
+.my-course-header__user-dropdown {
+  position: static;
+}
+
+.my-course-header__user-menu {
+  z-index: 1100;
+}
+
 .my-course-header-course-title {
   line-height: 1.35;
 }
@@ -188,5 +244,24 @@
 .my-course-header-nav-btn--active:focus-visible {
   background-color: var(--my-color-gray-3);
   border-color: var(--my-color-gray-2);
+}
+
+.my-course-header .my-design-08-dropdown .btn.my-button-white {
+  min-width: 0;
+  max-width: 10rem;
+  width: auto;
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-2) !important;
+  box-shadow: none;
+}
+
+.my-course-header .my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white.show {
+  color: var(--my-color-black) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white)) !important;
+  border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2)) !important;
 }
 </style>

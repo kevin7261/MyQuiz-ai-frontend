@@ -5,7 +5,7 @@
    * 職責：
    * - 左側選單：測驗、作答弱點分析；其餘項目與登出在使用者名下拉選單
    * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
-   * - /exam 對應 work（ExamPage），/:view 對應 student-weakness-analysis / create-exam-bank（建立測驗題庫頁）等
+   * - /exam 對應 work（九宮格＋TopView），/:view 對應 person-analysis 等
    * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
    * - 登入後若 currentCourse 為 null，自動顯示 CourseSelectModal 讓使用者選擇課程
    * - 切換至不同課程時整頁重新載入，確保各頁 API 與快取狀態皆對應新 course_id
@@ -28,21 +28,14 @@
 /** 網址 params.view 對應內部 currentView 類型 */
 const PATH_TO_VIEW = {
   work: 'work',
-  'student-weakness-analysis': 'studentWeaknessAnalysis',
-  'student-weakness-analysis_3': 'studentWeaknessAnalysis3',
-  'student-answer-analysis': 'studentAnswerAnalysis',
-  'student-answer-analysis_3': 'studentAnswerAnalysis3',
+  'person-analysis': 'personAnalysis',
+  'course-analysis': 'courseAnalysis',
   profile: 'profile',
-  profile_3: 'profile3',
   'create-exam-bank': 'createExamQuizBank',
-  'create-exam-bank_3': 'createExamQuizBank3',
   design: 'designPage',
-  design_3: 'designPage3',
   logo: 'logoPage',
   'manage-users': 'userManagement',
-  'manage-users_3': 'userManagement3',
   settings: 'systemSettings',
-  settings_3: 'systemSettings3',
   logs: 'logList',
   logs_3: 'logList3',
 };
@@ -61,32 +54,30 @@ const PATH_TO_VIEW = {
       /** 課程 Modal 是否開啟：currentCourse 為 null 時自動開啟；亦可由左側課程按鈕手動開啟 */
       const courseModalOpen = ref(false);
 
-      /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
+      /** 目前要顯示的區塊：work | personAnalysis | courseAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
       const currentView = computed(() => {
-        if (route.path === '/exam') return 'work';
-        if (route.path.startsWith('/exam_3') || route.name === 'Exam3Detail') return 'work3';
-        if (route.path === '/create-exam-bank_3' || route.name === 'CreateExamBank3Detail') {
-          return 'createExamQuizBank3';
+        if (route.name === 'Exam' || route.name === 'ExamDetail') return 'work';
+        if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') {
+          return 'createExamQuizBank';
         }
+        if (route.name === 'Design') return 'designPage';
         return PATH_TO_VIEW[route.params.view] || 'work';
       });
       const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
 
-      /** create-exam-bank_3 / exam_3 / design_3：系統 header + 課程 header + 主內容 */
+      /** 測驗／建立測驗題庫／design 等：系統 header + 課程 header + 主內容 */
       const useTopHeaderLayout = computed(
         () =>
-          route.path.startsWith('/create-exam-bank_3')
-          || route.name === 'CreateExamBank3Detail'
-          || route.path.startsWith('/exam_3')
-          || route.name === 'Exam3Detail'
-          || route.params.view === 'design_3'
-          || route.params.view === 'student-weakness-analysis_3'
-          || route.params.view === 'student-answer-analysis_3'
-          || route.params.view === 'manage-users_3'
+          route.name === 'Exam'
+          || route.name === 'ExamDetail'
+          || route.name === 'CreateExamBank'
+          || route.name === 'CreateExamBankDetail'
+          || route.name === 'Design'
+          || route.params.view === 'person-analysis'
+          || route.params.view === 'course-analysis'
+          || route.params.view === 'manage-users'
           || route.params.view === 'profile'
-          || route.params.view === 'profile_3'
           || route.params.view === 'settings'
-          || route.params.view === 'settings_3'
           || route.params.view === 'logs_3',
       );
 
@@ -125,15 +116,13 @@ const PATH_TO_VIEW = {
       /** 切換顯示區塊（由導覽連結或程式呼叫）；work 導向 /exam，其餘導向 /:view */
       const setView = (type) => {
         if (type === 'work') {
-          if (route.path !== '/exam') router.push('/exam');
+          if (route.name !== 'Exam' && route.name !== 'ExamDetail') router.push('/exam');
           return;
         }
-        if (type === 'work3') {
-          if (!route.path.startsWith('/exam_3')) router.push('/exam_3');
-          return;
-        }
-        if (type === 'createExamQuizBank3') {
-          if (!route.path.startsWith('/create-exam-bank_3')) router.push('/create-exam-bank_3');
+        if (type === 'createExamQuizBank') {
+          if (route.name !== 'CreateExamBank' && route.name !== 'CreateExamBankDetail') {
+            router.push('/create-exam-bank');
+          }
           return;
         }
         const path = VIEW_TO_PATH[type] ?? 'work';
@@ -204,7 +193,10 @@ const PATH_TO_VIEW = {
         @open-course-modal="openCourseModal"
       />
       <div class="d-flex flex-column flex-grow-1 min-w-0 min-h-0">
-        <TopView />
+        <TopView
+          :user-name="userName"
+          :user-type="authStore.user?.user_type"
+        />
         <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
           <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
         </div>
