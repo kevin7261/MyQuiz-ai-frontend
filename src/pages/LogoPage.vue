@@ -2,6 +2,10 @@
 /**
  * LogoPage - Logo 繪製稿（TopView 全寬、白底主內容；頁名由 TopView 顯示）
  */
+defineProps({
+  design3: { type: Boolean, default: false },
+});
+
 import LogoDiamondGridSvg from '../components/LogoDiamondGridSvg.vue';
 import LogoGridSvg from '../components/LogoGridSvg.vue';
 

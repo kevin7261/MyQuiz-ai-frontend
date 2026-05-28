@@ -1,83 +1,18 @@
 <script setup>
-/**
- * StudentAnswerAnalysisPage - 學生作答分析頁面
- *
- * 登入且已選課程後 GET `course_analysis_user_prompt_text`（query course_id）供「分析規則」與 Modal；僅 1／2 顯示編輯區，主按鈕為「儲存並開始分析」；其餘角色僅見「開始作答分析」。
- * GET /course-analysis/quizzes 須 course_id；已作答 Exam_Quiz 依 exam 分群；列表與 GET /exam/tabs 一致；另含 count、weakness_report。題目區（QuizCard）純顯示，並顯示各題使用者 ID。
- */
-import { ref, computed, watch } from 'vue';
-
-const props = defineProps({
-  hidePageHeader: { type: Boolean, default: false },
-  design3: { type: Boolean, default: false },
-});
-import { useAuthStore } from '../stores/authStore.js';
 import { API_BASE, API_COURSE_ANALYSIS_QUIZZES, API_COURSE_ANALYSIS_USER_PROMPT } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
 import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
 import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
-import {
-  normalizeAnalysisQuizzesListResponse,
-  mergeQuizzesWithTopLevelAnswers,
-} from '../utils/rag.js';
-import { formatGradingResult } from '../utils/grading.js';
-import { loggedFetch } from '../utils/loggedFetch.js';
-import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
+import { useAnalysisPage } from '../composables/useAnalysisPage.js';
 
-const authStore = useAuthStore();
-
-/** 分析規則：僅開發者（1）／管理者（2）；與設定頁 LLM API 金鑰可見範圍一致 */
-const canEditCourseAnalysisRules = computed(() => {
-  const t = Number(authStore.user?.user_type);
-  return t === 1 || t === 2;
+const props = defineProps({
+  hidePageHeader: { type: Boolean, default: false },
+  design3: { type: Boolean, default: false },
 });
 
-function md(s) {
-  return renderMarkdownToSafeHtml(s);
-}
-
-/** JSON 區塊內非陣列值：字串當 md；其餘以 fenced JSON 顯示 */
-function weaknessScalarToMdHtml(val) {
-  if (val == null) return '';
-  if (typeof val === 'string') return renderMarkdownToSafeHtml(val);
-  try {
-    return renderMarkdownToSafeHtml('```json\n' + JSON.stringify(val, null, 2) + '\n```');
-  } catch {
-    return renderMarkdownToSafeHtml(String(val));
-  }
-}
-
-const items = ref([]);
-/** 與 items 同序；供 QuizCard（與測驗頁同一題目區 UI） */
-const quizCardUi = ref([]);
-const count = ref(0);
-const weaknessReport = ref('');
-const loading = ref(false);
-const error = ref('');
-/** 尚未按「開始分析」前不請求 GET /course-analysis/quizzes */
-const analysisLoadedOnce = ref(false);
-
-const courseAnalysisPromptText = ref('');
-/** GET／儲存成功後對齊；重設還原至此 */
-const courseAnalysisPromptBaseline = ref('');
-const promptSectionLoading = ref(false);
-/** 編輯區先 PUT 規則時由全螢幕 overlay 顯示進度 */
-const promptSaving = ref(false);
-
-/** 全螢幕 LoadingOverlay：答題載入、GET／PUT 分析規則 */
-const overlayBlocking = computed(
-  () => loading.value || promptSectionLoading.value || promptSaving.value,
-);
-const overlayLoadingText = computed(() => {
-  if (loading.value) return '載入學生作答與分析報告中...';
-  if (promptSaving.value) return '儲存分析規則中...';
-  if (promptSectionLoading.value) return '載入分析規則中...';
-  return '載入中...';
-});
-
-function parseCourseAnalysisPromptFromBody(data) {
+function parsePromptFromBody(data) {
   if (!data || typeof data !== 'object') return '';
   const v =
     data.course_analysis_user_prompt_text ??
@@ -87,466 +22,59 @@ function parseCourseAnalysisPromptFromBody(data) {
   return v != null ? String(v) : '';
 }
 
-const COURSE_REQUIRED_MSG = '請先於左側選單選擇課程，再進行學生作答分析。';
-
-async function parseFetchErrorMessage(res, fallback) {
-  let msg = fallback;
-  try {
-    const body = await res.json();
-    if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
-  } catch {
-    /* ignore */
-  }
-  return msg;
-}
-
-function hasSelectedCourse() {
-  return authStore.currentCourse?.course_id != null;
-}
-
-async function fetchCourseAnalysisPromptSetting() {
-  const personId = authStore.user?.person_id;
-  if (!personId) return;
-  if (!hasSelectedCourse()) {
-    courseAnalysisPromptText.value = '';
-    courseAnalysisPromptBaseline.value = '';
-    return;
-  }
-  promptSectionLoading.value = true;
-  try {
-    const url = `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`;
-    const res = await loggedFetch(url, { method: 'GET', headers: { 'X-Person-Id': String(personId) } });
-    if (res.ok) {
-      const data = await res.json();
-      const next = parseCourseAnalysisPromptFromBody(data);
-      courseAnalysisPromptText.value = next;
-      courseAnalysisPromptBaseline.value = next;
-    }
-  } catch {
-    // 保留編輯框空白
-  } finally {
-    promptSectionLoading.value = false;
-  }
-}
-
-/** 抓答題與課程分析報告；manageLoading 為 false 時由呼叫端負責 loading。 */
-async function runCourseAnalysisQuizFetch({ manageLoading = true } = {}) {
-  const personId = authStore.user?.person_id;
-  if (!personId) {
-    error.value = '請先登入以查看學生作答分析';
-    return;
-  }
-  if (!hasSelectedCourse()) {
-    error.value = COURSE_REQUIRED_MSG;
-    return;
-  }
-  if (manageLoading) {
-    loading.value = true;
-  }
-  error.value = '';
-  analysisLoadedOnce.value = true;
-  try {
-    const url = `${API_BASE}${API_COURSE_ANALYSIS_QUIZZES}`;
-    const headers = { 'X-Person-Id': String(personId) };
-    const res = await loggedFetch(url, { method: 'GET', headers });
-    if (!res.ok) {
-      throw new Error(await parseFetchErrorMessage(res, res.statusText || '無法載入答題資料'));
-    }
-    const data = await res.json();
-    const exams = normalizeAnalysisQuizzesListResponse(data);
-    items.value = exams.flatMap((parent) => {
-      const quizzes = mergeQuizzesWithTopLevelAnswers(parent);
-      const examLabel =
-        parent.tab_name ?? parent.exam_name ?? parent.rag_name ?? parent.exam_tab_id ?? '';
-      const examTabId = parent.exam_tab_id ?? parent.test_tab_id;
-      const examId = parent.exam_id ?? parent.test_id;
-      const ragTabId = parent.rag_tab_id;
-      const ragId = parent.rag_id ?? parent.id;
-      return quizzes.map((q) => ({
-        ...q,
-        exam_name: q.exam_name ?? examLabel,
-        exam_tab_id: q.exam_tab_id ?? examTabId,
-        exam_id: q.exam_id ?? examId,
-        rag_tab_id: q.rag_tab_id ?? ragTabId,
-        rag_id: q.rag_id ?? q.ragId ?? ragId,
-      }));
-    });
-    count.value = data?.count ?? items.value.length;
-    weaknessReport.value =
-      data?.weakness_report != null && String(data.weakness_report).trim() !== ''
-        ? String(data.weakness_report).trim()
-        : '';
-  } catch (err) {
-    error.value = err.message || '無法載入學生作答分析';
-    items.value = [];
-    count.value = 0;
-    weaknessReport.value = '';
-  } finally {
-    if (manageLoading) {
-      loading.value = false;
-    }
-  }
-}
-
-/** 開發者／管理者：規則有改時先 PUT，再 GET 並觸發分析報告 */
-async function startCourseAnalysisFromRulesEditor() {
-  if (!canEditCourseAnalysisRules.value) return;
-  const personId = authStore.user?.person_id;
-  if (!personId) {
-    error.value = '請先登入';
-    return;
-  }
-  if (!hasSelectedCourse()) {
-    error.value = COURSE_REQUIRED_MSG;
-    return;
-  }
-  error.value = '';
-  if (courseAnalysisPromptDirty.value) {
-    promptSaving.value = true;
-    try {
-      const url = `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`;
-      const res = await loggedFetch(url, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Person-Id': String(personId),
-        },
-        body: JSON.stringify({ course_analysis_user_prompt_text: courseAnalysisPromptText.value ?? '' }),
-      });
-      if (!res.ok) {
-        error.value = await parseFetchErrorMessage(res, '儲存分析規則失敗');
-        return;
-      }
-      courseAnalysisPromptBaseline.value = String(courseAnalysisPromptText.value ?? '');
-    } catch (e) {
-      error.value = e?.message ?? '無法連線';
-      return;
-    } finally {
-      promptSaving.value = false;
-    }
-  }
-  await runCourseAnalysisQuizFetch({ manageLoading: true });
-}
-
-async function fetchCourseAnalysisOnly() {
-  await runCourseAnalysisQuizFetch({ manageLoading: true });
-}
-
-/** Modal：與測驗頁 QuizCard「出題規則」同源（Bootstrap modal-lg、Markdown、`my-modal-backdrop`） */
-const analysisRulesModalOpen = ref(false);
-const analysisRulesModalLoading = ref(false);
-const analysisRulesModalRaw = ref('');
-
-const analysisRulesModalHtml = computed(() => {
-  const raw = String(analysisRulesModalRaw.value ?? '');
-  return raw.trim() !== '' ? renderMarkdownToSafeHtml(raw) : '';
-});
-
-async function fetchAnalysisRulesForModal() {
-  const personId = authStore.user?.person_id;
-  if (!personId || !hasSelectedCourse()) {
-    analysisRulesModalRaw.value = '';
-    return;
-  }
-  analysisRulesModalLoading.value = true;
-  promptSectionLoading.value = true;
-  try {
-    const url = `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`;
-    const res = await loggedFetch(url, { method: 'GET', headers: { 'X-Person-Id': String(personId) } });
-    if (res.ok) {
-      const data = await res.json();
-      analysisRulesModalRaw.value = parseCourseAnalysisPromptFromBody(data);
-    } else {
-      analysisRulesModalRaw.value = '';
-    }
-  } catch {
-    analysisRulesModalRaw.value = '';
-  } finally {
-    analysisRulesModalLoading.value = false;
-    promptSectionLoading.value = false;
-  }
-}
-
-/** 與 QuizCard「出題規則」：僅在非空白提示文字時顯示按鈕（GET 後寫入 courseAnalysisPromptText，含全 user_type） */
-const analysisRulesSnapshotTrimmed = computed(() =>
-  String(courseAnalysisPromptText.value ?? '').trim(),
-);
-
-const courseAnalysisPromptDirty = computed(
-  () =>
-    String(courseAnalysisPromptText.value ?? '')
-    !== String(courseAnalysisPromptBaseline.value ?? ''),
-);
-
-/** design_3：「開始分析」— 使用後端已儲存之分析規則（未在編輯器改動） */
-const canStartCourseAnalysisFromSavedRules = computed(
-  () =>
-    !courseAnalysisPromptDirty.value
-    && !!authStore.user?.person_id
-    && hasSelectedCourse()
-    && !promptSectionLoading.value
-    && !loading.value
-    && !promptSaving.value,
-);
-
-/** design_3：「儲存並開始分析」— 分析規則已編輯 */
-const canSaveAndStartCourseAnalysis = computed(
-  () =>
-    courseAnalysisPromptDirty.value
-    && !!authStore.user?.person_id
-    && hasSelectedCourse()
-    && !promptSectionLoading.value
-    && !loading.value
-    && !promptSaving.value,
-);
-
-function resetCourseAnalysisPromptToBaseline() {
-  courseAnalysisPromptText.value = String(courseAnalysisPromptBaseline.value ?? '');
-}
-
-async function openCourseAnalysisRulesModal() {
-  analysisRulesModalOpen.value = true;
-  const local = analysisRulesSnapshotTrimmed.value;
-  if (local !== '') {
-    analysisRulesModalRaw.value = courseAnalysisPromptText.value;
-    analysisRulesModalLoading.value = false;
-    return;
-  }
-  await fetchAnalysisRulesForModal();
-}
-
-function closeCourseAnalysisRulesModal() {
-  analysisRulesModalOpen.value = false;
-}
-
-/** design_3：黑底預覽 + Modal 編輯（對齊 create-exam-bank_3 出題規則） */
-const analysisPromptEditModalOpen = ref(false);
-const analysisPromptEditModalDraft = ref('');
-
-const analysisPromptEditModalSavingDisabled = computed(
-  () => promptSectionLoading.value || loading.value || promptSaving.value,
-);
-
-const analysisPromptEditModalResetDisabled = computed(() => {
-  if (analysisPromptEditModalSavingDisabled.value) return true;
-  return (
-    String(analysisPromptEditModalDraft.value ?? '')
-    === String(courseAnalysisPromptBaseline.value ?? '')
-  );
-});
-
-function openAnalysisPromptEditModal() {
-  if (analysisPromptEditModalSavingDisabled.value) return;
-  analysisPromptEditModalDraft.value = String(courseAnalysisPromptText.value ?? '');
-  analysisPromptEditModalOpen.value = true;
-}
-
-function closeAnalysisPromptEditModal() {
-  analysisPromptEditModalOpen.value = false;
-  analysisPromptEditModalDraft.value = '';
-}
-
-function resetAnalysisPromptEditModalDraft() {
-  analysisPromptEditModalDraft.value = String(courseAnalysisPromptBaseline.value ?? '');
-}
-
-function applyAnalysisPromptEditModal() {
-  courseAnalysisPromptText.value = analysisPromptEditModalDraft.value;
-  closeAnalysisPromptEditModal();
-}
-
-watch(
-  () => [authStore.user?.person_id, authStore.currentCourse?.course_id],
-  ([pid, courseId]) => {
-    analysisLoadedOnce.value = false;
-    items.value = [];
-    count.value = 0;
-    weaknessReport.value = '';
-    error.value = '';
-    if (pid && courseId != null) {
-      fetchCourseAnalysisPromptSetting();
-    } else {
-      courseAnalysisPromptText.value = '';
-      courseAnalysisPromptBaseline.value = '';
-    }
-  },
-  { immediate: true },
-);
-
-/** 學習弱點分析報告：後端可能回傳純 JSON 或 ```json ... ```，key 為區塊標題、value 為字串陣列 */
-function extractJsonFromWeaknessReport(text) {
-  if (!text || typeof text !== 'string') return null;
-  let t = text.trim();
-  if (t.startsWith('```')) {
-    const endFence = t.indexOf('\n```');
-    const body = endFence >= 0 ? t.slice(t.indexOf('\n') + 1, endFence) : t.replace(/^```\w*\n?/, '').replace(/\n?```\s*$/, '');
-    t = body.trim();
-  }
-  if (!t.startsWith('{')) return null;
-  try {
-    const obj = JSON.parse(t);
-    return obj && typeof obj === 'object' ? obj : null;
-  } catch {
-    return null;
-  }
-}
-
-const weaknessReportParsed = computed(() => extractJsonFromWeaknessReport(weaknessReport.value));
-
-/** 依 JSON 的 key 順序產生的區塊列表 */
-const weaknessReportSections = computed(() => {
-  const obj = weaknessReportParsed.value;
-  if (!obj) return [];
-  return Object.keys(obj);
-});
-
-/** 與 ExamPage normalizeExamQuizRate 一致 */
-function normalizeExamQuizRate(v) {
-  const n = Number(v);
-  if (n === 1 || n === -1 || n === 0) return n;
-  return 0;
-}
-
-/** 與 ExamPage extractQuizUserPromptFromExamRagRow 鍵名對齊 */
-function extractQuizUserPromptFromRow(raw) {
-  if (!raw || typeof raw !== 'object') return '';
-  const keys = [
-    'quiz_user_prompt_text',
-    'quizUserPromptText',
-    'user_prompt_text',
-    'userPromptText',
-    'prompt_text',
-    'promptText',
-  ];
-  for (const key of keys) {
-    const val = raw[key];
-    if (val == null) continue;
-    const text = String(val);
-    if (text.trim()) return text;
-  }
-  return '';
-}
-
-/** 與 ExamPage extractAnswerUserPromptFromExamRagRow 鍵名對齊 */
-function extractAnswerUserPromptFromRow(raw) {
-  if (!raw || typeof raw !== 'object') return '';
-  const keys = [
-    'answer_user_prompt_text',
-    'answerUserPromptText',
-    'critique_user_prompt_instruction',
-  ];
-  for (const key of keys) {
-    const val = raw[key];
-    if (val == null) continue;
-    const text = String(val);
-    if (text.trim()) return text;
-  }
-  return '';
-}
-
-/** 與 ExamPage examQuizDisplayNameFromRow 一致（題型欄） */
-function examQuizDisplayNameFromRow(quiz) {
-  if (!quiz || typeof quiz !== 'object') return '';
-  const direct = quiz.quiz_name ?? quiz.quizName ?? quiz.QuizName;
-  if (direct != null && String(direct).trim() !== '') return String(direct).trim();
-  const meta = quiz.quiz_metadata ?? quiz.quizMetadata;
-  if (meta != null && typeof meta === 'object') {
-    const mn = meta.quiz_name ?? meta.quizName;
-    if (mn != null && String(mn).trim() !== '') return String(mn).trim();
-  }
-  return '';
-}
-
-function studentQuizTypeLabel(quiz) {
-  const s = examQuizDisplayNameFromRow(quiz);
-  return s || '—';
-}
-
-/**
- * 與 ExamPage buildCardFromExamQuiz 相同欄位，供 QuizCard 與測驗頁同一套題目區 UI。
- * @param {object} item
- * @param {number} index
- */
-function studentItemToQuizCard(item, index) {
-  const answers = Array.isArray(item?.answers) ? item.answers : [];
-  const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
-  const latestSubmitted =
-    latestAnswer?.quiz_answer ??
-    latestAnswer?.student_answer ??
-    latestAnswer?.answer_text ??
-    latestAnswer?.content ??
-    (item?.answer_content != null && String(item.answer_content).trim() !== ''
-      ? String(item.answer_content)
-      : null);
-  const quiz_answer =
-    latestSubmitted != null && String(latestSubmitted).trim() !== ''
-      ? String(latestSubmitted)
-      : '';
-  const gradingResult = latestAnswer
-    ? (formatGradingResult(JSON.stringify(latestAnswer)) ||
-        (latestSubmitted != null && String(latestSubmitted).trim() !== '' ? '已批改' : ''))
-    : '';
-  const quizId = item?.exam_quiz_id ?? item?.quiz_id ?? null;
-  const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
-  const rid = item?.rag_id ?? item?.ragId ?? null;
-  const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
-  const ragName = (item?.rag_name ?? item?.unit_name ?? item?.exam_name ?? '').trim() || null;
-  return {
-    id: `student-analysis-card-${quizId ?? item?.rag_quiz_id ?? index}-${index}`,
-    quiz: item?.quiz_content ?? item?.quiz ?? item?.question ?? '',
-    hint: item?.quiz_hint ?? item?.hint ?? '',
-    referenceAnswer:
-      item?.quiz_answer_reference ?? item?.quiz_reference_answer ?? item?.reference_answer ?? '',
-    sourceFilename: item?.file_name ?? null,
-    ragName,
-    rag_id: ragIdStr,
-    rag_unit_id:
-      item?.rag_unit_id != null && item?.rag_unit_id !== ''
-        ? Number(item.rag_unit_id)
-        : null,
-    rag_quiz_id:
-      item?.rag_quiz_id != null && item?.rag_quiz_id !== ''
-        ? Number(item.rag_quiz_id)
-        : null,
-    quiz_answer,
-    hintVisible: false,
-    referenceAnswerVisible: false,
-    quiz_rate: normalizeExamQuizRate(item?.quiz_rate),
-    rateError: '',
-    confirmed: !!latestAnswer,
-    gradingResult,
-    gradingResponseJson: latestAnswer ?? null,
-    generateQuizResponseJson: null,
-    exam_quiz_id: quizId,
-    answer_id: answerId,
-    gradingPrompt: extractAnswerUserPromptFromRow(item).trim(),
-    quiz_user_prompt_text: extractQuizUserPromptFromRow(item).trim(),
-    examQuizDisplayName: examQuizDisplayNameFromRow(item),
-  };
-}
-
-function toggleStudentHint(card) {
-  if (!card || typeof card !== 'object') return;
-  card.hintVisible = !card.hintVisible;
-}
-
-function toggleStudentReferenceAnswer(card) {
-  if (!card || typeof card !== 'object') return;
-  card.referenceAnswerVisible = !card.referenceAnswerVisible;
-}
-
-watch(
+const {
+  authStore,
+  canEditRules,
+  md,
+  weaknessScalarToMdHtml,
   items,
-  (list) => {
-    quizCardUi.value = list.map((it, i) => studentItemToQuizCard(it, i));
-  },
-  { immediate: true },
-);
-
-function studentSlotQuizBodyTrim(idx) {
-  const c = quizCardUi.value[idx];
-  return String(c?.quiz ?? '').trim();
-}
+  quizCardUi,
+  weaknessReport,
+  loading,
+  error,
+  analysisLoadedOnce,
+  promptText,
+  promptSectionLoading,
+  promptSaving,
+  overlayBlocking,
+  overlayLoadingText,
+  hasSelectedCourse,
+  fetchAnalysisOnly,
+  startAnalysisFromRulesEditor,
+  promptDirty,
+  canStartFromSavedRules,
+  canSaveAndStart,
+  resetPromptToBaseline,
+  analysisRulesModalOpen,
+  analysisRulesModalLoading,
+  analysisRulesModalHtml,
+  analysisRulesSnapshotTrimmed,
+  openRulesModal,
+  closeRulesModal,
+  editModalOpen,
+  editModalDraft,
+  editModalSavingDisabled,
+  editModalResetDisabled,
+  openEditModal,
+  closeEditModal,
+  resetEditModalDraft,
+  applyEditModal,
+  reportParsed,
+  reportSections,
+  quizTypeLabel,
+  toggleHint,
+  toggleReferenceAnswer,
+  slotQuizBodyTrim,
+} = useAnalysisPage({
+  apiQuizzesUrlFn: () => `${API_BASE}${API_COURSE_ANALYSIS_QUIZZES}`,
+  apiPromptUrl: `${API_BASE}${API_COURSE_ANALYSIS_USER_PROMPT}`,
+  promptBodyKey: 'course_analysis_user_prompt_text',
+  parsePromptFromBody,
+  courseRequiredMsg: '請先於左側選單選擇課程，再進行學生作答分析。',
+  loginRequiredMsg: '請先登入以查看學生作答分析',
+  overlayFetchText: '載入學生作答與分析報告中...',
+  cardIdPrefix: 'student-analysis-card',
+});
 </script>
 
 <template>
@@ -583,7 +111,7 @@ function studentSlotQuizBodyTrim(idx) {
                 type="button"
                 class="btn-close"
                 aria-label="關閉"
-                @click="closeCourseAnalysisRulesModal"
+                @click="closeRulesModal"
               />
             </div>
             <div class="modal-body p-0 lh-base" style="max-height: 70vh; overflow: auto;">
@@ -599,10 +127,7 @@ function studentSlotQuizBodyTrim(idx) {
                   class="my-markdown-rendered my-font-md-400 my-color-black text-break"
                   v-html="analysisRulesModalHtml"
                 />
-                <span
-                  v-else
-                  class="my-font-md-400 my-color-black"
-                >—</span>
+                <span v-else class="my-font-md-400 my-color-black">—</span>
               </template>
             </div>
           </div>
@@ -611,7 +136,7 @@ function studentSlotQuizBodyTrim(idx) {
     </Teleport>
     <Teleport to="body">
       <div
-        v-if="analysisPromptEditModalOpen"
+        v-if="editModalOpen"
         class="modal fade show d-block my-modal-backdrop"
         tabindex="-1"
         role="dialog"
@@ -634,14 +159,14 @@ function studentSlotQuizBodyTrim(idx) {
                 type="button"
                 class="btn-close"
                 aria-label="關閉"
-                @click="closeAnalysisPromptEditModal"
+                @click="closeEditModal"
               />
             </div>
             <div class="modal-body p-0 min-w-0">
               <EnglishExamMarkdownEditor
-                v-model="analysisPromptEditModalDraft"
+                v-model="editModalDraft"
                 textarea-id="student-analysis-rules-edit-md"
-                :disabled="analysisPromptEditModalSavingDisabled"
+                :disabled="editModalSavingDisabled"
                 prompt-code-font
               />
             </div>
@@ -653,16 +178,16 @@ function studentSlotQuizBodyTrim(idx) {
                 class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
                 title="還原為上次載入或儲存後的內容"
                 aria-label="重設"
-                :disabled="analysisPromptEditModalResetDisabled"
-                @click="resetAnalysisPromptEditModalDraft"
+                :disabled="editModalResetDisabled"
+                @click="resetEditModalDraft"
               >
                 重設
               </button>
               <button
                 type="button"
                 class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2"
-                :disabled="analysisPromptEditModalSavingDisabled"
-                @click="applyAnalysisPromptEditModal"
+                :disabled="editModalSavingDisabled"
+                @click="applyEditModal"
               >
                 確定
               </button>
@@ -687,7 +212,7 @@ function studentSlotQuizBodyTrim(idx) {
         <div class="row justify-content-center">
           <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
             <div
-              v-if="canEditCourseAnalysisRules"
+              v-if="canEditRules"
               :class="props.design3
                 ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section analysis-page-3-rules my-design--side-panel-left'
                 : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4'"
@@ -716,8 +241,8 @@ function studentSlotQuizBodyTrim(idx) {
                                   class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
                                   title="編輯分析規則"
                                   aria-label="編輯分析規則"
-                                  :disabled="analysisPromptEditModalSavingDisabled"
-                                  @click="openAnalysisPromptEditModal"
+                                  :disabled="editModalSavingDisabled"
+                                  @click="openEditModal"
                                 >
                                   <i class="fa-solid fa-pen" aria-hidden="true" />
                                 </button>
@@ -726,12 +251,12 @@ function studentSlotQuizBodyTrim(idx) {
                           </header>
                           <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
                             <EnglishExamMarkdownEditor
-                              :model-value="courseAnalysisPromptText"
+                              :model-value="promptText"
                               preview-only
                               preview-design-dark
                               preview-design-dark-embedded
                               textarea-id="student-analysis-rules-preview"
-                              :disabled="analysisPromptEditModalSavingDisabled"
+                              :disabled="editModalSavingDisabled"
                             />
                           </div>
                         </section>
@@ -740,7 +265,7 @@ function studentSlotQuizBodyTrim(idx) {
                         class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
                       >
                         <LogoGradientPillButton
-                          v-if="canStartCourseAnalysisFromSavedRules"
+                          v-if="canStartFromSavedRules"
                           id-prefix="student-analysis-start"
                           tone="generate"
                           gradient-bias="work3"
@@ -748,12 +273,12 @@ function studentSlotQuizBodyTrim(idx) {
                           title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存並開始分析」，或於編輯 Modal 內重設"
                           aria-label="開始分析"
                           :aria-busy="loading || promptSaving"
-                          @click="fetchCourseAnalysisOnly"
+                          @click="fetchAnalysisOnly"
                         >
                           開始分析
                         </LogoGradientPillButton>
                         <LogoGradientPillButton
-                          v-if="canSaveAndStartCourseAnalysis"
+                          v-if="canSaveAndStart"
                           id-prefix="student-analysis-save-start"
                           tone="generate"
                           gradient-bias="work3"
@@ -761,15 +286,12 @@ function studentSlotQuizBodyTrim(idx) {
                           title="儲存分析規則並開始分析"
                           aria-label="儲存並開始分析"
                           :aria-busy="loading || promptSaving"
-                          @click="startCourseAnalysisFromRulesEditor"
+                          @click="startAnalysisFromRulesEditor"
                         >
                           儲存並開始分析
                         </LogoGradientPillButton>
                         <LogoGradientPillButton
-                          v-if="
-                            !canStartCourseAnalysisFromSavedRules
-                            && !canSaveAndStartCourseAnalysis
-                          "
+                          v-if="!canStartFromSavedRules && !canSaveAndStart"
                           id-prefix="student-analysis-save-start-disabled"
                           tone="generate"
                           gradient-bias="work3"
@@ -791,7 +313,7 @@ function studentSlotQuizBodyTrim(idx) {
                     for="student-analysis-report-rules-md"
                   >分析規則</label>
                   <EnglishExamMarkdownEditor
-                    v-model="courseAnalysisPromptText"
+                    v-model="promptText"
                     textarea-id="student-analysis-report-rules-md"
                     placeholder=""
                     :disabled="promptSectionLoading || loading || promptSaving"
@@ -803,8 +325,8 @@ function studentSlotQuizBodyTrim(idx) {
                     class="btn rounded-pill my-font-md-400 px-4 py-2 my-btn-outline-gray-1"
                     title="還原為上次載入或儲存後的內容"
                     aria-label="重設分析規則"
-                    :disabled="promptSectionLoading || loading || promptSaving || !courseAnalysisPromptDirty"
-                    @click="resetCourseAnalysisPromptToBaseline"
+                    :disabled="promptSectionLoading || loading || promptSaving || !promptDirty"
+                    @click="resetPromptToBaseline"
                   >
                     重設
                   </button>
@@ -815,7 +337,7 @@ function studentSlotQuizBodyTrim(idx) {
                     aria-label="儲存並開始分析"
                     :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
                     :aria-busy="loading || promptSaving"
-                    @click="startCourseAnalysisFromRulesEditor"
+                    @click="startAnalysisFromRulesEditor"
                   >
                     儲存並開始分析
                   </button>
@@ -823,9 +345,9 @@ function studentSlotQuizBodyTrim(idx) {
               </template>
             </div>
 
-            <!-- 非開發者／管理者：無編輯區時由此啟動分析；user_type 1／2 改用上區「儲存並開始分析」 -->
+            <!-- 非開發者／管理者：無編輯區時由此啟動分析 -->
             <div
-              v-if="!canEditCourseAnalysisRules"
+              v-if="!canEditRules"
               :class="props.design3
                 ? 'd-flex justify-content-start align-items-center w-100 py-4 analysis-page-3-section'
                 : 'd-flex justify-content-center align-items-center w-100 py-2 px-2 mb-4'"
@@ -837,7 +359,7 @@ function studentSlotQuizBodyTrim(idx) {
                 aria-label="開始作答分析"
                 :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
                 :aria-busy="loading"
-                @click="fetchCourseAnalysisOnly"
+                @click="fetchAnalysisOnly"
               >
                 <i class="fa-solid fa-play" aria-hidden="true" />
                 開始作答分析
@@ -865,9 +387,9 @@ function studentSlotQuizBodyTrim(idx) {
                     <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
                       課程作答分析報告
                     </div>
-                    <template v-if="weaknessReportParsed">
+                    <template v-if="reportParsed">
                       <div
-                        v-for="sectionKey in weaknessReportSections"
+                        v-for="sectionKey in reportSections"
                         :key="sectionKey"
                         class="d-flex flex-column gap-2 mb-0"
                       >
@@ -876,18 +398,18 @@ function studentSlotQuizBodyTrim(idx) {
                           v-html="md(sectionKey)"
                         />
                         <ul
-                          v-if="Array.isArray(weaknessReportParsed[sectionKey]) && weaknessReportParsed[sectionKey].length"
+                          v-if="Array.isArray(reportParsed[sectionKey]) && reportParsed[sectionKey].length"
                           class="my-weakness-report-md-list my-font-md-400 lh-base ps-3 mb-0"
                         >
                           <li
-                            v-for="(line, i) in weaknessReportParsed[sectionKey]"
+                            v-for="(line, i) in reportParsed[sectionKey]"
                             :key="i"
                             class="my-weakness-report-md my-font-md-400 my-color-black text-break"
                             v-html="md(line)"
                           />
                         </ul>
                         <div
-                          v-else-if="Array.isArray(weaknessReportParsed[sectionKey]) && weaknessReportParsed[sectionKey].length === 0"
+                          v-else-if="Array.isArray(reportParsed[sectionKey]) && reportParsed[sectionKey].length === 0"
                           class="my-font-md-400 my-color-gray-4 mb-0"
                         >
                           —
@@ -895,7 +417,7 @@ function studentSlotQuizBodyTrim(idx) {
                         <div
                           v-else
                           class="my-weakness-report-md my-font-md-400 lh-base my-color-black text-break mb-0"
-                          v-html="weaknessScalarToMdHtml(weaknessReportParsed[sectionKey])"
+                          v-html="weaknessScalarToMdHtml(reportParsed[sectionKey])"
                         />
                       </div>
                     </template>
@@ -913,13 +435,13 @@ function studentSlotQuizBodyTrim(idx) {
                         class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-color-gray-1 px-3 py-1 my-btn-outline-gray-1"
                         title="分析規則（Markdown）"
                         aria-label="分析規則"
-                        @click="openCourseAnalysisRulesModal"
+                        @click="openRulesModal"
                       >
                         分析規則
                       </button>
                     </div>
                     <div
-                      v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditCourseAnalysisRules"
+                      v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditRules"
                       class="w-100 min-w-0 pt-3 analysis-page-3-rules my-design--side-panel-left"
                     >
                       <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
@@ -940,11 +462,11 @@ function studentSlotQuizBodyTrim(idx) {
                           </header>
                           <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
                             <EnglishExamMarkdownEditor
-                              :model-value="courseAnalysisPromptText"
+                              :model-value="promptText"
                               preview-only
                               preview-design-dark
                               preview-design-dark-embedded
-                              :textarea-id="`student-analysis-rules-report-ro`"
+                              textarea-id="student-analysis-rules-report-ro"
                             />
                           </div>
                         </section>
@@ -990,21 +512,21 @@ function studentSlotQuizBodyTrim(idx) {
                             <div
                               class="my-font-md-400 my-color-black text-break lh-base mt-1"
                               role="status"
-                              :aria-label="`題型：${studentQuizTypeLabel(item)}`"
+                              :aria-label="`題型：${quizTypeLabel(item)}`"
                             >
-                              {{ studentQuizTypeLabel(item) }}
+                              {{ quizTypeLabel(item) }}
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
                     <AnalysisDesign3QuizBlocks
-                      v-if="props.design3 && studentSlotQuizBodyTrim(idx) !== ''"
+                      v-if="props.design3 && slotQuizBodyTrim(idx) !== ''"
                       :card="quizCardUi[idx]"
                       :slot-index="idx + 1"
                     />
                     <QuizCard
-                      v-else-if="!props.design3 && studentSlotQuizBodyTrim(idx) !== ''"
+                      v-else-if="!props.design3 && slotQuizBodyTrim(idx) !== ''"
                       :card="quizCardUi[idx]"
                       :slot-index="idx + 1"
                       :current-rag-id="quizCardUi[idx]?.rag_id"
@@ -1015,8 +537,8 @@ function studentSlotQuizBodyTrim(idx) {
                       design-embedded
                       hide-slot-index
                       hide-grading-prompt
-                      @toggle-hint="toggleStudentHint"
-                      @toggle-reference-answer="toggleStudentReferenceAnswer"
+                      @toggle-hint="toggleHint"
+                      @toggle-reference-answer="toggleReferenceAnswer"
                     />
                   </div>
                 </div>

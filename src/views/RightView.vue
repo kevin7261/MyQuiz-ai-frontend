@@ -18,14 +18,6 @@
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
   import LogListPage from '../pages/LogListPage.vue';
 
-  const VIEWS_WITH_DESIGN3 = new Set([
-    'personAnalysis',
-    'courseAnalysis',
-    'profile',
-    'userManagement',
-    'systemSettings',
-  ]);
-
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
     work: markRaw(ExamPage2),
@@ -52,25 +44,12 @@
       },
       activePageProps() {
         if (this.currentView === 'work') {
-          return {
-            tabId: this.tabId,
-            routeBase: '/exam',
-            sidePanelOnLeft: true,
-            useExamDetailRoute: true,
-          };
+          return { tabId: this.tabId, routeBase: '/exam', sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
         }
         if (this.currentView === 'createExamQuizBank') {
-          return {
-            tabId: this.tabId,
-            routeBase: '/create-exam-bank',
-            sidePanelOnLeft: true,
-            useExamDetailRoute: true,
-          };
+          return { tabId: this.tabId, routeBase: '/create-exam-bank', sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
         }
-        if (VIEWS_WITH_DESIGN3.has(this.currentView)) {
-          return { design3: true };
-        }
-        return {};
+        return { design3: true };
       },
       /** 測驗／建立測驗題庫／design / 分析頁：主內容區顯示捲軸（與左側清單一致） */
       showMainScrollbar() {

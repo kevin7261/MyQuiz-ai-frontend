@@ -46,9 +46,9 @@ function close() {
       @click.self="close"
     >
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" @click.stop>
-        <div class="modal-content">
-          <div class="modal-header border-bottom-0 pb-1">
-            <h5 id="course-select-modal-title" class="modal-title my-font-lg-600">
+        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+          <div class="modal-header border-bottom-0 p-0">
+            <h5 id="course-select-modal-title" class="modal-title my-font-lg-600 my-color-black">
               選擇課程
             </h5>
             <button
@@ -60,7 +60,7 @@ function close() {
             />
           </div>
 
-          <div class="modal-body pt-2 pb-3">
+          <div class="modal-body p-0">
             <!-- 無課程 -->
             <div
               v-if="courses.length === 0"
@@ -102,7 +102,7 @@ function close() {
 }
 .my-course-select-btn:hover,
 .my-course-select-btn:focus-visible {
-  background-color: var(--my-color-gray-3, #ebebeb);
+  background-color: var(--my-color-gray-2, #e0e0e0);
   outline: none;
 }
 </style>

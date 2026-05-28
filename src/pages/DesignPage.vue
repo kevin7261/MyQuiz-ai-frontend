@@ -22,6 +22,7 @@ import { API_BASE } from '../constants/api.js';
 
 defineProps({
   tabId: { type: String, default: '' },
+  design3: { type: Boolean, default: false },
 });
 
 const demoExamLabel = ref('範例試卷 A');

@@ -1,31 +1,16 @@
 <script>
-  /**
-   * HomeView - 登入後的主畫面
-   *
-   * 職責：
-   * - 左側選單：測驗、作答弱點分析；其餘項目與登出在使用者名下拉選單
-   * - 依 route.path / route.params.view 決定 currentView，只渲染對應的一個頁面組件
-   * - /exam 對應 work（九宮格＋TopView），/:view 對應 person-analysis 等
-   * - onMounted 時在 dataStore 註冊一個工作分頁（MAIN_WORK_TAB_ID）供 Exam 使用
-   * - 登入後若 currentCourse 為 null，自動顯示 CourseSelectModal 讓使用者選擇課程
-   * - 切換至不同課程時整頁重新載入，確保各頁 API 與快取狀態皆對應新 course_id
-   */
-  import { ref, computed, onMounted, watch } from 'vue';
-  import { useRouter, useRoute } from 'vue-router';
-  import LoadingOverlay from '../components/LoadingOverlay.vue';
-  import CourseSelectModal from '../components/CourseSelectModal.vue';
-  import LeftView from './LeftView.vue';
-  import TopView from './TopView.vue';
-  import SideRailView from './SideRailView.vue';
-  import RightView from './RightView.vue';
-  import { useDataStore } from '../stores/dataStore.js';
-  import { useAuthStore } from '../stores/authStore.js';
-  import { userMayAccessRoute } from '../router/permissions.js';
+import { ref, computed, onMounted, watch } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
+import CourseSelectModal from '../components/CourseSelectModal.vue';
+import SideRailView from './SideRailView.vue';
+import TopView from './TopView.vue';
+import RightView from './RightView.vue';
+import { useDataStore } from '../stores/dataStore.js';
+import { useAuthStore } from '../stores/authStore.js';
+import { userMayAccessRoute } from '../router/permissions.js';
 
-  /** Exam 頁使用的固定分頁 id（與 dataStore workTabs 對應） */
-  const MAIN_WORK_TAB_ID = 'main';
+const MAIN_WORK_TAB_ID = 'main';
 
-/** 網址 params.view 對應內部 currentView 類型 */
 const PATH_TO_VIEW = {
   work: 'work',
   'person-analysis': 'personAnalysis',
@@ -38,146 +23,107 @@ const PATH_TO_VIEW = {
   settings: 'systemSettings',
   log: 'logList',
 };
-  const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
+const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 
-  export default {
-    name: 'HomeView',
-    components: { LoadingOverlay, CourseSelectModal, LeftView, TopView, SideRailView, RightView },
+export default {
+  name: 'HomeView',
+  components: { CourseSelectModal, SideRailView, TopView, RightView },
 
-    setup() {
-      const router = useRouter();
-      const route = useRoute();
-      const dataStore = useDataStore();
-      const authStore = useAuthStore();
+  setup() {
+    const router = useRouter();
+    const route = useRoute();
+    const dataStore = useDataStore();
+    const authStore = useAuthStore();
 
-      /** 課程 Modal 是否開啟：currentCourse 為 null 時自動開啟；亦可由左側課程按鈕手動開啟 */
-      const courseModalOpen = ref(false);
+    const courseModalOpen = ref(false);
 
-      /** 目前要顯示的區塊：work | personAnalysis | courseAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
-      const currentView = computed(() => {
-        if (route.name === 'Exam' || route.name === 'ExamDetail') return 'work';
-        if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') {
-          return 'createExamQuizBank';
-        }
-        if (route.name === 'Design') return 'designPage';
-        return PATH_TO_VIEW[route.params.view] || 'work';
-      });
-      const userName = computed(() => (authStore.user && authStore.user.name ? authStore.user.name : '—'));
+    const currentView = computed(() => {
+      if (route.name === 'Exam' || route.name === 'ExamDetail') return 'work';
+      if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') return 'createExamQuizBank';
+      if (route.name === 'Design') return 'designPage';
+      return PATH_TO_VIEW[route.params.view] || 'work';
+    });
 
-      /** 測驗／建立測驗題庫／design 等：系統 header + 課程 header + 主內容 */
-      const useTopHeaderLayout = computed(
-        () =>
-          route.name === 'Exam'
-          || route.name === 'ExamDetail'
-          || route.name === 'CreateExamBank'
-          || route.name === 'CreateExamBankDetail'
-          || route.name === 'Design'
-          || route.params.view === 'person-analysis'
-          || route.params.view === 'course-analysis'
-          || route.params.view === 'manage-users'
-          || route.params.view === 'profile'
-          || route.params.view === 'settings'
-          || route.params.view === 'log'
-          || route.params.view === 'logo',
-      );
+    const userName = computed(() =>
+      authStore.user?.name ? authStore.user.name : '—',
+    );
 
-      /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */
-      watch(
-        () => authStore.currentCourse,
-        (course) => {
-          if (course === null && authStore.user) {
-            courseModalOpen.value = true;
-          }
-        },
-        { immediate: true }
-      );
+    watch(
+      () => authStore.currentCourse,
+      (course) => {
+        if (course === null && authStore.user) courseModalOpen.value = true;
+      },
+      { immediate: true },
+    );
 
-      function onCourseSelect(course) {
-        const prev = authStore.currentCourse;
-        const isDifferent =
-          !prev ||
-          prev.course_id !== course.course_id ||
-          prev.course_user_id !== course.course_user_id;
-        authStore.setCurrentCourse(course);
-        courseModalOpen.value = false;
-        if (isDifferent) {
-          window.location.reload();
-        }
+    function onCourseSelect(course) {
+      const prev = authStore.currentCourse;
+      const isDifferent =
+        !prev ||
+        prev.course_id !== course.course_id ||
+        prev.course_user_id !== course.course_user_id;
+      authStore.setCurrentCourse(course);
+      courseModalOpen.value = false;
+      if (isDifferent) window.location.reload();
+    }
+
+    function openCourseModal() {
+      courseModalOpen.value = true;
+    }
+
+    const setView = (type) => {
+      if (type === 'work') {
+        if (route.name !== 'Exam' && route.name !== 'ExamDetail') router.push('/exam');
+        return;
       }
-
-      function onCourseModalClose() {
-        courseModalOpen.value = false;
-      }
-
-      function openCourseModal() {
-        courseModalOpen.value = true;
-      }
-
-      /** 切換顯示區塊（由導覽連結或程式呼叫）；work 導向 /exam，其餘導向 /:view */
-      const setView = (type) => {
-        if (type === 'work') {
-          if (route.name !== 'Exam' && route.name !== 'ExamDetail') router.push('/exam');
-          return;
+      if (type === 'createExamQuizBank') {
+        if (route.name !== 'CreateExamBank' && route.name !== 'CreateExamBankDetail') {
+          router.push('/create-exam-bank');
         }
-        if (type === 'createExamQuizBank') {
-          if (route.name !== 'CreateExamBank' && route.name !== 'CreateExamBankDetail') {
-            router.push('/create-exam-bank');
-          }
-          return;
+        return;
+      }
+      const path = VIEW_TO_PATH[type] ?? 'work';
+      if (route.params.view !== path) router.push(`/${path}`);
+    };
+
+    const onLogout = () => {
+      authStore.logout();
+      router.push('/login');
+    };
+
+    onMounted(() => {
+      dataStore.addWorkTab(MAIN_WORK_TAB_ID);
+    });
+
+    watch(
+      () => [route.fullPath, authStore.user],
+      () => {
+        if (!authStore.user) return;
+        if (!userMayAccessRoute(authStore.user, route)) {
+          router.replace({ path: '/exam', replace: true });
         }
-        const path = VIEW_TO_PATH[type] ?? 'work';
-        if (route.params.view !== path) router.push(`/${path}`);
-      };
+      },
+      { immediate: true },
+    );
 
-      /** 登出：清空 authStore 並導向 /login */
-      const onLogout = () => {
-        authStore.logout();
-        router.push('/login');
-      };
-
-      onMounted(() => {
-        dataStore.addWorkTab(MAIN_WORK_TAB_ID);
-      });
-
-      /** 與全域守衛雙重確認：若仍落在無權限路由（例如狀態還原時序），強制導向 /exam */
-      watch(
-        () => [route.fullPath, authStore.user],
-        () => {
-          if (!authStore.user) return;
-          if (!userMayAccessRoute(authStore.user, route)) {
-            router.replace({ path: '/exam', replace: true });
-          }
-        },
-        { immediate: true }
-      );
-
-      return {
-        currentView,
-        useTopHeaderLayout,
-        MAIN_WORK_TAB_ID,
-        userName,
-        authStore,
-        courseModalOpen,
-        setView,
-        onLogout,
-        onCourseSelect,
-        onCourseModalClose,
-        openCourseModal,
-      };
-    },
-  };
+    return {
+      currentView,
+      MAIN_WORK_TAB_ID,
+      userName,
+      authStore,
+      courseModalOpen,
+      setView,
+      onLogout,
+      onCourseSelect,
+      openCourseModal,
+      onCourseModalClose: () => { courseModalOpen.value = false; },
+    };
+  },
+};
 </script>
 
 <template>
   <div class="container-fluid h-100 d-flex flex-column p-0">
-    <LoadingOverlay
-      :isVisible="false"
-      loadingText="載入中..."
-      :progress="0"
-      :showProgress="false"
-      subText=""
-    />
-
     <CourseSelectModal
       :open="courseModalOpen"
       :courses="authStore.courses"
@@ -186,7 +132,7 @@ const PATH_TO_VIEW = {
       @close="onCourseModalClose"
     />
 
-    <div v-if="useTopHeaderLayout" class="d-flex flex-row h-100 g-0 my-home-layout my-home-layout--top-header">
+    <div class="d-flex flex-row h-100 g-0 my-home-layout">
       <SideRailView
         :user-name="userName"
         :user-type="authStore.user?.user_type"
@@ -202,20 +148,6 @@ const PATH_TO_VIEW = {
         </div>
       </div>
     </div>
-
-    <div v-else class="row h-100 g-0 my-home-layout">
-      <div class="col-4 col-md-3 col-lg-2 h-100 overflow-hidden">
-        <LeftView
-          :user-name="userName"
-          :user-type="authStore.user?.user_type"
-          @logout="onLogout"
-          @open-course-modal="openCourseModal"
-        />
-      </div>
-      <div class="col-8 col-md-9 col-lg-10 h-100 overflow-hidden d-flex flex-column">
-        <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
-      </div>
-    </div>
   </div>
 </template>
 
@@ -223,9 +155,6 @@ const PATH_TO_VIEW = {
 .my-home-layout {
   min-height: 0;
   flex: 1 1 0;
-}
-
-.my-home-layout--top-header {
   align-items: stretch;
 }
 </style>

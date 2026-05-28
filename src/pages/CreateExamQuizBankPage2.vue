@@ -34,6 +34,7 @@ const props = defineProps({
   sidePanelOnLeft: { type: Boolean, default: false },
   /** 詳情路由為 /:exam_id/:exam_quiz_id */
   useExamDetailRoute: { type: Boolean, default: true },
+  design3: { type: Boolean, default: false },
 });
 
 const UPLOAD_ALLOWED_EXTENSIONS = ['.zip'];

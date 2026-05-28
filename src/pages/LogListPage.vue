@@ -5,6 +5,10 @@
  * 讀取目前選取課程（currentCourse.course_id）的 Log，依 log_id 降冪；person_id 由 loggedFetch 帶入（僅供後端請求紀錄）。
  * 僅 user_type=1 可進入（路由與選單由 permissions 限制）；白底主內容、TopView 頁名。
  */
+defineProps({
+  design3: { type: Boolean, default: false },
+});
+
 import { ref, computed, onMounted } from 'vue';
 import { API_BASE, API_LIST_LOGS } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
