@@ -267,7 +267,7 @@ export const API_LIST_LOGS = '/log/logs';
 /**
  * GET /prompt/templates — Get All Prompt Templates
  * query person_id 為呼叫者（必填）。
- * 回傳 rag（向量檢索 retrieval_query／retrieval_k、build_defaults）、
+ * 回傳 placeholders（各區塊占位符說明）、rag（向量檢索，非 Chat LLM prompt）、
  * llm_generate、llm_grade、person_analysis、course_analysis 之 prompt 模板全文。
  */
 export const API_PROMPT_TEMPLATES = '/prompt/templates';
