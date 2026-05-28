@@ -10,8 +10,31 @@
   import { useAuthStore } from '../stores/authStore.js';
   import { API_BASE } from '../constants/api.js';
   import { loggedFetch } from '../utils/loggedFetch.js';
+  import { createRandomLogoDiamondGradient } from '../utils/logoDiamondGradient.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
+
+  function buildLoginLogoColors() {
+    const primaryGrad = createRandomLogoDiamondGradient();
+    const secondaryGrad = createRandomLogoDiamondGradient();
+    return {
+      background: '#ffffff',
+      primaryGradient: {
+        x1: primaryGrad.x1,
+        y1: primaryGrad.y1,
+        x2: primaryGrad.x2,
+        y2: primaryGrad.y2,
+        stops: primaryGrad.stops,
+      },
+      secondaryGradient: {
+        x1: secondaryGrad.x1,
+        y1: secondaryGrad.y1,
+        x2: secondaryGrad.x2,
+        y2: secondaryGrad.y2,
+        stops: secondaryGrad.stops,
+      },
+    };
+  }
 
   export default {
     name: 'LoginView',
@@ -23,6 +46,11 @@
       const password = ref('');
       const loading = ref(false);
       const error = ref('');
+      const loginLogoColors = ref(buildLoginLogoColors());
+
+      function refreshLoginLogoGradient() {
+        loginLogoColors.value = buildLoginLogoColors();
+      }
 
       const onLogin = async () => {
         error.value = '';
@@ -61,7 +89,15 @@
         }
       };
 
-      return { personId, password, loading, error, onLogin };
+      return {
+        personId,
+        password,
+        loading,
+        error,
+        onLogin,
+        loginLogoColors,
+        refreshLoginLogoGradient,
+      };
     },
   };
 </script>
@@ -75,13 +111,21 @@
       >
         <div class="my-login-view-card w-100 min-w-0">
           <div class="d-flex flex-column align-items-center text-center mb-4">
-            <div class="my-login-view-logo flex-shrink-0" aria-hidden="true">
+            <button
+              type="button"
+              class="my-login-view-logo flex-shrink-0"
+              aria-label="重新產生標誌漸層"
+              title="重新產生標誌漸層"
+              @click="refreshLoginLogoGradient"
+            >
               <LogoGridSvg
                 :show-grid="false"
+                unified-primary-gradient
                 size-to-container
                 id-prefix="login"
+                :colors="loginLogoColors"
               />
-            </div>
+            </button>
             <p class="my-login-view-brand my-font-xl-400 my-color-black text-break mb-0 mt-3">
               MyQuiz.ai
             </p>
@@ -139,7 +183,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 0;
+  border: none;
+  background: transparent;
   line-height: 0;
+  cursor: pointer;
 }
 
 .my-login-view-brand {

@@ -41,7 +41,16 @@ const props = defineProps({
   sizeToContainer: { type: Boolean, default: false },
   /** true：centerQuadOnly 時僅繪白色菱形，其餘區域透明 */
   diamondOnly: { type: Boolean, default: false },
+  /**
+   * true：黑／灰圖層各自以 primaryGradient／secondaryGradient 整片合併填色
+   * （userSpaceOnUse + mask），用於登入頁等需一體漸層的場景
+   */
+  unifiedPrimaryGradient: { type: Boolean, default: false },
 });
+
+function parsePctCoord(val) {
+  return parseFloat(String(val ?? '0').replace('%', '')) || 0;
+}
 
 const c = computed(() => ({ ...DEFAULT_COLORS, ...props.colors }));
 
@@ -121,6 +130,8 @@ const useCenterDiamondCutout = computed(
 );
 
 const centerDiamondMaskId = computed(() => `${props.idPrefix}-center-diamond-mask`);
+const primaryUnifiedMaskId = computed(() => `${props.idPrefix}-primary-unified-mask`);
+const secondaryUnifiedMaskId = computed(() => `${props.idPrefix}-secondary-unified-mask`);
 
 const viewBox = computed(() => {
   if (useCenterQuadOnly.value) return '80 80 80 80';
@@ -130,6 +141,63 @@ const viewBox = computed(() => {
   }
   return '0 0 240 180';
 });
+
+const viewBoxMetrics = computed(() => {
+  const parts = viewBox.value.split(/\s+/).map(Number);
+  return {
+    minX: parts[0] ?? 0,
+    minY: parts[1] ?? 0,
+    width: parts[2] ?? 240,
+    height: parts[3] ?? 180,
+  };
+});
+
+const useUnifiedPrimary = computed(
+  () => props.unifiedPrimaryGradient && c.value.primaryGradient && showPrimary.value,
+);
+
+const useUnifiedSecondary = computed(
+  () => props.unifiedPrimaryGradient && c.value.secondaryGradient && showSecondary.value,
+);
+
+function gradientAttrs(gradient, useUnified) {
+  if (!gradient) return null;
+  if (!useUnified) {
+    return {
+      gradientUnits: 'objectBoundingBox',
+      x1: gradient.x1 ?? '0%',
+      y1: gradient.y1 ?? '0%',
+      x2: gradient.x2 ?? '100%',
+      y2: gradient.y2 ?? '100%',
+    };
+  }
+  const { minX, minY, width, height } = viewBoxMetrics.value;
+  return {
+    gradientUnits: 'userSpaceOnUse',
+    x1: minX + (parsePctCoord(gradient.x1) / 100) * width,
+    y1: minY + (parsePctCoord(gradient.y1) / 100) * height,
+    x2: minX + (parsePctCoord(gradient.x2) / 100) * width,
+    y2: minY + (parsePctCoord(gradient.y2) / 100) * height,
+  };
+}
+
+const primaryGradientAttrs = computed(() =>
+  gradientAttrs(c.value.primaryGradient, useUnifiedPrimary.value),
+);
+
+const secondaryGradientAttrs = computed(() =>
+  gradientAttrs(c.value.secondaryGradient, useUnifiedSecondary.value),
+);
+
+const unifiedLayerMaskBounds = computed(() => {
+  const { minX, minY, width, height } = viewBoxMetrics.value;
+  return { x: minX, y: minY, width, height };
+});
+
+const drawPrimaryStrokes = computed(() => showPrimary.value && !useUnifiedPrimary.value);
+const drawPrimaryFills = computed(() => showPrimary.value && !useUnifiedPrimary.value);
+const drawSecondaryStrokes = computed(() => showSecondary.value && !useUnifiedSecondary.value);
+const drawSecondaryFills = computed(() => showSecondary.value && !useUnifiedSecondary.value);
 
 const svgStyle = computed(() => {
   if (props.sizeToContainer) {
@@ -160,13 +228,90 @@ const svgStyle = computed(() => {
 <template>
   <svg :viewBox="viewBox" xmlns="http://www.w3.org/2000/svg" :style="svgStyle">
     <defs>
+      <mask
+        v-if="useUnifiedPrimary"
+        :id="primaryUnifiedMaskId"
+        maskUnits="userSpaceOnUse"
+        maskContentUnits="userSpaceOnUse"
+      >
+        <template v-if="mergeCell5">
+          <g>
+            <path d="M 20 80 A 60 60 0 0 1 80 20" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 80 20 A 60 60 0 0 1 140 80" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 20 80 A 60 60 0 0 0 80 140" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 140 80 A 60 60 0 0 1 80 140" fill="none" stroke="white" stroke-width="40" />
+            <rect x="120" y="80" width="40" height="80" fill="white" />
+            <rect x="120" y="160" width="40" height="20" fill="white" />
+          </g>
+        </template>
+        <template v-else>
+          <template v-if="!useCenterCellsOnly && !useCenterQuadOnly">
+            <path d="M 20 80 A 60 60 0 0 1 80 20" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 80 20 A 60 60 0 0 1 140 80" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 20 80 A 60 60 0 0 0 80 140" fill="none" stroke="white" stroke-width="40" />
+          </template>
+          <template v-if="useCenterDiamondCutout">
+            <path
+              :d="CENTER_DIAMOND_PATH"
+              fill="white"
+              :clip-path="`url(#${idPrefix}-clip-right-half)`"
+            />
+          </template>
+          <template v-else>
+            <rect
+              x="120"
+              y="80"
+              width="40"
+              :height="centerBlockHeight"
+              fill="white"
+            />
+          </template>
+        </template>
+      </mask>
+      <mask
+        v-if="useUnifiedSecondary"
+        :id="secondaryUnifiedMaskId"
+        maskUnits="userSpaceOnUse"
+        maskContentUnits="userSpaceOnUse"
+      >
+        <template v-if="mergeCell5">
+          <g>
+            <path d="M 100 80 A 60 60 0 0 1 160 20" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 160 20 A 60 60 0 0 1 220 80" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 100 80 A 60 60 0 0 0 160 140" fill="none" stroke="white" stroke-width="40" />
+            <rect x="80" y="80" width="40" height="80" fill="white" />
+            <rect x="80" y="160" width="40" height="20" fill="white" />
+            <rect x="200" y="80" width="40" height="100" fill="white" />
+          </g>
+        </template>
+        <template v-else>
+          <template v-if="!useCenterCellsOnly && !useCenterQuadOnly">
+            <path d="M 100 80 A 60 60 0 0 1 160 20" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 160 20 A 60 60 0 0 1 220 80" fill="none" stroke="white" stroke-width="40" />
+            <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" stroke="white" stroke-width="40" />
+          </template>
+          <rect
+            x="80"
+            y="80"
+            width="40"
+            :height="centerBlockHeight"
+            fill="white"
+          />
+          <rect
+            v-if="!useCenterCellsOnly && !useCenterQuadOnly"
+            x="200"
+            y="80"
+            width="40"
+            height="100"
+            fill="white"
+          />
+        </template>
+      </mask>
       <linearGradient
         v-if="c.primaryGradient"
         :id="primaryGradientId"
-        :x1="c.primaryGradient.x1 ?? '0%'"
-        :y1="c.primaryGradient.y1 ?? '0%'"
-        :x2="c.primaryGradient.x2 ?? '100%'"
-        :y2="c.primaryGradient.y2 ?? '100%'"
+        v-bind="primaryGradientAttrs"
       >
         <stop
           v-for="(stop, i) in c.primaryGradient.stops"
@@ -178,10 +323,7 @@ const svgStyle = computed(() => {
       <linearGradient
         v-if="c.secondaryGradient"
         :id="secondaryGradientId"
-        :x1="c.secondaryGradient.x1 ?? '0%'"
-        :y1="c.secondaryGradient.y1 ?? '0%'"
-        :x2="c.secondaryGradient.x2 ?? '100%'"
-        :y2="c.secondaryGradient.y2 ?? '100%'"
+        v-bind="secondaryGradientAttrs"
       >
         <stop
           v-for="(stop, i) in c.secondaryGradient.stops"
@@ -249,17 +391,35 @@ const svgStyle = computed(() => {
       x="0" y="0" width="240" height="160"
       :fill="backgroundPaint"
     />
+    <rect
+      v-if="useUnifiedPrimary"
+      :x="unifiedLayerMaskBounds.x"
+      :y="unifiedLayerMaskBounds.y"
+      :width="unifiedLayerMaskBounds.width"
+      :height="unifiedLayerMaskBounds.height"
+      :fill="primaryPaint"
+      :mask="`url(#${primaryUnifiedMaskId})`"
+    />
+    <rect
+      v-if="useUnifiedSecondary"
+      :x="unifiedLayerMaskBounds.x"
+      :y="unifiedLayerMaskBounds.y"
+      :width="unifiedLayerMaskBounds.width"
+      :height="unifiedLayerMaskBounds.height"
+      :fill="secondaryPaint"
+      :mask="`url(#${secondaryUnifiedMaskId})`"
+    />
     <!-- mergeCell5 模式：格 5 各層畫 1/4 弧成圓 -->
     <template v-if="mergeCell5">
       <g :clip-path="`url(#${idPrefix}-clip-outside-5)`">
         <!-- 黑：弧 1、2、4 -->
-        <g v-if="showPrimary">
+        <g v-if="drawPrimaryStrokes">
           <path d="M 20 80 A 60 60 0 0 1 80 20"   fill="none" :stroke="primaryPaint" stroke-width="40"/>
           <path d="M 80 20 A 60 60 0 0 1 140 80"   fill="none" :stroke="primaryPaint" stroke-width="40"/>
           <path d="M 20 80 A 60 60 0 0 0 80 140"   fill="none" :stroke="primaryPaint" stroke-width="40"/>
         </g>
         <!-- 灰：弧 2、3、6 -->
-        <g v-if="showSecondary">
+        <g v-if="drawSecondaryStrokes">
           <path d="M 100 80 A 60 60 0 0 1 160 20"  fill="none" :stroke="secondaryPaint" stroke-width="40"/>
           <path d="M 160 20 A 60 60 0 0 1 220 80"  fill="none" :stroke="secondaryPaint" stroke-width="40"/>
           <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
@@ -267,20 +427,20 @@ const svgStyle = computed(() => {
       </g>
       <g :clip-path="`url(#${idPrefix}-clip-cell-5)`">
         <!-- 黑：格 5 弧（與 1、2、4 成圓，圓心 80,80）＋右側直線 -->
-        <g v-if="showPrimary">
-          <path d="M 140 80 A 60 60 0 0 1 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-          <rect x="120" y="80" width="40" height="80" :fill="primaryPaint"/>
+        <g v-if="drawPrimaryStrokes || drawPrimaryFills">
+          <path v-if="drawPrimaryStrokes" d="M 140 80 A 60 60 0 0 1 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+          <rect v-if="drawPrimaryFills" x="120" y="80" width="40" height="80" :fill="primaryPaint"/>
         </g>
         <!-- 灰：格 5 弧（與 2、3、6 成圓，對稱軸 x=160）＋左側直線 -->
-        <g v-if="showSecondary">
-          <path d="M 100 80 A 60 60 0 0 0 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-          <rect x="80" y="80" width="40" height="80" :fill="secondaryPaint"/>
+        <g v-if="drawSecondaryStrokes || drawSecondaryFills">
+          <path v-if="drawSecondaryStrokes" d="M 100 80 A 60 60 0 0 0 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+          <rect v-if="drawSecondaryFills" x="80" y="80" width="40" height="80" :fill="secondaryPaint"/>
         </g>
       </g>
       <!-- 延伸列 71／72；62＋81 灰方塊 -->
-      <rect v-if="showSecondary" x="80" y="160" width="40" height="20" :fill="secondaryPaint"/>
-      <rect v-if="showPrimary" x="120" y="160" width="40" height="20" :fill="primaryPaint"/>
-      <rect v-if="showSecondary" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
+      <rect v-if="drawSecondaryFills" x="80" y="160" width="40" height="20" :fill="secondaryPaint"/>
+      <rect v-if="drawPrimaryFills" x="120" y="160" width="40" height="20" :fill="primaryPaint"/>
+      <rect v-if="drawSecondaryFills" x="200" y="80" width="40" height="100" :fill="secondaryPaint"/>
     </template>
     <g v-else>
       <path
@@ -291,17 +451,17 @@ const svgStyle = computed(() => {
       <template v-else>
       <template v-if="!useCenterCellsOnly && !useCenterQuadOnly">
         <!-- 格 1／2／3／4／6：弧線 -->
-        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-        <path v-if="showPrimary" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
-        <path v-if="showPrimary" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
-        <path v-if="showSecondary" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="drawPrimaryStrokes" d="M 20 80 A 60 60 0 0 1 80 20" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="drawPrimaryStrokes" d="M 80 20 A 60 60 0 0 1 140 80" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="drawSecondaryStrokes" d="M 100 80 A 60 60 0 0 1 160 20" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="drawSecondaryStrokes" d="M 160 20 A 60 60 0 0 1 220 80" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
+        <path v-if="drawPrimaryStrokes" d="M 20 80 A 60 60 0 0 0 80 140" fill="none" :stroke="primaryPaint" stroke-width="40"/>
+        <path v-if="drawSecondaryStrokes" d="M 220 80 A 60 60 0 0 1 160 140" fill="none" :stroke="secondaryPaint" stroke-width="40"/>
       </template>
       <!-- 透明底：左 mask 挖洞（51＋53）；右填白色菱形（52＋54） -->
       <template v-if="useCenterDiamondCutout">
         <rect
-          v-if="showSecondary"
+          v-if="drawSecondaryFills"
           x="80"
           y="80"
           width="40"
@@ -310,7 +470,7 @@ const svgStyle = computed(() => {
           :mask="`url(#${centerDiamondMaskId})`"
         />
         <path
-          v-if="showPrimary"
+          v-if="drawPrimaryFills"
           :d="CENTER_DIAMOND_PATH"
           :fill="primaryPaint"
           :clip-path="`url(#${idPrefix}-clip-right-half)`"
@@ -318,7 +478,7 @@ const svgStyle = computed(() => {
       </template>
       <template v-else>
         <rect
-          v-if="showSecondary"
+          v-if="drawSecondaryFills"
           x="80"
           y="80"
           width="40"
@@ -326,7 +486,7 @@ const svgStyle = computed(() => {
           :fill="secondaryPaint"
         />
         <rect
-          v-if="showPrimary"
+          v-if="drawPrimaryFills"
           x="120"
           y="80"
           width="40"
@@ -341,7 +501,7 @@ const svgStyle = computed(() => {
       </template>
       <!-- 62＋81 灰方塊 -->
       <rect
-        v-if="showSecondary && !useCenterCellsOnly && !useCenterQuadOnly"
+        v-if="drawSecondaryFills && !useCenterCellsOnly && !useCenterQuadOnly"
         x="200"
         y="80"
         width="40"
