@@ -36,8 +36,7 @@ const PATH_TO_VIEW = {
   logo: 'logoPage',
   'manage-users': 'userManagement',
   settings: 'systemSettings',
-  logs: 'logList',
-  logs_3: 'logList3',
+  log: 'logList',
 };
   const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 
@@ -78,7 +77,8 @@ const PATH_TO_VIEW = {
           || route.params.view === 'manage-users'
           || route.params.view === 'profile'
           || route.params.view === 'settings'
-          || route.params.view === 'logs_3',
+          || route.params.view === 'log'
+          || route.params.view === 'logo',
       );
 
       /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */

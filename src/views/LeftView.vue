@@ -40,7 +40,7 @@
           canSeeNavLink(t, 'course-analysis') ||
           canSeeNavLink(t, 'users') ||
           canSeeNavLink(t, 'settings') ||
-          canSeeNavLink(t, 'logs')
+          canSeeNavLink(t, 'log')
         );
       });
 
@@ -123,8 +123,8 @@
           <li v-if="canSeeNavLink(userType, 'settings')">
             <router-link class="dropdown-item" to="/settings" active-class="active">系統設定</router-link>
           </li>
-          <li v-if="canSeeNavLink(userType, 'logs')">
-            <router-link class="dropdown-item" to="/logs" active-class="active">系統紀錄</router-link>
+          <li v-if="canSeeNavLink(userType, 'log')">
+            <router-link class="dropdown-item" to="/log" active-class="active">系統紀錄</router-link>
           </li>
           <li v-if="showDividerBeforeProfile">
             <hr class="dropdown-divider" />

@@ -52,7 +52,8 @@
         if (route.params.view === 'manage-users') return '使用者管理';
         if (route.params.view === 'profile') return '個人設定';
         if (route.params.view === 'settings') return '系統設定';
-        if (route.params.view === 'logs' || route.params.view === 'logs_3') return '系統紀錄';
+        if (route.params.view === 'log') return '系統紀錄';
+        if (route.params.view === 'logo') return 'Logo 繪製';
         return '';
       });
 

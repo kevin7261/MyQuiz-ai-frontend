@@ -1,6 +1,6 @@
 <script setup>
 /**
- * ExamPage2 - 測驗九宮格入口（供 ExamPage3 /exam 使用）
+ * ExamPage2 - 測驗九宮格入口（/exam，TopView 全寬版）
  *
  * 首屏以九宮格顯示各測驗；點方塊進入測驗內容（複用 ExamPage，隱藏分頁列）。
  */

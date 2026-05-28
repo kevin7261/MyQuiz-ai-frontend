@@ -36,7 +36,7 @@ const demoBankGridItems = [
 ];
 
 // ── Tab 狀態（sessionStorage 還原） ─────────────────────────────
-const DESIGN3_ACTIVE_TAB_STORAGE_KEY = 'myquiz:designPage:activeTab:v1';
+const DESIGN_ACTIVE_TAB_STORAGE_KEY = 'myquiz:designPage:activeTab:v1';
 const TABS = [
   { id: 'color',      label: '顏色' },
   { id: 'type',       label: '字體' },
@@ -55,7 +55,7 @@ const DESIGN3_TAB_IDS = new Set(TABS.map((tab) => tab.id));
 
 function readDesign3ActiveTab() {
   try {
-    const id = sessionStorage.getItem(DESIGN3_ACTIVE_TAB_STORAGE_KEY);
+    const id = sessionStorage.getItem(DESIGN_ACTIVE_TAB_STORAGE_KEY);
     if (id && DESIGN3_TAB_IDS.has(id)) return id;
   } catch {
     /* private mode / quota */
@@ -68,7 +68,7 @@ const activeTab = ref(readDesign3ActiveTab());
 watch(activeTab, (id) => {
   if (!DESIGN3_TAB_IDS.has(id)) return;
   try {
-    sessionStorage.setItem(DESIGN3_ACTIVE_TAB_STORAGE_KEY, id);
+    sessionStorage.setItem(DESIGN_ACTIVE_TAB_STORAGE_KEY, id);
   } catch {
     /* private mode / quota */
   }
@@ -157,7 +157,7 @@ const DESIGN3_CLASS_HEX = {
   'my-color-red': '#e84136',
 };
 
-function design3ClassHex(className) {
+function designClassHex(className) {
   return DESIGN3_CLASS_HEX[className] ?? '';
 }
 
@@ -312,12 +312,12 @@ const DESIGN3_TYPE_GROUPS = [
   },
 ];
 
-function design3ItemFontClass(group, item) {
+function designItemFontClass(group, item) {
   return item.fontClass ?? group.fontClass;
 }
 
-function design3TypeCss(group, item) {
-  const fc = design3ItemFontClass(group, item);
+function designTypeCss(group, item) {
+  const fc = designItemFontClass(group, item);
   const base = item.colorClass ? `${fc} ${item.colorClass}` : fc;
   return item.cssExtra ? `${base} · ${item.cssExtra}` : base;
 }
@@ -401,17 +401,17 @@ const DESIGN3_PACK_UNIT_TYPE_ICONS = [
   },
 ];
 
-function design3PackUnitTypeIconCss(unitType) {
+function designPackUnitTypeIconCss(unitType) {
   return `${packUnitTypeIconClasses(unitType)} · my-pack-unit-type-icon · my-color-gray-1`;
 }
 </script>
 
 <template>
   <!--
-    DesignPage3｜測驗、建立測驗題庫專用 UI 元件參考（TopView 全寬、白底主內容、左側清單欄）
+    DesignPage｜測驗、建立測驗題庫專用 UI 元件參考（TopView 全寬、白底主內容、左側清單欄）
     版面對齊 ExamPage2／CreateExamQuizBankPage2（sidePanelOnLeft）；頁名由 TopView 顯示
   -->
-  <div class="design-page-3 d-flex flex-column h-100 overflow-hidden my-bgcolor-white">
+  <div class="design-page d-flex flex-column h-100 overflow-hidden my-bgcolor-white">
     <!-- Tab 列（置中；底線隨 tab 寬度） -->
     <div class="flex-shrink-0 w-100 my-rag-tabs-bar my-bgcolor-white pt-3">
       <div class="d-flex justify-content-center w-100 align-items-center">
@@ -433,10 +433,10 @@ function design3PackUnitTypeIconCss(unitType) {
     </div>
 
     <div
-      class="design-page-3__scroll flex-grow-1 min-h-0 overflow-auto position-relative d-flex flex-column design-page-3__scroll--scrollbar px-3 px-md-4 py-4"
+      class="design-page__scroll flex-grow-1 min-h-0 overflow-auto position-relative d-flex flex-column design-page__scroll--scrollbar px-3 px-md-4 py-4"
     >
-      <div class="design-page-3__content flex-grow-1 w-100">
-        <div class="design-page-3__sections mx-auto w-100">
+      <div class="design-page__content flex-grow-1 w-100">
+        <div class="design-page__sections mx-auto w-100">
 
             <!-- ══════════════════════════════════════════════════
                  字體
@@ -460,19 +460,19 @@ function design3PackUnitTypeIconCss(unitType) {
                       :key="item.name"
                       :name="item.name"
                       :usage="item.usage"
-                      :css="design3TypeCss(group, item)"
+                      :css="designTypeCss(group, item)"
                     >
                       <p
                         v-if="item.previewKind === 'course-header'"
                         class="mb-0"
                       >
-                        <span :class="[design3ItemFontClass(group, item), item.colorClass]">範例課程</span>
+                        <span :class="[designItemFontClass(group, item), item.colorClass]">範例課程</span>
                         <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
                         <span :class="[group.fontClass, item.colorClass]">測驗</span>
                       </p>
                       <div
                         v-else-if="item.previewKind === 'stem-tabs'"
-                        class="design-page-3-stem-tabs-preview d-inline-flex align-items-stretch gap-4 border-bottom mb-0"
+                        class="design-page-stem-tabs-preview d-inline-flex align-items-stretch gap-4 border-bottom mb-0"
                         style="border-color: var(--my-color-gray-2) !important;"
                       >
                         <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--active my-font-sm-400 my-color-black">題目</button>
@@ -480,7 +480,7 @@ function design3PackUnitTypeIconCss(unitType) {
                       </div>
                       <div
                         v-else-if="item.previewKind === 'prompt-block-title'"
-                        class="design-page-3-prompt-block-preview rounded-2 overflow-hidden"
+                        class="design-page-prompt-block-preview rounded-2 overflow-hidden"
                       >
                         <div class="px-3 py-2">
                           <span class="my-font-sm-400 my-color-gray-2 mb-0">{{ item.previewText }}</span>
@@ -496,7 +496,7 @@ function design3PackUnitTypeIconCss(unitType) {
                       />
                       <p
                         v-else
-                        :class="[design3ItemFontClass(group, item), item.colorClass, 'mb-0']"
+                        :class="[designItemFontClass(group, item), item.colorClass, 'mb-0']"
                       >{{ item.previewText }}</p>
                     </DesignPageSpecItem>
                   </div>
@@ -523,7 +523,7 @@ function design3PackUnitTypeIconCss(unitType) {
                         :name="item.name"
                         :usage="item.usage"
                         :rows="item.rows"
-                        :hex-for-class="design3ClassHex"
+                        :hex-for-class="designClassHex"
                       />
                     </div>
                   </div>
@@ -544,7 +544,7 @@ function design3PackUnitTypeIconCss(unitType) {
                         :name="item.name"
                         :usage="item.usage"
                         :rows="item.rows"
-                        :hex-for-class="design3ClassHex"
+                        :hex-for-class="designClassHex"
                       />
                     </div>
                   </div>
@@ -565,7 +565,7 @@ function design3PackUnitTypeIconCss(unitType) {
                     css="my-course-header my-bgcolor-white · my-font-lg-600 my-color-black（課程名）· my-font-lg-400 my-color-black（頁面名）· ExamPageExamSwitchDropdown／CreateExamQuizBankBankSwitchDropdown（my-course-header-nav-btn px-4 py-2）"
                     copy-text="my-course-header my-bgcolor-white"
                   >
-                  <header class="design-page-3-topview-preview my-course-header flex-shrink-0 my-bgcolor-white border rounded-3">
+                  <header class="design-page-topview-preview my-course-header flex-shrink-0 my-bgcolor-white border rounded-3">
                     <div class="my-course-header-inner px-3 min-w-0 w-100">
                       <div class="my-course-header-inner__center min-w-0">
                         <p class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0">
@@ -599,7 +599,7 @@ function design3PackUnitTypeIconCss(unitType) {
                     css="exam-2-detail-bar--in-side-panel · exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 · exam-2-detail-bar__title my-font-lg-400 my-color-black"
                     copy-text="exam-2-detail-bar--in-side-panel"
                   >
-                  <div class="design-page-3-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
+                  <div class="design-page-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
                     <ExamPage2DetailBar
                       v-model:selected-exam-label="demoExamLabel"
                       :grid-items="demoExamGridItems"
@@ -621,7 +621,7 @@ function design3PackUnitTypeIconCss(unitType) {
                     css="create-exam-bank-2-detail-bar--in-side-panel · create-exam-bank-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2 · create-exam-bank-2-detail-bar__title my-font-lg-400 my-color-black"
                     copy-text="create-exam-bank-2-detail-bar--in-side-panel"
                   >
-                  <div class="design-page-3-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
+                  <div class="design-page-side-panel-preview my-bgcolor-gray-4 rounded-3 overflow-hidden border" style="max-width: 20rem;">
                     <CreateExamQuizBankPage2DetailBar
                       v-model:selected-bank-label="demoBankLabel"
                       :grid-items="demoBankGridItems"
@@ -644,7 +644,7 @@ function design3PackUnitTypeIconCss(unitType) {
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">列表</div>
 
                   <p class="my-font-sm-400 my-color-black mb-2">exam_3（無綠點欄）</p>
-                  <div class="design-page-3__list-preview design-page-3__list-preview--work3 mb-4">
+                  <div class="design-page__list-preview design-page__list-preview--work3 mb-4">
                     <div class="bank-list-wrap mx-auto">
                       <div class="bank-table-actions">
                         <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
@@ -677,7 +677,7 @@ function design3PackUnitTypeIconCss(unitType) {
                   </div>
 
                   <p class="my-font-sm-400 my-color-black mb-2">create-exam-bank_3（含綠點欄）</p>
-                  <div class="design-page-3__list-preview design-page-3__list-preview--work3 mb-3">
+                  <div class="design-page__list-preview design-page__list-preview--work3 mb-3">
                     <div class="bank-list-wrap mx-auto">
                       <div class="bank-table-actions">
                         <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
@@ -800,8 +800,8 @@ function design3PackUnitTypeIconCss(unitType) {
                       css="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 px-4 py-2 my-button-logo-gradient"
                     >
                       <div class="d-flex flex-wrap align-items-center gap-3">
-                        <LogoGradientPillButton id-prefix="design-page-3-generate" tone="generate" gradient-bias="work3" />
-                        <LogoGradientPillButton id-prefix="design-page-3-grade" tone="grade" gradient-bias="work3" />
+                        <LogoGradientPillButton id-prefix="design-page-generate" tone="generate" gradient-bias="work3" />
+                        <LogoGradientPillButton id-prefix="design-page-grade" tone="grade" gradient-bias="work3" />
                       </div>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
@@ -980,8 +980,8 @@ function design3PackUnitTypeIconCss(unitType) {
                       :key="item.name"
                       :name="item.name"
                       :usage="item.usage"
-                      :css="design3PackUnitTypeIconCss(item.unitType)"
-                      :copy-text="design3PackUnitTypeIconCss(item.unitType)"
+                      :css="designPackUnitTypeIconCss(item.unitType)"
+                      :copy-text="designPackUnitTypeIconCss(item.unitType)"
                     >
                       <PackUnitTypeIcon
                         :unit-type="item.unitType"
@@ -1106,7 +1106,7 @@ function design3PackUnitTypeIconCss(unitType) {
                     css="form-label my-font-sm-400 my-color-gray-1 · form-control my-input-md rounded-2 my-form-control-static font-monospace"
                     copy-text="form-control my-input-md my-form-control-static"
                   >
-                    <div class="design-page-3__page-preview design-page-3__page-preview--work3 mx-auto w-100">
+                    <div class="design-page__page-preview design-page__page-preview--work3 mx-auto w-100">
                       <div class="d-flex flex-column gap-4 w-100 min-w-0 text-start py-4">
                         <div class="mb-0">
                           <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">服務位址（僅供查閱）</label>
@@ -1129,7 +1129,7 @@ function design3PackUnitTypeIconCss(unitType) {
                     copy-text="form-control my-input-md"
                     class="mt-4"
                   >
-                    <div class="design-page-3__page-preview design-page-3__page-preview--work3 mx-auto w-100">
+                    <div class="design-page__page-preview design-page__page-preview--work3 mx-auto w-100">
                       <div class="d-flex flex-column gap-4 w-100 min-w-0 text-start py-4">
                         <div class="mb-0">
                           <label class="form-label my-font-sm-400 my-color-gray-1 mb-2">帳號</label>
@@ -1420,13 +1420,13 @@ function design3PackUnitTypeIconCss(unitType) {
       tabindex="-1"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="design3-upload-modal-title"
+      aria-labelledby="design-upload-modal-title"
       @click.self="closeUploadModal"
     >
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" @click.stop>
         <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
           <div class="modal-header border-bottom-0 p-0">
-            <h5 id="design3-upload-modal-title" class="modal-title my-color-black mb-0">上傳檔案</h5>
+            <h5 id="design-upload-modal-title" class="modal-title my-color-black mb-0">上傳檔案</h5>
             <button type="button" class="btn-close" aria-label="關閉" @click="closeUploadModal" />
           </div>
           <div class="modal-body p-0 min-w-0">
@@ -1492,12 +1492,12 @@ function design3PackUnitTypeIconCss(unitType) {
 </template>
 
 <style scoped>
-.design-page-3__sections {
+.design-page__sections {
   max-width: 52rem;
 }
 
 /* ── TopView 預覽（對齊 TopView.vue） ───────────────────────── */
-.design-page-3-topview-preview.my-course-header {
+.design-page-topview-preview.my-course-header {
   position: relative;
   z-index: 1;
   display: flex;
@@ -1509,7 +1509,7 @@ function design3PackUnitTypeIconCss(unitType) {
   overflow: visible;
 }
 
-.design-page-3-topview-preview .my-course-header-inner {
+.design-page-topview-preview .my-course-header-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -1520,23 +1520,23 @@ function design3PackUnitTypeIconCss(unitType) {
   width: 100%;
 }
 
-.design-page-3-topview-preview .my-course-header-inner__center {
+.design-page-topview-preview .my-course-header-inner__center {
   justify-self: stretch;
   width: 100%;
   min-width: 0;
 }
 
-.design-page-3-topview-preview .my-course-header-inner__end {
+.design-page-topview-preview .my-course-header-inner__end {
   justify-self: end;
   min-width: 0;
   overflow: visible;
 }
 
-.design-page-3-topview-preview .my-course-header-course-title {
+.design-page-topview-preview .my-course-header-course-title {
   line-height: 1.35;
 }
 
-.design-page-3-topview-preview :deep(.my-course-header-nav-btn) {
+.design-page-topview-preview :deep(.my-course-header-nav-btn) {
   background-color: var(--my-color-white);
   border: 1px solid var(--my-color-gray-2);
   box-shadow: none;
@@ -1545,8 +1545,8 @@ function design3PackUnitTypeIconCss(unitType) {
   padding-right: 1.5rem !important;
 }
 
-.design-page-3-topview-preview :deep(.my-course-header-nav-btn:hover),
-.design-page-3-topview-preview :deep(.my-course-header-nav-btn:focus-visible) {
+.design-page-topview-preview :deep(.my-course-header-nav-btn:hover),
+.design-page-topview-preview :deep(.my-course-header-nav-btn:focus-visible) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
   outline: none;
@@ -1619,11 +1619,11 @@ function design3PackUnitTypeIconCss(unitType) {
   background-color: var(--my-color-gray-2, #e5e5e5);
 }
 
-.design-page-3__list-preview--work3 .bank-list-row:hover:not(:disabled) {
+.design-page__list-preview--work3 .bank-list-row:hover:not(:disabled) {
   background-color: var(--my-color-gray-3);
 }
 
-.design-page-3__page-preview--work3 {
+.design-page__page-preview--work3 {
   width: 100%;
   max-width: 40rem;
 }
@@ -1671,7 +1671,7 @@ function design3PackUnitTypeIconCss(unitType) {
   white-space: nowrap;
 }
 
-.design-page-3-stem-tabs-preview .my-design-quiz-stem-tab {
+.design-page-stem-tabs-preview .my-design-quiz-stem-tab {
   position: relative;
   z-index: 0;
   margin-bottom: -1px;
@@ -1683,19 +1683,19 @@ function design3PackUnitTypeIconCss(unitType) {
   box-shadow: none;
 }
 
-.design-page-3-stem-tabs-preview .my-design-quiz-stem-tab--active {
+.design-page-stem-tabs-preview .my-design-quiz-stem-tab--active {
   z-index: 1;
   padding-bottom: calc(0.5rem + 1px);
   border-bottom-color: var(--my-color-black);
 }
 
-.design-page-3-prompt-block-preview {
+.design-page-prompt-block-preview {
   background-color: var(--my-color-black);
   max-width: 16rem;
 }
 
 /* 稿頁預覽：左欄「+ 新增單元」列（對齊 CreateExamQuizBankPage scoped） */
-.design-page-3-side-panel-preview .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn,
+.design-page-side-panel-preview .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn,
 .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn {
   align-self: stretch;
   width: auto;

@@ -1,21 +1,15 @@
 <script setup>
 /**
- * LogListPage - 系統 Log 列表（GET /log/logs）
+ * LogListPage - 系統紀錄（GET /log/logs）
  *
  * 讀取目前選取課程（currentCourse.course_id）的 Log，依 log_id 降冪；person_id 由 loggedFetch 帶入（僅供後端請求紀錄）。
- * 僅 user_type=1 可進入（路由與選單由 permissions 限制）。
- * design3：白底主內容、TopView 頁名；版面對齊 manage-users_3。
+ * 僅 user_type=1 可進入（路由與選單由 permissions 限制）；白底主內容、TopView 頁名。
  */
 import { ref, computed, onMounted } from 'vue';
 import { API_BASE, API_LIST_LOGS } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import { useAuthStore } from '../stores/authStore.js';
-
-const props = defineProps({
-  hidePageHeader: { type: Boolean, default: false },
-  design3: { type: Boolean, default: false },
-});
 
 const authStore = useAuthStore();
 
@@ -101,31 +95,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <div
-    class="d-flex flex-column h-100 overflow-hidden position-relative"
-    :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
-  >
+  <div class="d-flex flex-column h-100 overflow-hidden position-relative my-bgcolor-white">
     <LoadingOverlay :is-visible="loading" loading-text="載入中..." />
-    <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
-      <div class="container-fluid px-0 text-center">
-        <p class="my-font-xl-400 my-color-black text-break mb-0">系統紀錄</p>
-        <p v-if="courseSubtitle" class="my-font-md-400 my-color-gray-4 text-break mb-0 mt-2">{{ courseSubtitle }}</p>
-      </div>
-    </header>
     <div v-if="error" class="flex-shrink-0">
       <div class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
     </div>
-    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0 my-bgcolor-white">
       <div class="container-fluid px-3 px-md-4 py-4">
-        <div class="row" :class="{ 'justify-content-center': props.design3 }">
-          <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12'">
+        <div class="row justify-content-center">
+          <div class="col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6">
             <p
-              v-if="props.design3 && courseSubtitle"
+              v-if="courseSubtitle"
               class="my-font-sm-400 my-color-gray-1 text-break mb-3"
             >
               {{ courseSubtitle }}
             </p>
-            <div :class="props.design3 ? 'w-100 min-w-0' : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0'">
+            <div class="w-100 min-w-0">
               <div class="d-flex flex-wrap justify-content-end mb-3">
                 <button
                   type="button"

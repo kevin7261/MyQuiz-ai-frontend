@@ -44,7 +44,7 @@ app.use(router);
  * - 需登入：/exam、以及 name 為 Main 的 /:view（如 /manage-users、/profile）
  * - 舊網址 /main、/main/* 仍會觸發登入檢查後再重導向
  * - user_type 3：測驗／作答弱點分析／建立測驗題庫／設定（/exam、/person-analysis、/create-exam-bank、/profile）；其餘導向 /exam
- * - /logs（系統 Log）：僅 user_type 1；其餘導向 /exam
+ * - /log（系統紀錄）：僅 user_type 1；其餘導向 /exam
  * - 未定義路徑：已登入 → /exam；未登入 → /login
  */
 router.beforeEach((to, _from, next) => {

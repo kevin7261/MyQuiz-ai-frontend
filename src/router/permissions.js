@@ -3,7 +3,7 @@
  *
  * 1=開發者、2=管理者：除「系統 Log」外之全部頁面（含 /design）
  * 3=學生：測驗（/exam）、作答弱點分析（/person-analysis）、建立測驗題庫（/create-exam-bank）、設定（/profile）
- * 「系統 Log」（/logs）：僅 user_type=1
+ * 「系統紀錄」（/log）：僅 user_type=1
  */
 
 export const DEVELOPER_USER_TYPE = 1;
@@ -60,7 +60,7 @@ export function routeViewKey(to) {
 export function userMayAccessRoute(user, to) {
   if (!user) return false;
   const key = routeViewKey(to);
-  if ((key === 'logs' || key === 'logs_3' || key === 'design' || key === 'logo') && Number(user.user_type) !== DEVELOPER_USER_TYPE) return false;
+  if ((key === 'log' || key === 'design' || key === 'logo') && Number(user.user_type) !== DEVELOPER_USER_TYPE) return false;
   if (Number(user.user_type) !== RESTRICTED_USER_TYPE) return true;
   if (key == null) return true;
   return STUDENT_ALLOWED_VIEWS.has(key);
@@ -72,7 +72,7 @@ export function userMayAccessRoute(user, to) {
  * @param {string} viewKey — work | person-analysis | create-exam-bank 等（與 URL 片段相同）
  */
 export function canSeeNavLink(userType, viewKey) {
-  if (viewKey === 'logs' || viewKey === 'logs_3' || viewKey === 'design' || viewKey === 'logo') return Number(userType) === DEVELOPER_USER_TYPE;
+  if (viewKey === 'log' || viewKey === 'design' || viewKey === 'logo') return Number(userType) === DEVELOPER_USER_TYPE;
   if (Number(userType) !== RESTRICTED_USER_TYPE) return true;
   return STUDENT_ALLOWED_VIEWS.has(viewKey);
 }

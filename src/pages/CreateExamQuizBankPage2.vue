@@ -1,6 +1,6 @@
 <script setup>
 /**
- * CreateExamQuizBankPage2 - 建立測驗題庫九宮格入口（供 CreateExamQuizBankPage3 使用）
+ * CreateExamQuizBankPage2 - 建立測驗題庫九宮格入口（/create-exam-bank）
  *
  * 首屏以九宮格顯示各題庫；點方塊進入題庫內容（複用 CreateExamQuizBankPage，隱藏分頁列）。
  * 不修改 CreateExamQuizBankPage.vue。

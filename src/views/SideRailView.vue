@@ -21,7 +21,7 @@
     { perm: 'users', to: '/manage-users', label: '使用者管理' },
     { perm: 'design', to: '/design', label: 'UI 元件參考' },
     { perm: 'logo', to: '/logo', label: 'Logo 繪製' },
-    { perm: 'logs', to: '/logs_3', label: '系統紀錄' },
+    { perm: 'log', to: '/log', label: '系統紀錄' },
   ];
 
   export default {

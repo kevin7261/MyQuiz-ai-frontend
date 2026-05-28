@@ -1,4 +1,7 @@
 <script setup>
+/**
+ * LogoPage - Logo 繪製稿（TopView 全寬、白底主內容；頁名由 TopView 顯示）
+ */
 import LogoDiamondGridSvg from '../components/LogoDiamondGridSvg.vue';
 import LogoGridSvg from '../components/LogoGridSvg.vue';
 
@@ -145,20 +148,11 @@ const centerCellsLogoWidth = centerCellsWidth(240);
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
-
-    <!-- 頁首 -->
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
-      <div class="container-fluid px-0 text-center">
-        <p class="my-font-xl-400 my-color-black text-break mb-0">Logo 稿</p>
-      </div>
-    </header>
-
-    <!-- 主內文 -->
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+  <div class="d-flex flex-column h-100 overflow-hidden position-relative my-bgcolor-white">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0 my-bgcolor-white">
       <div class="container-fluid px-3 px-md-4 py-4">
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div class="col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6">
 
             <!-- ===== 01 · 3×2 方格格網 ===== -->
             <!--
@@ -461,6 +455,5 @@ const centerCellsLogoWidth = centerCellsWidth(240);
         </div>
       </div>
     </div>
-
   </div>
 </template>

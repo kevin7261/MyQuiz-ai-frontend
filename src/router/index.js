@@ -9,7 +9,7 @@
  * - /:view → 主區塊各功能（person-analysis、course-analysis、profile、design、manage-users 等），由 HomeView 依 view 渲染
  * - /main、/main/:view → 舊網址相容，重導向至 /exam 或 /:view
  *
- * 主區塊與 /exam 需登入、依 user_type 限制路由（/logs 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
+ * 主區塊與 /exam 需登入、依 user_type 限制路由（/log 僅 user_type=1），見 main.js 的 router.beforeEach 與 permissions.js。
  */
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
@@ -24,8 +24,7 @@ const VALID_VIEWS = [
   'logo',
   'manage-users',
   'settings',
-  'logs',
-  'logs_3',
+  'log',
 ];
 
 /** 各 view 對應的瀏覽器頁籤標題 */
@@ -39,8 +38,7 @@ const VIEW_TITLES = {
   logo: 'Logo 繪製 - MyQuiz.ai',
   'manage-users': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
-  logs: '系統 Log - MyQuiz.ai',
-  logs_3: '系統紀錄 - MyQuiz.ai',
+  log: '系統紀錄 - MyQuiz.ai',
 };
 
 const routes = [
@@ -65,17 +63,6 @@ const routes = [
   },
   {
     path: '/exam/:exam_id',
-    redirect: (to) => ({
-      path: `/exam/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
-      query: to.query,
-    }),
-  },
-  {
-    path: '/exam_2',
-    redirect: '/exam',
-  },
-  {
-    path: '/exam_2/:exam_id',
     redirect: (to) => ({
       path: `/exam/${encodeURIComponent(String(to.params.exam_id ?? ''))}/0`,
       query: to.query,
@@ -237,6 +224,14 @@ const routes = [
   {
     path: '/profile_3',
     redirect: '/profile',
+  },
+  {
+    path: '/logs',
+    redirect: '/log',
+  },
+  {
+    path: '/logs_3',
+    redirect: '/log',
   },
   {
     path: '/users',
