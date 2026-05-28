@@ -336,6 +336,20 @@ code {
   opacity: 0.55;
 }
 
+/* 深灰填色膠囊（併 .btn）：底 --my-color-gray-1、字 --my-color-white */
+.btn.my-button-gray-1 {
+  background-color: var(--my-color-gray-1);
+  color: var(--my-color-white);
+  border-color: transparent;
+}
+.btn.my-button-gray-1:hover,
+.btn.my-button-gray-1:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-gray-1));
+  color: var(--my-color-white);
+}
+.btn.my-button-gray-1:disabled {
+  opacity: 0.55;
+}
 
 /* 淺灰填色膠囊（併 .btn）：未選／非 highlight；底同 my-bgcolor-gray-2（字面 --my-color-gray-2）、字 --my-color-black。併 my-btn-group-pill 時分段線見該段 border */
 .btn.my-button-gray-2 {

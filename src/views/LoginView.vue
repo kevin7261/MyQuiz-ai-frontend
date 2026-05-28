@@ -220,13 +220,18 @@
 
 .my-login-view-page-gradient {
   position: absolute;
-  inset: 0;
+  left: 0;
+  right: 0;
+  top: 50%;
+  bottom: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.1;
+  opacity: 0.2;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 100%);
 }
 
 .my-login-view-content {
