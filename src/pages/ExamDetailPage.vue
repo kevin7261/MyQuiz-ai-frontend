@@ -3828,12 +3828,12 @@ onActivated(() => {
   flex-wrap: nowrap;
 }
 .my-design-tab-side-panel {
-  border-color: var(--my-color-gray-2, #e5e5e5) !important;
+  border-color: var(--my-color-gray-2) !important;
 }
 .my-design-tab-side-panel-header {
   flex-shrink: 0;
   z-index: 31;
-  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-bottom: 1px solid var(--my-color-gray-2);
 }
 .my-design-tab-left-view,
 .my-design-tab-right-view {
@@ -3912,7 +3912,7 @@ onActivated(() => {
   border-radius: 0;
 }
 .my-design-right-nav--flat .my-design-right-step-block--section-divide {
-  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-bottom: 1px solid var(--my-color-gray-2);
 }
 .my-design-right-nav--flat .my-design-right-step-block .nav-link {
   padding-left: 1rem;

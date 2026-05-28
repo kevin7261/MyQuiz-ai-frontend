@@ -145,7 +145,7 @@ function onTitleInput(e) {
   grid-template-columns: 1fr minmax(0, 50%) 1fr;
   align-items: center;
   gap: 0.75rem;
-  border-color: var(--my-color-gray-2, #e5e5e5) !important;
+  border-color: var(--my-color-gray-2) !important;
   overflow: visible;
   position: relative;
   z-index: 30;
@@ -215,7 +215,7 @@ function onTitleInput(e) {
 
 .exam-2-detail-bar__title:hover:not(:disabled),
 .exam-2-detail-bar__title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3, #f5f5f5);
+  background-color: var(--my-color-gray-3);
 }
 
 .exam-2-detail-bar__title:focus {
@@ -226,7 +226,7 @@ function onTitleInput(e) {
 
 .exam-2-detail-bar__title:disabled {
   opacity: 1;
-  color: var(--my-color-black, #000);
+  color: var(--my-color-black);
   background: transparent;
 }
 

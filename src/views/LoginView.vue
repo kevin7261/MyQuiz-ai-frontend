@@ -215,7 +215,7 @@
 
 <style scoped>
 .my-login-view-shell {
-  background-color: #ffffff;
+  background-color: var(--my-color-white);
 }
 
 .my-login-view-page-gradient {

@@ -7358,12 +7358,12 @@ async function confirmAnswer(item) {
   flex-wrap: nowrap;
 }
 .my-design-tab-side-panel {
-  border-color: var(--my-color-gray-2, #e5e5e5) !important;
+  border-color: var(--my-color-gray-2) !important;
 }
 .my-design-tab-side-panel-header {
   flex-shrink: 0;
   z-index: 31;
-  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-bottom: 1px solid var(--my-color-gray-2);
 }
 .my-design-tab-left-view,
 .my-design-tab-right-view {
@@ -7381,7 +7381,7 @@ async function confirmAnswer(item) {
 }
 
 .my-design-main-step-block--section-divide {
-  border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-top: 1px solid var(--my-color-gray-2);
 }
 
 .my-design--side-panel-left .my-pack-unit-attrs-panel {
@@ -7449,7 +7449,7 @@ async function confirmAnswer(item) {
   border-radius: 0;
 }
 .my-design-right-nav--flat .my-design-right-step-block--section-divide {
-  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-bottom: 1px solid var(--my-color-gray-2);
 }
 
 .my-design-right-nav--flat .my-design-right-step-block .nav-link:not(.my-design-right-unit-quiz-link) {
@@ -7518,7 +7518,7 @@ async function confirmAnswer(item) {
 }
 .my-design-pack-unit-name-title:hover:not(:disabled),
 .my-design-pack-unit-name-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3, #f5f5f5);
+  background-color: var(--my-color-gray-3);
 }
 .my-design-pack-unit-name-title:focus {
   outline: none;
@@ -7527,7 +7527,7 @@ async function confirmAnswer(item) {
 }
 .my-design-pack-unit-name-title:disabled {
   opacity: 1;
-  color: var(--my-color-black, #000);
+  color: var(--my-color-black);
   background: transparent;
 }
 /* 區段主標題：title → 橫線 → 內容（my-font-xl-400 + my-design-pack-unit-main-title） */
@@ -7951,7 +7951,7 @@ async function confirmAnswer(item) {
 }
 .my-design-unit-quiz-type-title:hover:not(:disabled),
 .my-design-unit-quiz-type-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3, #f5f5f5);
+  background-color: var(--my-color-gray-3);
 }
 .my-design-unit-quiz-type-title:focus {
   outline: none;
@@ -7960,7 +7960,7 @@ async function confirmAnswer(item) {
 }
 .my-design-unit-quiz-type-title:disabled {
   opacity: 1;
-  color: var(--my-color-black, #000);
+  color: var(--my-color-black);
   background: transparent;
 }
 /* 黑底區右上編輯：白 icon、小圓鈕（對齊 sm 標題列） */

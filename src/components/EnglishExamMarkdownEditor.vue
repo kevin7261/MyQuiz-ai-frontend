@@ -394,7 +394,7 @@ onBeforeUnmount(() => {
 .english-exam-md-editor-wrap :deep(.EasyMDEContainer) {
   border-radius: 0.25rem;
   overflow: visible;
-  border: 1px solid var(--bs-border-color, #dee2e6);
+  border: 1px solid var(--my-color-gray-2);
 }
 .english-exam-md-editor-wrap :deep(.editor-toolbar) {
   border-radius: 0.25rem 0.25rem 0 0;
@@ -420,7 +420,7 @@ onBeforeUnmount(() => {
 
 /* 唯讀預覽：高度隨內容伸縮，不設 max-height（出題／批改規則等長文一次看完） */
 .english-exam-md-preview-panel--surface {
-  border-color: var(--bs-border-color, #dee2e6) !important;
+  border-color: var(--my-color-gray-2) !important;
   overflow-x: auto;
   overflow-y: visible;
   -webkit-overflow-scrolling: touch;
@@ -564,7 +564,7 @@ onBeforeUnmount(() => {
   border-radius: 0.25rem;
   overflow-x: auto;
   font-size: 0.875rem;
-  background: var(--my-bgcolor-gray-3, #e9ecef);
+  background: var(--my-color-gray-3);
 }
 .english-exam-md-preview-body :deep(code) {
   font-size: 0.9em;
@@ -573,13 +573,13 @@ onBeforeUnmount(() => {
 .english-exam-md-preview-body :deep(li code) {
   padding: 0.1em 0.35em;
   border-radius: 0.2rem;
-  background: var(--my-bgcolor-gray-3, #e9ecef);
+  background: var(--my-color-gray-3);
 }
 .english-exam-md-preview-body :deep(blockquote) {
   margin: 0.5rem 0;
   padding-left: 0.75rem;
-  border-left: 3px solid var(--my-color-gray-2, #adb5bd);
-  color: var(--my-color-gray-1, #6c757d);
+  border-left: 3px solid var(--my-color-gray-2);
+  color: var(--my-color-gray-1);
 }
 .english-exam-md-preview-body :deep(table) {
   width: 100%;
@@ -589,7 +589,7 @@ onBeforeUnmount(() => {
 }
 .english-exam-md-preview-body :deep(th),
 .english-exam-md-preview-body :deep(td) {
-  border: 1px solid var(--bs-border-color, #dee2e6);
+  border: 1px solid var(--my-color-gray-2);
   padding: 0.25rem 0.5rem;
 }
 .english-exam-md-preview-body :deep(a) {

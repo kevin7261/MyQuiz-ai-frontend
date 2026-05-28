@@ -729,7 +729,7 @@ watch(
   list-style: none;
   padding: 0;
   margin: 0;
-  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-bottom: 1px solid var(--my-color-gray-2);
 }
 
 .bank-list > li {
@@ -737,7 +737,7 @@ watch(
 }
 
 .bank-list > li {
-  border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
+  border-top: 1px solid var(--my-color-gray-2);
 }
 
 .bank-list-row {
@@ -755,7 +755,7 @@ watch(
 }
 
 .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-2, #e5e5e5);
+  background-color: var(--my-color-gray-2);
 }
 
 /* exam_3 白底主頁清單：hover 淺灰 */
@@ -764,7 +764,7 @@ watch(
 }
 
 .bank-list-row:focus-visible {
-  outline: 2px solid var(--my-color-black, #000);
+  outline: 2px solid var(--my-color-black);
   outline-offset: -2px;
 }
 

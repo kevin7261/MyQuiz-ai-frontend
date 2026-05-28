@@ -48,7 +48,7 @@ function close() {
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" @click.stop>
         <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
           <div class="modal-header border-bottom-0 p-0">
-            <h5 id="course-select-modal-title" class="modal-title my-font-lg-600 my-color-black">
+            <h5 id="course-select-modal-title" class="modal-title my-color-black">
               選擇課程
             </h5>
             <button
@@ -60,31 +60,28 @@ function close() {
             />
           </div>
 
-          <div class="modal-body p-0">
-            <!-- 無課程 -->
-            <div
+          <div class="modal-body p-0 min-w-0">
+            <p
               v-if="courses.length === 0"
-              class="py-4 text-center"
+              class="my-font-md-400 my-color-gray-1 mb-0"
             >
-              <i class="fa-solid fa-book-open fa-2x my-color-gray-1 mb-3 d-block" aria-hidden="true" />
-              <p class="my-font-md-400 my-color-gray-1 mb-0">目前沒有可用的課程</p>
-            </div>
+              目前沒有可用的課程
+            </p>
 
-            <!-- 課程列表 -->
             <div v-else class="d-flex flex-column gap-2">
               <button
                 v-for="course in courses"
                 :key="course.course_user_id"
                 type="button"
-                class="my-course-select-btn rounded-3 text-start border-0 px-3 py-3 w-100"
+                class="my-course-select-btn rounded-3 text-start border-0 px-3 py-2 w-100"
                 @click="select(course)"
               >
-                <p class="my-font-md-600 my-color-black text-break mb-0">
+                <span class="my-font-md-400 my-color-black text-break d-block">
                   {{ course.course_name || '（未命名課程）' }}
-                </p>
-                <p class="my-font-sm-400 my-color-gray-1 mb-0 mt-1">
+                </span>
+                <span class="my-font-sm-400 my-color-gray-1 d-block mt-1">
                   {{ userTypeLabel(course.user_type) }}
-                </p>
+                </span>
               </button>
             </div>
           </div>
@@ -96,13 +93,13 @@ function close() {
 
 <style scoped>
 .my-course-select-btn {
-  background-color: var(--my-color-gray-3, #f2f2f2);
+  background-color: var(--my-color-gray-3);
   cursor: pointer;
   transition: background-color 0.15s ease;
 }
 .my-course-select-btn:hover,
 .my-course-select-btn:focus-visible {
-  background-color: var(--my-color-gray-2, #e0e0e0);
+  background-color: var(--my-color-gray-2);
   outline: none;
 }
 </style>

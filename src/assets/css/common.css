@@ -1546,7 +1546,7 @@ div.form-control {
   border-radius: 0.25rem;
   overflow-x: auto;
   font-size: 0.875rem;
-  background: var(--my-bgcolor-gray-3, #e9ecef);
+  background: var(--my-color-gray-3);
 }
 .my-markdown-rendered code {
   font-size: 0.9em;
@@ -1555,13 +1555,13 @@ div.form-control {
 .my-markdown-rendered li code {
   padding: 0.1em 0.35em;
   border-radius: 0.2rem;
-  background: var(--my-bgcolor-gray-3, #e9ecef);
+  background: var(--my-color-gray-3);
 }
 .my-markdown-rendered blockquote {
   margin: 0.5rem 0;
   padding-left: 0.75rem;
-  border-left: 3px solid var(--my-color-gray-2, #adb5bd);
-  color: var(--my-color-gray-1, #6c757d);
+  border-left: 3px solid var(--my-color-gray-2);
+  color: var(--my-color-gray-1);
 }
 .my-markdown-rendered table {
   width: 100%;
@@ -1571,7 +1571,7 @@ div.form-control {
 }
 .my-markdown-rendered th,
 .my-markdown-rendered td {
-  border: 1px solid var(--bs-border-color, #dee2e6);
+  border: 1px solid var(--my-color-gray-2);
   padding: 0.25rem 0.5rem;
 }
 .my-markdown-rendered a {
