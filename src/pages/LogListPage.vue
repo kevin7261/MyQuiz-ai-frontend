@@ -4,12 +4,18 @@
  *
  * 讀取目前選取課程（currentCourse.course_id）的 Log，依 log_id 降冪；person_id 由 loggedFetch 帶入（僅供後端請求紀錄）。
  * 僅 user_type=1 可進入（路由與選單由 permissions 限制）。
+ * design3：白底主內容、TopView 頁名；版面對齊 manage-users_3。
  */
 import { ref, computed, onMounted } from 'vue';
 import { API_BASE, API_LIST_LOGS } from '../constants/api.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import { useAuthStore } from '../stores/authStore.js';
+
+const props = defineProps({
+  hidePageHeader: { type: Boolean, default: false },
+  design3: { type: Boolean, default: false },
+});
 
 const authStore = useAuthStore();
 
@@ -95,9 +101,12 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="d-flex flex-column h-100 overflow-hidden my-bgcolor-gray-4 position-relative">
+  <div
+    class="d-flex flex-column h-100 overflow-hidden position-relative"
+    :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+  >
     <LoadingOverlay :is-visible="loading" loading-text="載入中..." />
-    <header class="flex-shrink-0 my-bgcolor-gray-4 p-4">
+    <header v-if="!props.hidePageHeader && !props.design3" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">系統紀錄</p>
         <p v-if="courseSubtitle" class="my-font-md-400 my-color-gray-4 text-break mb-0 mt-2">{{ courseSubtitle }}</p>
@@ -106,11 +115,17 @@ onMounted(() => {
     <div v-if="error" class="flex-shrink-0">
       <div class="my-alert-warning-soft my-font-sm-400 py-2 mx-4 mb-3" role="alert">{{ error }}</div>
     </div>
-    <div class="flex-grow-1 overflow-auto my-bgcolor-gray-4 d-flex flex-column min-h-0">
+    <div class="flex-grow-1 overflow-auto d-flex flex-column min-h-0" :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'">
       <div class="container-fluid px-3 px-md-4 py-4">
-        <div class="row">
-          <div class="col-12">
-            <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0">
+        <div class="row" :class="{ 'justify-content-center': props.design3 }">
+          <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12'">
+            <p
+              v-if="props.design3 && courseSubtitle"
+              class="my-font-sm-400 my-color-gray-1 text-break mb-3"
+            >
+              {{ courseSubtitle }}
+            </p>
+            <div :class="props.design3 ? 'w-100 min-w-0' : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0'">
               <div class="d-flex flex-wrap justify-content-end mb-3">
                 <button
                   type="button"
@@ -122,21 +137,21 @@ onMounted(() => {
                 </button>
               </div>
               <div class="table-responsive">
-            <table class="table table-bordered table-hover table-sm my-font-md-400 mb-0">
-              <thead class="my-table-thead">
-                <tr>
-                  <th v-for="col in columns" :key="col" class="my-font-md-600">{{ columnHeaderLabel(col) }}</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(row, idx) in rows" :key="row.log_id ?? idx">
-                  <td v-for="col in columns" :key="col" class="my-font-md-400 text-break">{{ cellDisplay(row[col]) }}</td>
-                </tr>
-                <tr v-if="!loading && rows.length === 0">
-                  <td :colspan="Math.max(columns.length, 1)" class="my-color-gray-4 text-center my-font-md-400">尚無資料</td>
-                </tr>
-              </tbody>
-            </table>
+                <table class="table table-bordered table-hover table-sm my-font-md-400 mb-0">
+                  <thead class="my-table-thead">
+                    <tr>
+                      <th v-for="col in columns" :key="col" class="my-font-md-600">{{ columnHeaderLabel(col) }}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(row, idx) in rows" :key="row.log_id ?? idx">
+                      <td v-for="col in columns" :key="col" class="my-font-md-400 text-break">{{ cellDisplay(row[col]) }}</td>
+                    </tr>
+                    <tr v-if="!loading && rows.length === 0">
+                      <td :colspan="Math.max(columns.length, 1)" class="my-color-gray-4 text-center my-font-md-400">尚無資料</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

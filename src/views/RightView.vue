@@ -28,6 +28,7 @@
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
   import SystemSettingsPage3 from '../pages/SystemSettingsPage3.vue';
   import LogListPage from '../pages/LogListPage.vue';
+  import LogListPage3 from '../pages/LogListPage3.vue';
 
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
@@ -52,6 +53,7 @@
     systemSettings: markRaw(SystemSettingsPage),
     systemSettings3: markRaw(SystemSettingsPage3),
     logList: markRaw(LogListPage),
+    logList3: markRaw(LogListPage3),
   };
 
   const VIEWS_WITH_WORK_TAB_ID = new Set([
@@ -65,7 +67,7 @@
 
   export default {
     name: 'RightView',
-    components: { ExamPage, ExamPage2, ExamPage3, AnswerWeaknessAnalysisPage, AnswerWeaknessAnalysisPage3, StudentAnswerAnalysisPage, StudentAnswerAnalysisPage3, ProfilePage, ProfilePage3, CreateExamQuizBankPage, CreateExamQuizBankPage2, CreateExamQuizBankPage3, DesignPage, DesignPage2, DesignPage3, LogoPage, UserManagementPage, UserManagementPage3, SystemSettingsPage, SystemSettingsPage3, LogListPage },
+    components: { ExamPage, ExamPage2, ExamPage3, AnswerWeaknessAnalysisPage, AnswerWeaknessAnalysisPage3, StudentAnswerAnalysisPage, StudentAnswerAnalysisPage3, ProfilePage, ProfilePage3, CreateExamQuizBankPage, CreateExamQuizBankPage2, CreateExamQuizBankPage3, DesignPage, DesignPage2, DesignPage3, LogoPage, UserManagementPage, UserManagementPage3, SystemSettingsPage, SystemSettingsPage3, LogListPage, LogListPage3 },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },
@@ -91,6 +93,7 @@
           || this.currentView === 'userManagement3'
           || this.currentView === 'systemSettings3'
           || this.currentView === 'profile3'
+          || this.currentView === 'logList3'
         );
       },
     },

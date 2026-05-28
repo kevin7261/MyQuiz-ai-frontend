@@ -26,7 +26,7 @@
     { perm: 'design_2', to: '/design_2', label: 'UI 元件參考 2', icon: 'fa-palette' },
     { perm: 'design_3', to: '/design_3', label: 'UI 元件參考 3', icon: 'fa-palette' },
     { perm: 'logo', to: '/logo', label: 'Logo 繪製', icon: 'fa-image' },
-    { perm: 'logs', to: '/logs', label: '系統紀錄', icon: 'fa-list-ul' },
+    { perm: 'logs', to: '/logs_3', label: '系統紀錄', icon: 'fa-list-ul' },
   ];
 
   export default {

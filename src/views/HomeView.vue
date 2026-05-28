@@ -46,6 +46,7 @@ const PATH_TO_VIEW = {
   settings: 'systemSettings',
   settings_3: 'systemSettings3',
   logs: 'logList',
+  logs_3: 'logList3',
 };
   const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 
@@ -91,7 +92,8 @@ const PATH_TO_VIEW = {
           || route.params.view === 'profile'
           || route.params.view === 'profile_3'
           || route.params.view === 'settings'
-          || route.params.view === 'settings_3',
+          || route.params.view === 'settings_3'
+          || route.params.view === 'logs_3',
       );
 
       /** currentCourse 為 null 時（含登入後首次進入）自動彈出選課 Modal */
@@ -216,9 +218,7 @@ const PATH_TO_VIEW = {
         @open-course-modal="openCourseModal"
       />
       <div class="d-flex flex-column flex-grow-1 min-w-0 min-h-0">
-        <TopView
-          :user-type="authStore.user?.user_type"
-        />
+        <TopView />
         <div class="flex-grow-1 min-h-0 overflow-hidden d-flex flex-column">
           <RightView :current-view="currentView" :tab-id="MAIN_WORK_TAB_ID" />
         </div>

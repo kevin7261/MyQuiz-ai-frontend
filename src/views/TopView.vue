@@ -15,9 +15,6 @@
   export default {
     name: 'TopView',
     components: { CreateExamQuizBankBankSwitchDropdown, ExamPageExamSwitchDropdown },
-    props: {
-      userType: { type: [Number, String], default: undefined },
-    },
     setup() {
       const authStore = useAuthStore();
       const route = useRoute();
@@ -49,6 +46,7 @@
         if (route.params.view === 'manage-users_3') return '使用者管理';
         if (route.params.view === 'profile' || route.params.view === 'profile_3') return '個人設定';
         if (route.params.view === 'settings' || route.params.view === 'settings_3') return '系統設定';
+        if (route.params.view === 'logs' || route.params.view === 'logs_3') return '系統紀錄';
         return '';
       });
 
