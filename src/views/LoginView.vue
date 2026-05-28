@@ -5,12 +5,15 @@
    * 版面對齊 DesignPage profile_3（白底、label + input、my-button-white）。
    * 以 person_id（使用者 ID）與 password 呼叫 POST /user/login。
    */
-  import { ref } from 'vue';
+  import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
   import { API_BASE } from '../constants/api.js';
   import { loggedFetch } from '../utils/loggedFetch.js';
-  import { createRandomLogoDiamondGradient } from '../utils/logoDiamondGradient.js';
+  import {
+    createRandomLogoDiamondGradient,
+    logoDiamondGradientToCssLinear,
+  } from '../utils/logoDiamondGradient.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
 
@@ -51,6 +54,13 @@
       function refreshLoginLogoGradient() {
         loginLogoColors.value = buildLoginLogoColors();
       }
+
+      const loginBrandPrimaryCss = computed(() =>
+        logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient),
+      );
+      const loginBrandSecondaryCss = computed(() =>
+        logoDiamondGradientToCssLinear(loginLogoColors.value.secondaryGradient),
+      );
 
       const onLogin = async () => {
         error.value = '';
@@ -97,6 +107,8 @@
         onLogin,
         loginLogoColors,
         refreshLoginLogoGradient,
+        loginBrandPrimaryCss,
+        loginBrandSecondaryCss,
       };
     },
   };
@@ -127,8 +139,14 @@
                 :colors="loginLogoColors"
               />
             </button>
-            <p class="my-login-view-brand my-font-xl-400 my-color-black text-break mb-0 mt-3">
-              MyQuiz.ai
+            <p class="my-login-view-brand my-font-xl-600 text-break mb-0 mt-3">
+              <span
+                class="my-login-view-brand-part"
+                :style="{ backgroundImage: loginBrandPrimaryCss }"
+              >MYQUIZ</span><span
+                class="my-login-view-brand-part"
+                :style="{ backgroundImage: loginBrandSecondaryCss }"
+              >.ai</span>
             </p>
           </div>
           <form class="d-flex flex-column gap-4 w-100 min-w-0 text-start" @submit.prevent="onLogin">
@@ -179,8 +197,8 @@
 }
 
 .my-login-view-logo {
-  width: calc(128pt * 4 / 3);
-  height: 128pt;
+  width: calc(160pt * 4 / 3);
+  height: 160pt;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -193,5 +211,12 @@
 
 .my-login-view-brand {
   line-height: 1.35;
+}
+
+.my-login-view-brand-part {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
 }
 </style>
