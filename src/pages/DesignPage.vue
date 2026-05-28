@@ -558,7 +558,7 @@ function designPackUnitTypeIconCss(unitType) {
                 <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-2">Logo 漸層色（20 組）</div>
                   <p class="my-font-sm-400 my-color-gray-1 text-break mb-4">
-                    登入頁、系統 header、LogoGradientPillButton 等隨機漸層僅能從以下 20 組雙色色盤取得；每組為對比色（互補／分裂互補）；出題偏冷色對暖色、批改偏暖色對冷色（work3 另有專用子集）。
+                    登入頁、系統 header、LogoGradientPillButton 等隨機漸層僅能從以下 20 組雙色色盤取得；每組為對比色且色調偏亮（約 300–400 色階）；出題偏冷色對暖色、批改偏暖色對冷色（work3 另有專用子集）。
                   </p>
                   <div class="row g-3">
                     <div
