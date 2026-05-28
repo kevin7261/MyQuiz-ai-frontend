@@ -22,6 +22,7 @@ const PATH_TO_VIEW = {
   'manage-users': 'userManagement',
   settings: 'systemSettings',
   log: 'logList',
+  'prompt-text': 'promptText',
 };
 const VIEW_TO_PATH = Object.fromEntries(Object.entries(PATH_TO_VIEW).map(([k, v]) => [v, k]));
 

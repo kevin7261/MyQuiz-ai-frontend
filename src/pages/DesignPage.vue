@@ -19,6 +19,7 @@ import {
   packUnitTypeIconClasses,
 } from '../utils/rag.js';
 import { API_BASE } from '../constants/api.js';
+import { LOGO_GRADIENT_PALETTES } from '../constants/logoGradientPalettes.js';
 
 defineProps({
   tabId: { type: String, default: '' },
@@ -532,7 +533,7 @@ function designPackUnitTypeIconCss(unitType) {
               </section>
 
               <!-- 彩色 -->
-              <section class="my-page-block-spacing mb-0">
+              <section class="my-page-block-spacing">
                 <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">彩色</div>
                   <div class="row g-3">
@@ -547,6 +548,59 @@ function designPackUnitTypeIconCss(unitType) {
                         :rows="item.rows"
                         :hex-for-class="designClassHex"
                       />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- Logo 漸層色盤（20 組雙色） -->
+              <section class="my-page-block-spacing mb-0">
+                <div class="rounded-4 my-design-page-section p-4">
+                  <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-2">Logo 漸層色（20 組）</div>
+                  <p class="my-font-sm-400 my-color-gray-1 text-break mb-4">
+                    登入頁、系統 header、LogoGradientPillButton 等隨機漸層僅能從以下 20 組雙色色盤取得；每組為對比色（互補／分裂互補）；出題偏冷色對暖色、批改偏暖色對冷色（work3 另有專用子集）。
+                  </p>
+                  <div class="row g-3">
+                    <div
+                      v-for="palette in LOGO_GRADIENT_PALETTES"
+                      :key="palette.id"
+                      class="col-12 col-md-6 col-xl-4"
+                    >
+                      <article class="my-design-spec-item my-design-spec-item--gradient">
+                        <dl class="my-design-spec-item__meta mb-2">
+                          <dt class="my-design-spec-item__term my-font-sm-400 my-color-gray-1">名稱</dt>
+                          <dd class="my-design-spec-item__value my-font-md-600 my-color-black text-break">
+                            {{ palette.label }}
+                            <span class="my-font-sm-400 my-color-gray-1 font-monospace">（{{ palette.id }}）</span>
+                          </dd>
+                          <dt class="my-design-spec-item__term my-font-sm-400 my-color-gray-1">用途標籤</dt>
+                          <dd class="my-design-spec-item__value my-font-sm-400 my-color-gray-1 text-break">
+                            {{ palette.tones.join('、') }}{{ palette.work3 ? ' · work3' : '' }}
+                          </dd>
+                        </dl>
+                        <div
+                          class="my-design-gradient-swatch rounded-3"
+                          :style="{ backgroundImage: palette.css }"
+                          role="img"
+                          :aria-label="`${palette.label} 漸層預覽`"
+                        />
+                        <div class="my-design-gradient-stops mt-2">
+                          <div
+                            v-for="(stop, idx) in palette.stops"
+                            :key="palette.id + '-stop-' + idx"
+                            class="my-design-gradient-stop-row"
+                          >
+                            <span
+                              class="my-design-swatch-dot flex-shrink-0"
+                              :style="{ backgroundColor: stop.color }"
+                            />
+                            <code class="my-font-sm-400 my-color-gray-1 font-monospace text-break">{{ stop.color }} {{ stop.offset }}</code>
+                          </div>
+                        </div>
+                        <div class="my-design-swatch-row my-bgcolor-black min-w-0 w-100 mt-2">
+                          <code class="my-font-sm-400 my-color-white font-monospace text-break flex-grow-1 min-w-0 px-1">{{ palette.css }}</code>
+                        </div>
+                      </article>
                     </div>
                   </div>
                 </div>
@@ -797,7 +851,7 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-logo-gradient"
-                      usage="開始出題／開始批改（LogoGradientPillButton gradient-bias=work3）"
+                      usage="開始出題／開始批改（LogoGradientPillButton；漸層僅從上方 20 組雙色色盤隨機；gradient-bias=work3）"
                       css="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 px-4 py-2 my-button-logo-gradient"
                     >
                       <div class="d-flex flex-wrap align-items-center gap-3">

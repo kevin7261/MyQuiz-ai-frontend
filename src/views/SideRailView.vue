@@ -22,6 +22,7 @@
     { perm: 'design', to: '/design', label: 'UI 元件參考' },
     { perm: 'logo', to: '/logo', label: 'Logo 繪製' },
     { perm: 'log', to: '/log', label: '系統紀錄' },
+    { perm: 'prompt-text', to: '/prompt-text', label: 'Prompt 模板' },
   ];
 
   export default {
@@ -221,11 +222,6 @@
   line-height: 0;
   background: transparent;
   cursor: pointer;
-}
-
-.my-system-header__logo:hover,
-.my-system-header__logo:focus-visible {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   outline: none;
 }
 

@@ -54,6 +54,7 @@
         if (route.params.view === 'profile') return '個人設定';
         if (route.params.view === 'settings') return '系統設定';
         if (route.params.view === 'log') return '系統紀錄';
+        if (route.params.view === 'prompt-text') return 'Prompt 模板';
         if (route.params.view === 'logo') return 'Logo 繪製';
         return '';
       });

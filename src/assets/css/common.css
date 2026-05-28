@@ -1084,6 +1084,26 @@ code {
   min-width: 0;
 }
 
+/* Design 顏色頁：Logo 漸層色盤預覽 */
+.my-design-gradient-swatch {
+  width: 100%;
+  height: 3.5rem;
+  border: 1px solid var(--my-color-gray-2);
+}
+
+.my-design-gradient-stops {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.my-design-gradient-stop-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
 .my-design-swatch-rows > .my-design-swatch-row {
   flex: 1 1 0;
   min-width: 0;

@@ -11,7 +11,7 @@
   import { API_BASE } from '../constants/api.js';
   import { loggedFetch } from '../utils/loggedFetch.js';
   import {
-    createRandomLogoDiamondGradient,
+    createRandomLogoDiamondGradientPair,
     createRandomLogoGradientCss,
     logoDiamondGradientToCssLinear,
   } from '../utils/logoDiamondGradient.js';
@@ -22,28 +22,42 @@
   const LOGIN_GRADIENT_OPTIONS = { linearOnly: true };
 
   function buildLoginLogoColors() {
-    const primaryGrad = createRandomLogoDiamondGradient(LOGIN_GRADIENT_OPTIONS);
-    const secondaryGrad = createRandomLogoDiamondGradient(LOGIN_GRADIENT_OPTIONS);
+    const { primary, secondary } = createRandomLogoDiamondGradientPair(LOGIN_GRADIENT_OPTIONS);
     return {
       background: 'transparent',
       diamondFill: '#ffffff',
       primaryGradient: {
-        x1: primaryGrad.x1,
-        y1: primaryGrad.y1,
-        x2: primaryGrad.x2,
-        y2: primaryGrad.y2,
-        stops: primaryGrad.stops,
-        css: primaryGrad.css,
+        x1: primary.x1,
+        y1: primary.y1,
+        x2: primary.x2,
+        y2: primary.y2,
+        stops: primary.stops,
+        css: primary.css,
+        paletteId: primary.paletteId,
       },
       secondaryGradient: {
-        x1: secondaryGrad.x1,
-        y1: secondaryGrad.y1,
-        x2: secondaryGrad.x2,
-        y2: secondaryGrad.y2,
-        stops: secondaryGrad.stops,
-        css: secondaryGrad.css,
+        x1: secondary.x1,
+        y1: secondary.y1,
+        x2: secondary.x2,
+        y2: secondary.y2,
+        stops: secondary.stops,
+        css: secondary.css,
+        paletteId: secondary.paletteId,
       },
     };
+  }
+
+  function buildLoginPageGradients() {
+    const logoColors = buildLoginLogoColors();
+    const excludeIds = [
+      logoColors.primaryGradient.paletteId,
+      logoColors.secondaryGradient.paletteId,
+    ].filter(Boolean);
+    const pageBgCss = createRandomLogoGradientCss({
+      ...LOGIN_GRADIENT_OPTIONS,
+      excludeIds,
+    });
+    return { logoColors, pageBgCss };
   }
 
   export default {
@@ -56,12 +70,14 @@
       const password = ref('');
       const loading = ref(false);
       const error = ref('');
-      const loginLogoColors = ref(buildLoginLogoColors());
-      const loginPageBgGradientCss = ref(createRandomLogoGradientCss(LOGIN_GRADIENT_OPTIONS));
+      const initialLoginGradients = buildLoginPageGradients();
+      const loginLogoColors = ref(initialLoginGradients.logoColors);
+      const loginPageBgGradientCss = ref(initialLoginGradients.pageBgCss);
 
       function refreshLoginLogoGradient() {
-        loginLogoColors.value = buildLoginLogoColors();
-        loginPageBgGradientCss.value = createRandomLogoGradientCss(LOGIN_GRADIENT_OPTIONS);
+        const next = buildLoginPageGradients();
+        loginLogoColors.value = next.logoColors;
+        loginPageBgGradientCss.value = next.pageBgCss;
       }
 
       /** 51、53（secondary 左半）— 與 SVG 漸層向量一致 */

@@ -90,6 +90,7 @@ function parseApiUrl(urlString) {
     p.startsWith('/person-analysis') ||
     p.startsWith('/course-analysis') ||
     p.startsWith('/log/') ||
+    p.startsWith('/prompt/') ||
     p.startsWith('/api');
 
   if (!isApiPath) return null;

@@ -263,3 +263,9 @@ export const API_PERSON_ANALYSIS_USER_PROMPT = '/system-settings/person_analysis
  * query person_id 為呼叫者（必填，僅供請求紀錄）；course_id 篩選課程（loggedFetch 自 currentCourse 帶入）。
  */
 export const API_LIST_LOGS = '/log/logs';
+
+/**
+ * GET /prompt/templates — Get All Prompt Templates
+ * query person_id 為呼叫者（必填）；回傳 rag（向量檢索查詢句）、llm_generate、llm_grade、person_analysis、course_analysis 之 prompt 模板全文。
+ */
+export const API_PROMPT_TEMPLATES = '/prompt/templates';

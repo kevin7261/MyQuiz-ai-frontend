@@ -25,6 +25,7 @@ const VALID_VIEWS = [
   'manage-users',
   'settings',
   'log',
+  'prompt-text',
 ];
 
 /** 各 view 對應的瀏覽器頁籤標題 */
@@ -39,6 +40,7 @@ const VIEW_TITLES = {
   'manage-users': '使用者管理 - MyQuiz.ai',
   settings: '系統設定 - MyQuiz.ai',
   log: '系統紀錄 - MyQuiz.ai',
+  'prompt-text': 'Prompt 模板 - MyQuiz.ai',
 };
 
 const routes = [
