@@ -773,7 +773,7 @@ function design3PackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-back-side-panel"
-                      usage="左欄 detail bar 返回主頁（exam_2／create-exam-bank_2）"
+                      usage="左欄 detail bar 返回主頁（exam_3／create-exam-bank_3）"
                       css="exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2"
                       copy-text="exam-2-detail-bar__back-btn--in-side-panel btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-3 pt-3 pb-2"
                     >

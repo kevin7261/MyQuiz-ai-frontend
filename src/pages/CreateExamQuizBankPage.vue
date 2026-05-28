@@ -128,7 +128,7 @@ const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
 /** design_3 核准按鈕 class（create-exam-bank_3 禁用 gray-3／black／outline-gray-1） */
 const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
-/** 設定單元「加入資料夾」：work3 白底欄位用 gray-3 pill；exam_2 灰底欄位用 white pill */
+/** 設定單元「加入資料夾」：work3 白底欄位用 gray-3 pill */
 const d3PackUnitAddFolderPill = computed(() => (
   props.designSidePanelOnLeft ? 'my-button-gray-3' : 'my-button-white'
 ));
@@ -7285,7 +7285,7 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
-/* 出題模式：gray-3 軌＋選中白底（與原白軌＋gray-3 選中對調；create-exam-bank_2） */
+/* 出題模式：gray-3 軌＋選中白底（與原白軌＋gray-3 選中對調） */
 .my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white) {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
@@ -7304,7 +7304,7 @@ async function confirmAnswer(item) {
   padding-right: 1.5rem !important;
 }
 
-/* create-exam-bank_3：小 pill 按鈕 px-2、灰字（對齊 DesignPage2）；類型／加入資料夾 picker 除外 */
+/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker 除外 */
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
 .my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   padding-left: 0.5rem !important;
@@ -7683,7 +7683,7 @@ async function confirmAnswer(item) {
   color: var(--my-color-black);
 }
 /* 單元／題型區圓形 +、選單：預設 gray-1；hover 改 black（列上「新增題型」見 .my-design-right-unit-add-quiz-btn） */
-/* 單元／題型區圓形 +、選單：design_3 用 transparent-borderless；exam_2 用 outline-gray-1 */
+/* 單元／題型區圓形 +、選單：design_3 用 transparent-borderless */
 .my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle,
 .my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless {
   color: var(--my-color-gray-1);

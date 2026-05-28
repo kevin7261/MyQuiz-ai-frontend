@@ -1,6 +1,6 @@
 <script setup>
 /**
- * CreateExamQuizBankPage2 - 建立測驗題庫（九宮格入口版）
+ * CreateExamQuizBankPage2 - 建立測驗題庫九宮格入口（供 CreateExamQuizBankPage3 使用）
  *
  * 首屏以九宮格顯示各題庫；點方塊進入題庫內容（複用 CreateExamQuizBankPage，隱藏分頁列）。
  * 不修改 CreateExamQuizBankPage.vue。
@@ -28,12 +28,12 @@ import { useMessageModal } from '../composables/useMessageModal.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
-  /** 路由前綴，供 create-exam-bank_2 / create-exam-bank_3 共用 */
-  routeBase: { type: String, default: '/create-exam-bank_2' },
-  /** true 時嵌入頁右側清單改顯示於左側（create-exam-bank_3） */
+  /** 路由前綴（/create-exam-bank_3） */
+  routeBase: { type: String, default: '/create-exam-bank_3' },
+  /** true 時嵌入頁右側清單改顯示於左側 */
   sidePanelOnLeft: { type: Boolean, default: false },
-  /** true 時詳情路由為 /:exam_id/:exam_quiz_id（_3）；false 時為 /:rag_id（_2） */
-  useExamDetailRoute: { type: Boolean, default: false },
+  /** 詳情路由為 /:exam_id/:exam_quiz_id */
+  useExamDetailRoute: { type: Boolean, default: true },
 });
 
 const UPLOAD_ALLOWED_EXTENSIONS = ['.zip'];

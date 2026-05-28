@@ -35,10 +35,8 @@ const PATH_TO_VIEW = {
   profile: 'profile',
   profile_3: 'profile3',
   'create-exam-bank': 'createExamQuizBank',
-  'create-exam-bank_2': 'createExamQuizBank2',
   'create-exam-bank_3': 'createExamQuizBank3',
   design: 'designPage',
-  design_2: 'designPage2',
   design_3: 'designPage3',
   logo: 'logoPage',
   'manage-users': 'userManagement',
@@ -66,11 +64,7 @@ const PATH_TO_VIEW = {
       /** 目前要顯示的區塊：work | studentWeaknessAnalysis | studentAnswerAnalysis | profile | createExamQuizBank | designPage | userManagement | systemSettings | logList */
       const currentView = computed(() => {
         if (route.path === '/exam') return 'work';
-        if (route.path === '/exam_2' || route.name === 'Exam2Detail') return 'work2';
         if (route.path.startsWith('/exam_3') || route.name === 'Exam3Detail') return 'work3';
-        if (route.path === '/create-exam-bank_2' || route.name === 'CreateExamBank2Detail') {
-          return 'createExamQuizBank2';
-        }
         if (route.path === '/create-exam-bank_3' || route.name === 'CreateExamBank3Detail') {
           return 'createExamQuizBank3';
         }
@@ -134,16 +128,8 @@ const PATH_TO_VIEW = {
           if (route.path !== '/exam') router.push('/exam');
           return;
         }
-        if (type === 'work2') {
-          if (!route.path.startsWith('/exam_2')) router.push('/exam_2');
-          return;
-        }
         if (type === 'work3') {
           if (!route.path.startsWith('/exam_3')) router.push('/exam_3');
-          return;
-        }
-        if (type === 'createExamQuizBank2') {
-          if (!route.path.startsWith('/create-exam-bank_2')) router.push('/create-exam-bank_2');
           return;
         }
         if (type === 'createExamQuizBank3') {

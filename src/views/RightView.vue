@@ -8,7 +8,6 @@
   */
   import { markRaw } from 'vue';
   import ExamPage from '../pages/ExamPage.vue';
-  import ExamPage2 from '../pages/ExamPage2.vue';
   import ExamPage3 from '../pages/ExamPage3.vue';
   import AnswerWeaknessAnalysisPage from '../pages/AnswerWeaknessAnalysisPage.vue';
   import AnswerWeaknessAnalysisPage3 from '../pages/AnswerWeaknessAnalysisPage3.vue';
@@ -17,10 +16,8 @@
   import ProfilePage from '../pages/ProfilePage.vue';
   import ProfilePage3 from '../pages/ProfilePage3.vue';
   import CreateExamQuizBankPage from '../pages/CreateExamQuizBankPage.vue';
-  import CreateExamQuizBankPage2 from '../pages/CreateExamQuizBankPage2.vue';
   import CreateExamQuizBankPage3 from '../pages/CreateExamQuizBankPage3.vue';
   import DesignPage from '../pages/DesignPage.vue';
-  import DesignPage2 from '../pages/DesignPage2.vue';
   import DesignPage3 from '../pages/DesignPage3.vue';
   import LogoPage from '../pages/LogoPage.vue';
   import UserManagementPage from '../pages/UserManagementPage.vue';
@@ -33,7 +30,6 @@
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
     work: markRaw(ExamPage),
-    work2: markRaw(ExamPage2),
     work3: markRaw(ExamPage3),
     studentWeaknessAnalysis: markRaw(AnswerWeaknessAnalysisPage),
     studentWeaknessAnalysis3: markRaw(AnswerWeaknessAnalysisPage3),
@@ -42,10 +38,8 @@
     profile: markRaw(ProfilePage),
     profile3: markRaw(ProfilePage3),
     createExamQuizBank: markRaw(CreateExamQuizBankPage),
-    createExamQuizBank2: markRaw(CreateExamQuizBankPage2),
     createExamQuizBank3: markRaw(CreateExamQuizBankPage3),
     designPage: markRaw(DesignPage),
-    designPage2: markRaw(DesignPage2),
     designPage3: markRaw(DesignPage3),
     logoPage: markRaw(LogoPage),
     userManagement: markRaw(UserManagementPage),
@@ -58,16 +52,14 @@
 
   const VIEWS_WITH_WORK_TAB_ID = new Set([
     'work',
-    'work2',
     'work3',
     'createExamQuizBank',
-    'createExamQuizBank2',
     'createExamQuizBank3',
   ]);
 
   export default {
     name: 'RightView',
-    components: { ExamPage, ExamPage2, ExamPage3, AnswerWeaknessAnalysisPage, AnswerWeaknessAnalysisPage3, StudentAnswerAnalysisPage, StudentAnswerAnalysisPage3, ProfilePage, ProfilePage3, CreateExamQuizBankPage, CreateExamQuizBankPage2, CreateExamQuizBankPage3, DesignPage, DesignPage2, DesignPage3, LogoPage, UserManagementPage, UserManagementPage3, SystemSettingsPage, SystemSettingsPage3, LogListPage, LogListPage3 },
+    components: { ExamPage, ExamPage3, AnswerWeaknessAnalysisPage, AnswerWeaknessAnalysisPage3, StudentAnswerAnalysisPage, StudentAnswerAnalysisPage3, ProfilePage, ProfilePage3, CreateExamQuizBankPage, CreateExamQuizBankPage3, DesignPage, DesignPage3, LogoPage, UserManagementPage, UserManagementPage3, SystemSettingsPage, SystemSettingsPage3, LogListPage, LogListPage3 },
     props: {
       currentView: { type: String, required: true },
       tabId: { type: String, required: true },

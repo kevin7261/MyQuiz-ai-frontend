@@ -62,10 +62,8 @@ router.beforeEach((to, _from, next) => {
 
   const requiresAuth =
     to.name === 'Exam'
-    || to.name === 'Exam2'
-    || to.name === 'Exam2Detail'
-    || to.name === 'CreateExamBank2'
-    || to.name === 'CreateExamBank2Detail'
+    || to.name === 'Exam3'
+    || to.name === 'Exam3Detail'
     || to.name === 'CreateExamBank3'
     || to.name === 'CreateExamBank3Detail'
     || to.name === 'Main'

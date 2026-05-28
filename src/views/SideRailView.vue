@@ -4,10 +4,11 @@
    *
    * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
    * 頂部 64×64：僅白色菱形 logo（點擊重繪頂部隨機漸層）。
-   * 中段：主要／進階功能 icon 導覽（三 icon 上方）。
+   * 中段：功能選單（dropend 下拉，三 icon 上方）。
    * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 profile_3）。
    */
   import { computed, ref } from 'vue';
+  import { useRoute } from 'vue-router';
   import LogoCenterMark from '../components/LogoCenterMark.vue';
   import { canSeeNavLink } from '../router/permissions.js';
   import { createRandomLogoDiamondSplitHorizontalGradients } from '../utils/logoDiamondGradient.js';
@@ -15,18 +16,17 @@
   /** 64×64 方塊內圖示撐滿（48pt ≈ 64px） */
   const SYSTEM_HEADER_LOGO_MARK_SIZE_PT = 48;
 
-  /** 三 icon 上方導覽；perm 為 null 表示一律顯示 */
-  const SIDE_RAIL_NAV_ITEMS = [
-    { perm: 'work', to: '/exam_3', label: '測驗', icon: 'fa-clipboard-list' },
-    { perm: null, to: '/create-exam-bank_3', label: '建立測驗題庫', icon: 'fa-book' },
-    { perm: 'student-weakness-analysis', to: '/student-weakness-analysis_3', label: '作答弱點分析', icon: 'fa-chart-line' },
-    { perm: 'student-answer-analysis', to: '/student-answer-analysis_3', label: '學生作答分析', icon: 'fa-users' },
-    { perm: 'users', to: '/manage-users_3', label: '使用者管理', icon: 'fa-user-group' },
-    { perm: 'design', to: '/design', label: 'UI 元件參考', icon: 'fa-palette' },
-    { perm: 'design_2', to: '/design_2', label: 'UI 元件參考 2', icon: 'fa-palette' },
-    { perm: 'design_3', to: '/design_3', label: 'UI 元件參考 3', icon: 'fa-palette' },
-    { perm: 'logo', to: '/logo', label: 'Logo 繪製', icon: 'fa-image' },
-    { perm: 'logs', to: '/logs_3', label: '系統紀錄', icon: 'fa-list-ul' },
+  /** 功能選單項目；perm 為 null 表示一律顯示 */
+  const SIDE_RAIL_MENU_ITEMS = [
+    { perm: 'work', to: '/exam_3', label: '測驗' },
+    { perm: null, to: '/create-exam-bank_3', label: '建立測驗題庫' },
+    { perm: 'student-weakness-analysis', to: '/student-weakness-analysis_3', label: '作答弱點分析' },
+    { perm: 'student-answer-analysis', to: '/student-answer-analysis_3', label: '學生作答分析' },
+    { perm: 'users', to: '/manage-users_3', label: '使用者管理' },
+    { perm: 'design', to: '/design', label: 'UI 元件參考' },
+    { perm: 'design_3', to: '/design_3', label: 'UI 元件參考 3' },
+    { perm: 'logo', to: '/logo', label: 'Logo 繪製' },
+    { perm: 'logs', to: '/logs_3', label: '系統紀錄' },
   ];
 
   export default {
@@ -38,6 +38,7 @@
     },
     emits: ['open-course-modal'],
     setup(props, { emit }) {
+      const route = useRoute();
       const systemHeaderGradientLeftStyle = ref({});
       const systemHeaderGradientRightStyle = ref({});
 
@@ -51,9 +52,15 @@
 
       const onOpenCourseModal = () => emit('open-course-modal');
 
-      const visibleNavItems = computed(() =>
-        SIDE_RAIL_NAV_ITEMS.filter(
+      const visibleMenuItems = computed(() =>
+        SIDE_RAIL_MENU_ITEMS.filter(
           (item) => item.perm == null || canSeeNavLink(props.userType, item.perm),
+        ),
+      );
+
+      const isMenuActive = computed(() =>
+        visibleMenuItems.value.some(
+          (item) => route.path === item.to || route.path.startsWith(`${item.to}/`),
         ),
       );
 
@@ -64,7 +71,8 @@
         regenerateLogoGradients: applyLogoGradients,
         onOpenCourseModal,
         canSeeNavLink,
-        visibleNavItems,
+        visibleMenuItems,
+        isMenuActive,
       };
     },
   };
@@ -97,21 +105,33 @@
       />
     </button>
 
-    <nav
-      class="my-system-header__nav flex-grow-1 min-h-0 overflow-auto d-flex flex-column justify-content-end"
-      aria-label="功能導覽"
-    >
-      <router-link
-        v-for="item in visibleNavItems"
-        :key="item.to"
-        :to="item.to"
-        class="my-system-header__action-btn"
-        active-class="my-system-header__action-btn--active"
-        :aria-label="item.label"
-        :title="item.label"
+    <div class="my-system-header__spacer flex-grow-1 min-h-0" aria-hidden="true" />
+
+    <nav class="my-system-header__nav" aria-label="功能導覽">
+      <div
+        v-if="visibleMenuItems.length > 0"
+        class="my-system-header__user-dropdown dropdown dropend position-static"
       >
-        <i :class="['fa-solid', item.icon]" aria-hidden="true" />
-      </router-link>
+        <button
+          type="button"
+          class="my-system-header__action-btn"
+          :class="{ 'my-system-header__action-btn--active': isMenuActive }"
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          aria-haspopup="true"
+          aria-label="功能選單"
+          title="功能選單"
+        >
+          <i class="fa-solid fa-bars" aria-hidden="true" />
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end my-system-header__user-menu">
+          <li v-for="item in visibleMenuItems" :key="item.to">
+            <router-link class="dropdown-item" :to="item.to" active-class="active">
+              {{ item.label }}
+            </router-link>
+          </li>
+        </ul>
+      </div>
     </nav>
 
     <nav class="my-system-header__footer" aria-label="系統功能">
@@ -214,10 +234,18 @@
   outline: none;
 }
 
-.my-system-header__nav {
+.my-system-header__spacer {
   position: relative;
   z-index: 1;
-  flex-shrink: 1;
+}
+
+.my-system-header__nav {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: visible;
 }
 
 .my-system-header__footer {
@@ -261,5 +289,15 @@
 .my-system-header__action-btn--active:focus-visible {
   color: var(--my-color-black);
   background-color: var(--my-color-gray-3);
+}
+
+.my-system-header__user-dropdown {
+  position: static;
+  width: 100%;
+}
+
+.my-system-header__user-menu {
+  z-index: 1100;
+  min-width: 12rem;
 }
 </style>

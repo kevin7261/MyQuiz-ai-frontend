@@ -1,9 +1,8 @@
 <script setup>
 /**
- * ExamPage2 - 測驗頁面（exam_2，九宮格入口版）
+ * ExamPage2 - 測驗九宮格入口（供 ExamPage3 /exam_3 使用）
  *
  * 首屏以九宮格顯示各測驗；點方塊進入測驗內容（複用 ExamPage，隱藏分頁列）。
- * 不修改 ExamPage.vue。
  */
 import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -32,20 +31,16 @@ import { useMessageModal } from '../composables/useMessageModal.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
-  /** 路由前綴，供 exam_2 / exam_3 共用 */
-  routeBase: { type: String, default: '/exam_2' },
-  /** true 時嵌入頁右側清單改顯示於左側（exam_3） */
+  /** 路由前綴（/exam_3） */
+  routeBase: { type: String, default: '/exam_3' },
+  /** true 時嵌入頁右側清單改顯示於左側 */
   sidePanelOnLeft: { type: Boolean, default: false },
-  /** true 時詳情路由為 /:exam_id/:exam_quiz_id（_3）；false 時為 /:exam_id（_2） */
-  useExamDetailRoute: { type: Boolean, default: false },
+  /** 詳情路由為 /:exam_id/:exam_quiz_id */
+  useExamDetailRoute: { type: Boolean, default: true },
 });
 
 const EXAM_NOUN = '測驗';
-
-/** exam_3 grid 入口按鈕文案（exam_2 仍為「新增測驗」） */
-const addExamEntryLabel = computed(() => (
-  props.routeBase === '/exam_3' ? '新增試卷' : `新增${EXAM_NOUN}`
-));
+const addExamEntryLabel = '新增試卷';
 
 const authStore = useAuthStore();
 const courseHeaderStore = useCourseHeaderStore();
