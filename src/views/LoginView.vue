@@ -157,7 +157,7 @@ const onLogin = async () => {
             <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break text-center" role="alert">{{ error }}</p>
             <button
               type="submit"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-login-view-submit-btn px-4 py-2 w-100"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
               :disabled="loading || !canLogin"
               :aria-busy="loading"
             >
@@ -271,40 +271,4 @@ const onLogin = async () => {
   transition: background-color 9999s ease-out 0s;
 }
 
-.my-login-view-shell .btn.my-login-view-submit-btn {
-  --bs-btn-bg: var(--my-color-white);
-  --bs-btn-hover-bg: var(--my-color-white);
-  --bs-btn-active-bg: var(--my-color-white);
-  --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-border-color: var(--my-color-gray-3);
-  --bs-btn-hover-border-color: var(--my-color-gray-3);
-  --bs-btn-active-border-color: var(--my-color-gray-3);
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
-  border: 1px solid var(--my-color-gray-3) !important;
-  box-shadow: none !important;
-}
-
-.my-login-view-shell .btn.my-login-view-submit-btn:hover:not(:disabled),
-.my-login-view-shell .btn.my-login-view-submit-btn:focus-visible:not(:disabled) {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
-  border-color: var(--my-color-gray-3) !important;
-  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
-}
-
-.my-login-view-shell .btn.my-login-view-submit-btn:active:not(:disabled) {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
-}
-
-.my-login-view-shell .btn.my-login-view-submit-btn:disabled {
-  --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-disabled-border-color: var(--my-color-gray-3);
-  --bs-btn-disabled-color: var(--my-color-gray-3);
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-3) !important;
-  border: 1px solid var(--my-color-gray-3) !important;
-  opacity: 1;
-}
 </style>

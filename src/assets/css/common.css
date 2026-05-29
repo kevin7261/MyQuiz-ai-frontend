@@ -268,6 +268,41 @@ code {
   background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
 }
 
+/* 白底 gray-3 框膠囊；hover 陰影（LoginView 登入、create-exam-bank「開始建立單元」） */
+.btn.my-btn-login-submit {
+  --bs-btn-bg: var(--my-color-white);
+  --bs-btn-hover-bg: var(--my-color-white);
+  --bs-btn-active-bg: var(--my-color-white);
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-border-color: var(--my-color-gray-3);
+  --bs-btn-hover-border-color: var(--my-color-gray-3);
+  --bs-btn-active-border-color: var(--my-color-gray-3);
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
+  box-shadow: none !important;
+}
+.btn.my-btn-login-submit:hover:not(:disabled),
+.btn.my-btn-login-submit:focus-visible:not(:disabled) {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  border-color: var(--my-color-gray-3) !important;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
+}
+.btn.my-btn-login-submit:active:not(:disabled) {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+}
+.btn.my-btn-login-submit:disabled {
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-disabled-border-color: var(--my-color-gray-3);
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-3) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
+  opacity: 1;
+}
+
 /* 線框綠字（透明底）；建立測驗題庫「取消設為測驗用」等 */
 .btn.my-btn-outline-green-hollow {
   color: var(--my-color-green);

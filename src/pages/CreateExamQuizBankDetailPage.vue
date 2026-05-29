@@ -6444,8 +6444,7 @@ async function confirmAnswer(item) {
               >
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2 w-100"
-                  :class="d3ConfirmPillMd"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
                   :disabled="startPackUnitBuildDisabled"
                   :aria-busy="currentState.packLoading"
                   title="開始建立單元"
@@ -7321,8 +7320,7 @@ async function confirmAnswer(item) {
                   </div>
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2 w-100"
-                    :class="d3ConfirmPillMd"
+                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
                     :disabled="startPackUnitBuildDisabled"
                     :aria-busy="currentState.packLoading"
                     title="開始建立單元"

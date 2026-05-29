@@ -961,12 +961,12 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-start-pack-build"
-                      usage="create-exam-bank_3 左側底欄「開始建立單元」（建置前；my-button-white 黑底 pill，位於「刪除此題庫」上方）"
-                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
+                      usage="create-exam-bank_3 左側底欄「開始建立單元」（建置前；同登入 my-btn-login-submit 白底 gray-3 框、hover 陰影）"
+                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
                     >
                       <button
                         type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
+                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
                         style="max-width: 20rem;"
                       >
                         開始建立單元
