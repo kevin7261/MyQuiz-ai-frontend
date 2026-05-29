@@ -8,6 +8,7 @@
   import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
+  import { useAppStore } from '../stores/appStore.js';
   import { API_BASE } from '../constants/api.js';
   import { loggedFetch } from '../utils/loggedFetch.js';
   import {
@@ -92,6 +93,7 @@
     setup() {
       const router = useRouter();
       const authStore = useAuthStore();
+      const appStore = useAppStore();
       const personId = ref('');
       const password = ref('');
       const loading = ref(false);
@@ -172,6 +174,7 @@
         loginBrandMyquizCss,
         loginBrandAiCss,
         loginPageBgGradientCss,
+        currentVersion: appStore.currentVersion,
       };
     },
   };
@@ -218,7 +221,7 @@
               >.ai</span>
             </p>
           </div>
-          <form class="d-flex flex-column gap-4 w-100 min-w-0 text-start" @submit.prevent="onLogin">
+          <form class="d-flex flex-column gap-4 w-100 min-w-0 text-start pt-5" @submit.prevent="onLogin">
             <div class="d-flex flex-column gap-0 mb-0">
               <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者帳號</label>
               <input
@@ -257,6 +260,9 @@
       </div>
     </div>
     </div>
+    <p class="my-login-view-version my-font-sm-400 my-color-gray-1 text-center mb-0 px-3 py-3 flex-shrink-0">
+      v{{ currentVersion }}
+    </p>
   </div>
 </template>
 
@@ -277,14 +283,20 @@
   z-index: 1;
 }
 
+.my-login-view-version {
+  position: relative;
+  z-index: 1;
+  font-family: var(--my-font-family-code);
+}
+
 .my-login-view-card {
   width: 100%;
   max-width: 360px;
 }
 
 .my-login-view-logo {
-  width: calc(160pt * 4 / 3);
-  height: 160pt;
+  width: calc(80pt * 4 / 3);
+  height: 80pt;
   display: flex;
   align-items: center;
   justify-content: center;

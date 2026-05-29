@@ -100,10 +100,10 @@ function onConfirm() {
       aria-labelledby="exam-add-question-modal-title"
     >
       <div
-        class="modal-dialog modal-dialog-centered modal-lg exam-add-question-modal-dialog"
+        class="modal-dialog modal-dialog-centered modal-lg overflow-visible exam-add-question-modal-dialog"
         @click.stop
       >
-        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3 exam-add-question-modal-content">
+        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3 overflow-visible exam-add-question-modal-content">
           <div class="modal-header border-bottom-0 p-0">
             <h5 id="exam-add-question-modal-title" class="modal-title my-color-black">新增題目</h5>
             <button
@@ -209,10 +209,6 @@ function onConfirm() {
 
 <style scoped>
 /* Modal 內 Bootstrap 下拉：避免選單被裁切，樣式仍用 UnitSelectDropdown */
-.exam-add-question-modal-dialog,
-.exam-add-question-modal-content {
-  overflow: visible;
-}
 :deep(.my-design-08-dropdown) {
   position: relative;
 }

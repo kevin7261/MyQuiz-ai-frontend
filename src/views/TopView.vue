@@ -84,9 +84,9 @@
 </script>
 
 <template>
-  <header class="my-course-header flex-shrink-0 my-bgcolor-white border-bottom">
-    <div class="my-course-header-inner px-3 min-w-0 w-100">
-      <div class="my-course-header-inner__center min-w-0">
+  <header class="my-course-header position-relative d-flex align-items-stretch overflow-visible flex-shrink-0 my-bgcolor-white border-bottom">
+    <div class="my-course-header-inner d-grid align-items-center gap-3 h-100 overflow-visible px-3 min-w-0 w-100">
+      <div class="my-course-header-inner__center w-100 min-w-0">
         <p class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0">
           <span
             class="my-course-header-course-name my-font-lg-600"
@@ -102,7 +102,7 @@
         </p>
       </div>
 
-      <div class="my-course-header-inner__end d-flex align-items-center justify-content-end gap-2 gap-md-3 min-w-0 flex-shrink-0">
+      <div class="my-course-header-inner__end overflow-visible d-flex align-items-center justify-content-end gap-2 gap-md-3 min-w-0 flex-shrink-0">
         <nav
           class="my-course-header-nav d-flex flex-row flex-shrink-0 gap-2 min-w-0 overflow-auto"
         >
@@ -170,41 +170,23 @@
 
 <style scoped>
 .my-course-header {
-  position: relative;
   z-index: 50;
-  display: flex;
-  align-items: stretch;
-  box-sizing: border-box;
   height: 64px;
   min-height: 64px;
   max-height: 64px;
-  overflow: visible;
 }
 
 .my-course-header-inner {
-  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 0.75rem;
-  height: 100%;
   min-height: 0;
-  overflow: visible;
 }
 
 .my-course-header-inner__center {
   justify-self: stretch;
-  width: 100%;
-  min-width: 0;
 }
 
 .my-course-header-inner__end {
   justify-self: end;
-  min-width: 0;
-  overflow: visible;
-}
-
-.my-course-header__user-dropdown {
-  position: static;
 }
 
 .my-course-header__user-menu {
@@ -219,37 +201,8 @@
   cursor: pointer;
 }
 
-.my-course-header-nav-btn {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
-  box-shadow: none;
-  text-decoration: none;
-}
-
-.my-course-header-nav-btn.btn.rounded-pill {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-
-.my-course-header-nav-btn:hover,
-.my-course-header-nav-btn:focus-visible {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
-  outline: none;
-}
-
-.my-course-header-nav-btn--active,
-.my-course-header-nav-btn--active:hover,
-.my-course-header-nav-btn--active:focus,
-.my-course-header-nav-btn--active:focus-visible {
-  background-color: var(--my-color-gray-3);
-  border-color: var(--my-color-gray-2);
-}
-
 .my-course-header .my-design-08-dropdown .btn.my-button-white {
-  min-width: 0;
   max-width: 10rem;
-  width: auto;
   color: var(--my-color-black) !important;
   background-color: var(--my-color-white) !important;
   border: 1px solid var(--my-color-gray-2) !important;

@@ -75,21 +75,21 @@
 </script>
 
 <template>
-  <aside class="my-system-header flex-shrink-0 my-bgcolor-white border-end" aria-label="系統 header">
-    <div class="my-system-header__gradient" aria-hidden="true">
+  <aside class="my-system-header position-relative d-flex flex-column h-100 align-self-stretch overflow-visible flex-shrink-0 my-bgcolor-white border-end" aria-label="系統 header">
+    <div class="my-system-header__gradient position-absolute top-0 start-0 z-0 d-flex w-100 pe-none" aria-hidden="true">
       <div
-        class="my-system-header__gradient-half"
+        class="my-system-header__gradient-half w-50 h-100 min-w-0 overflow-hidden"
         :style="systemHeaderGradientLeftStyle"
       />
       <div
-        class="my-system-header__gradient-half"
+        class="my-system-header__gradient-half w-50 h-100 min-w-0 overflow-hidden"
         :style="systemHeaderGradientRightStyle"
       />
     </div>
 
     <button
       type="button"
-      class="my-system-header__logo"
+      class="my-system-header__logo position-relative z-1 d-flex flex-shrink-0 align-items-center justify-content-center m-0 p-0 border-0 bg-transparent"
       aria-label="重新產生標誌漸層"
       title="重新產生標誌漸層"
       @click="regenerateLogoGradients"
@@ -101,16 +101,16 @@
       />
     </button>
 
-    <div class="my-system-header__spacer flex-grow-1 min-h-0" aria-hidden="true" />
+    <div class="my-system-header__spacer position-relative z-1 flex-grow-1 min-h-0" aria-hidden="true" />
 
-    <nav class="my-system-header__nav" aria-label="功能導覽">
+    <nav class="my-system-header__nav position-relative z-2 d-flex flex-column flex-shrink-0 overflow-visible" aria-label="功能導覽">
       <div
         v-if="visibleMenuItems.length > 0"
-        class="my-system-header__user-dropdown dropdown dropend position-static"
+        class="my-system-header__user-dropdown dropdown dropend position-static w-100"
       >
         <button
           type="button"
-          class="my-system-header__action-btn"
+          class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
           :class="{ 'my-system-header__action-btn--active': isMenuActive }"
           data-bs-toggle="dropdown"
           aria-expanded="false"
@@ -130,10 +130,10 @@
       </div>
     </nav>
 
-    <nav class="my-system-header__footer" aria-label="系統功能">
+    <nav class="my-system-header__footer position-relative z-2 d-flex flex-column flex-shrink-0 overflow-visible" aria-label="系統功能">
       <button
         type="button"
-        class="my-system-header__action-btn"
+        class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
         aria-label="課程"
         title="課程"
         @click="onOpenCourseModal"
@@ -144,7 +144,7 @@
       <router-link
         v-if="canSeeNavLink(userType, 'settings')"
         to="/settings"
-        class="my-system-header__action-btn"
+        class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
         active-class="my-system-header__action-btn--active"
         aria-label="系統設定"
         title="系統設定"
@@ -155,7 +155,7 @@
       <router-link
         v-if="canSeeNavLink(userType, 'profile')"
         to="/profile"
-        class="my-system-header__action-btn"
+        class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
         active-class="my-system-header__action-btn--active"
         aria-label="個人設定"
         :title="userName || '個人設定'"
@@ -168,103 +168,39 @@
 
 <style scoped>
 .my-system-header {
-  position: relative;
   z-index: 50;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
   width: 64px;
   min-width: 64px;
   max-width: 64px;
-  height: 100%;
   min-height: 0;
-  align-self: stretch;
-  flex-shrink: 0;
-  overflow: visible;
 }
 
 .my-system-header__gradient {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 0;
-  display: flex;
-  width: 100%;
   height: 15%;
-  pointer-events: none;
   -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
 }
 
 .my-system-header__gradient-half {
   flex: 1 1 50%;
-  width: 50%;
-  height: 100%;
-  min-width: 0;
-  overflow: hidden;
 }
 
 .my-system-header__logo {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
   width: 64px;
   height: 64px;
   min-width: 64px;
   min-height: 64px;
-  margin: 0;
-  padding: 0;
-  border: none;
   line-height: 0;
-  background: transparent;
   cursor: pointer;
   outline: none;
 }
 
-.my-system-header__spacer {
-  position: relative;
-  z-index: 1;
-}
-
-.my-system-header__nav {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  overflow: visible;
-}
-
-.my-system-header__footer {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-  overflow: visible;
-}
-
 .my-system-header__action-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
   width: 64px;
   height: 64px;
   min-width: 64px;
   min-height: 64px;
-  margin: 0;
-  padding: 0;
-  border: none;
   background: transparent;
-  color: var(--my-color-gray-1);
-  font-size: 1.25rem;
-  line-height: 1;
-  text-decoration: none;
   cursor: pointer;
 }
 
@@ -280,11 +216,6 @@
 .my-system-header__action-btn--active:focus-visible {
   color: var(--my-color-black);
   background-color: var(--my-color-gray-3);
-}
-
-.my-system-header__user-dropdown {
-  position: static;
-  width: 100%;
 }
 
 .my-system-header__user-menu {

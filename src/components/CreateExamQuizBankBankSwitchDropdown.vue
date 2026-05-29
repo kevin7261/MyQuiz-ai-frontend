@@ -25,7 +25,7 @@ const emit = defineEmits(['switch-bank']);
       :class="
         variant === 'course-header-nav'
           ? 'my-font-md-400 my-color-gray-1 my-course-header-nav-btn gap-2 px-4 py-2'
-          : 'my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 justify-content-between text-start'
+          : 'my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-2 py-1 justify-content-between text-start text-nowrap'
       "
       data-bs-toggle="dropdown"
       aria-expanded="false"
@@ -66,9 +66,6 @@ const emit = defineEmits(['switch-bank']);
 </template>
 
 <style scoped>
-.create-exam-bank-bank-switch--detail-bar .btn.dropdown-toggle {
-  white-space: nowrap;
-}
 
 .create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle.my-course-header-nav-btn {
   background-color: var(--my-color-white);

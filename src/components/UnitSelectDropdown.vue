@@ -140,13 +140,13 @@ function select(val) {
 <template>
   <div
     ref="rootRef"
-    class="dropdown w-100 my-design-08-dropdown my-unit-select-dd-root"
+    class="dropdown w-100 my-design-08-dropdown"
     v-bind="dropdownRootBind"
   >
     <button
       :id="toggleId"
       type="button"
-      class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white w-100 min-w-0 px-3 py-2 text-start my-unit-select-dd-toggle"
+      class="btn rounded-2 d-flex justify-content-between align-items-center dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white w-100 min-w-0 mw-100 px-3 py-2 text-start"
       data-bs-toggle="dropdown"
       aria-expanded="false"
       :disabled="disabled"
@@ -163,7 +163,7 @@ function select(val) {
       <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
     </button>
     <ul
-      class="dropdown-menu dropdown-menu-start w-100 my-unit-select-dd-menu"
+      class="dropdown-menu dropdown-menu-start w-100 mw-100 overflow-y-auto my-unit-select-dd-menu"
       :class="{ 'my-unit-select-dd-menu--in-modal': inModal }"
       :aria-labelledby="toggleId"
     >
@@ -198,20 +198,9 @@ function select(val) {
 </template>
 
 <style scoped>
-.my-unit-select-dd-root {
-  position: relative;
-}
-/* 觸發鈕與選單同寬，佔滿父層 */
-.my-unit-select-dd-toggle {
-  max-width: 100%;
-}
 .my-unit-select-dd-menu {
-  width: 100%;
   min-width: 100%;
-  max-width: 100%;
   max-height: 280px;
-  overflow-y: auto;
-  box-sizing: border-box;
 }
 </style>
 

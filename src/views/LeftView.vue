@@ -60,11 +60,11 @@
     class="d-flex flex-column w-100 my-bgcolor-gray-3"
     :class="compact ? 'my-left-view-compact flex-shrink-0' : 'h-100'"
   >
-    <div class="my-left-view-header">
-      <div class="my-left-view-brand">MyQuiz.ai</div>
+    <div class="my-left-view-header flex-shrink-0 w-100 pt-3 pb-2 d-flex flex-column align-items-center">
+      <div class="w-100 m-0 p-0 text-center fw-semibold fs-5 lh-sm my-color-black">MyQuiz.ai</div>
       <button
         type="button"
-        class="my-left-view-course-btn"
+        class="my-left-view-course-btn d-block w-100 m-0 py-2 border-0 text-center my-font-md-400 my-color-black text-truncate"
         @click="onOpenCourseModal"
       >
         {{ currentCourseName }}
@@ -145,42 +145,9 @@
 </template>
 
 <style scoped>
-.my-left-view-header {
-  flex-shrink: 0;
-  width: 100%;
-  padding: 1rem 0 0.5rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.my-left-view-brand {
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  text-align: center;
-  font-weight: 600;
-  font-size: 1.25rem;
-  line-height: 1.25;
-  color: var(--my-color-black);
-}
-
 .my-left-view-course-btn {
-  display: block;
-  width: 100%;
-  margin: 0;
-  padding: 0.5rem 0;
-  border: none;
   background: transparent;
-  text-align: center;
-  font-size: var(--my-font-size-md, 1rem);
-  font-weight: 400;
-  line-height: 1.5;
-  color: var(--my-color-black);
   cursor: pointer;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .my-left-view-course-btn:hover,
@@ -205,7 +172,7 @@
   color: var(--my-color-black);
 }
 .my-left-view-compact .my-left-view-header {
-  padding-bottom: 0.25rem;
+  padding-bottom: 0.25rem !important;
 }
 .my-left-view-compact .my-left-view-nav {
   margin-top: 0.75rem;
