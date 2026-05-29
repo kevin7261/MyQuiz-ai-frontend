@@ -912,7 +912,7 @@ const loadingOverlayText = computed(() => {
   return '處理中...';
 });
 
-/** 建題庫串流進度（僅 LoadingOverlay subText：筆數、目前序號、儲存 repack／RAG；不含工作檔名） */
+/** 建題庫串流進度（僅 LoadingOverlay subText：筆數、目前序號、儲存 repack／單元；不含工作檔名） */
 const packBuildOverlayLines = computed(() => {
   const st = currentState.value;
   if (!st?.packLoading) return [];
@@ -925,7 +925,7 @@ const packBuildOverlayLines = computed(() => {
   const lines = [`共 ${total} 個單元，已完成 ${done} 個`];
   if (cur > 0) lines.push(`目前建置：第 ${cur} / ${total} 個`);
   if (repackKey) lines.push(`儲存 repack：${repackKey}`);
-  if (ragKey) lines.push(`儲存 RAG：${ragKey}`);
+  if (ragKey) lines.push(`儲存單元：${ragKey}`);
   return lines;
 });
 

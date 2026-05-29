@@ -1372,13 +1372,13 @@ label[for]:not(.btn) + div {
 .btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear {
   font-size: var(--my-font-size-sm);
   font-weight: var(--my-font-weight-regular);
-  color: var(--my-color-gray-1);
+  color: var(--my-color-red);
 }
 .btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear:hover:not(:disabled),
 .btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear:focus-visible:not(:disabled),
 .btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear:active:not(:disabled) {
-  color: var(--my-color-gray-1);
-  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
+  color: var(--my-color-red-hover);
+  background-color: color-mix(in srgb, var(--my-color-red) 12%, var(--my-color-white));
 }
 .my-zip-drop-zone-selected__name {
   font-size: var(--my-font-size-md);
