@@ -4,8 +4,8 @@
  * 職責：呼叫 GET /rag/tabs?local=（與 Rag.local / POST /rag/tab/create 一致）、維護 ragList / ragListLoading / ragListError，
  * 並以 normalizeRagListResponse 正規化後端回傳格式（不依名稱或類型排除任何分頁）。供 CreateExamQuizBankPage 使用。
  *
- * 以 watch（immediate）依登入身分載入列表：Pinia 還原較晚時 loggedFetch 會在 user 就緒後再帶 person_id query；
- * 頁面 onMounted 勿再呼叫 fetchRagList，以免與 immediate 重複一次。
+ * 以 watch（immediate）依登入身分與目前路由 scope 的 course_id 載入列表：與 ExamPage 相同，未選課時不呼叫 API；
+ * Pinia 還原較晚時 loggedFetch 會在 user 就緒後再帶 person_id query。
  */
 import { ref, watch, unref } from 'vue';
 import { API_BASE, API_RAG_LIST, isFrontendLocalHost } from '../constants/api.js';
@@ -49,6 +49,14 @@ export function useRagList(options = {}) {
   async function fetchRagList(opts = {}) {
     if (!isFetchEnabled()) return;
     const silent = opts.silent === true;
+    if (authStore.currentCourse?.course_id == null) {
+      ragList.value = [];
+      ragListError.value = '';
+      if (!silent) {
+        ragListLoading.value = false;
+      }
+      return;
+    }
     if (!silent) {
       ragListLoading.value = true;
     }
@@ -57,7 +65,17 @@ export function useRagList(options = {}) {
       const listParams = new URLSearchParams();
       listParams.set('local', String(isFrontendLocalHost()));
       const res = await loggedFetch(`${API_BASE}${API_RAG_LIST}?${listParams}`, { method: 'GET' });
-      if (!res.ok) throw new Error(res.statusText);
+      if (!res.ok) {
+        let msg = res.statusText;
+        try {
+          const err = await res.json();
+          msg = err.detail ?? err.error ?? msg;
+          if (typeof msg !== 'string') msg = JSON.stringify(msg);
+        } catch {
+          /* ignore */
+        }
+        throw new Error(msg);
+      }
       const data = await res.json();
       ragList.value = normalizeRagListResponse(data);
     } catch (err) {
@@ -71,7 +89,11 @@ export function useRagList(options = {}) {
   }
 
   watch(
-    () => [listReloadKeyFromUser(authStore.user), isFetchEnabled()],
+    () => [
+      listReloadKeyFromUser(authStore.user),
+      authStore.currentCourse?.course_id,
+      isFetchEnabled(),
+    ],
     () => {
       if (!isFetchEnabled()) {
         ragListLoading.value = false;
@@ -80,7 +102,7 @@ export function useRagList(options = {}) {
       }
       fetchRagList();
     },
-    { immediate: true }
+    { immediate: true },
   );
 
   return { ragList, ragListLoading, ragListError, fetchRagList };

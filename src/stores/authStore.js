@@ -86,7 +86,18 @@ export const useAuthStore = defineStore(
         if (fromQuery) activeCourseScopeKey.value = fromQuery;
         return;
       }
-      activeCourseScopeKey.value = resolveCourseScopeKey(route);
+      const scopeKey = resolveCourseScopeKey(route);
+      activeCourseScopeKey.value = scopeKey;
+      // 建立測驗題庫與測驗同屬課程功能；若僅在 /exam 選過課，進入本頁時沿用 exam scope 的課程
+      if (scopeKey === COURSE_SCOPE_KEYS.CREATE_EXAM_BANK) {
+        const bankCourse = getCourseForScope(COURSE_SCOPE_KEYS.CREATE_EXAM_BANK);
+        if (!bankCourse?.course_id) {
+          const examCourse = getCourseForScope(COURSE_SCOPE_KEYS.EXAM);
+          if (examCourse?.course_id) {
+            setCourseForScope(COURSE_SCOPE_KEYS.CREATE_EXAM_BANK, examCourse);
+          }
+        }
+      }
     }
 
     /**
