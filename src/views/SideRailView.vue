@@ -1,69 +1,50 @@
-<script>
-  /**
-   * SideRailView - 系統 header（create-exam-bank_3 等全寬版面左側直立欄）
-   *
-   * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
-   * 頂部 64×64：僅白色菱形 logo（點擊重繪頂部隨機漸層）。
-   * 中段：開發者功能選單（dropend；測驗等四項僅在 TopView 右上角姓名下拉）。
-   * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）。
-   */
-  import { computed } from 'vue';
-  import { useRoute } from 'vue-router';
-  import LogoCenterMark from '../components/LogoCenterMark.vue';
-  import { canSeeNavLink } from '../router/permissions.js';
-  import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
+<script setup>
+/**
+ * SideRailView - 系統 header（create-exam-bank_3 等全寬版面左側直立欄）
+ *
+ * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
+ * 頂部 64×(64+16)pt：51–54、71–72 漸層與白色菱形 logo（點擊重繪隨機漸層）。
+ * 中段：開發者功能選單（dropend；測驗等四項僅在 TopView 右上角姓名下拉）。
+ * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）。
+ */
+import { computed } from 'vue';
+import { useRoute } from 'vue-router';
+import LogoCenterMark from '../components/LogoCenterMark.vue';
+import { canSeeNavLink } from '../router/permissions.js';
+import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 
-  /** 64×64 方塊內圖示撐滿（48pt ≈ 64px） */
-  const SYSTEM_HEADER_LOGO_MARK_SIZE_PT = 48;
+/** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
+const SIDE_RAIL_MENU_ITEMS = [
+  { perm: 'users', to: '/manage-users', label: '使用者管理' },
+  { perm: 'design', to: '/design', label: 'UI 元件參考' },
+  { perm: 'logo', to: '/logo', label: 'Logo 繪製' },
+  { perm: 'log', to: '/log', label: '系統紀錄' },
+  { perm: 'prompt-text', to: '/prompt-text', label: 'Prompt 模板' },
+];
 
-  /** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
-  const SIDE_RAIL_MENU_ITEMS = [
-    { perm: 'users', to: '/manage-users', label: '使用者管理' },
-    { perm: 'design', to: '/design', label: 'UI 元件參考' },
-    { perm: 'logo', to: '/logo', label: 'Logo 繪製' },
-    { perm: 'log', to: '/log', label: '系統紀錄' },
-    { perm: 'prompt-text', to: '/prompt-text', label: 'Prompt 模板' },
-  ];
+const props = defineProps({
+  userName: { type: String, default: '' },
+  userType: { type: [Number, String], default: undefined },
+});
 
-  export default {
-    name: 'SideRailView',
-    components: { LogoCenterMark },
-    props: {
-      userName: { type: String, default: '' },
-      userType: { type: [Number, String], default: undefined },
-    },
-    emits: [],
-    setup(props) {
-      const route = useRoute();
-      const {
-        systemHeaderGradientLeftStyle,
-        systemHeaderGradientRightStyle,
-        regenerateSystemHeaderLogoGradients,
-      } = useSystemHeaderLogoGradients();
+const route = useRoute();
+const {
+  systemHeaderGradientLeftStyle,
+  systemHeaderGradientRightStyle,
+  regenerateSystemHeaderLogoGradients: regenerateLogoGradients,
+} = useSystemHeaderLogoGradients();
 
-      const visibleMenuItems = computed(() =>
-        SIDE_RAIL_MENU_ITEMS.filter(
-          (item) => item.perm == null || canSeeNavLink(props.userType, item.perm),
-        ),
-      );
+const visibleMenuItems = computed(() =>
+  SIDE_RAIL_MENU_ITEMS.filter(
+    (item) => item.perm == null || canSeeNavLink(props.userType, item.perm),
+  ),
+);
 
-      const isMenuActive = computed(() =>
-        visibleMenuItems.value.some(
-          (item) => route.path === item.to || route.path.startsWith(`${item.to}/`),
-        ),
-      );
-
-      return {
-        SYSTEM_HEADER_LOGO_MARK_SIZE_PT,
-        systemHeaderGradientLeftStyle,
-        systemHeaderGradientRightStyle,
-        regenerateLogoGradients: regenerateSystemHeaderLogoGradients,
-        canSeeNavLink,
-        visibleMenuItems,
-        isMenuActive,
-      };
-    },
-  };
+const isMenuActive = computed(() =>
+  visibleMenuItems.value.some(
+    (item) => route.path === item.to || route.path.startsWith(`${item.to}/`),
+  ),
+);
 </script>
 
 <template>
@@ -92,7 +73,8 @@
       <LogoCenterMark
         id-prefix="system-header-logo"
         variant="white-diamond-only"
-        :size-pt="SYSTEM_HEADER_LOGO_MARK_SIZE_PT"
+        include-extension-row
+        size-to-container
       />
     </button>
 
@@ -171,9 +153,21 @@
 }
 
 .my-system-header__gradient {
-  height: 15%;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, transparent 100%);
+  /* 51–54（64）+ 71–72（16）= 80，與 80×100 格網同比例 */
+  height: calc(64px + 16px);
+  /* 底部 32pt：上緣 0% 透明（實心）→ 底緣 100% 透明 */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - 32pt),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0,
+    #000 calc(100% - 32pt),
+    transparent 100%
+  );
 }
 
 .my-system-header__gradient-half {
@@ -182,9 +176,9 @@
 
 .my-system-header__logo {
   width: 64px;
-  height: 64px;
+  height: calc(64px + 16px);
   min-width: 64px;
-  min-height: 64px;
+  min-height: calc(64px + 16px);
   line-height: 0;
   cursor: pointer;
   outline: none;

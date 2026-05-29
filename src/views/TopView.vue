@@ -2,14 +2,15 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列顯示「MyQuiz.ai | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
+   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」（測驗等四頁）或「MyQuiz.ai | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
    */
   import { computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
+  import { useAuthStore } from '../stores/authStore.js';
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
-  import { resolveBrandName, resolvePageName } from '../utils/pageHeaderTitle.js';
+  import { resolveBrandName, resolvePageName, isCourseScopedHeaderRoute } from '../utils/pageHeaderTitle.js';
   import CreateExamQuizBankBankSwitchDropdown from '../components/CreateExamQuizBankBankSwitchDropdown.vue';
   import ExamPageExamSwitchDropdown from '../components/ExamPageExamSwitchDropdown.vue';
 
@@ -23,6 +24,7 @@
     setup() {
       const route = useRoute();
       const router = useRouter();
+      const authStore = useAuthStore();
       const courseHeaderStore = useCourseHeaderStore();
       const {
         showBankSwitcher,
@@ -35,9 +37,14 @@
         examActionsDisabled,
       } = storeToRefs(courseHeaderStore);
 
-      const currentCourseName = computed(() => resolveBrandName());
+      const currentCourseName = computed(() =>
+        resolveBrandName(route, authStore.currentCourse),
+      );
 
-      /** TopView 版面之頁面名稱（MyQuiz.ai | 頁面名稱） */
+      /** 非課程四頁左側為 MYQUIZ.ai：Google Sans Code，字寬與課程名稱相同 */
+      const useBrandCodeFont = computed(() => !isCourseScopedHeaderRoute(route));
+
+      /** TopView 版面之頁面名稱（課程名稱 | 頁面名稱） */
       const pageTitle = computed(() => resolvePageName(route));
 
       function onHeaderTitleClick() {
@@ -47,6 +54,7 @@
       return {
         canSeeNavLink,
         currentCourseName,
+        useBrandCodeFont,
         pageTitle,
         onHeaderTitleClick,
         showBankSwitcher,
@@ -71,6 +79,7 @@
         <p class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0">
           <span
             class="my-course-header-course-name my-font-lg-600"
+            :class="{ 'my-font-family-code': useBrandCodeFont }"
             role="button"
             tabindex="0"
             @click="onHeaderTitleClick"

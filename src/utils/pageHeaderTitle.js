@@ -1,6 +1,20 @@
 /**
- * TopView 頂部「MyQuiz.ai | 頁面名稱」與 document.title 共用邏輯。
+ * TopView 頂部「課程名稱 | 頁面名稱」（課程四頁）或「MyQuiz.ai | 頁面名稱」與 document.title 共用邏輯。
  */
+
+/** @param {import('vue-router').RouteLocationNormalizedLoaded} route */
+export function isCourseScopedHeaderRoute(route) {
+  if (route.name === 'Exam' || route.name === 'ExamDetail') return true;
+  if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') return true;
+  const view = route.params?.view;
+  return view === 'person-analysis' || view === 'course-analysis';
+}
+
+/** @param {{ course_name?: string, course_id?: number } | null | undefined} course */
+export function resolveCourseDisplayName(course) {
+  if (!course) return null;
+  return course.course_name || `課程 ${course.course_id}`;
+}
 
 /** @param {import('vue-router').RouteLocationNormalizedLoaded} route */
 export function resolvePageName(route) {
@@ -28,13 +42,24 @@ export function resolvePageName(route) {
   return '';
 }
 
-export function resolveBrandName() {
-  return 'MyQuiz.ai';
+/**
+ * TopView 左側標題：課程四頁為課程名稱，其餘為 MyQuiz.ai。
+ * @param {import('vue-router').RouteLocationNormalizedLoaded} route
+ * @param {{ course_name?: string, course_id?: number } | null | undefined} [course]
+ */
+export function resolveBrandName(route, course) {
+  if (isCourseScopedHeaderRoute(route)) {
+    return resolveCourseDisplayName(course) ?? '選擇課程...';
+  }
+  return 'MYQUIZ.ai';
 }
 
-/** @param {import('vue-router').RouteLocationNormalizedLoaded} route */
-export function buildPageHeaderTitle(route) {
-  const left = resolveBrandName();
+/**
+ * @param {import('vue-router').RouteLocationNormalizedLoaded} route
+ * @param {{ course_name?: string, course_id?: number } | null | undefined} [course]
+ */
+export function buildPageHeaderTitle(route, course) {
+  const left = resolveBrandName(route, course);
   const right = resolvePageName(route);
   if (right) return `${left} | ${right}`;
   return left;

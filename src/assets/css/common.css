@@ -89,18 +89,18 @@ code {
   font-weight: var(--my-font-weight-semibold);
 }
 
-/* 品牌字標 MYQUIZ.ai：Google Sans Code ＋字距；inline-block ＋ margin 補償尾端字距，置中不偏左 */
+/* Google Sans Code（版本號、程式碼區、header MYQUIZ.ai 等；不含品牌字距） */
+.my-font-family-code {
+  font-family: var(--my-font-family-code);
+}
+
+/* 品牌字標 MYQUIZ.ai（登入頁、側欄等）：Google Sans Code ＋字距；inline-block ＋ margin 補償尾端字距，置中不偏左 */
 .my-brand-wordmark {
   display: inline-block;
   font-family: var(--my-font-family-code);
   letter-spacing: var(--my-brand-letter-spacing);
   margin-right: calc(-1 * var(--my-brand-letter-spacing));
   text-align: center;
-}
-
-/* Google Sans Code（版本號、程式碼區等；不含品牌字距） */
-.my-font-family-code {
-  font-family: var(--my-font-family-code);
 }
 
 /* 併 my-color-gray-1 的按鈕 hover／focus 字色加深 */

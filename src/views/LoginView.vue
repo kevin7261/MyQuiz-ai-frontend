@@ -1,108 +1,91 @@
-<script>
-  /**
-   * LoginView - 登入頁
-   *
-   * 版面對齊 DesignPage profile_3（白底、label + input、my-button-white）。
-   * 以 person_id（使用者帳號）與 password 呼叫 POST /user/login。
-   */
-  import { ref, computed } from 'vue';
-  import { useRouter } from 'vue-router';
-  import { useAuthStore } from '../stores/authStore.js';
-  import { useAppStore } from '../stores/appStore.js';
-  import { API_BASE } from '../constants/api.js';
-  import { loggedFetch } from '../utils/loggedFetch.js';
-  import { logoDiamondGradientToCssLinear } from '../utils/logoDiamondGradient.js';
-  import LoadingOverlay from '../components/LoadingOverlay.vue';
-  import LogoGridSvg from '../components/LogoGridSvg.vue';
-  import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
+<script setup>
+/**
+ * LoginView - 登入頁
+ *
+ * 版面對齊 DesignPage profile_3（白底、label + input、my-button-white）。
+ * 以 person_id（使用者帳號）與 password 呼叫 POST /user/login。
+ */
+import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '../stores/authStore.js';
+import { useAppStore } from '../stores/appStore.js';
+import { API_BASE } from '../constants/api.js';
+import { loggedFetch } from '../utils/loggedFetch.js';
+import { logoDiamondGradientToCssLinear } from '../utils/logoDiamondGradient.js';
+import LoadingOverlay from '../components/LoadingOverlay.vue';
+import LogoGridSvg from '../components/LogoGridSvg.vue';
+import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 
-  export default {
-    name: 'LoginView',
-    components: { LoadingOverlay, LogoGridSvg },
-    setup() {
-      const router = useRouter();
-      const authStore = useAuthStore();
-      const appStore = useAppStore();
-      const personId = ref('');
-      const password = ref('');
-      const loading = ref(false);
-      const error = ref('');
-      const {
-        loginLogoColors,
-        loginPageBgGradientCss,
-        regenerateSystemHeaderLogoGradients: refreshLoginLogoGradient,
-      } = useSystemHeaderLogoGradients();
+const router = useRouter();
+const authStore = useAuthStore();
+const appStore = useAppStore();
 
-      /** 51、53（secondary 左半）— 與 SVG 漸層向量一致 */
-      const loginBrandMyquizCss = computed(() =>
-        logoDiamondGradientToCssLinear(loginLogoColors.value.secondaryGradient, {
-          useStopsOnly: true,
-        }),
-      );
-      /** 52、54（primary 右半）— 與 SVG 漸層向量一致 */
-      const loginBrandAiCss = computed(() =>
-        logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient, {
-          useStopsOnly: true,
-        }),
-      );
+const personId = ref('');
+const password = ref('');
+const loading = ref(false);
+const error = ref('');
 
-      const canLogin = computed(
-        () => personId.value.trim() !== '' && password.value.trim() !== '',
-      );
+const {
+  loginLogoColors,
+  loginPageBgGradientCss,
+  regenerateSystemHeaderLogoGradients: refreshLoginLogoGradient,
+} = useSystemHeaderLogoGradients();
 
-      const onLogin = async () => {
-        error.value = '';
-        loading.value = true;
-        try {
-          const res = await loggedFetch(
-            `${API_BASE}/user/login`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ person_id: personId.value, password: password.value }),
-            },
-            { personId: personId.value, omitCourseQuery: true }
-          );
-          const text = await res.text();
-          if (!res.ok) {
-            let msg = '登入失敗';
-            try {
-              const body = JSON.parse(text);
-              if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
-            } catch {
-              if (text && text.length < 150) msg = text;
-            }
-            error.value = msg;
-            return;
-          }
-          const data = JSON.parse(text);
-          const userData = data.user != null ? data.user : data;
-          authStore.setUser(userData);
-          authStore.setCourses(data.courses ?? []);
-          router.push('/exam');
-        } catch (e) {
-          error.value = e.message || '無法連線，請檢查網路或稍後再試';
-        } finally {
-          loading.value = false;
-        }
-      };
+/** 51、53（secondary 左半）— 與 SVG 漸層向量一致 */
+const loginBrandMyquizCss = computed(() =>
+  logoDiamondGradientToCssLinear(loginLogoColors.value?.secondaryGradient, {
+    useStopsOnly: true,
+  }),
+);
+/** 52、54（primary 右半）— 與 SVG 漸層向量一致 */
+const loginBrandAiCss = computed(() =>
+  logoDiamondGradientToCssLinear(loginLogoColors.value?.primaryGradient, {
+    useStopsOnly: true,
+  }),
+);
 
-      return {
-        personId,
-        password,
-        loading,
-        error,
-        canLogin,
-        onLogin,
-        loginLogoColors,
-        refreshLoginLogoGradient,
-        loginBrandMyquizCss,
-        loginBrandAiCss,
-        loginPageBgGradientCss,
-        currentVersion: appStore.currentVersion,
-      };
-    },
-  };
+const canLogin = computed(
+  () => personId.value.trim() !== '' && password.value.trim() !== '',
+);
+
+const currentVersion = appStore.currentVersion;
+
+const onLogin = async () => {
+  error.value = '';
+  loading.value = true;
+  try {
+    const res = await loggedFetch(
+      `${API_BASE}/user/login`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ person_id: personId.value, password: password.value }),
+      },
+      { personId: personId.value, omitCourseQuery: true },
+    );
+    const text = await res.text();
+    if (!res.ok) {
+      let msg = '登入失敗';
+      try {
+        const body = JSON.parse(text);
+        if (body.detail) msg = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+      } catch {
+        if (text && text.length < 150) msg = text;
+      }
+      error.value = msg;
+      return;
+    }
+    const data = JSON.parse(text);
+    const userData = data.user != null ? data.user : data;
+    authStore.setUser(userData);
+    authStore.setCourses(data.courses ?? []);
+    router.push(authStore.currentCourse ? '/exam' : '/courses');
+  } catch (e) {
+    error.value = e.message || '無法連線，請檢查網路或稍後再試';
+  } finally {
+    loading.value = false;
+  }
+};
 </script>
 
 <template>

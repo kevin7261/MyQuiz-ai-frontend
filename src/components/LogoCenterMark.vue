@@ -5,8 +5,12 @@ import LogoGridSvg from './LogoGridSvg.vue';
 let logoCenterMarkSeq = 0;
 
 const props = defineProps({
-  /** 圖示高度（pt）；51–54 為正方形 */
+  /** 圖示寬度（pt）；51–54 為正方形；含 71–72 時高為 sizePt × 5/4 */
   sizePt: { type: Number, default: 16 },
+  /** true：含 71–72 延伸列（80×100 格網，高 = 64pt + 16pt 當 sizePt = 64） */
+  includeExtensionRow: { type: Boolean, default: false },
+  /** true：寬高 100% 撐滿外層容器 */
+  sizeToContainer: { type: Boolean, default: false },
   /** 黑底按鈕：灰／白透明、菱形白；white-diamond-only：僅白菱形；default 為淺底黑灰 logo */
   variant: {
     type: String,
@@ -63,10 +67,21 @@ const markColors = computed(() => {
   };
 });
 
-const wrapStyle = computed(() => ({
-  height: `${props.sizePt}pt`,
-  width: `${props.sizePt}pt`,
-}));
+const wrapStyle = computed(() => {
+  if (props.sizeToContainer) {
+    return { width: '100%', height: '100%' };
+  }
+  if (props.includeExtensionRow) {
+    return {
+      width: `${props.sizePt}pt`,
+      height: `${props.sizePt * 5 / 4}pt`,
+    };
+  }
+  return {
+    height: `${props.sizePt}pt`,
+    width: `${props.sizePt}pt`,
+  };
+});
 </script>
 
 <template>
@@ -77,7 +92,8 @@ const wrapStyle = computed(() => ({
     aria-hidden="true"
   >
     <LogoGridSvg
-      center-quad-only
+      :center-cells-only="includeExtensionRow"
+      :center-quad-only="!includeExtensionRow"
       :diamond-only="diamondOnly"
       :show-grid="false"
       :show-background="false"

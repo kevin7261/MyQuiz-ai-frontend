@@ -15,6 +15,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
 import HomeView from '../views/HomeView.vue';
+import { useAuthStore } from '../stores/authStore.js';
 import { buildPageHeaderTitle } from '../utils/pageHeaderTitle.js';
 
 /** 允許的 view 參數（對應 /:view 的網址片段，用於側邊選單） */
@@ -259,7 +260,8 @@ const router = createRouter({
 
 /** 每次導航完成後設定 document.title，與 TopView header 一致 */
 router.afterEach((to) => {
-  document.title = buildPageHeaderTitle(to);
+  const authStore = useAuthStore();
+  document.title = buildPageHeaderTitle(to, authStore.currentCourse);
 });
 
 export default router;
