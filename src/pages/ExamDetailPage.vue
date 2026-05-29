@@ -14,6 +14,7 @@
 import { ref, computed, watch, onActivated, reactive, nextTick, useSlots, provide } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
+import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
 import {
   API_BASE,
   API_RESPONSE_QUIZ_CONTENT,
@@ -1263,7 +1264,7 @@ const activeExamSlotShowGradingSubBlock = computed(() => {
  * KeepAlive onActivated：再抓兩者；首次 onActivated 僅補抓試卷題庫，避免與 immediate 雙重 GET /exam/tabs。
  */
 watch(
-  () => [getCurrentPersonId(), authStore.currentCourse?.course_id],
+  () => [getCurrentPersonId(), authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM)?.course_id],
   () => {
     fetchExamTests();
     fetchExamRagSource();

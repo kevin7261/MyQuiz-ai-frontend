@@ -7,6 +7,7 @@
 import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
+import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
 import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
 import {
   API_BASE,
@@ -527,7 +528,7 @@ watch(viewMode, (mode) => {
 });
 
 watch(
-  () => authStore.currentCourse?.course_id,
+  () => authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM)?.course_id,
   () => {
     if (viewMode.value === 'grid') {
       fetchExamList();

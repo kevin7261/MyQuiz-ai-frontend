@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue';
 import { useAuthStore } from '../stores/authStore.js';
+import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
 import {
   normalizeAnalysisQuizzesListResponse,
   mergeQuizzesWithTopLevelAnswers,
@@ -30,6 +31,7 @@ export function useAnalysisPage({
   loginRequiredMsg,
   overlayFetchText,
   cardIdPrefix,
+  scopeKey,
 }) {
   const authStore = useAuthStore();
 
@@ -81,8 +83,10 @@ export function useAnalysisPage({
 
   // ── helpers ────────────────────────────────────────────────────────────────
 
+  const resolvedScopeKey = scopeKey ?? COURSE_SCOPE_KEYS.EXAM;
+
   function hasSelectedCourse() {
-    return authStore.currentCourse?.course_id != null;
+    return authStore.getCourseForScope(resolvedScopeKey)?.course_id != null;
   }
 
   async function parseFetchErrorMessage(res, fallback) {
@@ -324,7 +328,7 @@ export function useAnalysisPage({
   // ── watch: reset on user / course change ───────────────────────────────────
 
   watch(
-    () => [authStore.user?.person_id, authStore.currentCourse?.course_id],
+    () => [authStore.user?.person_id, authStore.getCourseForScope(resolvedScopeKey)?.course_id],
     ([pid, courseId]) => {
       analysisLoadedOnce.value = false;
       items.value = [];

@@ -6,7 +6,7 @@
  * - 存放登入時回傳的課程列表（User_Course_Relation）
  * - 各功能頁各自記憶已選課程（coursesByScope）；currentCourse 為目前路由 scope 對應的課程
  * - 提供 setUser、setCourses、logout，供登入頁與導航守衛使用
- * - 啟用 persist，重新整理後仍保留登入狀態（依 pinia-plugin-persistedstate）
+ * - persist：user／courses 存 localStorage；coursesByScope 雙層 persist：localStorage（auth-scope，供新分頁讀取初始課程）＋ sessionStorage（auth-scope-tab，分頁本地覆蓋，restore 順序後蓋前，已開分頁不受其他分頁影響）
  *
  * 使用者物件欄位：user_id, person_id, name, user_type, llm_api_key 等（依後端 API）
  * 課程物件欄位：course_user_id, course_id, course_name, user_type
@@ -186,8 +186,10 @@ export const useAuthStore = defineStore(
     };
   },
   {
-    persist: {
-      pick: ['user', 'courses', 'coursesByScope'],
-    },
+    persist: [
+      { pick: ['user', 'courses'] },
+      { key: 'auth-scope', pick: ['coursesByScope'] },
+      { key: 'auth-scope-tab', pick: ['coursesByScope'], storage: sessionStorage },
+    ],
   },
 );

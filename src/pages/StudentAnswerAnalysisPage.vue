@@ -76,6 +76,7 @@ const {
   loginRequiredMsg: '請先登入以查看學生作答分析',
   overlayFetchText: '載入學生作答與分析報告中...',
   cardIdPrefix: 'student-analysis-card',
+  scopeKey: 'course-analysis',
 });
 </script>
 

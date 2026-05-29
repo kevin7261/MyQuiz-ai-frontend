@@ -8,6 +8,7 @@ import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
+import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
 import { useRagList } from '../composables/useRagList.js';
 import {
   getPersonId,
@@ -565,6 +566,16 @@ watch(viewMode, (mode) => {
     fetchRagList({ silent: true });
   }
 });
+
+watch(
+  () => authStore.getCourseForScope(COURSE_SCOPE_KEYS.CREATE_EXAM_BANK)?.course_id,
+  () => {
+    viewMode.value = 'grid';
+    selectedBankTabId.value = '';
+    selectedBankLabel.value = '';
+    fetchRagList();
+  },
+);
 </script>
 
 <template>

@@ -12,7 +12,7 @@
   import { useRoute } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
-  import { buildCoursesPageLocation } from '../utils/courseScope.js';
+  import { buildCoursesPageLocation, resolveCourseScopeKey } from '../utils/courseScope.js';
 
   export default {
     name: 'LeftView',
@@ -31,7 +31,8 @@
       const onLogout = () => emit('logout');
 
       const currentCourseName = computed(() => {
-        const c = authStore.currentCourse;
+        const scope = resolveCourseScopeKey(route);
+        const c = scope ? authStore.getCourseForScope(scope) : authStore.currentCourse;
         return c ? (c.course_name || `課程 ${c.course_id}`) : '選擇課程...';
       });
 

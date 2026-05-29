@@ -76,6 +76,7 @@ const {
   loginRequiredMsg: '請先登入以查看作答弱點分析',
   overlayFetchText: '載入作答與弱點分析中...',
   cardIdPrefix: 'weakness-card',
+  scopeKey: 'person-analysis',
 });
 </script>
 
