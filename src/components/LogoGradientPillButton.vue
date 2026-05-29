@@ -1,6 +1,7 @@
 <script setup>
 import { computed, shallowRef, watch } from 'vue';
 import LogoCenterMark from './LogoCenterMark.vue';
+import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 import { createRandomLogoGradientCss } from '../utils/logoDiamondGradient.js';
 
 const props = defineProps({
@@ -26,23 +27,33 @@ const props = defineProps({
 
 defineEmits(['click']);
 
-/** 每顆按鈕各一組隨機線性漸層（色域依 tone；僅 linear-gradient） */
-const buttonGradientCss = shallowRef(
-  createRandomLogoGradientCss({
+const { generateButtonGradientCss, gradeButtonGradientCss } = useSystemHeaderLogoGradients();
+
+function resolveButtonGradientCss() {
+  if (props.gradientBias === 'work3') {
+    return props.tone === 'generate'
+      ? generateButtonGradientCss.value
+      : gradeButtonGradientCss.value;
+  }
+  return createRandomLogoGradientCss({
     tone: props.tone,
     bias: props.gradientBias,
     linearOnly: true,
-  }),
-);
+  });
+}
+
+/** work3：與系統 header 左上左右半漸層同色盤；其餘為各按鈕獨立隨機漸層 */
+const buttonGradientCss = shallowRef(resolveButtonGradientCss());
 
 watch(
-  () => [props.tone, props.gradientBias],
-  ([tone, bias]) => {
-    buttonGradientCss.value = createRandomLogoGradientCss({
-      tone,
-      bias,
-      linearOnly: true,
-    });
+  () => [
+    props.tone,
+    props.gradientBias,
+    generateButtonGradientCss.value,
+    gradeButtonGradientCss.value,
+  ],
+  () => {
+    buttonGradientCss.value = resolveButtonGradientCss();
   },
 );
 

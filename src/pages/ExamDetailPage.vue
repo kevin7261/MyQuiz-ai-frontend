@@ -4039,7 +4039,7 @@ onActivated(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--my-color-white);
+  border: none;
   border-radius: 0.5rem;
   background-color: var(--my-color-black);
   overflow: hidden;

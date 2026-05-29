@@ -7,11 +7,11 @@
    * 中段：開發者功能選單（dropend；測驗等四項僅在 TopView 右上角姓名下拉）。
    * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）。
    */
-  import { computed, ref } from 'vue';
+  import { computed } from 'vue';
   import { useRoute } from 'vue-router';
   import LogoCenterMark from '../components/LogoCenterMark.vue';
   import { canSeeNavLink } from '../router/permissions.js';
-  import { createRandomLogoDiamondSplitHorizontalGradients } from '../utils/logoDiamondGradient.js';
+  import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 
   /** 64×64 方塊內圖示撐滿（48pt ≈ 64px） */
   const SYSTEM_HEADER_LOGO_MARK_SIZE_PT = 48;
@@ -35,16 +35,11 @@
     emits: [],
     setup(props) {
       const route = useRoute();
-      const systemHeaderGradientLeftStyle = ref({});
-      const systemHeaderGradientRightStyle = ref({});
-
-      function applyLogoGradients() {
-        const split = createRandomLogoDiamondSplitHorizontalGradients();
-        systemHeaderGradientLeftStyle.value = split.left;
-        systemHeaderGradientRightStyle.value = split.right;
-      }
-
-      applyLogoGradients();
+      const {
+        systemHeaderGradientLeftStyle,
+        systemHeaderGradientRightStyle,
+        regenerateSystemHeaderLogoGradients,
+      } = useSystemHeaderLogoGradients();
 
       const visibleMenuItems = computed(() =>
         SIDE_RAIL_MENU_ITEMS.filter(
@@ -62,7 +57,7 @@
         SYSTEM_HEADER_LOGO_MARK_SIZE_PT,
         systemHeaderGradientLeftStyle,
         systemHeaderGradientRightStyle,
-        regenerateLogoGradients: applyLogoGradients,
+        regenerateLogoGradients: regenerateSystemHeaderLogoGradients,
         canSeeNavLink,
         visibleMenuItems,
         isMenuActive,

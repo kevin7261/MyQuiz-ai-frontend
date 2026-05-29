@@ -6783,22 +6783,22 @@ async function confirmAnswer(item) {
                   </div>
                 </div>
                 <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
-                <div
-                  class="my-design-quiz-sub-block-outer"
-                  :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
-                >
-                  <LogoLayerMark
-                    v-if="designSidePanelOnLeft"
-                    layer="primary"
-                    :size-pt="24"
-                    :id-prefix="`bank-quiz-q-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                    class="my-design-quiz-sub-block-outer__logo"
-                  />
-                  <div class="my-design-quiz-sub-block-outer__content min-w-0 flex-grow-1">
+                <div class="my-design-quiz-sub-block-outer">
                   <div
                     class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                    :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                    :class="[
+                      designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                      { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
+                    ]"
                   >
+                    <LogoLayerMark
+                      v-if="designSidePanelOnLeft"
+                      layer="primary"
+                      :size-pt="24"
+                      :id-prefix="`bank-quiz-q-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                      class="my-design-quiz-sub-block__logo pt-2"
+                    />
+                    <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div
                       class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
@@ -6904,30 +6904,30 @@ async function confirmAnswer(item) {
                       />
                     </div>
                     </div>
-                  </div>
+                    </div>
                   </div>
                 </div>
                 <!-- 子區塊：答案 + 批改（合併） -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer"
-                  :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
                 >
-                  <LogoLayerMark
-                    v-if="designSidePanelOnLeft"
-                    layer="secondary"
-                    :size-pt="24"
-                    :id-prefix="`bank-quiz-a-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                    class="my-design-quiz-sub-block-outer__logo"
-                  />
-                  <div class="my-design-quiz-sub-block-outer__content min-w-0 flex-grow-1">
                   <div
                     class="my-design-quiz-sub-block rounded-4"
                     :class="[
                       designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                      designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                      designSidePanelOnLeft ? 'my-bgcolor-gray-2' : 'my-bgcolor-white',
+                      { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                     ]"
                   >
+                    <LogoLayerMark
+                      v-if="designSidePanelOnLeft"
+                      layer="secondary"
+                      :size-pt="24"
+                      :id-prefix="`bank-quiz-a-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                      class="my-design-quiz-sub-block__logo pt-2"
+                    />
+                    <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div class="w-100 min-w-0">
                       <QuizCard
                         v-bind="designUnitQuizCardBind"
@@ -6948,7 +6948,7 @@ async function confirmAnswer(item) {
                         @open-grading-prompt-edit="openBankGradingPromptEditModal"
                       />
                     </div>
-                  </div>
+                    </div>
                   </div>
                 </div>
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
@@ -7411,9 +7411,8 @@ async function confirmAnswer(item) {
   background-color: var(--my-color-white) !important;
   border: 1px solid var(--my-color-gray-2);
 }
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
-  background-color: var(--my-color-gray-3) !important;
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-2 {
+  background-color: var(--my-color-gray-2) !important;
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
@@ -7868,20 +7867,24 @@ async function confirmAnswer(item) {
   max-width: 100%;
   min-width: 0;
 }
-.my-design-quiz-sub-block-outer--with-logo {
+/* create-exam-bank_3：Q／A 標誌在區塊內左側同一欄 */
+.my-design-quiz-sub-block--with-logo {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 0.75rem;
+  gap: 0;
+  padding-left: 1rem;
+  box-sizing: border-box;
 }
-.my-design-quiz-sub-block-outer__logo {
+.my-design-quiz-sub-block__logo {
   flex: 0 0 24pt;
   width: 24pt;
   min-width: 24pt;
   max-width: 24pt;
   align-self: flex-start;
+  box-sizing: content-box;
 }
-.my-design-quiz-sub-block-outer__content {
+.my-design-quiz-sub-block__body {
   box-sizing: border-box;
   min-width: 0;
   flex: 1 1 0;
@@ -7945,6 +7948,10 @@ async function confirmAnswer(item) {
   border-top: 1px solid var(--my-color-gray-2);
   opacity: 1;
 }
+/* create-exam-bank_3：答案區 gray-2 底內，答案／提示／參考答案、批改結果 tab 下橫線為白線 */
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-2 :deep(.my-design-quiz-field-inset__rule) {
+  border-top-color: var(--my-color-white) !important;
+}
 /*
  * 出題／批改規則黑底區外層 wrap：px-3 pt-2；標題列 px-3 py-2 → 橫線 → 內文
  * 題目／批改子區塊頂部：.my-design-quiz-stem-sub-block-top（灰底區最上方、非題目 title 列）
@@ -7961,7 +7968,7 @@ async function confirmAnswer(item) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--my-color-white);
+  border: none;
   border-radius: 0.5rem;
   background-color: var(--my-color-black);
   overflow: hidden;
