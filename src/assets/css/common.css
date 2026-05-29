@@ -109,6 +109,15 @@ code {
   color: var(--my-color-black);
 }
 
+/* 取消按鈕（併 my-button-transparent-borderless）：字色 gray-4 */
+.btn.my-button-transparent-borderless.my-color-gray-4 {
+  color: var(--my-color-gray-1);
+}
+.btn.my-button-transparent-borderless.my-color-gray-4:hover:not(:disabled),
+.btn.my-button-transparent-borderless.my-color-gray-4:focus-visible:not(:disabled) {
+  color: var(--my-color-black);
+}
+
 /* —— 字色（對應 --my-color-*） —— */
 .my-color-black {
   color: var(--my-color-black);

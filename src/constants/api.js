@@ -118,7 +118,7 @@ export const API_RAG_QUIZ_GRADE_RESULT = '/rag/tab/unit/quiz/grade-result';
 export const API_CREATE_UNIT = '/rag/tab/create';
 /** 建立 Rag 並上傳 ZIP：POST /rag/tab/create-upload-zip（先 tab/create，再 tab/upload-zip）；multipart：file、rag_tab_id、person_id、tab_name、local（選填）；query person_id、course_id 必填；回傳 create 欄位與 file_metadata */
 export const API_CREATE_UPLOAD_ZIP = '/rag/tab/create-upload-zip';
-/** 列出 RAG：GET /rag/tabs；回傳 { rags, count }；query 可選 local（須與 Rag.local 相符；未傳時後端依連線判定）；僅 deleted=false；每筆含表欄位（含 for_exam、file_size〔MB〕、file_metadata）、units[]（每單元含 transcription、quizzes、for_exam 等；quizzes 含 follow_up）、相容頂層 quizzes／answers */
+/** 列出 RAG：GET /rag/tabs；回傳 { rags, count }；query 可選 local（須與 Rag.local 相符；未傳時後端依連線判定）；僅 deleted=false；每筆含表欄位（含 for_exam、file_size〔MB〕、file_metadata）、units[]（每單元含 transcript、quizzes、for_exam 等；quizzes 含 follow_up）、相容頂層 quizzes／answers */
 export const API_RAG_LIST = '/rag/tabs';
 /** 上傳教材檔：POST /rag/tab/upload-zip，需先 POST /rag/tab/create；Form: file、rag_tab_id、person_id、course_id（必填）；query 亦附 course_id（loggedFetch）；file 可為 .pdf、.doc、.docx、.ppt、.pptx 等後端可解析格式；不需 llm_api_key；回傳 file_metadata（內含 file_size〔MB〕等）並寫入 DB */
 export const API_UPLOAD_ZIP = '/rag/tab/upload-zip';
@@ -128,23 +128,23 @@ export const API_RAG_DELETE = '/rag/tab/delete';
 export const API_RAG_TAB_QUIZ_DELETE = '/rag/tab/quiz/delete';
 /** 更新 RAG 分頁顯示名稱：PUT /rag/tab/tab-name；body JSON：rag_id、tab_name；以 rag_id 比對，僅更新 deleted=false；回傳 rag_id、rag_tab_id、person_id、tab_name、updated_at */
 export const API_RAG_UNIT_NAME = '/rag/tab/tab-name';
-/** 建 RAG ZIP：POST /rag/tab/build-rag-zip；body 順序：rag_tab_id、person_id、unit_list、unit_names、unit_types、transcriptions、rag_chunk_*、build_faiss（可含 course_id）；query：person_id、course_id、repack_only；NDJSON 串流 */
+/** 建 RAG ZIP：POST /rag/tab/build-rag-zip；body 順序：rag_tab_id、person_id、unit_list、unit_names、unit_types、transcripts、rag_chunk_*、build_faiss（可含 course_id）；query：person_id、course_id、repack_only；NDJSON 串流 */
 export const API_BUILD_RAG_ZIP = '/rag/tab/build-rag-zip';
-/** RAG 文字單元（unit_type 2）：GET /rag/unit/text；query：`rag_tab_id`、`folder_name`、`person_id`；JSON 含 transcription */
+/** RAG 文字單元（unit_type 2）：GET /rag/unit/text；query：`rag_tab_id`、`folder_name`、`person_id`；JSON 含 transcript */
 export const API_RAG_UNIT_TEXT = '/rag/unit/text';
 /** RAG 音訊單元逐字稿：GET /rag/transcript/audio；query：`rag_tab_id`、`folder_name`、`person_id`（ZIP 內該資料夾之音訊轉寫） */
 export const API_RAG_TRANSCRIPT_AUDIO = '/rag/transcript/audio';
 /** RAG YouTube 單元逐字稿：GET /rag/transcript/youtube；query：同上；選填 `youtube_url`（與播放器解析網址一致時可帶） */
 export const API_RAG_TRANSCRIPT_YOUTUBE = '/rag/transcript/youtube';
-/** RAG 音訊單元（ZIP folder）：GET /rag/unit/mp3-file；query：rag_tab_id、folder_name、person_id；JSON 含 audio_base64、transcription */
+/** RAG 音訊單元（ZIP folder）：GET /rag/unit/mp3-file；query：rag_tab_id、folder_name、person_id；JSON 含 audio_base64、transcript */
 export const API_RAG_UNIT_MP3_FILE = '/rag/unit/mp3-file';
-/** RAG YouTube 單元 URL（ZIP folder）：GET /rag/unit/youtube-url；query：rag_tab_id、folder_name、person_id；JSON 含 youtube_url、transcription */
+/** RAG YouTube 單元 URL（ZIP folder）：GET /rag/unit/youtube-url；query：rag_tab_id、folder_name、person_id；JSON 含 youtube_url、transcript */
 export const API_RAG_UNIT_YOUTUBE_URL = '/rag/unit/youtube-url';
 /** 列出指定 tab 下所有未刪除 Rag_Unit（含關聯 quizzes，quizzes 含 follow_up）：GET /rag/tab/units；query: rag_tab_id、person_id（必填）；依 created_at 舊→新 */
 export const API_RAG_TAB_UNITS = '/rag/tab/units';
-/** 音訊單元：GET /rag/tab/unit/mp3-file；query：rag_tab_id、rag_unit_id（不需 person_id）；JSON：audio_base64、media_type、filename、transcription */
+/** 音訊單元：GET /rag/tab/unit/mp3-file；query：rag_tab_id、rag_unit_id（不需 person_id）；JSON：audio_base64、media_type、filename、transcript */
 export const API_RAG_TAB_UNIT_MP3_FILE = '/rag/tab/unit/mp3-file';
-/** YouTube 單元：GET /rag/tab/unit/youtube-url；query：rag_tab_id、rag_unit_id（不需 person_id）；JSON：youtube_url、transcription */
+/** YouTube 單元：GET /rag/tab/unit/youtube-url；query：rag_tab_id、rag_unit_id（不需 person_id）；JSON：youtube_url、transcript */
 export const API_RAG_TAB_UNIT_YOUTUBE_URL = '/rag/tab/unit/youtube-url';
 /**
  * 依 rag_tab_id／rag_unit_id 建立空白 Rag_Quiz（不呼叫 LLM）；rag_quiz_id 由後端於回應中帶出。
@@ -235,7 +235,7 @@ export const API_EXAM_TAB_QUIZ_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/llm-gener
  * 回傳 { exams: Exam[], count }（與 GET /exam/tabs 相同；quizzes[] 可含 follow_up_quiz 巢狀鏈）。
  */
 export const API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE_FOLLOWUP = '/exam/tab/quiz/create-llm-generate-followup';
-/** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */
+/** Exam：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz，202 + job_id）；body：`exam_quiz_id`、`quiz_content`（可 ""）、`quiz_answer`；query `person_id` 必填；`unit_type` 2／3／4 改 transcript 純 LLM 批改；完成後更新 answer_content／answer_critique；GET /exam/tab/quiz/grade-result/{job_id} 輪詢 */
 export const API_EXAM_QUIZ_GRADE = '/exam/tab/quiz/llm-grade';
 /** @deprecated 舊路徑 POST /exam/tab/quiz/grade；批改請使用 {@link API_EXAM_QUIZ_GRADE}（llm-grade） */
 export const API_EXAM_QUIZ_GRADE_LEGACY = '/exam/tab/quiz/grade';

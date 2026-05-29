@@ -209,7 +209,12 @@ async function submit() {
             </div>
           </div>
           <div class="modal-footer border-top-0 pt-0">
-            <button type="button" class="btn my-btn-outline-gray-3" :disabled="saving" @click="close">
+            <button
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
+              :disabled="saving"
+              @click="close"
+            >
               取消
             </button>
             <button

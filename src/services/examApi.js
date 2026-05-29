@@ -131,7 +131,7 @@ export async function apiExamTabQuizCreate(body, personId, fetchExtra = undefine
 
 /**
  * 測驗 LLM 批改（非同步）：POST /exam/tab/quiz/llm-grade（Exam Grade Quiz）。
- * Body：`exam_quiz_id`、`quiz_content`（字串，可空字串）、`quiz_answer`。以 `exam_quiz_id` 定位題目；RAG+LLM 非同步評分；`unit_type` 2／3／4 改 transcription 純 LLM 批改；完成後更新 Exam_Quiz.answer_content／answer_critique。回傳 **202** + `job_id`；輪詢 GET `/exam/tab/quiz/grade-result/{job_id}`。
+ * Body：`exam_quiz_id`、`quiz_content`（字串，可空字串）、`quiz_answer`。以 `exam_quiz_id` 定位題目；RAG+LLM 非同步評分；`unit_type` 2／3／4 改 transcript 純 LLM 批改；完成後更新 Exam_Quiz.answer_content／answer_critique。回傳 **202** + `job_id`；輪詢 GET `/exam/tab/quiz/grade-result/{job_id}`。
  * 批改指引由後端讀取，**勿傳**於 body。
  *
  * @param {{

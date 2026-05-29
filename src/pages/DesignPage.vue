@@ -17,6 +17,8 @@ import {
   UNIT_TYPE_MP3,
   UNIT_TYPE_YOUTUBE,
   packUnitTypeIconClasses,
+  ZIP_UPLOAD_UNIT_TYPE_INTRO,
+  ZIP_UPLOAD_UNIT_TYPE_RULES,
 } from '../utils/rag.js';
 import { API_BASE } from '../constants/api.js';
 import { LOGO_GRADIENT_PALETTES } from '../constants/logoGradientPalettes.js';
@@ -171,7 +173,7 @@ const DESIGN3_COLORS_GRAY = [
   },
   {
     name: 'color-gray-1',
-    usage: '次要文字、返回按鈕、圓形選單鈕、取消按鈕、方塊副標題',
+    usage: '次要文字、返回按鈕、圓形選單鈕、方塊副標題',
     rows: [{ className: 'my-bgcolor-gray-1' }, { className: 'my-color-gray-1' }],
   },
   {
@@ -191,7 +193,7 @@ const DESIGN3_COLORS_GRAY = [
   },
   {
     name: 'color-gray-4-text',
-    usage: '左側題目／流程清單（my-design-right-nav）· drop zone 提示文字、說明 ul 等最淡輔助字色',
+    usage: '左側題目／流程清單（my-design-right-nav）· drop zone 提示文字、說明 ul、Modal 取消按鈕等最淡輔助字色',
     rows: [{ className: 'my-bgcolor-gray-4' }, { className: 'my-color-gray-4' }],
   },
   {
@@ -267,9 +269,15 @@ const DESIGN3_TYPE_GROUPS = [
       },
       {
         name: 'type-md-gray-1',
-        usage: '取消按鈕、圓形選單鈕；exam_3 空題目提示；create-exam-bank_3 主內容空題型居中提示',
+        usage: '圓形選單鈕；exam_3 空題目提示；create-exam-bank_3 主內容空題型居中提示',
         colorClass: 'my-color-gray-1',
         previewText: '目前沒有題型，請在左側選單的單元按 + 新增題型',
+      },
+      {
+        name: 'type-md-gray-4',
+        usage: '取消按鈕（Modal footer）',
+        colorClass: 'my-color-gray-4',
+        previewText: '取消',
       },
     ],
   },
@@ -867,16 +875,16 @@ function designPackUnitTypeIconCss(unitType) {
                     <DesignPageSpecItem
                       name="btn-modal-cancel-gray"
                       usage="上傳 Modal 取消"
-                      css="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2"
+                      css="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless flex-shrink-0 px-4 py-2"
                     >
-                      <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2">取消</button>
+                      <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless flex-shrink-0 px-4 py-2">取消</button>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-delete-modal-cancel"
                       usage="刪除確認 Modal 取消"
-                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2"
+                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
                     >
-                      <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-4 py-2">取消</button>
+                      <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2">取消</button>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-upload-confirm"
@@ -1358,12 +1366,11 @@ function designPackUnitTypeIconCss(unitType) {
                             <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
                             <div class="my-font-sm-400 my-color-gray-4 mt-2">單檔不可超過 50 MB</div>
                             <div class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto" style="max-width: 28rem;">
-                              <div class="mb-1">請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：</div>
+                              <div class="mb-1">{{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}</div>
                               <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                                <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
-                                <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                                <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
-                                <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                                <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-preview-' + ri" class="mb-0">
+                                  {{ rule }}
+                                </li>
                               </ul>
                             </div>
                           </div>
@@ -1387,7 +1394,7 @@ function designPackUnitTypeIconCss(unitType) {
                         </div>
                       </div>
                       <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
-                        <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2">取消</button>
+                        <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless flex-shrink-0 px-4 py-2">取消</button>
                         <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2">確定上傳</button>
                       </div>
                     </div>
@@ -1509,12 +1516,11 @@ function designPackUnitTypeIconCss(unitType) {
                 <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
                 <div class="my-font-sm-400 my-color-gray-4 mt-2">單檔不可超過 50 MB</div>
                 <div class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto" style="max-width: 28rem;">
-                  <div class="mb-1">請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：</div>
+                  <div class="mb-1">{{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}</div>
                   <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                    <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
-                    <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                    <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
-                    <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                    <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-modal-' + ri" class="mb-0">
+                      {{ rule }}
+                    </li>
                   </ul>
                 </div>
               </template>
@@ -1522,7 +1528,7 @@ function designPackUnitTypeIconCss(unitType) {
             <div v-if="uploadError" class="my-color-red my-font-sm-400 mt-2 mb-0 text-break">{{ uploadError }}</div>
           </div>
           <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
-            <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless flex-shrink-0 px-4 py-2" @click="closeUploadModal">取消</button>
+            <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless flex-shrink-0 px-4 py-2" @click="closeUploadModal">取消</button>
             <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white flex-shrink-0 px-4 py-2" @click="onUploadConfirm">確定上傳</button>
           </div>
         </div>

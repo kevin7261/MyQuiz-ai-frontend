@@ -7,8 +7,8 @@
  * API 對應：
  * - 列表：GET /rag/tabs?local=（與 tab/create 的 local 一致）；useRagList 首次 watch(immediate) 載入，之後每次從側欄再進入本頁（KeepAlive onActivated）再抓一次
  * - 建立並上傳（按 + 開 Modal）：POST /rag/tab/create-upload-zip（multipart: file、rag_tab_id、person_id、tab_name、local；query person_id、course_id）；成功後顯示設定單元
- * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；course_id、unit_list、unit_types、transcriptions〔與逗號分段同序〕、rag_chunk_sizes／rag_chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
- * - 設定單元：unit_type 2／3／4 時自動 GET `/rag/unit/text`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url`；回應 `transcription`（Markdown）寫入逐字稿編輯區（mp3／YouTube 另設播放器預覽）；期間全螢幕 LoadingOverlay「檔案讀取中…」
+ * - 建 RAG：POST /rag/tab/build-rag-zip（NDJSON 串流；course_id、unit_list、unit_types、transcripts〔與逗號分段同序〕、rag_chunk_sizes／rag_chunk_overlaps〔與群組同序之逗號字串；非 unit_type 1 時為 0〕、可選 unit_names〔與群組同序之逗號字串，名稱內逗號會轉空白〕；已不再傳 system_prompt_instruction）
+ * - 設定單元：unit_type 2／3／4 時自動 GET `/rag/unit/text`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url`；回應 `transcript`（Markdown）寫入逐字稿編輯區（mp3／YouTube 另設播放器預覽）；期間全螢幕 LoadingOverlay「檔案讀取中…」
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：GET /rag/tabs 每筆 Rag.for_exam，或其 units／quizzes 任一有 Rag_Quiz.for_exam，或本機題卡 rag_quiz_for_exam，皆於分頁列顯示綠點並禁止刪除該題庫分頁（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）與已儲存批改規則之 POST /rag/tab/unit/quiz/llm-grade-db；GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
@@ -31,7 +31,7 @@ import {
   apiRagUnitText,
   apiRagUnitMp3FileByFolder,
   apiRagUnitYoutubeUrlByFolder,
-  ragUnitTranscriptionFromResponse,
+  ragUnitTranscriptFromResponse,
   apiGetRagTabUnits,
   apiCreateRagUnitQuiz,
   apiRagUnitQuizLlmGenerate,
@@ -67,7 +67,7 @@ import {
   examOrRagQuizRowKey,
   examOrRagAnswerRowKey,
   serializePackUnitTypesForApi,
-  transcriptionsForBuildRagZip,
+  transcriptsForBuildRagZip,
   chunkSizesOverlapsStringsForBuildRagZip,
   serializePackUnitNamesForApi,
   normalizePackUnitType,
@@ -80,6 +80,8 @@ import {
   UNIT_TYPE_YOUTUBE,
   DEFAULT_PACK_CHUNK_SIZE,
   DEFAULT_PACK_CHUNK_OVERLAP,
+  ZIP_UPLOAD_UNIT_TYPE_INTRO,
+  ZIP_UPLOAD_UNIT_TYPE_RULES,
 } from '../utils/rag.js';
 import { useRagList } from '../composables/useRagList.js';
 import { useMessageModal } from '../composables/useMessageModal.js';
@@ -847,7 +849,7 @@ const isUnitSubTabsLoading = computed(() => unitSubTabsLoadingCount.value > 0);
 
 const isGradingSubmitting = computed(() => gradingSubmittingCardId.value != null);
 
-/** 設定單元：逐字稿載入中（文字 GET /rag/unit/text）或檔案讀取（mp3-file／youtube-url 含 transcription）期間，禁「新增單元」等 */
+/** 設定單元：逐字稿載入中（文字 GET /rag/unit/text）或檔案讀取（mp3-file／youtube-url 含 transcript）期間，禁「新增單元」等 */
 const hasPackUnitTranscriptLoading = computed(() => {
   const st = currentState.value;
   const t = Array.isArray(st?.packUnitTranscriptLoading) && st.packUnitTranscriptLoading.some(Boolean);
@@ -1247,15 +1249,15 @@ const bankUnitTranscriptSection = computed(() => {
   const state = currentState.value;
   const rag = currentRagItem.value;
   const rawTab = state.unitTabOrder?.[gi];
-  const tab = rawTab ? tabWithResolvedTranscription(rawTab, gi, state, rag) : null;
+  const tab = rawTab ? tabWithResolvedTranscript(rawTab, gi, state, rag) : null;
   const ut = Number(row.unitType ?? tab?.unitType ?? UNIT_TYPE_RAG);
   if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return null;
-  const transcription = resolveUnitSlotTranscription(gi, tab ?? {}, state, rag);
+  const transcript = resolveUnitSlotTranscript(gi, tab ?? {}, state, rag);
   const sourceDisplay =
     quizBankReadonlySourceDisplay(tab ?? {}) || String(row.sourceDisplay ?? '').trim() || '—';
   const youtubeHref =
     ut === UNIT_TYPE_YOUTUBE ? String(tab?.youtubeUrl ?? sourceDisplay ?? '').trim() : '';
-  return { unitType: ut, transcription, sourceDisplay, youtubeHref, tab };
+  return { unitType: ut, transcript, sourceDisplay, youtubeHref, tab };
 });
 
 /** 文字／YouTube／MP3 單元：顯示單元內容區（對齊 exam_design examSlotShowUnitTranscriptUi） */
@@ -1264,7 +1266,7 @@ const bankShowUnitTranscriptUi = computed(() => bankUnitTranscriptSection.value 
 const bankUnitTranscriptMdHtml = computed(() => {
   const sec = bankUnitTranscriptSection.value;
   if (!sec) return '';
-  return renderMarkdownToSafeHtml(sec.transcription != null ? String(sec.transcription) : '');
+  return renderMarkdownToSafeHtml(sec.transcript != null ? String(sec.transcript) : '');
 });
 
 const bankUnitYoutubeEmbedUrl = computed(() => {
@@ -1818,7 +1820,7 @@ function packUnitYoutubeEmbedUrl(gi) {
 
 /**
  * unit_type 2／3／4 自動載入：GET `/rag/unit/text`、`/rag/unit/mp3-file`、`/rag/unit/youtube-url`；
- * 回應之 transcription（Markdown）寫入逐字稿編輯區（mp3／YouTube 另設定播放器預覽）。
+ * 回應之 transcript（Markdown）寫入逐字稿編輯區（mp3／YouTube 另設定播放器預覽）。
  */
 async function loadPackUnitPreviewForType(gi, group) {
   const ut = packUnitTypeAt(gi);
@@ -1846,7 +1848,7 @@ async function loadPackUnitPreviewForType(gi, group) {
         folder_name: ctx.folder,
         personId: ctx.personId,
       });
-      md = ragUnitTranscriptionFromResponse(data);
+      md = ragUnitTranscriptFromResponse(data);
     } else if (ut === UNIT_TYPE_MP3) {
       const payload = await apiRagUnitMp3FileByFolder({
         rag_tab_id: ctx.rag_tab_id,
@@ -1855,7 +1857,7 @@ async function loadPackUnitPreviewForType(gi, group) {
       });
       if (!(payload.blob instanceof Blob) || payload.blob.size <= 0) throw new Error('empty audio');
       setPackUnitMp3PreviewUrlAt(gi, URL.createObjectURL(payload.blob));
-      md = String(payload.transcription ?? '').trim();
+      md = String(payload.transcript ?? '').trim();
     } else if (ut === UNIT_TYPE_YOUTUBE) {
       const ytData = await apiRagUnitYoutubeUrlByFolder({
         rag_tab_id: ctx.rag_tab_id,
@@ -1865,7 +1867,7 @@ async function loadPackUnitPreviewForType(gi, group) {
       const url = youtubeUrlFromUnitUrlResponse(ytData);
       if (!url || !youtubeEmbedUrlFromInput(url)) throw new Error('invalid youtube');
       setPackUnitYoutubeUrlAt(gi, url);
-      md = ragUnitTranscriptionFromResponse(ytData);
+      md = ragUnitTranscriptFromResponse(ytData);
     } else {
       throw new Error('不支援此單元類型的逐字稿載入');
     }
@@ -2023,18 +2025,18 @@ function parseFolderCombinationTags(folderCombinationStr, fallbackFolderLine) {
 }
 
 /** Rag_Unit／GET /rag/tab/units／build-rag-zip output：逐字稿欄位（含 NDJSON output.transcript_plain） */
-function rawUnitTranscriptionString(unit) {
+function rawUnitTranscriptString(unit) {
   if (!unit || typeof unit !== 'object') return '';
   const out = unit.output && typeof unit.output === 'object' ? unit.output : null;
   const candidates = [
-    unit.transcription,
     unit.transcript,
+    unit.transcription,
     unit.transcript_plain,
     unit.transcriptPlain,
     unit.transcript_text,
     unit.transcriptText,
-    out?.transcription,
     out?.transcript,
+    out?.transcription,
     out?.transcript_plain,
     out?.transcriptPlain,
   ];
@@ -2058,7 +2060,7 @@ function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
   const anchorRagQuizId = firstRagQuizAnchorIdFromUnit(unit);
   const ragUnitId = ragUnitIdFromRawUnit(unit);
   const src = unitSourceFilename(unit);
-  const transcription = rawUnitTranscriptionString(unit);
+  const transcript = rawUnitTranscriptString(unit);
   const ut = Number(unit.unit_type ?? unit.unitType);
   const rag_mode = unit.rag_mode ?? unit.ragMode;
   const csRaw =
@@ -2072,7 +2074,7 @@ function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
     unit_name: safeName,
     anchor_rag_quiz_id: anchorRagQuizId,
     rag_unit_id: ragUnitId,
-    transcription,
+    transcript,
     ...(Number.isFinite(ut) && ut > 0 ? { unit_type: ut } : {}),
     ...(rag_mode != null && String(rag_mode).trim() !== '' ? { rag_mode } : {}),
     text_file_name: unitTextFileName(unit),
@@ -2120,7 +2122,7 @@ function fallbackUnitsRawFromRag(rag) {
             ? String(o.rag_name).trim()
             : label;
       const unit_name = String(rawUnit || '').replace(/\+/g, '_') || label || sourceTabId;
-      const transcription = rawUnitTranscriptionString(o);
+      const transcript = rawUnitTranscriptString(o);
       const utMerged = Number(o.unit_type ?? o.unitType ?? typesArr[idx]);
       const merged = {
         ...o,
@@ -2128,7 +2130,7 @@ function fallbackUnitsRawFromRag(rag) {
         filename: o.filename ?? o.rag_filename ?? `${derivedName || label || 'RAG'}.zip`,
         rag_name: label,
         unit_name,
-        transcription,
+        transcript,
       };
       if (Number.isFinite(utMerged) && utMerged > 0) merged.unit_type = utMerged;
       const ragModeOut = merged.rag_mode ?? merged.ragMode;
@@ -2138,7 +2140,7 @@ function fallbackUnitsRawFromRag(rag) {
         filename: merged.filename,
         rag_name: label,
         unit_name,
-        transcription,
+        transcript,
         ...(Number.isFinite(utMerged) && utMerged > 0 ? { unit_type: utMerged } : {}),
         ...(ragModeOut != null && String(ragModeOut).trim() !== '' ? { rag_mode: ragModeOut } : {}),
         text_file_name: unitTextFileName(merged),
@@ -2239,7 +2241,7 @@ function buildUnitTabItem(unit, index = 0) {
     ragTabId,
     anchorRagQuizId: Number.isFinite(anchorRagQuizId) && anchorRagQuizId > 0 ? anchorRagQuizId : null,
     ragUnitDbId: Number.isFinite(ragUnitId) && ragUnitId > 0 ? ragUnitId : null,
-    transcription: rawUnitTranscriptionString(unit),
+    transcript: rawUnitTranscriptString(unit),
     textFileName: unitTextFileName(unit),
     mp3FileName: unitMp3FileName(unit),
     youtubeUrl: unitYoutubeUrl(unit),
@@ -3230,7 +3232,7 @@ function quizBankReadonlySourceDisplay(tab) {
  */
 function buildQuizBankReadonlyDetailSegments(tab) {
   const ut = Number(tab?.unitType ?? UNIT_TYPE_RAG);
-  const trRaw = String(tab?.transcription ?? '').trim();
+  const trRaw = String(tab?.transcript ?? tab?.transcription ?? '').trim();
   const trLen = trRaw.length;
   const personId = getPersonId(authStore);
   /** @type {( { kind: 'text', text: string } | { kind: 'field', label: string, value: string } | { kind: 'markdown', markdown: string } | { kind: 'audio', ragTabId: string, ragUnitId: number } | { kind: 'youtube', embedSrc: string, pageUrl: string } | { kind: 'transcript_button', markdown: string } )[]} */
@@ -3265,33 +3267,33 @@ function buildQuizBankReadonlyDetailSegments(tab) {
 }
 
 /** 唯讀「設定單元」逐字稿：API 省略全文時依本頁索引補 pack 稿／最近一次 build outputs／列表 rag.outputs */
-function resolveUnitSlotTranscription(index, tabLike, state, rag) {
+function resolveUnitSlotTranscript(index, tabLike, state, rag) {
   const i = Number(index);
-  const fromTab = rawUnitTranscriptionString(tabLike ?? {});
+  const fromTab = rawUnitTranscriptString(tabLike ?? {});
   if (fromTab) return fromTab;
   const md = state?.packUnitMarkdownTexts?.[i];
   if (md != null && String(md).trim() !== '') return String(md).trim();
   const packOutputs = Array.isArray(state?.packResponseJson?.outputs) ? state.packResponseJson.outputs : null;
   if (packOutputs && packOutputs[i] != null) {
-    const t2 = rawUnitTranscriptionString(packOutputs[i]);
+    const t2 = rawUnitTranscriptString(packOutputs[i]);
     if (t2) return t2;
   }
   if (rag && Array.isArray(rag.outputs) && rag.outputs[i] != null) {
-    const t3 = rawUnitTranscriptionString(rag.outputs[i]);
+    const t3 = rawUnitTranscriptString(rag.outputs[i]);
     if (t3) return t3;
   }
   const metaParsed = rag ? parseRagMetadataObject(rag) : null;
   const nested = metaParsed?.outputs;
   if (Array.isArray(nested) && nested[i] != null) {
-    const t4 = rawUnitTranscriptionString(nested[i]);
+    const t4 = rawUnitTranscriptString(nested[i]);
     if (t4) return t4;
   }
   return '';
 }
 
-function tabWithResolvedTranscription(tab, index, state, rag) {
-  const tr = resolveUnitSlotTranscription(index, tab, state, rag);
-  return { ...tab, transcription: tr };
+function tabWithResolvedTranscript(tab, index, state, rag) {
+  const tr = resolveUnitSlotTranscript(index, tab, state, rag);
+  return { ...tab, transcript: tr };
 }
 
 /**
@@ -3308,7 +3310,7 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
     const chunkHL = rag ? hydratePackChunkArraysFromRag(rag, nTabs) : { sizes: [], overs: [] };
     const groupsRo = ragListReadonlyGroups.value;
     return tabs.map((t, i) => {
-      const tResolved = tabWithResolvedTranscription(t, i, state, rag);
+      const tResolved = tabWithResolvedTranscript(t, i, state, rag);
       const srcDisp = quizBankReadonlySourceDisplay(tResolved);
       const ut = Number(t.unitType ?? UNIT_TYPE_RAG);
       const cs =
@@ -3369,7 +3371,7 @@ const quizBankSettingReadonlyUnitRows = computed(() => {
     if (synTab) {
       const cs = synTab.ragChunkSize != null ? synTab.ragChunkSize : ragChunkSizeRow;
       const co = synTab.ragChunkOverlap != null ? synTab.ragChunkOverlap : ragChunkOverlapRow;
-      const synResolved = tabWithResolvedTranscription(synTab, i, state, rag);
+      const synResolved = tabWithResolvedTranscript(synTab, i, state, rag);
       const s = quizBankReadonlySourceDisplay(synResolved);
       if (String(s ?? '').trim() !== '') sourceDisplay = String(s).trim();
       const utSyn = Number(synResolved.unitType ?? UNIT_TYPE_RAG);
@@ -4395,7 +4397,7 @@ async function confirmPack() {
       state.packTasksList,
       parsePackUnitTypesFromRag(state.packUnitTypes, state.packTasksList?.length ?? 0),
     );
-    const transcriptions = transcriptionsForBuildRagZip(
+    const transcripts = transcriptsForBuildRagZip(
       unitTypesNormalized,
       state.packUnitMarkdownTexts ?? []
     );
@@ -4419,7 +4421,7 @@ async function confirmPack() {
         unit_list: unitList,
         unit_names: unitNamesStr,
         unit_types: serializePackUnitTypesForApi(unitTypesNormalized),
-        transcriptions,
+        transcripts,
         rag_chunk_size: DEFAULT_PACK_CHUNK_SIZE,
         rag_chunk_overlap: DEFAULT_PACK_CHUNK_OVERLAP,
         rag_chunk_sizes: chunkSizesStr,
@@ -5455,7 +5457,7 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-3 py-2"
                 :disabled="packGroupsEditBlocked"
                 @click="closePackFolderPickModal"
               >
@@ -5709,7 +5711,7 @@ async function confirmAnswer(item) {
             >
               <button
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
                 aria-label="取消"
                 @click="closeTranscriptEditModal"
               >
@@ -5786,14 +5788,11 @@ async function confirmAnswer(item) {
                   class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto"
                   style="max-width: 28rem;"
                 >
-                  <div class="mb-1">
-                    請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：
-                  </div>
+                  <div class="mb-1">{{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}</div>
                   <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                    <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
-                    <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                    <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
-                    <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                    <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-' + ri" class="mb-0">
+                      {{ rule }}
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -5807,7 +5806,7 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-end gap-2 w-100">
               <button
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
                 :disabled="createRagLoading"
                 @click="closeNewBankUploadModal"
               >
@@ -5861,7 +5860,7 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-3 py-2"
                 @click="closeDeletePackUnitModal"
               >
                 取消
@@ -5912,7 +5911,7 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-3 py-2"
                 @click="closeDeleteAllPackUnitsModal"
               >
                 取消
@@ -5963,7 +5962,7 @@ async function confirmAnswer(item) {
             <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-3 py-2"
                 :disabled="deleteUnitQuizLoading"
                 @click="closeDeleteUnitQuizModal"
               >

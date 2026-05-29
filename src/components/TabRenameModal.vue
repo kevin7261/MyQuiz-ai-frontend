@@ -111,7 +111,7 @@ function onSave() {
           <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless px-3 py-2"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-3 py-2"
               :disabled="saving"
               @click="close"
             >

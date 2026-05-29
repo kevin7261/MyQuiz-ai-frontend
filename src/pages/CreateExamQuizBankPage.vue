@@ -16,7 +16,7 @@ import {
   apiDeleteRag,
   is504OrNetworkError,
 } from '../services/ragApi.js';
-import { deriveRagName, generateTabId } from '../utils/rag.js';
+import { deriveRagName, generateTabId, ZIP_UPLOAD_UNIT_TYPE_INTRO, ZIP_UPLOAD_UNIT_TYPE_RULES } from '../utils/rag.js';
 import CreateExamQuizBankDetailPage from './CreateExamQuizBankDetailPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -756,13 +756,12 @@ watch(viewMode, (mode) => {
                 style="max-width: 28rem;"
               >
                 <div class="mb-1">
-                  請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：
+                  {{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}
                 </div>
                 <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                  <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
-                  <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                  <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
-                  <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                  <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-' + ri" class="mb-0">
+                    {{ rule }}
+                  </li>
                 </ul>
               </div>
             </div>
@@ -776,7 +775,7 @@ watch(viewMode, (mode) => {
           <div class="modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-1 my-button-transparent-borderless px-4 py-2"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
               :disabled="createRagLoading"
               @click="closeNewBankUploadModal"
             >

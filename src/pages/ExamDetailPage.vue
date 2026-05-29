@@ -5,7 +5,7 @@
  * 與 CreateExamQuizBankPage 版面類似（分頁、題目卡片、出題/評分），但無 RAG 建立/上傳/Pack；題目來源為 GET /exam/rag-for-exams／測驗分頁。**新增題目**（按 + 開 Modal 選單元／題型）：POST /exam/tab/quiz/create-llm-generate 或 create-llm-generate-followup（body 不需 exam_quiz_id）；**重新產生題目**（已有題列）POST /exam/tab/quiz/llm-generate／llm-generate-followup（須 exam_quiz_id）。
  *
  * 資料來源：
- * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcription、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
+ * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcript、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
  * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>`（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe（不標 YouTube 字樣）；mp3／YouTube 可開「詳細資訊」Modal（僅逐字稿）
  * 出題：Modal「產生題目」→ create-llm-generate／create-llm-generate-followup；槽位內「產生題目」→ llm-generate／llm-generate-followup（提示自 Rag_Quiz 讀勿傳）。追問先前出題 Modal 不含當前題；followup API 之 quiz_history_list 為祖先鏈＋followupRounds（繼續追問含剛批改輪）。評分：POST /exam/tab/quiz/llm-grade；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
@@ -200,7 +200,7 @@ function normalizeExamRagForExamsPayload(data) {
       rag_name: u0.rag_name ?? u0.unit_name,
       units,
       outputs: units.map(unitToOutput),
-      transcription: u0.transcription ?? undefined,
+      transcript: u0.transcript ?? u0.transcription ?? undefined,
     };
   }
 
@@ -266,7 +266,7 @@ function normalizeExamRagForExamsPayload(data) {
         rag_name: u0.rag_name ?? u0.unit_name,
         units,
         outputs: units.map(unitToOutput),
-        transcription: u0.transcription ?? undefined,
+        transcript: u0.transcript ?? u0.transcription ?? undefined,
       };
     }
   }
@@ -320,14 +320,16 @@ function normalizeExamRagForExamsPayload(data) {
   }
 
   const sys =
-    unwrap.transcription
+    unwrap.transcript
+    ?? unwrap.transcription
+    ?? pickRag?.transcript
     ?? pickRag?.transcription
     ?? null;
   const rootQuizzes = parseArrayMaybeJson(unwrap.quizzes);
 
   if (pickRag != null && typeof pickRag === 'object') {
     const base = { ...pickRag };
-    if (sys != null && base.transcription == null) base.transcription = sys;
+    if (sys != null && base.transcript == null) base.transcript = sys;
     const baseUnits = normalizeUnitRows(base.units ?? base.rag_units);
     const mergedUnits = pickRicherUnitRows(baseUnits, units);
     if (mergedUnits.length > 0) {
@@ -352,7 +354,7 @@ function normalizeExamRagForExamsPayload(data) {
       units,
       outputs: units.map(unitToOutput),
       quizzes: rootQuizzes.length > 0 ? rootQuizzes : undefined,
-      transcription: sys ?? undefined,
+      transcript: sys ?? undefined,
       rag_metadata: unwrap.rag_metadata,
       unit_list: unwrap.unit_list,
       file_metadata: unwrap.file_metadata,
@@ -369,7 +371,7 @@ function normalizeExamRagForExamsPayload(data) {
       units: [],
       outputs: [],
       quizzes: rootQuizzes.length > 0 ? rootQuizzes : undefined,
-      transcription: sys ?? undefined,
+      transcript: sys ?? undefined,
       rag_metadata: unwrap.rag_metadata,
       unit_list: unwrap.unit_list,
       file_metadata: unwrap.file_metadata,
@@ -709,9 +711,9 @@ function examResolvedUnitType(unit) {
   return UNIT_TYPE_RAG;
 }
 
-function examUnitTranscriptionFromRaw(unit) {
+function examUnitTranscriptFromRaw(unit) {
   if (!unit || typeof unit !== 'object') return '';
-  const tx = unit.transcription;
+  const tx = unit.transcript ?? unit.transcription;
   return tx != null && String(tx).trim() !== '' ? String(tx).trim() : '';
 }
 
@@ -757,13 +759,13 @@ function examSlotUnitTranscriptSection(slotIndex) {
   if (!raw || typeof raw !== 'object') return null;
   const ut = Number(raw.unit_type ?? raw.unitType);
   if (ut !== UNIT_TYPE_TEXT && ut !== UNIT_TYPE_MP3 && ut !== UNIT_TYPE_YOUTUBE) return null;
-  const transcription = examUnitTranscriptionFromRaw(raw);
+  const transcript = examUnitTranscriptFromRaw(raw);
   const sourceValue = examUnitSourceFilenameLabel(raw);
   const youtubeHref =
     ut === UNIT_TYPE_YOUTUBE && examYoutubeLooksLikeUrl(sourceValue) ? sourceValue.trim() : '';
   return {
     unitType: ut,
-    transcription,
+    transcript,
     sourceDisplay: sourceValue || '—',
     youtubeHref,
   };
@@ -795,7 +797,7 @@ function examSlotShowUnitTranscriptUi(slotIndex) {
 function examSlotUnitTranscriptMdHtml(slotIndex) {
   const sec = examSlotUnitTranscriptSection(slotIndex);
   if (!sec) return '';
-  const t = sec.transcription;
+  const t = sec.transcript;
   return renderMarkdownToSafeHtml(t != null ? String(t) : '');
 }
 
@@ -1050,7 +1052,7 @@ watch(
     () => forExamLoading.value,
     () => `${currentExamDisplay.value.exam_tab_id}|${currentExamDisplay.value.exam_name}`,
     () => `${forExamRagIdAndTabId.value.rag_id}|${forExamRagIdAndTabId.value.rag_tab_id}`,
-    () => String(forExamRag.value?.transcription ?? ''),
+    () => String(forExamRag.value?.transcript ?? forExamRag.value?.transcription ?? ''),
   ],
   () => {
     if (examList.value.length === 0 || !activeTabId.value) return;
@@ -1061,9 +1063,9 @@ watch(
       試卷題庫: { ...forExamRagIdAndTabId.value },
       file_size:
         forExamRag.value?.file_metadata?.file_size ?? forExamRag.value?.file_size ?? '—',
-      transcription:
-        forExamRag.value != null && forExamRag.value.transcription != null
-          ? forExamRag.value.transcription
+      transcript:
+        forExamRag.value != null
+          ? (forExamRag.value.transcript ?? forExamRag.value.transcription ?? '—')
           : '—',
     });
   }

@@ -71,11 +71,11 @@ const LLM_SECTIONS = [
     title: '評分（llm_grade）',
     groups: [
       {
-        key: 'transcription',
-        label: 'transcription / course',
+        key: 'transcript',
+        label: 'transcript / course',
         fields: [
           { key: 'system', label: 'system' },
-          { key: 'user_transcription_course', label: 'user_transcription_course' },
+          { key: 'user_transcript_course', label: 'user_transcript_course' },
         ],
       },
       {
