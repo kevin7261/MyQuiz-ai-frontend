@@ -59,7 +59,7 @@
     :class="compact ? 'my-left-view-compact flex-shrink-0' : 'h-100'"
   >
     <div class="my-left-view-header flex-shrink-0 w-100 pt-3 pb-2 d-flex flex-column align-items-center">
-      <div class="w-100 m-0 p-0 text-center fw-semibold fs-5 lh-sm my-color-black my-brand-wordmark">MyQuiz.ai</div>
+      <div class="w-100 m-0 p-0 text-center fw-semibold fs-5 lh-sm my-color-black my-brand-wordmark">MYQUIZ.ai</div>
       <router-link
         to="/courses"
         class="my-left-view-course-btn d-block w-100 m-0 py-2 border-0 text-center my-font-md-400 my-color-black text-truncate text-decoration-none"

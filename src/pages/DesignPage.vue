@@ -177,7 +177,7 @@ const DESIGN3_COLORS_GRAY = [
   {
     name: 'color-gray-2',
     usage: '中灰（#999999）',
-    rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-gray-3' }],
+    rows: [{ className: 'my-bgcolor-gray-2' }, { className: 'my-color-gray-2' }],
   },
   {
     name: 'color-gray-3',

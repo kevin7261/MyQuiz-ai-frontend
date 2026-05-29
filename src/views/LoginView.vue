@@ -213,7 +213,7 @@
                 :colors="loginLogoColors"
               />
             </button>
-            <p class="my-login-view-brand my-font-family-code my-font-xl-600 text-break mb-0 mt-3">
+            <p class="my-login-view-brand my-brand-wordmark my-font-xl-600 text-break text-center mb-0 mt-4">
               <span
                 class="my-login-view-brand-part"
                 :style="{ backgroundImage: loginBrandMyquizCss }"
@@ -324,23 +324,33 @@
 /* 漸層底上：輸入／登入鈕須實心白底（Bootstrap --bs-* 與透明 .btn 預設會透出背景） */
 .my-login-view-shell #login-person-id,
 .my-login-view-shell #login-password {
-  --bs-body-bg: #ffffff;
-  background-color: #ffffff !important;
+  --bs-body-bg: var(--my-color-white);
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
 }
 
 .my-login-view-shell #login-person-id::placeholder,
 .my-login-view-shell #login-password::placeholder {
-  color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3) !important;
   opacity: 1;
 }
 
-.my-login-view-shell #login-person-id:focus,
-.my-login-view-shell #login-password:focus,
-.my-login-view-shell #login-person-id:disabled,
-.my-login-view-shell #login-password:disabled {
-  background-color: #ffffff !important;
+.my-login-view-shell #login-person-id::-webkit-input-placeholder,
+.my-login-view-shell #login-password::-webkit-input-placeholder {
   color: var(--my-color-gray-3);
   -webkit-text-fill-color: var(--my-color-gray-3);
+}
+
+.my-login-view-shell #login-person-id:focus,
+.my-login-view-shell #login-password:focus {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+}
+
+.my-login-view-shell #login-person-id:disabled,
+.my-login-view-shell #login-password:disabled {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
   opacity: 1;
 }
 
@@ -351,19 +361,19 @@
 .my-login-view-shell #login-password:-webkit-autofill:hover,
 .my-login-view-shell #login-password:-webkit-autofill:focus {
   -webkit-text-fill-color: var(--my-color-black);
-  box-shadow: 0 0 0 1000px #ffffff inset;
+  box-shadow: 0 0 0 1000px var(--my-color-white) inset;
   transition: background-color 9999s ease-out 0s;
 }
 
 .my-login-view-shell .btn.my-login-view-submit-btn {
-  --bs-btn-bg: #ffffff;
-  --bs-btn-hover-bg: #ffffff;
-  --bs-btn-active-bg: #ffffff;
-  --bs-btn-disabled-bg: #ffffff;
+  --bs-btn-bg: var(--my-color-white);
+  --bs-btn-hover-bg: var(--my-color-white);
+  --bs-btn-active-bg: var(--my-color-white);
+  --bs-btn-disabled-bg: var(--my-color-white);
   --bs-btn-border-color: var(--my-color-gray-3);
   --bs-btn-hover-border-color: var(--my-color-gray-3);
   --bs-btn-active-border-color: var(--my-color-gray-3);
-  background-color: #ffffff !important;
+  background-color: var(--my-color-white) !important;
   color: var(--my-color-black) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
@@ -371,22 +381,22 @@
 
 .my-login-view-shell .btn.my-login-view-submit-btn:hover:not(:disabled),
 .my-login-view-shell .btn.my-login-view-submit-btn:focus-visible:not(:disabled) {
-  background-color: #ffffff !important;
+  background-color: var(--my-color-white) !important;
   color: var(--my-color-black) !important;
   border-color: var(--my-color-gray-3) !important;
   box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
 }
 
 .my-login-view-shell .btn.my-login-view-submit-btn:active:not(:disabled) {
-  background-color: #ffffff !important;
+  background-color: var(--my-color-white) !important;
   color: var(--my-color-black) !important;
 }
 
 .my-login-view-shell .btn.my-login-view-submit-btn:disabled {
-  --bs-btn-disabled-bg: #ffffff;
+  --bs-btn-disabled-bg: var(--my-color-white);
   --bs-btn-disabled-border-color: var(--my-color-gray-3);
   --bs-btn-disabled-color: var(--my-color-gray-3);
-  background-color: #ffffff !important;
+  background-color: var(--my-color-white) !important;
   color: var(--my-color-gray-3) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   opacity: 1;

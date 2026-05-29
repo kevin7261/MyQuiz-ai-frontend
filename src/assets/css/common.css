@@ -2,7 +2,7 @@
  * 全域與共用 class：
  * 全站：html/body/#app（body 底為 gray-4）、連結無底線、捲軸
  * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)；body 字距 var(--my-letter-spacing)（variables.css）
- * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（若需次色另併 .my-color-gray-1）；其餘字色另併 .my-color-*；底 .my-bgcolor-*；業務內容區 .my-bgcolor-page-block（同 gray）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-2／.my-bgcolor-gray-3／.my-bgcolor-gray-4、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-green`／`.my-button-blue`／`.my-button-black`／`.my-button-gray-3`／`.my-button-gray-4`／`.my-button-white`（填色白＝黑底白字，與 black 同階；黑底稿頁內例外回淺底）；描邊 `.my-button-white-border`、無框 `.my-button-transparent-borderless`（預設黑字黑無框；黑底分頁列內例外淺字）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-transparent-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
+ * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（若需次色另併 .my-color-gray-1）；其餘字色另併 .my-color-*；底 .my-bgcolor-*；業務內容區 .my-bgcolor-page-block（同 gray-4）、rounded-3、p-3 p-lg-4、mb-4；淺灰底 .my-bgcolor-gray-3（輕邊線色 #dddddd）／.my-bgcolor-gray-4（canvas #f2f2f2）；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-green`／`.my-button-blue`／`.my-button-black`／`.my-button-gray-3`／`.my-button-gray-4`／`.my-button-white`（填色白＝黑底白字，與 black 同階；黑底稿頁內例外回淺底）；描邊 `.my-button-white-border`、無框 `.my-button-transparent-borderless`（預設黑字黑無框；黑底分頁列內例外淺字）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-transparent-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
  * Design 頁：章節外層 .my-design-page-section；規格項 .my-design-spec-item（名稱／使用位置／css；DesignPageSpecItem、DesignPageSpecColorGroup）；色階每組 .my-design-swatch-dots 左右兩色圓對應底／字 class；.my-design-swatch-row my-bgcolor-black＝黑底白字 class 示範（字級 --my-font-size-sm；內距同中型輸入 px-3 py-2；程式碼／可選取片語 font 併 --my-font-family-code）；08 下拉 class 列同黑底（併 .my-design-swatch-row my-bgcolor-black、複製鈕 on-light-bg false）；08 外層 .my-design-08-dropdown（觸發 rounded-2 同 my-input-md；白底 my-button-white 邊 gray-3；透明 my-button-transparent-borderless 無邊；選單 .dropdown-menu Bootstrap 預設）；其它區可併 .my-design-swatch-row--light（淺灰底）；02／03 加 .my-design-swatch-cell（單一色圓）＋ .my-design-swatch-rows 兩黑框橫向同一排（底／字分區、無中點）
  * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）；文字輸入 .form-control.my-input-md（白底、邊線 --my-color-gray-3；與中型膠囊同字級／px-3 py-2；單行／textarea 併 .rounded-2）；欄位標題／label 併 .my-color-gray-1（variables --my-color-gray-1）；標題與輸入／下拉間距見檔內「欄位標題與控件」規則（等同 Bootstrap mt-1）；.my-input-md--on-dark 僅相容舊 class、與預設同視覺；唯讀或 div 仿輸入併 .my-form-control-static（與 :read-only 同視覺，Design 06「輸入（停用）」；字色同 disabled 為 --my-color-black）
  * textarea／符合條件之 input／div.form-control：寬度撐滿父層（同 Bootstrap .w-100，見檔內「輸入／多行」規則）
@@ -89,10 +89,13 @@ code {
   font-weight: var(--my-font-weight-semibold);
 }
 
-/* 品牌字標 MyQuiz.ai：Google Sans Code ＋字距 */
+/* 品牌字標 MYQUIZ.ai：Google Sans Code ＋字距；inline-block ＋ margin 補償尾端字距，置中不偏左 */
 .my-brand-wordmark {
+  display: inline-block;
   font-family: var(--my-font-family-code);
   letter-spacing: var(--my-brand-letter-spacing);
+  margin-right: calc(-1 * var(--my-brand-letter-spacing));
+  text-align: center;
 }
 
 /* Google Sans Code（版本號、程式碼區等；不含品牌字距） */
