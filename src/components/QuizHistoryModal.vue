@@ -47,7 +47,7 @@ function close() {
               @click="close"
             />
           </div>
-          <div class="modal-body p-0" style="max-height: 70vh; overflow: auto;">
+          <div class="modal-body p-0">
             <QuizHistoryPanel
               :unit-label="unitLabel"
               :quiz-type-label="quizTypeLabel"

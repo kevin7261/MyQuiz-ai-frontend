@@ -82,15 +82,15 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
         <span class="my-color-gray-1 my-font-sm-400">出題模式：一般</span>
       </div>
     </div>
-    <ol
-      v-if="historyEntriesDisplay.length > 0"
-      class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-4"
-    >
-      <li
-        v-for="(entry, hi) in historyEntriesDisplay"
-        :key="`quiz-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
-        class="pe-2"
+    <div class="quiz-history-panel__scroll w-100 min-w-0">
+      <ol
+        v-if="historyEntriesDisplay.length > 0"
+        class="quiz-history-panel__list my-font-md-400 my-color-black text-break mb-0"
       >
+        <li
+          v-for="(entry, hi) in historyEntriesDisplay"
+          :key="`quiz-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
+        >
         <div class="d-flex flex-column gap-2">
           <div>
             <div class="my-color-gray-1 my-font-sm-400">題目</div>
@@ -150,12 +150,31 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
           </div>
         </div>
       </li>
-    </ol>
-    <p
-      v-else
-      class="my-font-md-400 my-color-gray-1 mb-0"
-    >
-      尚無先前的出題。
-    </p>
+      </ol>
+      <p
+        v-else
+        class="my-font-md-400 my-color-gray-1 mb-0"
+      >
+        尚無先前的出題。
+      </p>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.quiz-history-panel__scroll {
+  max-height: 320pt;
+  overflow-y: auto;
+  padding-inline-end: 0.25rem;
+}
+
+.quiz-history-panel__list {
+  padding-left: 1.25rem;
+  margin-left: 0;
+  list-style-position: outside;
+}
+
+.quiz-history-panel__list > li + li {
+  margin-top: 1.5rem;
+}
+</style>
