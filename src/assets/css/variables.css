@@ -33,8 +33,9 @@
 
   /* 中性灰階：gray-1 次深字色；gray-2 邊線；gray-3 淺底 #f2f2f2（canvas／區塊）；.my-color-gray-4 淺底輔助字 class 同 gray-1 */
   --my-color-black: #333333;
-  --my-color-gray-1: #888888;
-  --my-color-gray-2: #e2e2e2;
+  --my-color-gray-1: #666666;
+  --my-color-gray-2: #999999;
+  --my-color-gray-2: #dddddd;
   --my-color-gray-3: #f2f2f2;
   --my-color-white: #fdfdfd;
   /* 設定單元：資料夾／資料夾組合拖放區（深於白底 tag、淺於 gray-1 字色） */

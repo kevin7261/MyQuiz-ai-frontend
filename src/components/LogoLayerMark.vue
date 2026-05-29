@@ -28,11 +28,11 @@ const wrapStyle = computed(() => ({
   width: `${props.sizePt}pt`,
 }));
 
-/** Q＝gray-2；A＝白 */
+/** Q／A 同色 gray-2 */
 const logoColors = {
   background: 'transparent',
   primary: 'var(--my-color-gray-2)',
-  secondary: 'var(--my-color-white)',
+  secondary: 'var(--my-color-gray-2)',
 };
 </script>
 

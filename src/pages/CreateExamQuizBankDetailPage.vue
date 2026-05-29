@@ -6916,7 +6916,7 @@ async function confirmAnswer(item) {
                     class="my-design-quiz-sub-block rounded-4"
                     :class="[
                       designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                      designSidePanelOnLeft ? 'my-bgcolor-gray-2' : 'my-bgcolor-white',
+                      designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
                       { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                     ]"
                   >
@@ -7411,8 +7411,8 @@ async function confirmAnswer(item) {
   background-color: var(--my-color-white) !important;
   border: 1px solid var(--my-color-gray-2);
 }
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-2 {
-  background-color: var(--my-color-gray-2) !important;
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3 {
+  background-color: var(--my-color-gray-3) !important;
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
@@ -7860,7 +7860,7 @@ async function confirmAnswer(item) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 題型區三子區塊：題目＝白底 gray-2 邊框；答案＝白底；批改子區 inset 灰框 */
+/* 題型區三子區塊：題目＝白底 gray-2 邊框；答案＝gray-3 底；批改子區 inset 灰框 */
 .my-design-quiz-sub-block-outer {
   box-sizing: border-box;
   width: 100%;
@@ -7947,10 +7947,6 @@ async function confirmAnswer(item) {
   border: 0;
   border-top: 1px solid var(--my-color-gray-2);
   opacity: 1;
-}
-/* create-exam-bank_3：答案區 gray-2 底內，答案／提示／參考答案、批改結果 tab 下橫線為白線 */
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-2 :deep(.my-design-quiz-field-inset__rule) {
-  border-top-color: var(--my-color-white) !important;
 }
 /*
  * 出題／批改規則黑底區外層 wrap：px-3 pt-2；標題列 px-3 py-2 → 橫線 → 內文
