@@ -106,8 +106,6 @@ const quizBankNoun = computed(() => '試卷');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
 const examAddQuestionConfirmLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
-/** design_3 核准填色 pill（exam_3 禁用 my-button-gray-4／my-button-black） */
-const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-4'));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
 const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-4'));
 
@@ -3294,8 +3292,8 @@ onActivated(() => {
         <button
           v-if="!examListLoading"
           type="button"
-          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
-          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
+          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-btn-lg px-5 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400']"
           :title="`新增${quizBankNoun}`"
           :aria-label="`新增${quizBankNoun}`"
           :disabled="createExamLoading"
@@ -3339,7 +3337,7 @@ onActivated(() => {
               <button
                 v-else
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-4 px-5 py-3"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-lg px-5 py-3"
                 title="新增題目"
                 aria-label="新增題目"
                 :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"

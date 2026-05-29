@@ -16,7 +16,8 @@ import {
   apiDeleteRag,
   is504OrNetworkError,
 } from '../services/ragApi.js';
-import { deriveRagName, generateTabId, ZIP_UPLOAD_UNIT_TYPE_INTRO, ZIP_UPLOAD_UNIT_TYPE_RULES } from '../utils/rag.js';
+import { deriveRagName, generateTabId } from '../utils/rag.js';
+import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import CreateExamQuizBankDetailPage from './CreateExamQuizBankDetailPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -578,7 +579,7 @@ watch(viewMode, (mode) => {
         >
           <button
             type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-gray-4 px-5 py-3"
+            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3"
             :disabled="createRagLoading"
             :aria-busy="createRagLoading"
             @click="openNewBankUploadModal"
@@ -751,19 +752,7 @@ watch(viewMode, (mode) => {
               <div class="my-font-sm-400 my-color-gray-4 mt-2">
                 單檔不可超過 50 MB
               </div>
-              <div
-                class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto"
-                style="max-width: 28rem;"
-              >
-                <div class="mb-1">
-                  {{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}
-                </div>
-                <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                  <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-' + ri" class="mb-0">
-                    {{ rule }}
-                  </li>
-                </ul>
-              </div>
+              <ZipUploadUnitTypeHints />
             </div>
             <div
               v-if="newBankUploadError"

@@ -17,9 +17,8 @@ import {
   UNIT_TYPE_MP3,
   UNIT_TYPE_YOUTUBE,
   packUnitTypeIconClasses,
-  ZIP_UPLOAD_UNIT_TYPE_INTRO,
-  ZIP_UPLOAD_UNIT_TYPE_RULES,
 } from '../utils/rag.js';
+import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import { API_BASE } from '../constants/api.js';
 import { LOGO_GRADIENT_PALETTES } from '../constants/logoGradientPalettes.js';
 
@@ -967,9 +966,9 @@ function designPackUnitTypeIconCss(unitType) {
                     <DesignPageSpecItem
                       name="btn-add-empty-list"
                       usage="空清單居中新增試卷"
-                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3"
                     >
-                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3">
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3">
                         <i class="fa-solid fa-plus" aria-hidden="true" />
                         新增試卷
                       </button>
@@ -1365,14 +1364,7 @@ function designPackUnitTypeIconCss(unitType) {
                           <div class="my-zip-drop-zone text-center position-relative">
                             <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
                             <div class="my-font-sm-400 my-color-gray-4 mt-2">單檔不可超過 50 MB</div>
-                            <div class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto" style="max-width: 28rem;">
-                              <div class="mb-1">{{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}</div>
-                              <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                                <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-preview-' + ri" class="mb-0">
-                                  {{ rule }}
-                                </li>
-                              </ul>
-                            </div>
+                            <ZipUploadUnitTypeHints />
                           </div>
                         </div>
                         <div>
@@ -1515,14 +1507,7 @@ function designPackUnitTypeIconCss(unitType) {
               <template v-else>
                 <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
                 <div class="my-font-sm-400 my-color-gray-4 mt-2">單檔不可超過 50 MB</div>
-                <div class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto" style="max-width: 28rem;">
-                  <div class="mb-1">{{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}</div>
-                  <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                    <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-modal-' + ri" class="mb-0">
-                      {{ rule }}
-                    </li>
-                  </ul>
-                </div>
+                <ZipUploadUnitTypeHints />
               </template>
             </div>
             <div v-if="uploadError" class="my-color-red my-font-sm-400 mt-2 mb-0 text-break">{{ uploadError }}</div>

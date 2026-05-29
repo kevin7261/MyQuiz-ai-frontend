@@ -563,7 +563,7 @@ watch(
         >
           <button
             type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3"
+            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3"
             :disabled="createExamLoading"
             :aria-busy="createExamLoading"
             @click="addNewExam"

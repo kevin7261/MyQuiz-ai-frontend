@@ -80,9 +80,8 @@ import {
   UNIT_TYPE_YOUTUBE,
   DEFAULT_PACK_CHUNK_SIZE,
   DEFAULT_PACK_CHUNK_OVERLAP,
-  ZIP_UPLOAD_UNIT_TYPE_INTRO,
-  ZIP_UPLOAD_UNIT_TYPE_RULES,
 } from '../utils/rag.js';
+import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import { useRagList } from '../composables/useRagList.js';
 import { useMessageModal } from '../composables/useMessageModal.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
@@ -129,8 +128,6 @@ const quizBankNoun = computed(() => '測驗題庫');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
-/** design_3 核准按鈕 class（create-exam-bank_3 禁用 gray-4／black／outline-gray-1） */
-const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-4'));
 /** 設定單元「加入資料夾」：work3 白底欄位用 gray-4 pill */
 const d3PackUnitAddFolderPill = computed(() => (
   props.designSidePanelOnLeft ? 'my-button-gray-4' : 'my-button-white'
@@ -5784,17 +5781,7 @@ async function confirmAnswer(item) {
                 <div class="my-font-sm-400 my-color-gray-4 mt-2">
                   單檔不可超過 50 MB
                 </div>
-                <div
-                  class="my-font-sm-400 my-color-gray-4 mt-2 text-start lh-sm w-100 mx-auto"
-                  style="max-width: 28rem;"
-                >
-                  <div class="mb-1">{{ ZIP_UPLOAD_UNIT_TYPE_INTRO }}</div>
-                  <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
-                    <li v-for="(rule, ri) in ZIP_UPLOAD_UNIT_TYPE_RULES" :key="'zip-upload-rule-' + ri" class="mb-0">
-                      {{ rule }}
-                    </li>
-                  </ul>
-                </div>
+                <ZipUploadUnitTypeHints />
               </div>
               <div
                 v-if="newBankUploadError"
@@ -6146,8 +6133,8 @@ async function confirmAnswer(item) {
         <button
           v-if="!ragListLoading"
           type="button"
-          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
-          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
+          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-btn-lg px-5 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400']"
           :title="`新增${quizBankNoun}`"
           :aria-label="`新增${quizBankNoun}`"
           :disabled="createRagLoading"
@@ -6629,8 +6616,8 @@ async function confirmAnswer(item) {
               <div class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0">
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
-          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-btn-lg px-5 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400']"
                   title="新增題型"
                   aria-label="新增題型"
                   :aria-busy="getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
@@ -7033,8 +7020,8 @@ async function confirmAnswer(item) {
             >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
-          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-btn-lg px-5 py-3"
+          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400']"
                 title="新增題目"
                 aria-label="新增題目"
                 @click="openNextQuizSlot"

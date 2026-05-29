@@ -217,6 +217,24 @@ export const UNIT_TYPE_YOUTUBE = 4;
 /** 新增／缺省單元類型預設 */
 export const DEFAULT_PACK_UNIT_TYPE = UNIT_TYPE_RAG;
 
+/** @param {string} rule */
+function parseZipUploadUnitTypeRule(rule) {
+  const sep = rule.indexOf('：');
+  if (sep < 0) return { label: rule, text: '' };
+  return { label: rule.slice(0, sep), text: rule.slice(sep + 1) };
+}
+
+/** ZIP 上傳說明列（標籤＋內文；合併顯示與 {@link ZIP_UPLOAD_UNIT_TYPE_RULES} 相同） */
+export const ZIP_UPLOAD_UNIT_TYPE_HINT_ROWS = [
+  UNIT_TYPE_RAG,
+  UNIT_TYPE_TEXT,
+  UNIT_TYPE_MP3,
+  UNIT_TYPE_YOUTUBE,
+].map((unitType, index) => ({
+  unitType,
+  ...parseZipUploadUnitTypeRule(ZIP_UPLOAD_UNIT_TYPE_RULES[index]),
+}));
+
 /** 正規化 unit_type（0→文字；無效→預設 rag） */
 export function normalizePackUnitType(raw) {
   const v = Number(raw);
