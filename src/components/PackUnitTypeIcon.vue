@@ -4,25 +4,19 @@ import { packUnitTypeDisplayLabel, packUnitTypeIconClasses } from '../utils/rag.
 
 const props = defineProps({
   unitType: { type: [Number, String], required: true },
-  colorClass: { type: String, default: 'my-color-gray-1' },
+  /** 已廢止：icon 一律繼承父層字色，請在父層設 .my-color-* */
+  colorClass: { type: String, default: '' },
   /** 按鈕旁已有文字標籤時設 true，避免重複 aria */
   decorative: { type: Boolean, default: false },
 });
 
 const iconClass = computed(() => packUnitTypeIconClasses(props.unitType));
 const ariaLabel = computed(() => packUnitTypeDisplayLabel(props.unitType));
-/** decorative 時 icon 繼承按鈕字色，不套 colorClass */
-const iconColorClass = computed(() => (props.decorative ? null : props.colorClass));
 </script>
 
 <template>
   <i
-    :class="[
-      iconClass,
-      iconColorClass,
-      'my-pack-unit-type-icon',
-      decorative ? 'my-pack-unit-type-icon--inherit' : null,
-    ]"
+    :class="[iconClass, 'my-pack-unit-type-icon']"
     :role="decorative ? undefined : 'img'"
     :aria-hidden="decorative ? 'true' : undefined"
     :aria-label="decorative ? undefined : ariaLabel"

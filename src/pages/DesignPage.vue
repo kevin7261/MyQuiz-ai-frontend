@@ -137,7 +137,7 @@ function openListErrorDemo() {
 }
 function openTranscriptErrorDemo() {
   openMessageDemo(
-    '無法讀取來源內容',
+    '無法讀取內容',
     '逐字稿讀取失敗：於資料夾「2_SNA.Data」下找不到支援的音訊檔（副檔名: .aac, .flac, .m4a, .mp3, .mp4, .mpeg, .mpga, .ogg, .opus, .wav, .webm, .wma）',
   );
 }
@@ -356,9 +356,9 @@ const DESIGN3_LIST_SPECS = [
   },
   {
     name: 'list-bank-exam-dot',
-    usage: 'create-exam-bank_3 綠點欄與表頭對齊',
-    css: 'bank-table-header__dot-spacer · bank-list-row__dot-col · bank-list-row__exam-dot rounded-circle d-inline-block my-bgcolor-green',
-    copyText: 'bank-table-header__dot-spacer',
+    usage: 'create-exam-bank_3 試卷用題庫列前綠點（僅 isExam；bank-list-wrap--no-lead-gap 不預留表頭空白）',
+    css: 'bank-list-wrap--no-lead-gap · bank-list-row__dot-col · bank-list-row__exam-dot rounded-circle d-inline-block my-bgcolor-green',
+    copyText: 'bank-list-wrap--no-lead-gap',
   },
 ];
 
@@ -392,8 +392,8 @@ const DESIGN3_MODAL_SPECS = [
   { name: 'modal-drop-zone', usage: 'ZIP 拖放區（空／已選）', css: 'my-zip-drop-zone text-center position-relative rounded-4 p-3' },
   { name: 'modal-drop-zone-over', usage: 'ZIP 拖放區拖曳中', css: 'my-zip-drop-zone my-zip-drop-zone-over text-center position-relative rounded-4 p-3' },
   { name: 'modal-footer', usage: 'Modal 底部按鈕列', css: 'modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0' },
-  { name: 'modal-message-component', usage: 'MessageModal：頁面級錯誤／警告（列表、建立、pack、出題、來源內容逐字稿等）；work3 :confirm-button-class=my-button-white', css: 'MessageModal · modal fade show d-block my-modal-backdrop · modal-dialog modal-dialog-centered · modal-title my-color-black · my-color-red my-font-sm-400 mb-0 text-break', copyText: 'MessageModal' },
-  { name: 'modal-error-text', usage: 'MessageModal 內文；上傳 Modal 內 newBankUploadError；ConfirmDeleteModal :error（取代 my-alert-warning-soft／my-alert-danger-soft 與「來源內容」下方 inline 紅字）', css: 'my-color-red my-font-sm-400 mb-0 text-break' },
+  { name: 'modal-message-component', usage: 'MessageModal：頁面級錯誤／警告（列表、建立、pack、出題、內容逐字稿等）；work3 :confirm-button-class=my-button-white', css: 'MessageModal · modal fade show d-block my-modal-backdrop · modal-dialog modal-dialog-centered · modal-title my-color-black · my-color-red my-font-sm-400 mb-0 text-break', copyText: 'MessageModal' },
+  { name: 'modal-error-text', usage: 'MessageModal 內文；上傳 Modal 內 newBankUploadError；ConfirmDeleteModal :error（取代 my-alert-warning-soft／my-alert-danger-soft 與「內容」下方 inline 紅字）', css: 'my-color-red my-font-sm-400 mb-0 text-break' },
 ];
 
 const DESIGN3_EMBED_SPECS = [
@@ -427,7 +427,7 @@ const DESIGN3_PACK_UNIT_TYPE_ICONS = [
 ];
 
 function designPackUnitTypeIconCss(unitType) {
-  return `${packUnitTypeIconClasses(unitType)} · my-pack-unit-type-icon · my-color-gray-1`;
+  return `${packUnitTypeIconClasses(unitType)} · my-pack-unit-type-icon（color: inherit）`;
 }
 </script>
 
@@ -723,7 +723,7 @@ function designPackUnitTypeIconCss(unitType) {
 
                   <p class="my-font-sm-400 my-color-black mb-2">exam_3（無綠點欄）</p>
                   <div class="design-page__list-preview design-page__list-preview--work3 mb-4">
-                    <div class="bank-list-wrap mx-auto">
+                    <div class="bank-list-wrap bank-list-wrap--no-lead-gap mx-auto">
                       <div class="bank-table-actions">
                         <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
@@ -741,13 +741,11 @@ function designPackUnitTypeIconCss(unitType) {
                           <button type="button" class="bank-list-row">
                             <span class="bank-list-row__label my-font-md-400 my-color-black">範例試卷 A</span>
                             <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
-                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                         <li>
                           <button type="button" class="bank-list-row">
                             <span class="bank-list-row__label my-font-md-400 my-color-black">未命名試卷</span>
-                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                       </ul>
@@ -756,15 +754,14 @@ function designPackUnitTypeIconCss(unitType) {
 
                   <p class="my-font-sm-400 my-color-black mb-2">create-exam-bank_3（含綠點欄）</p>
                   <div class="design-page__list-preview design-page__list-preview--work3 mb-3">
-                    <div class="bank-list-wrap mx-auto">
+                    <div class="bank-list-wrap bank-list-wrap--no-lead-gap mx-auto">
                       <div class="bank-table-actions">
-                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
                           新增測驗題庫
                         </button>
                       </div>
                       <div class="bank-table-header">
-                        <span class="bank-table-header__dot-spacer" aria-hidden="true" />
                         <button type="button" class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0">
                           名稱
                           <i class="fa-solid fa-chevron-up" aria-hidden="true" />
@@ -778,14 +775,11 @@ function designPackUnitTypeIconCss(unitType) {
                             </span>
                             <span class="bank-list-row__label my-font-md-400 my-color-black">試卷用題庫</span>
                             <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">3 個單元</span>
-                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                         <li>
                           <button type="button" class="bank-list-row">
-                            <span class="bank-list-row__dot-col" />
                             <span class="bank-list-row__label my-font-md-400 my-color-black">範例題庫 B</span>
-                            <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                           </button>
                         </li>
                       </ul>
@@ -864,10 +858,10 @@ function designPackUnitTypeIconCss(unitType) {
                     <div class="my-color-gray-4 my-font-sm-400 pt-2">中（my-font-md-400）</div>
                     <DesignPageSpecItem
                       name="btn-add-list"
-                      usage="grid 列表右上方新增試卷／題庫"
-                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
+                      usage="grid 列表右上方新增試卷／題庫（同登入 my-btn-login-submit：白底 gray-3 框、hover 陰影）"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2"
                     >
-                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2">
                         <i class="fa-solid fa-plus" aria-hidden="true" />
                         新增試卷
                       </button>
@@ -1010,7 +1004,6 @@ function designPackUnitTypeIconCss(unitType) {
                       <button type="button" class="bank-list-row w-100" style="max-width: 28rem;">
                         <span class="bank-list-row__label my-font-md-400 my-color-black">範例試卷</span>
                         <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">5 題</span>
-                        <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
                       </button>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
@@ -1070,22 +1063,21 @@ function designPackUnitTypeIconCss(unitType) {
                       :css="designPackUnitTypeIconCss(item.unitType)"
                       :copy-text="designPackUnitTypeIconCss(item.unitType)"
                     >
-                      <PackUnitTypeIcon
-                        :unit-type="item.unitType"
-                        color-class="my-color-gray-1"
-                      />
+                      <span class="my-color-gray-1">
+                        <PackUnitTypeIcon :unit-type="item.unitType" decorative />
+                      </span>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="icon-unit-nav-row"
                       usage="create-exam-bank_3 左側清單：PackUnitTypeIcon（my-pack-unit-type-icon-slot 固定寬度置中）＋單元名稱"
-                      css="my-pack-unit-type-icon-slot · PackUnitTypeIcon · my-design-right-unit-row-label · my-color-gray-1"
+                      css="my-pack-unit-type-icon-slot · PackUnitTypeIcon decorative · my-design-right-unit-row-label · my-color-black"
                       copy-text="my-pack-unit-type-icon-slot"
                     >
                       <span class="my-font-md-400 my-color-black d-inline-flex align-items-center gap-2 min-w-0">
-                        <span class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0" aria-hidden="true">
+                        <span class="my-pack-unit-type-icon-slot flex-shrink-0" aria-hidden="true">
                           <PackUnitTypeIcon
                             :unit-type="UNIT_TYPE_RAG"
-                            color-class="my-color-gray-1"
+                            decorative
                           />
                         </span>
                         <span class="my-design-right-unit-row-label min-w-0 text-start text-break">範例單元</span>
@@ -1093,7 +1085,7 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="icon-unit-type-picker"
-                      usage="設定單元「類型」：rounded-pill my-bgcolor-gray-4 p-1 內四顆 icon＋文字 pill（選中 my-button-white + my-color-black）"
+                      usage="設定單元「類型」：rounded-pill my-bgcolor-gray-4 p-1 內四顆 icon＋文字 pill（選中白底 my-pack-unit-type-btn--selected；未選 gray-2 字；hover gray-3 底）"
                       css="my-pack-unit-type-segment d-inline-flex flex-wrap gap-1 rounded-pill my-bgcolor-gray-4 p-1 · btn rounded-pill my-font-sm-400 my-pack-unit-type-btn px-3 py-1 gap-2 · PackUnitTypeIcon decorative（icon 繼承按鈕字色）"
                     >
                       <div
@@ -1103,7 +1095,7 @@ function designPackUnitTypeIconCss(unitType) {
                       >
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white my-pack-unit-type-btn px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-pack-unit-type-btn my-pack-unit-type-btn--selected px-3 py-1"
                           title="RAG"
                           aria-label="RAG"
                         >
@@ -1112,7 +1104,7 @@ function designPackUnitTypeIconCss(unitType) {
                         </button>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-pack-unit-type-btn px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-color-gray-2 my-pack-unit-type-btn px-3 py-1"
                           title="文字"
                           aria-label="文字"
                         >
@@ -1121,7 +1113,7 @@ function designPackUnitTypeIconCss(unitType) {
                         </button>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-pack-unit-type-btn px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-color-gray-2 my-pack-unit-type-btn px-3 py-1"
                           title="MP3"
                           aria-label="MP3"
                         >
@@ -1130,7 +1122,7 @@ function designPackUnitTypeIconCss(unitType) {
                         </button>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-pack-unit-type-btn px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-transparent-borderless my-color-gray-2 my-pack-unit-type-btn px-3 py-1"
                           title="YouTube"
                           aria-label="YouTube"
                         >
@@ -1265,8 +1257,8 @@ function designPackUnitTypeIconCss(unitType) {
                 <div class="rounded-4 my-design-page-section p-4 mb-5">
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-4">訊息 Modal</div>
                   <p class="my-font-sm-400 my-color-gray-1 mb-4">
-                    警告／錯誤一律以 <code class="my-color-black">MessageModal</code> 呈現（含列表載入、建立、pack、出題、設定單元「來源內容」逐字稿讀取失敗等）；不再使用頁面 inline
-                    <code class="my-color-black">my-alert-warning-soft</code>／<code class="my-color-black">my-alert-danger-soft</code> 或「來源內容」下方紅字。
+                    警告／錯誤一律以 <code class="my-color-black">MessageModal</code> 呈現（含列表載入、建立、pack、出題、設定單元「內容」逐字稿讀取失敗等）；不再使用頁面 inline
+                    <code class="my-color-black">my-alert-warning-soft</code>／<code class="my-color-black">my-alert-danger-soft</code> 或「內容」下方紅字。
                     上傳 Modal 內驗證錯誤仍為 Modal 內 <code class="my-color-black">my-color-red my-font-sm-400 text-break</code>。
                   </p>
                   <DesignPageSpecItem
@@ -1288,7 +1280,7 @@ function designPackUnitTypeIconCss(unitType) {
                       class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
                       @click="openTranscriptErrorDemo"
                     >
-                      開啟來源內容錯誤示範
+                      開啟內容錯誤示範
                     </button>
                   </div>
                   <DesignPageSpecItem
@@ -1314,14 +1306,14 @@ function designPackUnitTypeIconCss(unitType) {
                   </DesignPageSpecItem>
                   <DesignPageSpecItem
                     name="modal-message-transcript-error"
-                    usage="設定單元「來源內容」逐字稿／MP3／YouTube 自動載入失敗（setPackUnitTranscriptErrorAt；不在預覽下方顯示紅字）"
-                    css="MessageModal · title 無法讀取來源內容 · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
+                    usage="設定單元「內容」逐字稿／MP3／YouTube 自動載入失敗（setPackUnitTranscriptErrorAt；不在預覽下方顯示紅字）"
+                    css="MessageModal · title 無法讀取內容 · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
                     copy-text="MessageModal"
                   >
                     <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-3, #dddddd);">
                       <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
                         <div class="modal-header border-bottom-0 p-0">
-                          <h5 class="modal-title my-color-black mb-0">無法讀取來源內容</h5>
+                          <h5 class="modal-title my-color-black mb-0">無法讀取內容</h5>
                           <button type="button" class="btn-close" aria-label="關閉" />
                         </div>
                         <div class="modal-body p-0 min-w-0">

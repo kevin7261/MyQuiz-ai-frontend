@@ -574,7 +574,7 @@ watch(
         </div>
 
         <!-- 有資料：顯示列表 -->
-        <div v-else class="bank-list-wrap mx-auto">
+        <div v-else class="bank-list-wrap bank-list-wrap--no-lead-gap mx-auto">
           <!-- 新增按鈕列 -->
           <div class="bank-table-actions">
             <button
@@ -615,7 +615,6 @@ watch(
                   v-if="item.subtitle"
                   class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1"
                 >{{ item.subtitle }}</span>
-                <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
               </button>
             </li>
           </ul>

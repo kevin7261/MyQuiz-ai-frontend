@@ -16,11 +16,10 @@ import {
       <li
         v-for="row in ZIP_UPLOAD_UNIT_TYPE_HINT_ROWS"
         :key="'zip-upload-hint-' + row.unitType"
-        class="my-zip-upload-unit-hints__item"
+        class="my-zip-upload-unit-hints__item my-color-gray-1"
       >
         <PackUnitTypeIcon
           :unit-type="row.unitType"
-          color-class="my-color-gray-1"
           decorative
           class="my-zip-upload-unit-hints__icon flex-shrink-0"
         />

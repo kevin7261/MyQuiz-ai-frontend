@@ -130,10 +130,6 @@ const quizBankNoun = computed(() => '測驗題庫');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
-/** 設定單元「加入資料夾」：work3 白底欄位用 gray-4 pill */
-const d3PackUnitAddFolderPill = computed(() => (
-  props.designSidePanelOnLeft ? 'my-button-gray-4' : 'my-button-white'
-));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
 
 const messageModal = useMessageModal();
@@ -152,7 +148,9 @@ provide('showMessageModal', (modalTitle, text, options = {}) => {
 });
 const messageModalOpts = { confirmButtonClass: () => d3ConfirmPillMd.value };
 const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-4'));
-const d3SegmentSelected = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-4'));
+/** 設定單元「類型」segment（role=group）：選中白底；未選 gray-2 字；hover gray-3 底 */
+const PACK_UNIT_TYPE_SELECTED_BTN = 'my-pack-unit-type-btn--selected';
+const PACK_UNIT_TYPE_UNSELECTED_BTN = 'my-button-transparent-borderless my-color-gray-2';
 /** create-exam-bank_3：一般／追問 segmented 選中態（淺灰底） */
 const d3QuizModeSegmentSelected = computed(() => (
   props.designSidePanelOnLeft ? 'my-button-gray-4' : 'my-button-white'
@@ -1770,7 +1768,7 @@ function setPackUnitTranscriptErrorAt(gi, message) {
   arr[gi] = text;
   s.packUnitTranscriptError = arr;
   if (!text) return;
-  messageModal.show('無法讀取來源內容', text, {
+  messageModal.show('無法讀取內容', text, {
     confirmButtonClass: () => d3ConfirmPillMd.value,
     onClose: () => {
       const err = [...currentState.value.packUnitTranscriptError];
@@ -2300,7 +2298,7 @@ const activeUnitQuizHistoryQuizTypeLabel = computed(() => {
   return card ? quizTypeTabLabel(card) : '—';
 });
 
-/** 來源內容：純預覽 + 編輯 Modal */
+/** 內容：純預覽 + 編輯 Modal */
 const transcriptEditModalOpen = ref(false);
 const transcriptEditModalGi = ref(0);
 const transcriptEditModalDraft = ref('');
@@ -5457,12 +5455,13 @@ async function confirmAnswer(item) {
                     v-for="(name, i) in secondFoldersFull"
                     :key="'pack-folder-pick-' + i"
                     type="button"
-                    class="badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1 my-pack-folder-pick-chip"
+                    class="badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1 my-pack-folder-pick-chip"
                     :class="{ 'my-pack-folder-pick-chip--selected': isPackFolderPickDraftSelected(name) }"
                     :aria-pressed="isPackFolderPickDraftSelected(name)"
                     :disabled="packGroupsEditBlocked"
                     @click="togglePackFolderPickDraft(name)"
                   >
+                    <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
                     {{ name }}
                   </button>
                 </div>
@@ -5539,8 +5538,11 @@ async function confirmAnswer(item) {
                               <span
                                 v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
                                 :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
-                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
-                              >{{ tag }}</span>
+                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
+                              >
+                                <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
+                                {{ tag }}
+                              </span>
                             </template>
                             <span
                               v-else
@@ -5705,7 +5707,7 @@ async function confirmAnswer(item) {
               <h5
                 id="transcript-edit-modal-title"
                 class="modal-title my-color-black"
-              >編輯來源內容</h5>
+              >編輯內容</h5>
               <button
                 type="button"
                 class="btn-close"
@@ -5909,7 +5911,7 @@ async function confirmAnswer(item) {
                 id="delete-all-pack-units-modal-title"
                 class="modal-title my-color-black"
               >
-                刪除全部
+                刪除全部單元
               </h5>
               <button
                 type="button"
@@ -6211,14 +6213,14 @@ async function confirmAnswer(item) {
                   設定單元
                 </div>
                 <div
-                  class="d-flex align-items-center gap-2 min-w-0 w-100"
+                  class="d-flex align-items-center gap-2 min-w-0 w-100 my-color-black"
                   role="heading"
                   aria-level="2"
                 >
-                  <span class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0" aria-hidden="true">
+                  <span class="my-pack-unit-type-icon-slot flex-shrink-0" aria-hidden="true">
                     <PackUnitTypeIcon
                       :unit-type="packUnitTypeAt(activePackUnitGi)"
-                      color-class="my-color-gray-1"
+                      decorative
                     />
                   </span>
                   <input
@@ -6259,11 +6261,12 @@ async function confirmAnswer(item) {
                           <div
                             v-for="(tag, ti) in activePackUnitGroup"
                             :key="'t-' + activePackUnitGi + '-' + ti"
-                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-1 rounded px-2 py-1"
+                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
                           >
+                            <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
                             {{ tag }}
                             <span
-                              class="my-color-gray-4 ms-1"
+                              class="my-color-gray-4"
                               style="cursor: pointer;"
                               @click.stop="removeFromRagList(activePackUnitGi, ti)"
                             >×</span>
@@ -6272,8 +6275,7 @@ async function confirmAnswer(item) {
                         </div>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-pack-unit-add-folder-btn px-3 py-1"
-                          :class="d3PackUnitAddFolderPill"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-color-gray-2 my-pack-unit-add-folder-btn px-3 py-1"
                           title="加入資料夾"
                           aria-label="加入資料夾"
                           :disabled="packGroupsEditBlocked || !secondFoldersFull.length"
@@ -6291,8 +6293,7 @@ async function confirmAnswer(item) {
                         類型
                       </div>
                       <div
-                        class="my-pack-unit-type-segment d-inline-flex flex-wrap gap-1 rounded-pill flex-shrink-0 align-self-start p-1 mt-1"
-                        :class="designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white'"
+                        class="my-pack-unit-type-segment d-inline-flex flex-wrap gap-1 rounded-pill flex-shrink-0 align-self-start p-1 mt-1 my-bgcolor-gray-4"
                         role="group"
                         :aria-label="`設定單元 ${activePackUnitGi + 1} 類型`"
                       >
@@ -6302,9 +6303,9 @@ async function confirmAnswer(item) {
                           type="button"
                           class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-pack-unit-type-btn px-3 py-1"
                           :class="
-                            packUnitTypeAt(activePackUnitGi) === opt.value
-                              ? d3SegmentSelected
-                              : 'my-button-transparent-borderless'
+                            Number(packUnitTypeAt(activePackUnitGi)) === Number(opt.value)
+                              ? PACK_UNIT_TYPE_SELECTED_BTN
+                              : PACK_UNIT_TYPE_UNSELECTED_BTN
                           "
                           :disabled="
                             packGroupsEditBlocked
@@ -6377,16 +6378,17 @@ async function confirmAnswer(item) {
                     <div class="my-design-pack-unit-section w-100 min-w-0">
                       <div class="d-flex align-items-center justify-content-between mb-0">
                         <div class="my-font-sm-400 my-color-gray-1">
-                          來源內容
+                          內容
                         </div>
                         <button
                           type="button"
-                          :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
+                          class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn my-design-quiz-question-prompt-block__edit-btn--on-light lh-1"
+                          title="編輯內容"
                           :disabled="packGroupsEditBlocked || !packUnitTranscriptLoadedAt(activePackUnitGi) || packUnitTranscriptBusy(activePackUnitGi)"
-                          aria-label="編輯來源內容"
+                          aria-label="編輯內容"
                           @click="openTranscriptEditModal(activePackUnitGi)"
                         >
-                          編輯
+                          <i class="fa-solid fa-pen" aria-hidden="true" />
                         </button>
                       </div>
                       <div class="d-flex flex-column gap-2 w-100 min-w-0 mt-1">
@@ -6472,9 +6474,10 @@ async function confirmAnswer(item) {
                 <span
                   v-for="(name, i) in secondFoldersFull"
                   :key="'pack-empty-folder-' + i"
-                  class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center rounded px-2 py-1"
+                  class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
                   role="listitem"
                 >
+                  <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
                   {{ name }}
                 </span>
               </div>
@@ -6513,15 +6516,15 @@ async function confirmAnswer(item) {
             role="heading"
             aria-level="2"
           >
-            <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
+            <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden my-color-black">
               <span
                 v-if="activeReadonlyPackUnitRow?.unitType != null"
-                class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0"
+                class="my-pack-unit-type-icon-slot flex-shrink-0"
                 aria-hidden="true"
               >
                 <PackUnitTypeIcon
                   :unit-type="activeReadonlyPackUnitRow.unitType"
-                  color-class="my-color-gray-1"
+                  decorative
                 />
               </span>
               <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ builtPackUnitSectionHeadingTitle }}</span>
@@ -6538,7 +6541,7 @@ async function confirmAnswer(item) {
           </div>
           <span
             v-if="!packUnitCarouselCountEffective"
-            class="my-font-md-400 my-color-gray-2"
+            class="my-font-lg-400 my-color-gray-2"
           >沒有單元</span>
         </div>
         <template v-if="packUnitCarouselCountEffective">
@@ -7155,7 +7158,7 @@ async function confirmAnswer(item) {
                       @keydown.enter.prevent="onDesignRightSubTabClick(item)"
                       @keydown.space.prevent="onDesignRightSubTabClick(item)"
                     >
-                      <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-2">
+                      <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-2 my-color-black">
                         <span
                           v-if="hasBuiltRagSummary && hasUnitSubTabs"
                           class="my-design-right-unit-expand-icon flex-shrink-0 my-color-gray-1"
@@ -7167,10 +7170,10 @@ async function confirmAnswer(item) {
                             :class="{ 'my-design-right-unit-expand-chevron--open': isDesignRightUnitExpanded(item.index) }"
                           />
                         </span>
-                        <span class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0" aria-hidden="true">
+                        <span class="my-pack-unit-type-icon-slot flex-shrink-0" aria-hidden="true">
                           <PackUnitTypeIcon
                             :unit-type="item.unitType"
-                            color-class="my-color-gray-1"
+                            decorative
                           />
                         </span>
                         <span class="my-design-right-unit-row-label flex-grow-1 min-w-0 text-start text-break">
@@ -7237,7 +7240,7 @@ async function confirmAnswer(item) {
                 </template>
                 <p
                   v-else
-                  class="my-design-right-unit-empty my-font-md-400 my-color-gray-2 mb-0"
+                  class="my-design-right-unit-empty my-font-lg-400 my-color-gray-2 mb-0"
                 >
                   沒有單元
                 </p>
@@ -7287,12 +7290,12 @@ async function confirmAnswer(item) {
                         <li>
                           <button
                             type="button"
-                            class="dropdown-item my-font-md-400 d-flex align-items-center gap-2"
+                            class="dropdown-item my-font-md-400 my-color-red d-flex align-items-center gap-2"
                             :disabled="!(currentState.packTasksList || []).length"
                             title="清空所有設定單元（含空位）"
                             @click="openDeleteAllPackUnitsModal"
                           >
-                            <DeleteButtonLabel label="刪除全部" />
+                            <DeleteButtonLabel label="刪除全部單元" />
                           </button>
                         </li>
                         <li v-if="secondFoldersFull.length">
@@ -7376,16 +7379,99 @@ async function confirmAnswer(item) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
-/* create-exam-bank_3：詳細資訊等 stem history、設定單元類型／加入資料夾 pill 維持 px-3 */
+/* create-exam-bank_3：詳細資訊 stem history、類型 segment pill 僅維持 px-3（底色由 common .my-pack-unit-type-segment 控制） */
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400) {
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-pack-unit-type-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-pack-unit-type-btn)) {
+/* 「+ 加入資料夾」：gray-4 底、gray-2 字（蓋過 .form-control.my-input-md 黑字） */
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  --bs-btn-bg: var(--my-color-gray-4);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-disabled-bg: var(--my-color-gray-4);
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-hover-color: var(--my-color-gray-2);
+  --bs-btn-active-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-border-color: transparent;
+  --bs-btn-border-width: 0;
+  background-color: var(--my-color-gray-4) !important;
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled) {
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+}
+/* 類型 segment：選中白底、未選 hover（蓋過 work3 小 pill 灰字規則） */
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected) {
+  --bs-btn-bg: var(--my-color-white);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  --bs-btn-color: var(--my-color-black);
+  --bs-btn-hover-color: var(--my-color-black);
+  --bs-btn-active-color: var(--my-color-black);
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:disabled) {
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  --bs-btn-disabled-opacity: 1;
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-3) !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 1;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:hover:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:focus-visible:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
+  color: var(--my-color-black) !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:disabled) {
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled)) {
+  --bs-btn-hover-bg: var(--my-color-gray-3);
+  --bs-btn-active-bg: var(--my-color-gray-3);
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-gray-3) !important;
+}
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+}
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   color: var(--my-color-gray-1);
 }
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
@@ -7393,6 +7479,7 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
 .my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)) {
   color: var(--my-color-gray-1);
+  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
 }
 /* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
@@ -7799,23 +7886,6 @@ async function confirmAnswer(item) {
 .my-pack-folder-combo-field {
   cursor: default;
 }
-.my-pack-folder-pick-chip {
-  background-color: var(--my-color-gray-4);
-  color: var(--my-color-gray-1);
-  border: 1px solid var(--my-color-gray-3);
-}
-.my-pack-folder-pick-chip:hover:not(:disabled) {
-  color: var(--my-color-black);
-  border-color: var(--my-color-gray-1);
-}
-.my-pack-folder-pick-chip--selected,
-.my-pack-folder-pick-chip--selected:hover:not(:disabled),
-.my-pack-folder-pick-chip--selected:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-blue) 14%, var(--my-color-white));
-  color: var(--my-color-black);
-  border-color: var(--my-color-blue);
-  font-weight: var(--my-font-weight-semibold);
-}
 .my-pack-folder-field-input {
   box-sizing: border-box;
   width: 100%;
@@ -8065,6 +8135,23 @@ async function confirmAnswer(item) {
   font-size: var(--my-font-size-sm);
   line-height: 1;
 }
+/* 設定單元「內容」：筆 icon 圓鈕（尺寸同出題規則；淺色區白底） */
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light,
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-1) !important;
+}
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:focus-visible:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:active:not(:disabled),
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:hover:not(:disabled),
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:focus-visible:not(:disabled),
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:active:not(:disabled) {
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
+  color: var(--my-color-black) !important;
+}
 .my-design-quiz-question-prompt-block__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__rule) {
   border: 0;
@@ -8227,9 +8314,37 @@ async function confirmAnswer(item) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
   color: inherit !important;
+}
+/* 類型 segment：未選 gray-2 字、hover gray-3 底（蓋過 Bootstrap .btn） */
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:disabled) {
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  background-color: transparent !important;
+}
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled)),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled)),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled)) {
+  --bs-btn-hover-bg: var(--my-color-gray-3) !important;
+  --bs-btn-active-bg: var(--my-color-gray-3) !important;
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-gray-3) !important;
+}
+
+/* 「+ 加入資料夾」字色：置末覆寫（蓋過 .form-control.my-input-md 與 Bootstrap .btn:disabled） */
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-hover-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
 }
 
 </style>

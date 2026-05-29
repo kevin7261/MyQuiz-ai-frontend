@@ -606,12 +606,12 @@ watch(viewMode, (mode) => {
         </div>
 
         <!-- 有資料：顯示列表 -->
-        <div v-else class="bank-list-wrap mx-auto">
+        <div v-else class="bank-list-wrap bank-list-wrap--no-lead-gap mx-auto">
           <!-- 新增按鈕：表格上方獨立列，靠表格右上 -->
           <div class="bank-table-actions">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2 flex-shrink-0"
               :disabled="createRagLoading"
               :aria-busy="createRagLoading"
               @click="openNewBankUploadModal"
@@ -623,7 +623,6 @@ watch(viewMode, (mode) => {
 
           <!-- 表頭：名稱排序 -->
           <div class="bank-table-header">
-            <span class="bank-table-header__dot-spacer" aria-hidden="true" />
             <button
               type="button"
               class="bank-table-sort-btn btn d-inline-flex align-items-center gap-2 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless px-0 py-1 flex-shrink-0"
@@ -643,18 +642,18 @@ watch(viewMode, (mode) => {
                 class="bank-list-row"
                 @click="openBankDetail(item.tabId, item.label)"
               >
-                <span class="bank-list-row__dot-col" :aria-label="item.isExam ? '試卷用題庫' : undefined">
-                  <span
-                    v-if="item.isExam"
-                    class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot"
-                  />
+                <span
+                  v-if="item.isExam"
+                  class="bank-list-row__dot-col"
+                  aria-label="試卷用題庫"
+                >
+                  <span class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot" />
                 </span>
                 <span class="bank-list-row__label my-font-md-400 my-color-black">{{ item.label }}</span>
                 <span
                   v-if="item.subtitle"
                   class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1"
                 >{{ item.subtitle }}</span>
-                <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
               </button>
             </li>
           </ul>
@@ -900,8 +899,37 @@ watch(viewMode, (mode) => {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
+.create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
+.create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
   color: inherit !important;
+}
+
+/* 嵌入頁「+ 加入資料夾」：gray-4 底、gray-2 字（蓋過 .form-control.my-input-md 黑字；不限 side-panel-left） */
+.create-exam-bank-2-embedded :deep(.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn),
+.create-exam-bank-2-embedded :deep(.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn),
+.create-exam-bank-2-embedded :deep(.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn) {
+  --bs-btn-bg: var(--my-color-gray-4);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-disabled-bg: var(--my-color-gray-4);
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-hover-color: var(--my-color-gray-2);
+  --bs-btn-active-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-border-color: transparent;
+  --bs-btn-border-width: 0;
+  background-color: var(--my-color-gray-4) !important;
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.create-exam-bank-2-embedded :deep(.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled),
+.create-exam-bank-2-embedded :deep(.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled),
+.create-exam-bank-2-embedded :deep(.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled) {
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
 }
 </style>

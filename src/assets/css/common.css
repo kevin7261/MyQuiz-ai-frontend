@@ -113,8 +113,8 @@ code {
 .btn.my-button-transparent-borderless.my-color-gray-4 {
   color: var(--my-color-gray-1);
 }
-.btn.my-button-transparent-borderless.my-color-gray-4:hover:not(:disabled),
-.btn.my-button-transparent-borderless.my-color-gray-4:focus-visible:not(:disabled) {
+.btn.my-button-transparent-borderless.my-color-gray-4:not(.my-pack-unit-type-btn):hover:not(:disabled),
+.btn.my-button-transparent-borderless.my-color-gray-4:not(.my-pack-unit-type-btn):focus-visible:not(:disabled) {
   color: var(--my-color-black);
 }
 
@@ -268,17 +268,20 @@ code {
   background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
 }
 
-/* 白底 gray-3 框膠囊；hover 陰影（LoginView 登入、create-exam-bank「開始建立單元」） */
+/* 白底 gray-3 框膠囊；預設字色同 .my-color-gray-4（#666）；hover 陰影＋黑字 */
 .btn.my-btn-login-submit {
   --bs-btn-bg: var(--my-color-white);
   --bs-btn-hover-bg: var(--my-color-white);
   --bs-btn-active-bg: var(--my-color-white);
   --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-black);
+  --bs-btn-active-color: var(--my-color-black);
   --bs-btn-border-color: var(--my-color-gray-3);
   --bs-btn-hover-border-color: var(--my-color-gray-3);
   --bs-btn-active-border-color: var(--my-color-gray-3);
   background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
+  color: var(--my-color-gray-1) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }
@@ -292,6 +295,9 @@ code {
 .btn.my-btn-login-submit:active:not(:disabled) {
   background-color: var(--my-color-white) !important;
   color: var(--my-color-black) !important;
+}
+.btn.my-btn-login-submit .fa-solid {
+  color: inherit;
 }
 .btn.my-btn-login-submit:disabled {
   --bs-btn-disabled-bg: var(--my-color-white);
@@ -558,8 +564,8 @@ code {
   background-color: transparent;
   border: none;
 }
-.btn.my-button-transparent-borderless:hover,
-.btn.my-button-transparent-borderless:active:not(:disabled) {
+.btn.my-button-transparent-borderless:not(.my-pack-unit-type-btn):hover,
+.btn.my-button-transparent-borderless:not(.my-pack-unit-type-btn):active:not(:disabled) {
   color: var(--my-color-black);
   background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
 }
@@ -1472,6 +1478,9 @@ div.form-control {
 }
 
 /* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（black 與 white 皆黑底白字，黑稿內 white 例外）；描邊 .my-button-white-border／.my-btn-outline-gray-1／.my-btn-outline-*-hollow；transparent-borderless 為黑無框（黑稿內例外淺字） —— */
+.btn {
+  white-space: nowrap;
+}
 .btn.rounded-pill:not(.my-btn-outline-gray-1):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow):not(.my-button-logo-gradient):not(.my-btn-lg),
 .btn.rounded-circle:not(.my-btn-outline-gray-1) {
   border: none;
@@ -1847,59 +1856,187 @@ div.form-control {
   width: 1rem;
   min-width: 1rem;
 }
-.my-pack-unit-type-icon--inherit,
-.my-pack-unit-type-icon--inherit::before {
+/* RAG／文字／MP3／YouTube：icon（含 fa-brands）一律繼承父層字色 */
+.my-pack-unit-type-icon,
+.my-pack-unit-type-icon::before {
   color: inherit !important;
 }
 
-/* 設定單元「類型」segmented pill group：px-3；選中／未選字色；icon 與文字同色 */
+/* 設定單元「類型」segmented pill group：px-3；選中白底；未選透明 gray-4 字；icon 與文字同色 */
 .my-pack-unit-type-segment .btn.my-pack-unit-type-btn.rounded-pill {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white {
+/* 選中：白底黑字（勿用全站 .my-button-white＝黑底 pill） */
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-pack-unit-type-btn--selected {
+  --bs-btn-bg: var(--my-color-white);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  --bs-btn-color: var(--my-color-black);
+  --bs-btn-hover-color: var(--my-color-black);
+  --bs-btn-active-color: var(--my-color-black);
+  --bs-btn-border-color: transparent;
   background-color: var(--my-color-white) !important;
   color: var(--my-color-black) !important;
-  border-color: transparent !important;
+  border: none !important;
   box-shadow: none !important;
 }
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white:hover:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white:focus-visible:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-white:active:not(:disabled) {
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-pack-unit-type-btn--selected:disabled {
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  --bs-btn-disabled-opacity: 1;
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-3) !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 1;
+}
+/* 淺底 btn-group 白底選中分段：disabled 字 gray-3 */
+.bg-white .my-btn-group-pill.btn-group > .btn.my-button-white:disabled,
+.my-bgcolor-surface .my-btn-group-pill.btn-group > .btn.my-button-white:disabled,
+.my-bgcolor-white .my-btn-group-pill.btn-group > .btn.my-button-white:disabled,
+.my-bgcolor-gray-4 .my-btn-group-pill.btn-group > .btn.my-button-white:disabled,
+.my-bgcolor-page-block .my-btn-group-pill.btn-group > .btn.my-button-white:disabled {
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  --bs-btn-disabled-opacity: 1;
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-3) !important;
+  opacity: 1;
+}
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-pack-unit-type-btn--selected:hover:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-pack-unit-type-btn--selected:focus-visible:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-pack-unit-type-btn--selected:active:not(:disabled) {
   background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
   color: var(--my-color-black) !important;
 }
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4 {
-  background-color: var(--my-color-gray-4) !important;
-  color: var(--my-color-black) !important;
-  border-color: transparent !important;
-  box-shadow: none !important;
-}
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4:hover:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4:focus-visible:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
-  color: var(--my-color-black) !important;
-}
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless {
-  color: var(--my-color-gray-1) !important;
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless,
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2,
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:disabled,
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:disabled {
+  --bs-btn-bg: transparent;
+  --bs-btn-hover-bg: var(--my-color-gray-3);
+  --bs-btn-active-bg: var(--my-color-gray-3);
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-hover-color: var(--my-color-black);
+  --bs-btn-active-color: var(--my-color-black);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-disabled-opacity: 0.55;
+  color: var(--my-color-gray-2) !important;
   background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 .my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:hover:not(:disabled),
 .my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:active:not(:disabled) {
-  color: var(--my-color-gray-1) !important;
-  background-color: transparent !important;
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless:active:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled),
+.my-pack-unit-type-segment.my-bgcolor-gray-4 .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled),
+.my-pack-unit-type-segment.my-bgcolor-gray-4 .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled),
+.my-pack-unit-type-segment.my-bgcolor-gray-4 .btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled) {
+  --bs-btn-hover-bg: var(--my-color-gray-3) !important;
+  --bs-btn-active-bg: var(--my-color-gray-3) !important;
+  --bs-btn-hover-color: var(--my-color-black) !important;
+  --bs-btn-active-color: var(--my-color-black) !important;
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-gray-3) !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 .my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon,
 .my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before {
   color: inherit !important;
 }
 
-/* 設定單元「加入資料夾」pill：px-3 */
-.btn.my-pack-unit-add-folder-btn.rounded-pill {
+/* 設定單元「+ 加入資料夾」：gray-4 底、gray-2 字（蓋過 .form-control.my-input-md 黑字繼承與 Bootstrap .btn） */
+.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn,
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn,
+.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn,
+button.btn.my-pack-unit-add-folder-btn,
+button.btn.my-pack-unit-add-folder-btn.my-color-gray-2 {
+  --bs-btn-bg: var(--my-color-gray-4);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-disabled-bg: var(--my-color-gray-4);
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-hover-color: var(--my-color-gray-2);
+  --bs-btn-active-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-border-width: 0;
+  background-color: var(--my-color-gray-4) !important;
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn.rounded-pill,
+button.btn.my-pack-unit-add-folder-btn.rounded-pill {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled),
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled),
+button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled),
+button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
+  color: var(--my-color-gray-2) !important;
+}
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:active:not(:disabled),
+button.btn.my-pack-unit-add-folder-btn:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
+  color: var(--my-color-gray-2) !important;
+}
+.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled,
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled,
+button.btn.my-pack-unit-add-folder-btn:disabled {
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-disabled-bg: var(--my-color-gray-4);
+  --bs-btn-disabled-opacity: 1;
+  background-color: var(--my-color-gray-4) !important;
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  opacity: 0.55;
+}
+.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn .fa-solid,
+.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn .fa-solid,
+button.btn.my-pack-unit-add-folder-btn .fa-solid {
+  color: inherit !important;
+  -webkit-text-fill-color: currentColor;
+}
+
+/* 選擇資料夾 Modal（Teleport to body）：chip 選中態＝上傳區拖曳中 .my-zip-drop-zone-over；字重不變（蓋過 .badge） */
+button.my-pack-folder-pick-chip {
+  font-weight: var(--my-font-weight-regular);
+  border: 1px solid var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-gray-1);
+}
+button.my-pack-folder-pick-chip:hover:not(:disabled) {
+  color: var(--my-color-black);
+  border-color: var(--my-color-gray-1);
+}
+button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected,
+button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected:hover:not(:disabled),
+button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected:focus-visible:not(:disabled),
+button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected:active:not(:disabled) {
+  --bs-btn-bg: var(--my-drop-zone-active-bg);
+  --bs-btn-hover-bg: var(--my-drop-zone-active-bg);
+  --bs-btn-active-bg: var(--my-drop-zone-active-bg);
+  background-color: var(--my-drop-zone-active-bg) !important;
+  color: var(--my-color-black) !important;
+  border: 1px solid var(--my-color-gray-1) !important;
+  font-weight: var(--my-font-weight-regular) !important;
+  box-shadow: none !important;
+}
+button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
+  color: inherit !important;
 }
 
 /* 左欄清單底部刪除（exam_3／create-exam-bank_3）：固定於 list 下方；併 my-btn-outline-red-hollow，灰底上透明＋hover 淡紅 */
@@ -2048,6 +2185,20 @@ div.form-control {
   display: inline-block;
   width: calc(0.5rem + 0.75rem);
   flex-shrink: 0;
+}
+
+/* 題庫／測驗主頁列表：列首不預留空白；綠點僅在 isExam 列顯示，間距用 margin */
+.bank-list-wrap--no-lead-gap .bank-table-header {
+  gap: 0;
+}
+.bank-list-wrap--no-lead-gap .bank-list-row {
+  gap: 0;
+}
+.bank-list-wrap--no-lead-gap .bank-list-row__dot-col {
+  margin-right: 0.75rem;
+}
+.bank-list-wrap--no-lead-gap .bank-list-row__subtitle {
+  margin-left: 0.75rem;
 }
 
 .bank-table-sort-btn {
@@ -2280,7 +2431,7 @@ div.form-control {
   --bs-btn-hover-bg: var(--my-color-white);
   --bs-btn-active-bg: var(--my-color-white);
   --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-color: var(--my-color-black);
+  --bs-btn-color: var(--my-color-gray-1);
   --bs-btn-hover-color: var(--my-color-black);
   --bs-btn-active-color: var(--my-color-black);
   --bs-btn-border-color: var(--my-color-gray-3);
@@ -2289,7 +2440,7 @@ div.form-control {
   --bs-btn-disabled-border-color: var(--my-color-gray-3);
   --bs-btn-disabled-color: var(--my-color-gray-3);
   background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
+  color: var(--my-color-gray-1) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }
@@ -2304,6 +2455,9 @@ div.form-control {
   background-color: var(--my-color-white) !important;
   color: var(--my-color-black) !important;
   border-color: var(--my-color-gray-3) !important;
+}
+.btn.my-btn-lg .fa-solid {
+  color: inherit;
 }
 .btn.my-btn-lg:disabled {
   background-color: var(--my-color-white) !important;
