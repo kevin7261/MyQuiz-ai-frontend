@@ -13,7 +13,7 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
  * 可輸入答案並按「開始批改」送出評分；**測驗頁**（hideGradingPrompt）在已批改（card.confirmed）後不顯示此鈕；建立題庫等未帶 hideGradingPrompt 時仍顯示按鈕群。
  * 單元題區塊內「開始批改」（llm-grade／llm-grade-db，由父層依規則是否改動路由）：啟停用對齊「產生題目」；gradingPromptInModal 時僅顯示單一「開始批改」鈕。
  * 「答案」不因 rag_id 與題庫不一致而停用（仍可鍵入；並顯示警示）；**測驗頁（hideGradingPrompt）在有批改結果文字後答案改為停用**（再次送出批改時會先清空結果）；**測驗稿頁三子區塊（hideExamRulePills）在有批改結果後答案改為與題目相同之純顯示**；其餘情境已批改後 textarea 仍可編輯（僅 readOnlyAnswer／分析頁為靜態）。
- * **RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致；**不顯示「儲存並開始批改」**（仍可依後端既有規則使用「開始批改」）。
+ * **RAG 題庫且 card.rag_quiz_for_exam === true（測驗用）時**：批改規則改為預覽唯讀（黑底預覽），與建立頁出題規則一致；**不顯示「儲存規則並開始批改」**（仍可依後端既有規則使用「開始批改」）。
  * 供 CreateExamQuizBankPage、ExamPage 使用；評分邏輯由父層透過 useQuizGrading 處理。
  *
  * card 物件需含：quiz, hint, referenceAnswer, quiz_answer（使用者作答）, gradingPrompt（可選；Markdown；**RAG** 批改 POST 對應 answer_user_prompt_text；**Exam** 時批改指引仍不由前端於 POST 送出，欄位可編輯以相容），confirmed, gradingResult, ragName, rag_id（可選，供與 currentRagId 比對是否可作答）, id；測驗頁另含 exam_quiz_id、quiz_rate、rateError、quiz_user_prompt_text（可選；POST /exam/tab/quiz/llm-generate 回傳之出題模板快照，與 gradingPrompt 一併在 hideGradingPrompt 時唯讀顯示）；RAG 題庫頁／單元題另含 rag_quiz_id、rag_tab_id、rag_unit_id（狀態／其他 API）、rag_quiz_for_exam（已標為測驗用試題；for-exam 僅送 rag_quiz_id／for_exam）。designEmbedded：true 時不套 rounded-4 深灰外框（由父層區塊包住）；稿頁「測試題目」每題一區塊時應為 false。hideRagQuizForExamToolbar：true 時不在卡內顯示「設為測驗用」（由建立頁置於題型區塊最下方（題目卡片之後）常駐；未出題或未批改為 disabled）。showExamRating：測驗頁專用，顯示讚／差（32×32 透明底；未選 fa-regular gray-1、選中 fa-solid 黑色）並 emit rate-quiz。questionHintOnly：建立英文測驗題庫用，僅顯示「第 N 題」、題目、提示（與 designUi 相同 class），不顯示參考答案、作答、批改。hideGradingPrompt／hideGradingResult：測驗頁可隱藏批改輸入／結果區（仍可送出批改）。readOnlyAnswer：作答弱點分析／學生作答分析等純顯示頁，答案區唯讀、不顯示「開始批改」。
@@ -56,7 +56,7 @@ const props = defineProps({
   /** true 時答案區唯讀、不顯示「開始批改」（仍顯示批改結果區；與 hideGradingPrompt 併用於分析頁） */
   readOnlyAnswer: { type: Boolean, default: false },
   /**
-   * 建立題庫頁覆寫「儲存並開始批改」是否可按（對齊 canEnableUnitQuizGenerate）；省略時用元件內 gradingPrompt／baseline 判斷。
+   * 建立題庫頁覆寫「儲存規則並開始批改」是否可按（對齊 canEnableUnitQuizGenerate）；省略時用元件內 gradingPrompt／baseline 判斷。
    */
   gradeSaveAllowed: { type: Boolean, default: undefined },
   /**
@@ -414,6 +414,18 @@ const showDesignAnswerPlainDisplay = computed(
   () => props.readOnlyAnswer || showDesignAnswerAsGradedDisplay.value,
 );
 
+/** 稿頁合併「開始批改」鈕文案：規則已改 → 儲存規則並開始批改（llm-grade）；否則 → 開始批改（llm-grade-db） */
+const mergedGradeButtonLabel = computed(() => {
+  if (props.gradeSaveAllowed === true) return '儲存規則並開始批改';
+  if (props.gradeSaveAllowed !== undefined || props.gradeDbAllowed !== undefined) {
+    return '開始批改';
+  }
+  if (!saveAndGradeButtonDisabled.value && isGradingPromptDirtyVsBaseline.value) {
+    return '儲存規則並開始批改';
+  }
+  return '開始批改';
+});
+
 /** 稿頁「開始批改」是否應顯示（不含子區塊位置） */
 const showDesignGradingStartButton = computed(() => {
   if (!props.createExamBankDesignLayout) return false;
@@ -659,11 +671,16 @@ const gradingPromptNonEmptyTrimmed = computed(() =>
   String(props.card?.gradingPrompt ?? '').trim() !== '',
 );
 
+const quizAnswerNonEmptyTrimmed = computed(
+  () => String(props.card?.quiz_answer ?? '').trim() !== '',
+);
+
 /**
- * 「儲存並開始批改」— 對應「儲存並產生題目」(canEnableUnitQuizGenerate)；建立題庫頁可經 gradeSaveAllowed 與父層 canEnableUnitQuizGrade 綁定。
+ * 「儲存規則並開始批改」— 對應「儲存規則並產生題目」(canEnableUnitQuizGenerate)；建立題庫頁可經 gradeSaveAllowed 與父層 canEnableUnitQuizGrade 綁定。
  */
 const saveAndGradeButtonDisabled = computed(() => {
   if (props.gradeSubmitting) return true;
+  if (!quizAnswerNonEmptyTrimmed.value) return true;
   if (props.gradeSaveAllowed !== undefined) return !props.gradeSaveAllowed;
   return (
     !gradingPromptNonEmptyTrimmed.value
@@ -676,6 +693,7 @@ const saveAndGradeButtonDisabled = computed(() => {
  */
 const ragGradeDbButtonDisabled = computed(() => {
   if (!props.showRagGradeDbButton || props.gradeSubmitting) return true;
+  if (!quizAnswerNonEmptyTrimmed.value) return true;
   if (props.gradeDbAllowed !== undefined) return !props.gradeDbAllowed;
   return (
     props.card?.hasUsedSaveAndGradeOnce !== true
@@ -684,9 +702,10 @@ const ragGradeDbButtonDisabled = computed(() => {
   );
 });
 
-/** 稿頁 gradingPromptInModal：合併「儲存並開始批改／開始批改」為單一「開始批改」 */
+/** 稿頁 gradingPromptInModal：合併「儲存規則並開始批改／開始批改」為單一「開始批改」 */
 const mergedGradeButtonDisabled = computed(() => {
   if (props.gradeSubmitting) return true;
+  if (!quizAnswerNonEmptyTrimmed.value) return true;
   if (props.gradeSaveAllowed !== undefined && props.gradeDbAllowed !== undefined) {
     return !props.gradeSaveAllowed && !props.gradeDbAllowed;
   }
@@ -701,6 +720,7 @@ const mergedGradeButtonDisabled = computed(() => {
 const standaloneStartGradeButtonDisabled = computed(
   () =>
     props.gradeSubmitting
+    || !quizAnswerNonEmptyTrimmed.value
     || blockExamStyleGradeResubmitUntilDirty.value,
 );
 
@@ -1572,10 +1592,10 @@ const quizAnswerFieldDisabled = computed(
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="designGradingStartButtonDisabled"
                 :aria-busy="gradeSubmitting"
-                aria-label="開始批改"
+                :aria-label="mergedGradeButtonLabel"
                 @click="emit('confirm-answer', card)"
               >
-                開始批改
+                {{ mergedGradeButtonLabel }}
               </LogoGradientPillButton>
             </div>
             <div
@@ -1660,10 +1680,10 @@ const quizAnswerFieldDisabled = computed(
               title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
               :disabled="mergedGradeButtonDisabled"
               :aria-busy="gradeSubmitting"
-              aria-label="開始批改"
+              :aria-label="mergedGradeButtonLabel"
               @click="emit('confirm-answer', card)"
             >
-              開始批改
+              {{ mergedGradeButtonLabel }}
             </LogoGradientPillButton>
           </div>
         </div>
@@ -1710,7 +1730,7 @@ const quizAnswerFieldDisabled = computed(
               tone="grade"
               :gradient-bias="logoGradientBias"
               :id-prefix="`quiz-grade-mark-${card.id}-grade-db`"
-              title="使用後端已儲存之批改規則；須曾成功「儲存並開始批改」且未在編輯器中改動批改規則"
+              title="使用後端已儲存之批改規則；須曾成功「儲存規則並開始批改」且未在編輯器中改動批改規則"
               :disabled="ragGradeDbButtonDisabled"
               :aria-busy="gradeSubmitting"
               aria-label="開始批改"
@@ -1724,10 +1744,10 @@ const quizAnswerFieldDisabled = computed(
               class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 flex-shrink-0 px-3 py-2 my-font-md-400 my-button-white"
               :disabled="saveAndGradeButtonDisabled"
               :aria-busy="gradeSubmitting"
-              aria-label="儲存並開始批改"
+              aria-label="儲存規則並開始批改"
               @click="emit('confirm-answer', card)"
             >
-              儲存並開始批改
+              儲存規則並開始批改
             </button>
           </div>
         </div>

@@ -12,7 +12,7 @@
  * - 分頁更名：PUT /rag/tab/tab-name（body: rag_id、tab_name）
  * - 試卷用：GET /rag/tabs 每筆 Rag.for_exam，或其 units／quizzes 任一有 Rag_Quiz.for_exam，或本機題卡 rag_quiz_for_exam，皆於分頁列顯示綠點並禁止刪除該題庫分頁（不再呼叫 system-settings rag-for-exam-*）
  * - 出題（舊／整庫）：POST /rag/tab/quiz/create（rag_id 必填；rag_tab_id、unit_name 選填可 ""）；評分：POST /rag/tab/unit/quiz/llm-grade（body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略）與已儲存批改規則之 POST /rag/tab/unit/quiz/llm-grade-db；GET /rag/tab/unit/quiz/grade-result/{job_id}，ready 時 result: quiz_score、quiz_comments、rag_quiz_id、rag_answer_id
- * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，選定類型且資料夾就緒後自動載入逐字稿，完成載入前編輯區停用且不能新增單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
+ * - 單元子分頁：GET /rag/tab/units；題型列「+」新增題庫 POST /rag/tab/unit/quiz/create（body: rag_tab_id、rag_unit_id；不呼叫 LLM）後推入一列（帶 rag_quiz_id）；後端若未帶 quiz_name 常將該欄預設為所屬 unit_name，故建立成功後前端會 PUT /rag/tab/unit/quiz/quiz-name 寫入「未命名題型」與草稿一致，再上傳／重整才不會被 hydrate 覆寫成單元名。再填題名／出題規則後按「儲存規則並產生題目」POST /rag/tab/unit/quiz/llm-generate（body 含 quiz_user_prompt_text）；「產生題目」POST /rag/tab/unit/quiz/llm-generate-db（body 僅 rag_quiz_id、quiz_name；後端使用 Rag_Quiz 已儲存之 quiz_user_prompt_text）；若列上尚無 rag_quiz_id（舊本機草稿），「儲存規則並產生題目」仍會先 create 再 llm；單題設為／取消測驗用 POST /rag/tab/unit/quiz/for-exam（body 僅 rag_quiz_id、for_exam）；題型 sub-tab 更名：PUT /rag/tab/unit/quiz/quiz-name（body: rag_quiz_id、quiz_name）；軟刪題型：PUT /rag/tab/quiz/delete/{rag_quiz_id}；「單元內容」：單元僅見上方子分頁；user_type 1／2／234；設定單元選 unit_type=2/3/4 時共用 Markdown 逐字稿編輯器，選定類型且資料夾就緒後自動載入逐字稿，完成載入前編輯區停用且不能新增單元；3 僅 `<audio>` 與「逐字稿」Modal（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe 與逐字稿 Modal（不標 YouTube 字樣）；3 且已有 rag_unit_id 時 GET `/rag/tab/unit/mp3-file`；RAG（1）僅來源檔案
  * 上述 API 不需 llm_api_key。
  */
 import { ref, computed, watch, onActivated, reactive, nextTick, useSlots, provide } from 'vue';
@@ -224,7 +224,7 @@ const deleteUnitQuizDraftIndex = ref(null);
 const deleteUnitQuizLoading = ref(false);
 /** 正在送出批改的題卡 id（全螢幕 LoadingOverlay；結果區待回傳） */
 const gradingSubmittingCardId = ref(null);
-/** 批改 overlay 文案：`llm-grade`＝規則已改動（儲存並批改）；`llm-grade-db`＝開始批改 */
+/** 批改 overlay 文案：`llm-grade`＝規則已改動（儲存規則並批改）；`llm-grade-db`＝開始批改 */
 const gradingSubmittingOverlayKind = ref(/** @type {null | 'llm-grade' | 'llm-grade-db'} */ (null));
 const deleteRagLoading = ref(false);
 /** GET /rag/tab/units 載入單元 sub-tab（可併發，計數避免提早關閉 overlay） */
@@ -950,17 +950,17 @@ const loadingOverlayVisible = computed(
 
 const loadingOverlayText = computed(() => {
   if (isGradingSubmitting.value) {
-    if (gradingSubmittingOverlayKind.value === 'llm-grade') return '儲存並批改中...';
+    if (gradingSubmittingOverlayKind.value === 'llm-grade') return '儲存規則並批改中...';
     return '批改中...';
   }
   if (hasRagQuizForExamApiLoading.value) return '儲存測驗設定中...';
   if (hasRagQuizFollowupApiLoading.value) return '儲存出題模式中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'add-row') return '產生題型中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
-  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存並追問出題中...';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存規則並追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return generateDbOverlayLabel.value;
-  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '儲存並產生題目中...';
-  if (hasAnySlotGenerating.value) return '儲存並產生題目中...';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '儲存規則並產生題目中...';
+  if (hasAnySlotGenerating.value) return '儲存規則並產生題目中...';
   const st = currentState.value;
   if (st?.zipLoading) return '上傳中...';
   if (st?.packLoading) return '建立單元中...';
@@ -2825,6 +2825,14 @@ const activeUnitQuizCard = computed(() => {
   return cards[i] ?? null;
 });
 
+/** 出題後強制 QuizCard 重掛（同 id 合併列時答案 textarea 才不殘留舊值） */
+const activeUnitQuizCardRemountKey = computed(() => {
+  const card = activeUnitQuizCard.value;
+  if (!card) return 'none';
+  const genAt = card.quizGeneratedAt ?? 0;
+  return `${card.id ?? 'card'}-${genAt}-${String(card.quiz ?? '').length}`;
+});
+
 /** 題型區：已產出題幹（答案／批改子區塊與題幹 QuizCard 顯示條件） */
 const activeUnitQuizHasGeneratedBody = computed(() => {
   const card = activeUnitQuizCard.value;
@@ -2839,8 +2847,8 @@ const designUnitQuizCardBind = computed(() => {
   return {
     card,
     slotIndex: activeUnitQuizTypeIdxResolved.value + 1,
-    gradeSaveAllowed: canEnableUnitQuizGradeMerged(card, slotIndex),
-    gradeDbAllowed: canEnableUnitQuizGradeMerged(card, slotIndex),
+    gradeSaveAllowed: canEnableUnitQuizGrade(card, slotIndex),
+    gradeDbAllowed: canEnableUnitQuizGradeDb(card, slotIndex),
     currentRagId: currentRagIdForQuizCards.value,
     designEmbedded: true,
     hideSlotIndex: true,
@@ -2930,6 +2938,17 @@ function syncQuizCardPromptBaselines(row) {
   row.quizAnswerBaseline = String(row.quiz_answer ?? '');
 }
 
+/** 重新出題後清空使用者作答與批改結果（保留題幹、規則等其餘欄位） */
+function clearCardAnswerAndGradingState(row) {
+  if (!row || typeof row !== 'object') return;
+  row.quiz_answer = '';
+  row.confirmed = false;
+  row.gradingResult = '';
+  row.gradingResponseJson = null;
+  row.answer_id = null;
+  row.quizAnswerBaseline = '';
+}
+
 function isQuizUserPromptDirty(card) {
   if (!card || typeof card !== 'object') return false;
   return (
@@ -2973,7 +2992,7 @@ function resolveUnitQuizRagQuizIdForLlm(slotIndex, quizCardRow) {
   );
 }
 
-/** 「儲存並產生題目」可按：須有非空白之出題規則，且出題規則內容須與 baseline 不同（已編輯） */
+/** 「儲存規則並產生題目」可按：須有非空白之出題規則，且出題規則內容須與 baseline 不同（已編輯） */
 /** 出題模式：slot 與題卡 quizGenerateMode 同步；GET /rag/tabs、/rag/tab/units 之 follow_up 載入時寫入題卡 */
 function resolveUnitQuizGenerateMode(slotIndex, card = null) {
   if (card != null && typeof card === 'object') {
@@ -3044,7 +3063,7 @@ function canEnableUnitQuizGenerate(card, slotIndex) {
   return isQuizUserPromptDirty(card);
 }
 
-/** 「產生題目」（llm-generate-db／llm-generate-followup-db）：須已有 rag_quiz_id，且曾成功「儲存並產生題目」或載入時後端已有出題規則；出題規則若與 baseline 不同（未儲存）則不可按 */
+/** 「產生題目」（llm-generate-db／llm-generate-followup-db）：須已有 rag_quiz_id，且曾成功「儲存規則並產生題目」或載入時後端已有出題規則；出題規則若與 baseline 不同（未儲存）則不可按 */
 function canEnableUnitQuizGenerateFromDb(card, slotIndex) {
   if (!card || typeof card !== 'object') return false;
   if (card.hasUsedSaveAndGenerateOnce !== true) return false;
@@ -3053,38 +3072,35 @@ function canEnableUnitQuizGenerateFromDb(card, slotIndex) {
   return rqid != null && rqid >= 1;
 }
 
-/** 「儲存並開始批改」可按：對齊 {@link canEnableUnitQuizGenerate}—trim 後非空批改規則且與 baseline 不同（不依賴 slot 回填，規則僅在題卡）。 */
+/** 「儲存規則並開始批改」可按：對齊 {@link canEnableUnitQuizGenerate}—trim 後非空批改規則且與 baseline 不同（不依賴 slot 回填，規則僅在題卡）；作答須非空。 */
 function canEnableUnitQuizGrade(card, slotIndex) {
   void slotIndex;
   if (!card || typeof card !== 'object') return false;
+  if (String(card.quiz_answer ?? '').trim() === '') return false;
   const gpTrim = String(card.gradingPrompt ?? '').trim();
   if (!gpTrim) return false;
   return String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '');
 }
 
-/** 「開始批改」（llm-grade-db）：對齊 {@link canEnableUnitQuizGenerateFromDb}—hasUsedSaveAndGradeOnce、規則未改動、{@link resolveUnitQuizRagQuizIdForLlm} 有效 */
+/** 「開始批改」（llm-grade-db）：對齊 {@link canEnableUnitQuizGenerateFromDb}—hasUsedSaveAndGradeOnce、規則未改動、{@link resolveUnitQuizRagQuizIdForLlm} 有效；作答須非空。 */
 function canEnableUnitQuizGradeDb(card, slotIndex) {
   if (!card || typeof card !== 'object') return false;
+  if (String(card.quiz_answer ?? '').trim() === '') return false;
   if (card.hasUsedSaveAndGradeOnce !== true) return false;
   if (String(card.gradingPrompt ?? '') !== String(card.gradingPromptBaseline ?? '')) return false;
   const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, card);
   return rqid != null && rqid >= 1;
 }
 
-/** 「開始批改」（合併 llm-grade／llm-grade-db）：非空批改規則且（規則已改動或可走後端已存規則） */
-function canEnableUnitQuizGradeMerged(card, slotIndex) {
-  return canEnableUnitQuizGrade(card, slotIndex) || canEnableUnitQuizGradeDb(card, slotIndex);
-}
-
 async function confirmGradeMerged(item) {
   if (!item || typeof item !== 'object') return;
   const slotIndex = activeUnitSlotIndex.value;
-  const dirty =
-    String(item.gradingPrompt ?? '') !== String(item.gradingPromptBaseline ?? '');
-  if (dirty || !canEnableUnitQuizGradeDb(item, slotIndex)) {
+  if (canEnableUnitQuizGrade(item, slotIndex)) {
     return confirmAnswer(item);
   }
-  return confirmAnswerGradeDb(item);
+  if (canEnableUnitQuizGradeDb(item, slotIndex)) {
+    return confirmAnswerGradeDb(item);
+  }
 }
 
 /** 該列出題文字：優先題卡本身，再以 slot（舊相容）回填 */
@@ -3826,9 +3842,9 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     gradingResponseJson,
     generateQuizResponseJson: null,
     quizUserPromptText: quizUserPromptTextResolved,
-    /** 曾成功「儲存並產生題目」或載入時後端已有出題規則時為 true，供「產生題目」（llm-generate-db）按鈕可啟用 */
+    /** 曾成功「儲存規則並產生題目」或載入時後端已有出題規則時為 true，供「產生題目」（llm-generate-db）按鈕可啟用 */
     hasUsedSaveAndGenerateOnce,
-    /** 曾成功「儲存並開始批改」或載入時後端已有批改規則時為 true，供「開始批改」（llm-grade-db）可啟用 */
+    /** 曾成功「儲存規則並開始批改」或載入時後端已有批改規則時為 true，供「開始批改」（llm-grade-db）可啟用 */
     hasUsedSaveAndGradeOnce,
     rag_quiz_id: positiveRagQuizIdFromQuizRow(quiz),
     rag_tab_id: rtid,
@@ -4872,7 +4888,7 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
 
     if (rqid == null || rqid < 1) {
       slotState.unitQuizCreateError =
-        '無法取得 rag_quiz_id。請在空白列填寫出題規則後按「儲存並產生題目」，或重新整理頁面。';
+        '無法取得 rag_quiz_id。請在空白列填寫出題規則後按「儲存規則並產生題目」，或重新整理頁面。';
       return;
     }
 
@@ -4919,12 +4935,9 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       return;
     }
 
-    /** 同一題重新產生：立即隱藏舊批改結果（合併 setCardAtSlot 亦會清空，避免短暫殘留） */
+    /** 同一題重新產生：立即清空作答／批改（合併 setCardAtSlot 亦會清空，避免 overlay 關閉前短暫殘留） */
     if (quizCardRow != null && typeof quizCardRow === 'object') {
-      quizCardRow.confirmed = false;
-      quizCardRow.gradingResult = '';
-      quizCardRow.gradingResponseJson = null;
-      quizCardRow.answer_id = null;
+      clearCardAnswerAndGradingState(quizCardRow);
       quizCardRow.hasUsedSaveAndGenerateOnce = true;
       quizCardRow.quizGenerateMode =
         ragQuizApiRowIsFollowUp(data) || followupMode ? 'followup' : 'normal';
@@ -4989,7 +5002,7 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
 
   if (rqid == null || rqid < 1) {
     slotState.unitQuizCreateError =
-      '無法取得 rag_quiz_id。請先用題型列「+」新增題庫，或按「儲存並產生題目」建立題列。';
+      '無法取得 rag_quiz_id。請先用題型列「+」新增題庫，或按「儲存規則並產生題目」建立題列。';
     return;
   }
 
@@ -5036,10 +5049,7 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
     }
 
     if (quizCardRow != null && typeof quizCardRow === 'object') {
-      quizCardRow.confirmed = false;
-      quizCardRow.gradingResult = '';
-      quizCardRow.gradingResponseJson = null;
-      quizCardRow.answer_id = null;
+      clearCardAnswerAndGradingState(quizCardRow);
     }
 
     slotState.unitDraftRagQuizId = null;
@@ -5244,14 +5254,9 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
           )
         : parseFollowupHistoryListFromSource(prev);
       /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
-      card.quiz_answer = '';
+      clearCardAnswerAndGradingState(card);
       card.hintVisible = prev.hintVisible ?? false;
       card.referenceAnswerVisible = prev.referenceAnswerVisible ?? false;
-      /** 題幹已由 LLM 更新，勿沿用上一版批改／作答對應（否則仍顯示舊評語） */
-      card.confirmed = false;
-      card.gradingResult = '';
-      card.gradingResponseJson = null;
-      card.answer_id = null;
       card.quizUserPromptText = promptSnap || prev.quizUserPromptText || '';
       card.gradingPrompt =
         answerPromptFromApi !== ''
@@ -5280,10 +5285,14 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
           ? 'followup'
           : (followupMode ? 'followup' : 'normal'));
       const merged = { ...prev, ...card };
+      clearCardAnswerAndGradingState(merged);
+      merged.quizGeneratedAt = Date.now();
       applyQuizHistoryToCard(merged, generateQuizResponseJson, slotIndex);
       syncQuizCardPromptBaselines(merged);
       sub[idx] = merged;
     } else {
+      clearCardAnswerAndGradingState(card);
+      card.quizGeneratedAt = Date.now();
       applyQuizHistoryToCard(card, generateQuizResponseJson, slotIndex);
       syncQuizCardPromptBaselines(card);
       sub.push(card);
@@ -5297,6 +5306,7 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
   }
 
   syncQuizCardPromptBaselines(card);
+  card.quizGeneratedAt = Date.now();
   state.cardList[slotIndex - 1] = card;
 }
 
@@ -5399,7 +5409,7 @@ async function confirmAnswerGradeDb(item) {
   }
 }
 
-/** 評分：POST /rag/tab/unit/quiz/llm-grade；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text。題卡區「儲存並開始批改」須批改規則非空且相對 baseline 已改動；送出時作答須非空否則靜默 return／顯示訊息。 */
+/** 評分：POST /rag/tab/unit/quiz/llm-grade；body 以 rag_id、rag_quiz_id、quiz_answer 為核心；quiz_content 可省略（後端自 Rag_Quiz 讀）；選填 rag_tab_id、answer_user_prompt_text。題卡區「儲存規則並開始批改」須批改規則非空且相對 baseline 已改動；送出時作答須非空否則靜默 return／顯示訊息。 */
 async function confirmAnswer(item) {
   if (!item.quiz_answer.trim()) return;
   if (!String(item.gradingPrompt ?? '').trim()) {
@@ -6958,8 +6968,8 @@ async function confirmAnswer(item) {
                         :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         extra-class="my-design-quiz-generate-btn"
                         :title="designSidePanelOnLeft
-                          ? '使用後端已儲存之出題規則開始出題；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設'
-                          : '使用後端已儲存之出題規則產生題目；須曾成功「儲存並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存並產生題目」，或於編輯 Modal 內重設'"
+                          ? '使用後端已儲存之出題規則開始出題；須曾成功「儲存規則並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存規則並產生題目」，或於編輯 Modal 內重設'
+                          : '使用後端已儲存之出題規則產生題目；須曾成功「儲存規則並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存規則並產生題目」，或於編輯 Modal 內重設'"
                         :aria-label="generateDbButtonLabel"
                         @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
@@ -6971,10 +6981,10 @@ async function confirmAnswer(item) {
                         :gradient-bias="work3LogoGradientBias"
                         :id-prefix="`bank-save-generate-quiz-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         extra-class="my-design-quiz-generate-btn"
-                        aria-label="儲存並產生題目"
+                        aria-label="儲存規則並產生題目"
                         @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
-                        儲存並產生題目
+                        儲存規則並產生題目
                       </LogoGradientPillButton>
                       <LogoGradientPillButton
                         v-if="
@@ -6985,10 +6995,10 @@ async function confirmAnswer(item) {
                         :gradient-bias="work3LogoGradientBias"
                         :id-prefix="`bank-save-generate-quiz-disabled-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         extra-class="my-design-quiz-generate-btn"
-                        aria-label="儲存並產生題目"
+                        aria-label="儲存規則並產生題目"
                         disabled
                       >
-                        儲存並產生題目
+                        儲存規則並產生題目
                       </LogoGradientPillButton>
                     </div>
                     <div
@@ -6996,6 +7006,7 @@ async function confirmAnswer(item) {
                       class="w-100 min-w-0"
                     >
                       <QuizCard
+                        :key="`bank-quiz-q-${activeUnitQuizCardRemountKey}`"
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
                         design-sub-block="question"
@@ -7031,6 +7042,7 @@ async function confirmAnswer(item) {
                     <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div class="w-100 min-w-0">
                       <QuizCard
+                        :key="`bank-quiz-a-${activeUnitQuizCardRemountKey}`"
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
                         design-sub-block="answer"
@@ -7041,6 +7053,7 @@ async function confirmAnswer(item) {
                     </div>
                     <div class="w-100 min-w-0">
                       <QuizCard
+                        :key="`bank-quiz-g-${activeUnitQuizCardRemountKey}`"
                         v-bind="designUnitQuizCardBind"
                         create-exam-bank-design-layout
                         design-sub-block="grading"
@@ -7108,10 +7121,10 @@ async function confirmAnswer(item) {
                       v-if="!getSlotFormState(activeUnitSlotIndex).loading && String(getSlotFormState(activeUnitSlotIndex).generateQuizTabId || '').trim()"
                       type="button"
                       class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2"
-                      aria-label="儲存並產生題目"
+                      aria-label="儲存規則並產生題目"
                       @click="generateQuiz(activeUnitSlotIndex)"
                     >
-                      儲存並產生題目
+                      儲存規則並產生題目
                     </button>
                   </div>
                 </div>

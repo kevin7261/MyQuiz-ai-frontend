@@ -25,7 +25,7 @@ const props = defineProps({
   promptDirty:          { type: Boolean, default: false },
   canStartFromSavedRules: { type: Boolean, default: false },
   canSaveAndStart:      { type: Boolean, default: false },
-  /** 非 design3 時「儲存並開始分析」的額外啟用條件（已登入且已選課） */
+  /** 非 design3 時「儲存規則並開始分析」的額外啟用條件（已登入且已選課） */
   canStart:             { type: Boolean, default: false },
 });
 
@@ -86,7 +86,7 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
                 tone="generate"
                 gradient-bias="work3"
                 extra-class="my-design-quiz-generate-btn"
-                title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存並開始分析」"
+                title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存規則並開始分析」"
                 aria-label="開始分析"
                 :aria-busy="props.loading || props.promptSaving"
                 @click="$emit('fetch-analysis-only')"
@@ -101,11 +101,11 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
                 gradient-bias="work3"
                 extra-class="my-design-quiz-generate-btn"
                 title="儲存分析規則並開始分析"
-                aria-label="儲存並開始分析"
+                aria-label="儲存規則並開始分析"
                 :aria-busy="props.loading || props.promptSaving"
                 @click="$emit('start-analysis')"
               >
-                儲存並開始分析
+                儲存規則並開始分析
               </LogoGradientPillButton>
               <!-- 兩者皆不可用：停用佔位按鈕 -->
               <LogoGradientPillButton
@@ -114,10 +114,10 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
                 tone="generate"
                 gradient-bias="work3"
                 extra-class="my-design-quiz-generate-btn"
-                aria-label="儲存並開始分析"
+                aria-label="儲存規則並開始分析"
                 disabled
               >
-                儲存並開始分析
+                儲存規則並開始分析
               </LogoGradientPillButton>
             </div>
 
@@ -156,12 +156,12 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
           type="button"
           class="btn rounded-pill my-font-md-400 px-4 py-2 my-button-black"
           title="儲存規則（若有修改）並開始分析"
-          aria-label="儲存並開始分析"
+          aria-label="儲存規則並開始分析"
           :disabled="props.promptSectionLoading || props.loading || props.promptSaving || !props.canStart"
           :aria-busy="props.loading || props.promptSaving"
           @click="$emit('start-analysis')"
         >
-          儲存並開始分析
+          儲存規則並開始分析
         </button>
       </div>
     </template>
