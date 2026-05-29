@@ -246,7 +246,7 @@
             <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break text-center" role="alert">{{ error }}</p>
             <button
               type="submit"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-login-view-submit-btn shadow-lg px-4 py-2 w-100"
               :disabled="loading || !canLogin"
               :aria-busy="loading"
             >
@@ -304,5 +304,23 @@
   -webkit-background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
+}
+
+.my-login-view-submit-btn {
+  --bs-box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+  border-color: transparent;
+  box-shadow: var(--bs-box-shadow-lg) !important;
+}
+
+.my-login-view-submit-btn:hover:not(:disabled),
+.my-login-view-submit-btn:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  color: var(--my-color-black);
+}
+
+.my-login-view-submit-btn:disabled {
+  opacity: 0.55;
 }
 </style>
