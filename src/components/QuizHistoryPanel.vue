@@ -1,6 +1,7 @@
 <script setup>
 /**
  * QuizHistoryPanel — 「先前出題」內容區（Modal 與題目區 tab 內嵌共用）
+ * 每筆含題目、參考答案、您的答案、評閱（一般／追問模式相同版面）。
  */
 import { computed } from 'vue';
 import { normalizeFollowupHistoryItem } from '../services/ragApi.js';
@@ -15,31 +16,27 @@ const props = defineProps({
   compact: { type: Boolean, default: false },
 });
 
-const followupEntries = computed(() => {
-  if (!props.isFollowup) return [];
+const historyEntries = computed(() => {
   const out = [];
   for (const item of props.historyList) {
-    if (typeof item === 'string') continue;
+    if (typeof item === 'string') {
+      const s = item.trim();
+      if (!s) continue;
+      out.push({
+        quiz_content: s,
+        answer_content: '',
+        quiz_answer_reference: '',
+        answer_critique: '',
+      });
+      continue;
+    }
     const normalized = normalizeFollowupHistoryItem(item);
     if (normalized) out.push(normalized);
   }
   return out;
 });
 
-const stemList = computed(() => {
-  if (props.isFollowup) return [];
-  return props.historyList
-    .map((s) => String(s ?? '').trim())
-    .filter((s) => s !== '');
-});
-
-/** 與 QuizCard 題幹相同：marked + DOMPurify */
-const stemHtmlList = computed(() => stemList.value.map((stem) => ({
-  stem,
-  html: renderMarkdownToSafeHtml(stem),
-})));
-
-const followupEntriesDisplay = computed(() => followupEntries.value.map((entry) => ({
+const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) => ({
   ...entry,
   quizContentHtml: renderMarkdownToSafeHtml(entry.quiz_content),
   referenceHtml: renderMarkdownToSafeHtml(entry.quiz_answer_reference),
@@ -72,14 +69,26 @@ const followupEntriesDisplay = computed(() => followupEntries.value.map((entry) 
           {{ quizTypeLabel || '—' }}
         </div>
       </div>
+      <div
+        v-if="isFollowup"
+        class="flex-shrink-0 align-self-end"
+      >
+        <span class="my-color-gray-1 my-font-sm-400">出題模式：追問</span>
+      </div>
+      <div
+        v-else
+        class="flex-shrink-0 align-self-end"
+      >
+        <span class="my-color-gray-1 my-font-sm-400">出題模式：一般</span>
+      </div>
     </div>
     <ol
-      v-if="isFollowup && followupEntriesDisplay.length > 0"
+      v-if="historyEntriesDisplay.length > 0"
       class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-4"
     >
       <li
-        v-for="(entry, hi) in followupEntriesDisplay"
-        :key="`quiz-followup-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
+        v-for="(entry, hi) in historyEntriesDisplay"
+        :key="`quiz-history-${hi}-${entry.quiz_content.slice(0, 24)}`"
         class="pe-2"
       >
         <div class="d-flex flex-column gap-2">
@@ -112,7 +121,7 @@ const followupEntriesDisplay = computed(() => followupEntries.value.map((entry) 
             </div>
           </div>
           <div>
-            <div class="my-color-gray-1 my-font-sm-400">回答</div>
+            <div class="my-color-gray-1 my-font-sm-400">您的答案</div>
             <div
               v-if="entry.answerHtml"
               class="my-markdown-rendered my-color-black lh-base text-break mt-1"
@@ -140,26 +149,6 @@ const followupEntriesDisplay = computed(() => followupEntries.value.map((entry) 
             </div>
           </div>
         </div>
-      </li>
-    </ol>
-    <ol
-      v-else-if="!isFollowup && stemHtmlList.length > 0"
-      class="my-font-md-400 my-color-black text-break mb-0 ps-3 d-flex flex-column gap-3"
-    >
-      <li
-        v-for="(item, hi) in stemHtmlList"
-        :key="`quiz-history-stem-${hi}-${item.stem.slice(0, 32)}`"
-        class="pe-2"
-      >
-        <div
-          v-if="item.html"
-          class="my-markdown-rendered lh-base text-break"
-          v-html="item.html"
-        />
-        <span
-          v-else
-          class="lh-base text-break"
-        >{{ item.stem }}</span>
       </li>
     </ol>
     <p

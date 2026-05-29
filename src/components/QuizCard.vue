@@ -1268,7 +1268,7 @@ const quizAnswerFieldDisabled = computed(
         <template v-if="useDesignFieldLabelInset">
           <section
             class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
-            aria-label="答案"
+            aria-label="您的答案"
           >
             <header class="my-design-quiz-field-inset__head">
               <div
@@ -1279,7 +1279,7 @@ const quizAnswerFieldDisabled = computed(
                   v-if="showAnswerHintRefTabs"
                   :class="designStemTabsClass"
                   role="tablist"
-                  aria-label="答案、提示與參考答案"
+                  aria-label="您的答案、提示與參考答案"
                 >
                   <button
                     type="button"
@@ -1289,7 +1289,7 @@ const quizAnswerFieldDisabled = computed(
                     :aria-selected="answerSectionTab === 'answer'"
                     @click="answerSectionTab = 'answer'"
                   >
-                    答案
+                    您的答案
                   </button>
                   <button
                     v-if="hasHintText"
@@ -1318,7 +1318,7 @@ const quizAnswerFieldDisabled = computed(
                   v-else
                   class="my-design-quiz-field-inset-label my-font-sm-400 mb-0"
                 >
-                  答案
+                  您的答案
                 </h3>
               </div>
               <div class="px-3 py-0">
@@ -1395,7 +1395,7 @@ const quizAnswerFieldDisabled = computed(
               v-if="showAnswerHintRefTabs && designUi"
               :class="designStemTabsClass"
               role="tablist"
-              aria-label="答案、提示與參考答案"
+              aria-label="您的答案、提示與參考答案"
             >
               <button
                 type="button"
@@ -1405,7 +1405,7 @@ const quizAnswerFieldDisabled = computed(
                 :aria-selected="answerSectionTab === 'answer'"
                 @click="answerSectionTab = 'answer'"
               >
-                答案
+                您的答案
               </button>
               <button
                 v-if="hasHintText"
@@ -1434,7 +1434,7 @@ const quizAnswerFieldDisabled = computed(
               v-else
               :for="`quiz-answer-${card.id}`"
               :class="designUi ? 'my-color-gray-1 flex-shrink-0 my-font-sm-400 mb-0' : 'form-label my-font-sm-600 mb-0 my-color-gray-1'"
-            >答案</label>
+            >您的答案</label>
             <div
               v-if="hintReferenceInModal && !designUi"
               class="d-inline-flex flex-wrap align-items-end justify-content-end gap-2 ms-auto"

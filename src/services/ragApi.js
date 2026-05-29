@@ -862,7 +862,7 @@ export function normalizeFollowupHistoryItem(item) {
     ?? '',
   ).trim();
   const answer_critique = String(
-    item.answer_critique ?? item.answerCritique ?? '',
+    item.answer_critique ?? item.answerCritique ?? item.gradingResult ?? '',
   ).trim();
   return { quiz_content, answer_content, quiz_answer_reference, answer_critique };
 }

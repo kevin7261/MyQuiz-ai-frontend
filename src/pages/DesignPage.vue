@@ -501,7 +501,7 @@ function designPackUnitTypeIconCss(unitType) {
                         style="border-color: var(--my-color-gray-3) !important;"
                       >
                         <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--active my-font-sm-400 my-color-black">題目</button>
-                        <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-gray-1">答案</button>
+                        <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-gray-1">您的答案</button>
                       </div>
                       <div
                         v-else-if="item.previewKind === 'prompt-block-title'"

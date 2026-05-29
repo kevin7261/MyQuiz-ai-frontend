@@ -102,6 +102,12 @@ import {
   readCreateBankTabUiPersisted,
   writeCreateBankTabUiPersisted,
 } from '../utils/createBankTabUiStorage.js';
+import {
+  applyCreateBankQuizDraftToCard,
+  clearCreateBankQuizDraftEntry,
+  writeCreateBankQuizDraftAnswer,
+  writeCreateBankQuizDraftCritique,
+} from '../utils/createBankQuizDraftCookie.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -255,7 +261,7 @@ function willRestoreBankTabUiForTab(tabId) {
   );
 }
 
-/** 題型「先前出題」：localStorage 備援（鍵 rag_tab_id|rag_unit_id|rag_quiz_id；GET 未帶 quiz_history_list 時重整仍可還原） */
+/** 題型「先前出題」：localStorage 備援（鍵 rag_tab_id|rag_unit_id|rag_quiz_id|出題模式；每筆含題目／答案／參考答案／批改結果） */
 const CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX = 'myquiz:createBankQuizHistory:v1:';
 
 function createBankQuizHistoryStorageKey(personId) {
@@ -280,28 +286,115 @@ function writeRagQuizHistoryMap(personId, byKey) {
   try {
     localStorage.setItem(
       createBankQuizHistoryStorageKey(personId),
-      JSON.stringify({ v: 2, byKey })
+      JSON.stringify({ v: 3, byKey })
     );
   } catch {
     /* private mode / quota */
   }
 }
 
-function mergeQuizHistoryLists(...sources) {
+function richQuizHistoryDedupKey(item) {
+  return [
+    item.quiz_content,
+    item.answer_content,
+    item.quiz_answer_reference,
+    item.answer_critique,
+  ].join('\0');
+}
+
+/** 先前出題單筆：題目／答案／參考答案／批改結果（相容舊版僅題幹字串） */
+function parseRichQuizHistoryListFromSource(source) {
+  let list = source;
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    list =
+      source.quiz_followup_history_list
+      ?? source.quizFollowupHistoryList
+      ?? source.quiz_history_list
+      ?? source.quizHistoryList;
+  }
+  if (typeof list === 'string') {
+    const trimmed = list.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        list = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    } else {
+      return [];
+    }
+  }
+  if (!Array.isArray(list)) return [];
   const seen = new Set();
   const out = [];
-  for (const src of sources) {
-    for (const s of parseQuizHistoryListFromSource(src)) {
-      if (seen.has(s)) continue;
+  for (const item of list) {
+    if (typeof item === 'string') {
+      const s = item.trim();
+      if (!s || seen.has(s)) continue;
       seen.add(s);
-      out.push(s);
+      out.push({
+        quiz_content: s,
+        answer_content: '',
+        quiz_answer_reference: '',
+        answer_critique: '',
+      });
+      continue;
     }
+    const normalized = normalizeFollowupHistoryItem(item);
+    if (!normalized) continue;
+    const key = richQuizHistoryDedupKey(normalized);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalized);
   }
   return out;
 }
 
-/** 先前出題錨點：rag_tab_id + rag_unit_id + rag_quiz_id 三者須齊全 */
-function quizHistoryAnchorFromRow(row) {
+function richQuizHistoryRichnessScore(entry) {
+  if (!entry || typeof entry !== 'object') return 0;
+  return (
+    (String(entry.answer_content ?? '').trim() ? 4 : 0)
+    + (String(entry.quiz_answer_reference ?? '').trim() ? 2 : 0)
+    + (String(entry.answer_critique ?? '').trim() ? 1 : 0)
+  );
+}
+
+function mergeRichQuizHistoryLists(...sources) {
+  const stemOrder = [];
+  const bestByStem = new Map();
+  for (const src of sources) {
+    for (const entry of parseRichQuizHistoryListFromSource(src)) {
+      const stem = String(entry?.quiz_content ?? '').trim();
+      if (!stem) continue;
+      if (!bestByStem.has(stem)) stemOrder.push(stem);
+      const prev = bestByStem.get(stem);
+      if (
+        !prev
+        || richQuizHistoryRichnessScore(entry) > richQuizHistoryRichnessScore(prev)
+      ) {
+        bestByStem.set(stem, entry);
+      }
+    }
+  }
+  return stemOrder.map((stem) => bestByStem.get(stem));
+}
+
+function quizHistoryListFieldForMode(generateMode) {
+  return generateMode === 'followup' ? 'quiz_followup_history_list' : 'quiz_history_list';
+}
+
+function richHistoryFromSourceForAnchor(source, anchor) {
+  if (!source) return [];
+  if (Array.isArray(source)) return parseRichQuizHistoryListFromSource(source);
+  if (typeof source !== 'object') return [];
+  const field = quizHistoryListFieldForMode(anchor?.generate_mode ?? 'normal');
+  return parseRichQuizHistoryListFromSource(source[field] ?? source);
+}
+
+/** 先前出題錨點：rag_tab_id + rag_unit_id + rag_quiz_id + 出題模式（一般／追問）四者須齊全 */
+function quizHistoryAnchorFromRow(row, slotIndex = null) {
   if (!row || typeof row !== 'object') return null;
   const rag_tab_id = String(row.rag_tab_id ?? '').trim();
   const rag_unit_id = row.rag_unit_id != null ? Math.trunc(Number(row.rag_unit_id)) : NaN;
@@ -309,12 +402,22 @@ function quizHistoryAnchorFromRow(row) {
   if (!rag_tab_id || !Number.isFinite(rag_unit_id) || rag_unit_id < 1 || rag_quiz_id == null) {
     return null;
   }
-  return { rag_tab_id, rag_unit_id, rag_quiz_id };
+  let generate_mode = 'normal';
+  if (row.quizGenerateMode === 'followup' || row.quizGenerateMode === 'normal') {
+    generate_mode = row.quizGenerateMode;
+  } else if (row.generate_mode === 'followup' || row.generate_mode === 'normal') {
+    generate_mode = row.generate_mode;
+  } else if (ragQuizApiRowIsFollowUp(row)) {
+    generate_mode = 'followup';
+  } else if (slotIndex != null) {
+    generate_mode = resolveUnitQuizGenerateMode(slotIndex, row);
+  }
+  return { rag_tab_id, rag_unit_id, rag_quiz_id, generate_mode };
 }
 
 function quizHistoryAnchorKey(anchor) {
   if (!anchor) return '';
-  return `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}`;
+  return `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}|${anchor.generate_mode}`;
 }
 
 function quizHistoryAnchorsEqual(a, b) {
@@ -323,18 +426,21 @@ function quizHistoryAnchorsEqual(a, b) {
     a.rag_tab_id === b.rag_tab_id
     && a.rag_unit_id === b.rag_unit_id
     && a.rag_quiz_id === b.rag_quiz_id
+    && a.generate_mode === b.generate_mode
   );
 }
 
-/** 同分頁內所有共用同一組 rag_tab_id／rag_unit_id／rag_quiz_id 的題卡 */
-function cardsSharingQuizHistoryAnchor(anchor) {
+/** 同分頁內共用同一組 rag_tab_id／rag_unit_id／rag_quiz_id／出題模式 的題卡 */
+function cardsSharingQuizHistoryAnchor(anchor, slotIndex = null) {
   if (!anchor) return [];
   const out = [];
   const stacks = currentState.value.unitSlotQuizCards ?? [];
-  for (const stack of stacks) {
+  for (let si = 0; si < stacks.length; si += 1) {
+    const stack = stacks[si];
     if (!Array.isArray(stack)) continue;
+    const slot = slotIndex ?? si + 1;
     for (const card of stack) {
-      if (quizHistoryAnchorsEqual(quizHistoryAnchorFromRow(card), anchor)) out.push(card);
+      if (quizHistoryAnchorsEqual(quizHistoryAnchorFromRow(card, slot), anchor)) out.push(card);
     }
   }
   return out;
@@ -345,68 +451,134 @@ function storedQuizHistoryForAnchor(personId, anchor) {
   const key = quizHistoryAnchorKey(anchor);
   if (!pid || !key) return [];
   const map = readRagQuizHistoryMap(pid);
-  if (map[key] != null) return parseQuizHistoryListFromSource(map[key]);
-  /** 舊版僅 rag_quiz_id 鍵：遷移前資料仍可读 */
-  const legacyKey = String(anchor.rag_quiz_id);
-  if (legacyKey !== key && map[legacyKey] != null) {
-    return parseQuizHistoryListFromSource(map[legacyKey]);
+  if (map[key] != null) return parseRichQuizHistoryListFromSource(map[key]);
+  /** 舊版三 id 鍵（無出題模式）：僅一般模式沿用 */
+  if (anchor.generate_mode === 'normal') {
+    const legacyTriple = `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}`;
+    if (legacyTriple !== key && map[legacyTriple] != null) {
+      return parseRichQuizHistoryListFromSource(map[legacyTriple]);
+    }
+    const legacyQuizId = String(anchor.rag_quiz_id);
+    if (legacyQuizId !== key && map[legacyQuizId] != null) {
+      return parseRichQuizHistoryListFromSource(map[legacyQuizId]);
+    }
   }
   return [];
 }
 
-function resolveQuizHistoryForRagQuiz(personId, ...sources) {
-  let anchor = null;
-  const parts = [];
-  for (const src of sources) {
-    if (!anchor) anchor = quizHistoryAnchorFromRow(src);
-    parts.push(parseQuizHistoryListFromSource(src));
-  }
+function resolveRichQuizHistoryForAnchor(personId, anchor, ...sources) {
+  const parts = sources.map((src) => richHistoryFromSourceForAnchor(src, anchor));
   if (anchor) parts.push(storedQuizHistoryForAnchor(personId, anchor));
-  return mergeQuizHistoryLists(...parts);
+  return mergeRichQuizHistoryLists(...parts);
 }
 
 function persistQuizHistoryForAnchor(personId, anchor, list) {
   const pid = String(personId ?? '').trim();
   const key = quizHistoryAnchorKey(anchor);
   if (!pid || !key) return;
-  const normalized = parseQuizHistoryListFromSource(list);
+  const normalized = parseRichQuizHistoryListFromSource(list);
   const map = readRagQuizHistoryMap(pid);
   map[key] = normalized;
-  const legacyKey = String(anchor.rag_quiz_id);
-  if (legacyKey !== key && map[legacyKey] != null) {
-    delete map[legacyKey];
+  const legacyTriple = `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}`;
+  if (legacyTriple !== key && map[legacyTriple] != null) {
+    delete map[legacyTriple];
+  }
+  const legacyQuizId = String(anchor.rag_quiz_id);
+  if (legacyQuizId !== key && map[legacyQuizId] != null) {
+    delete map[legacyQuizId];
   }
   writeRagQuizHistoryMap(pid, map);
 }
 
-/** 合併題卡／產題 API 之歷史並寫入 localStorage（鍵：rag_tab_id|rag_unit_id|rag_quiz_id） */
+/** 題卡「您的答案／評閱」cookie 錨點鍵（rag_tab_id|rag_unit_id|rag_quiz_id|出題模式） */
+function quizDraftAnchorKeyForCard(card, slotIndex = null) {
+  if (!card || typeof card !== 'object') return '';
+  enrichQuizHistoryIdsOnCard(card, slotIndex);
+  const anchor = quizHistoryAnchorFromRow(card, slotIndex);
+  return anchor ? quizHistoryAnchorKey(anchor) : '';
+}
+
+function persistQuizDraftAnswerToCookie(card, slotIndex = null) {
+  const personId = getPersonId(authStore);
+  const key = quizDraftAnchorKeyForCard(card, slotIndex);
+  if (!personId || !key) return;
+  writeCreateBankQuizDraftAnswer(personId, key, String(card.quiz_answer ?? ''));
+}
+
+function persistQuizDraftCritiqueToCookie(card, slotIndex = null) {
+  const personId = getPersonId(authStore);
+  const key = quizDraftAnchorKeyForCard(card, slotIndex);
+  const critique = String(card.gradingResult ?? '').trim();
+  if (!personId || !key || !critique) return;
+  writeCreateBankQuizDraftCritique(
+    personId,
+    key,
+    critique,
+    card.gradingResponseJson ?? null,
+  );
+}
+
+/** 批改成功後將完整問答寫入 localStorage（供先前出題顯示；與重新產題時 append 互補） */
+function persistGradedRoundToQuizHistory(card, slotIndex = null) {
+  if (!card || typeof card !== 'object') return;
+  if (!String(card.quiz ?? '').trim()) return;
+  const entry = followupHistoryEntryFromQuizCard(card);
+  if (!entry?.quiz_content) return;
+  const personId = getPersonId(authStore);
+  enrichQuizHistoryIdsOnCard(card, slotIndex);
+  const anchor = quizHistoryAnchorFromRow(card, slotIndex);
+  if (!personId || !anchor) return;
+  const stored = storedQuizHistoryForAnchor(personId, anchor);
+  persistQuizHistoryForAnchor(
+    personId,
+    anchor,
+    appendRichQuizHistory(stored, entry),
+  );
+}
+
+/** 補齊先前出題錨點三 id（rag_tab_id／rag_unit_id／rag_quiz_id）以便寫入 localStorage */
+function enrichQuizHistoryIdsOnCard(card, slotIndex = null) {
+  if (!card || typeof card !== 'object') return;
+  const meta = slotIndex != null ? getRagQuizUnitMeta(slotIndex) : { rag_tab_id: '', rag_unit_id: 0 };
+  const state = currentState.value;
+  const rag = currentRagItem.value;
+  if (!String(card.rag_tab_id ?? '').trim()) {
+    let tabId = meta.rag_tab_id;
+    if (!tabId) {
+      tabId =
+        String(rag?.rag_tab_id ?? '').trim()
+        || String(state.zipTabId ?? '').trim()
+        || String(activeTabId.value ?? '').trim();
+      if (isNewTabId(tabId)) tabId = String(state.zipTabId ?? '').trim();
+    }
+    if (tabId) card.rag_tab_id = tabId;
+  }
+  if (card.rag_unit_id == null || Number(card.rag_unit_id) < 1) {
+    if (meta.rag_unit_id >= 1) card.rag_unit_id = meta.rag_unit_id;
+  }
+}
+
+/** 合併題卡／產題 API 之歷史並寫入 localStorage（鍵：rag_tab_id|rag_unit_id|rag_quiz_id|出題模式） */
 function applyQuizHistoryToCard(card, generateQuizResponseJson = null, slotIndex = null) {
   if (!card || typeof card !== 'object') return;
   const personId = getPersonId(authStore);
-  if (!quizHistoryAnchorFromRow(card) && slotIndex != null) {
-    const meta = getRagQuizUnitMeta(slotIndex);
-    if (!String(card.rag_tab_id ?? '').trim() && meta.rag_tab_id) {
-      card.rag_tab_id = meta.rag_tab_id;
-    }
-    if (
-      (card.rag_unit_id == null || Number(card.rag_unit_id) < 1)
-      && meta.rag_unit_id >= 1
-    ) {
-      card.rag_unit_id = meta.rag_unit_id;
-    }
-  }
-  const anchor = quizHistoryAnchorFromRow(card) ?? quizHistoryAnchorFromRow(generateQuizResponseJson);
-  const historySources = anchor
-    ? cardsSharingQuizHistoryAnchor(anchor)
-    : [card];
-  if (historySources.length === 0) historySources.push(card);
-  card.quiz_history_list = resolveQuizHistoryForRagQuiz(
+  enrichQuizHistoryIdsOnCard(card, slotIndex);
+  let anchor =
+    quizHistoryAnchorFromRow(card, slotIndex)
+    ?? quizHistoryAnchorFromRow(generateQuizResponseJson, slotIndex);
+  const field = quizHistoryListFieldForMode(anchor?.generate_mode ?? 'normal');
+  /** 須含本次更新的 card；僅讀 stack 舊列會覆寫掉剛併入的完整問答 */
+  const stackCards = anchor ? cardsSharingQuizHistoryAnchor(anchor, slotIndex) : [];
+  const historySources = [...stackCards.filter((c) => c !== card), card];
+  card[field] = resolveRichQuizHistoryForAnchor(
     personId,
+    anchor,
     ...historySources,
     generateQuizResponseJson
   );
-  if (card.quiz_history_list.length > 0 && anchor) {
-    persistQuizHistoryForAnchor(personId, anchor, card.quiz_history_list);
+  anchor = quizHistoryAnchorFromRow(card, slotIndex) ?? anchor;
+  if (card[field].length > 0 && anchor) {
+    persistQuizHistoryForAnchor(personId, anchor, card[field]);
   }
 }
 
@@ -959,8 +1131,16 @@ const loadingOverlayText = computed(() => {
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup-db') return '追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-followup') return '儲存規則並追問出題中...';
   if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate-db') return generateDbOverlayLabel.value;
-  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') return '儲存規則並產生題目中...';
-  if (hasAnySlotGenerating.value) return '儲存規則並產生題目中...';
+  if (activeUnitQuizLoadingOverlayKind.value === 'llm-generate') {
+    return props.designSidePanelOnLeft
+      ? generateDbOverlayLabel.value
+      : '儲存規則並產生題目中...';
+  }
+  if (hasAnySlotGenerating.value) {
+    return props.designSidePanelOnLeft
+      ? generateDbOverlayLabel.value
+      : '儲存規則並產生題目中...';
+  }
   const st = currentState.value;
   if (st?.zipLoading) return '上傳中...';
   if (st?.packLoading) return '建立單元中...';
@@ -2500,7 +2680,15 @@ function getRagQuizUnitMeta(slotIndex) {
   const state = currentState.value;
   const tabs = state.unitTabOrder ?? [];
   const t = tabs[slotIndex - 1];
-  const ragTabId = t ? String(t.ragTabId ?? '').trim() : '';
+  let ragTabId = t ? String(t.ragTabId ?? '').trim() : '';
+  if (!ragTabId) {
+    const rag = currentRagItem.value;
+    ragTabId =
+      String(rag?.rag_tab_id ?? '').trim()
+      || String(state.zipTabId ?? '').trim()
+      || String(activeTabId.value ?? '').trim();
+    if (isNewTabId(ragTabId)) ragTabId = String(state.zipTabId ?? '').trim();
+  }
   const ru = t?.ragUnitDbId != null ? Number(t.ragUnitDbId) : 0;
   return {
     rag_tab_id: ragTabId,
@@ -2939,8 +3127,11 @@ function syncQuizCardPromptBaselines(row) {
 }
 
 /** 重新出題後清空使用者作答與批改結果（保留題幹、規則等其餘欄位） */
-function clearCardAnswerAndGradingState(row) {
+function clearCardAnswerAndGradingState(row, slotIndex = null) {
   if (!row || typeof row !== 'object') return;
+  const personId = getPersonId(authStore);
+  const draftKey = quizDraftAnchorKeyForCard(row, slotIndex);
+  if (personId && draftKey) clearCreateBankQuizDraftEntry(personId, draftKey);
   row.quiz_answer = '';
   row.confirmed = false;
   row.gradingResult = '';
@@ -3070,6 +3261,38 @@ function canEnableUnitQuizGenerateFromDb(card, slotIndex) {
   if (isQuizUserPromptDirty(card)) return false;
   const rqid = resolveUnitQuizRagQuizIdForLlm(slotIndex, card);
   return rqid != null && rqid >= 1;
+}
+
+/** 單一「開始出題／產生題目」按鈕：規則已改走 llm-generate，否則 llm-generate-db */
+function canEnableUnitQuizGenerateMerged(card, slotIndex) {
+  if (!card || typeof card !== 'object') return false;
+  if (isRagQuizMarkedForExam(card)) {
+    return canEnableUnitQuizGenerateFromDb(card, slotIndex);
+  }
+  return (
+    canEnableUnitQuizGenerate(card, slotIndex)
+    || canEnableUnitQuizGenerateFromDb(card, slotIndex)
+  );
+}
+
+async function submitUnitQuizGenerateMerged(slotIndex, quizCardRow = null) {
+  if (
+    quizCardRow != null
+    && !isRagQuizMarkedForExam(quizCardRow)
+    && canEnableUnitQuizGenerate(quizCardRow, slotIndex)
+  ) {
+    return submitUnitQuizLlmGenerate(slotIndex, quizCardRow);
+  }
+  if (canEnableUnitQuizGenerateFromDb(quizCardRow, slotIndex)) {
+    return submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow);
+  }
+}
+
+/** 稿頁「開始出題」：常駐顯示；loading 或不可送出時 disabled（對齊 QuizCard 開始批改） */
+function unitQuizGenerateButtonDisabled(card, slotIndex) {
+  const slot = getSlotFormState(slotIndex);
+  if (slot?.unitQuizCreateLoading) return true;
+  return !canEnableUnitQuizGenerateMerged(card, slotIndex);
 }
 
 /** 「儲存規則並開始批改」可按：對齊 {@link canEnableUnitQuizGenerate}—trim 後非空批改規則且與 baseline 不同（不依賴 slot 回填，規則僅在題卡）；作答須非空。 */
@@ -3566,37 +3789,6 @@ function parsePositiveQuizId(raw) {
   return Math.floor(n);
 }
 
-/** 自 API／題卡解析已出題幹列表（去重、去空白；支援 JSON 字串） */
-function parseQuizHistoryListFromSource(source) {
-  let list = source;
-  if (source && typeof source === 'object' && !Array.isArray(source)) {
-    list = source.quiz_history_list ?? source.quizHistoryList;
-  }
-  if (typeof list === 'string') {
-    const trimmed = list.trim();
-    if (!trimmed) return [];
-    if (trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        list = Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    } else {
-      return [];
-    }
-  }
-  if (!Array.isArray(list)) return [];
-  const seen = new Set();
-  const out = [];
-  for (const item of list) {
-    const s = String(item ?? '').trim();
-    if (!s || seen.has(s)) continue;
-    seen.add(s);
-    out.push(s);
-  }
-  return out;
-}
 
 /** 供追問 llm-generate-followup：含儲存歷史與當前問答（重新產生／繼續追問時接續） */
 function unitQuizFollowupHistoryListForLlm(quizCardRow) {
@@ -3622,9 +3814,31 @@ function unitQuizFollowupHistoryListForLlm(quizCardRow) {
   return out;
 }
 
-/** 供 Modal：追問模式過去問答（不含當前題） */
-function unitQuizFollowupHistoryListForDisplay(quizCardRow) {
-  return parseFollowupHistoryListFromSource(quizCardRow);
+/** 供 Modal 顯示：排除當前題幹 */
+function finalizeQuizHistoryListForDisplay(quizCardRow, merged) {
+  const currentStem = String(quizCardRow?.quiz ?? '').trim();
+  if (!currentStem) return merged;
+  return merged.filter(
+    (e) => String(e.quiz_content ?? '').trim() !== currentStem,
+  );
+}
+
+/** 供 Modal：追問模式過去問答（不含當前題；同四鍵錨點） */
+function unitQuizFollowupHistoryListForDisplay(quizCardRow, slotIndex = activeUnitSlotIndex.value) {
+  const personId = getPersonId(authStore);
+  const anchor = quizHistoryAnchorFromRow(
+    quizCardRow != null && typeof quizCardRow === 'object'
+      ? { ...quizCardRow, quizGenerateMode: 'followup' }
+      : null,
+    slotIndex,
+  );
+  if (!anchor || anchor.generate_mode !== 'followup') {
+    return parseRichQuizHistoryListFromSource(quizCardRow?.quiz_followup_history_list ?? quizCardRow);
+  }
+  const cards = cardsSharingQuizHistoryAnchor(anchor, slotIndex);
+  const sources = cards.length > 0 ? cards : [quizCardRow];
+  const merged = resolveRichQuizHistoryForAnchor(personId, anchor, ...sources);
+  return finalizeQuizHistoryListForDisplay(quizCardRow, merged);
 }
 
 /** 將舊問答併入追問歷史（重新產生前） */
@@ -3647,21 +3861,36 @@ function appendFollowupToQuizHistory(existingHistory, pair) {
   return [...base, entry];
 }
 
-/** 供 Modal：目前題型 tab 過去出過的題幹（不含當前題幹；同 rag_tab_id／rag_unit_id／rag_quiz_id） */
-function unitQuizHistoryListForDisplay(quizCardRow) {
+/** 供 Modal：一般模式過去問答（不含當前題；同四鍵錨點） */
+function unitQuizHistoryListForDisplay(quizCardRow, slotIndex = activeUnitSlotIndex.value) {
   const personId = getPersonId(authStore);
-  const anchor = quizHistoryAnchorFromRow(quizCardRow);
-  if (!anchor) return parseQuizHistoryListFromSource(quizCardRow);
-  const cards = cardsSharingQuizHistoryAnchor(anchor);
+  const anchor = quizHistoryAnchorFromRow(
+    quizCardRow != null && typeof quizCardRow === 'object'
+      ? { ...quizCardRow, quizGenerateMode: 'normal' }
+      : null,
+    slotIndex,
+  );
+  if (!anchor || anchor.generate_mode !== 'normal') {
+    return parseRichQuizHistoryListFromSource(quizCardRow?.quiz_history_list ?? quizCardRow);
+  }
+  const cards = cardsSharingQuizHistoryAnchor(anchor, slotIndex);
   const sources = cards.length > 0 ? cards : [quizCardRow];
-  return resolveQuizHistoryForRagQuiz(personId, ...sources);
+  const merged = resolveRichQuizHistoryForAnchor(personId, anchor, ...sources);
+  return finalizeQuizHistoryListForDisplay(quizCardRow, merged);
 }
 
-/** 供 llm-generate：含儲存歷史與當前題幹（重新產生時避免重複；同三 id 錨點） */
-function unitQuizHistoryListForLlm(quizCardRow) {
-  const base = unitQuizHistoryListForDisplay(quizCardRow);
-  const seen = new Set(base);
-  const out = [...base];
+/** 供 llm-generate：含儲存歷史與當前題幹（重新產生時避免重複；同四鍵錨點） */
+function unitQuizHistoryListForLlm(quizCardRow, slotIndex = activeUnitSlotIndex.value) {
+  const base = unitQuizHistoryListForDisplay(quizCardRow, slotIndex);
+  const seen = new Set();
+  const out = [];
+  for (const item of base) {
+    const stem = String(item?.quiz_content ?? item ?? '').trim();
+    if (stem && !seen.has(stem)) {
+      seen.add(stem);
+      out.push(stem);
+    }
+  }
   const stem = String(quizCardRow?.quiz ?? '').trim();
   if (stem && !seen.has(stem)) out.push(stem);
   return out;
@@ -3685,7 +3914,7 @@ function unitQuizGeneratedQuestionCount(quizCardRow) {
     const hasHistory = unitQuizFollowupHistoryListForDisplay(quizCardRow).length > 0;
     return hasCurrent || hasHistory ? 1 : 0;
   }
-  return unitQuizHistoryListForLlm(quizCardRow).length;
+  return unitQuizHistoryListForLlm(quizCardRow, activeUnitSlotIndex.value).length;
 }
 
 /** 右側欄：單元內各題型題目筆數加總 */
@@ -3696,15 +3925,15 @@ function unitQuizStackQuestionCount(stack) {
     .reduce((sum, row) => sum + unitQuizGeneratedQuestionCount(row), 0);
 }
 
-/** 將舊題幹併入歷史（重新產生前） */
-function appendStemToQuizHistory(existingHistory, stem) {
-  const s = String(stem ?? '').trim();
-  const base = Array.isArray(existingHistory)
-    ? parseQuizHistoryListFromSource(existingHistory)
-    : parseQuizHistoryListFromSource(existingHistory);
-  if (!s) return base;
-  if (base.includes(s)) return base;
-  return [...base, s];
+/** 將舊題問答併入歷史（重新產生前；含題目／答案／參考答案／批改結果） */
+function appendRichQuizHistory(existingHistory, entrySource) {
+  const entry =
+    normalizeFollowupHistoryItem(entrySource) ?? followupHistoryEntryFromQuizCard(entrySource);
+  const base = parseRichQuizHistoryListFromSource(existingHistory);
+  if (!entry?.quiz_content) return base;
+  const key = richQuizHistoryDedupKey(entry);
+  if (base.some((item) => richQuizHistoryDedupKey(item) === key)) return base;
+  return [...base, entry];
 }
 
 /** 自題目列／題卡取下正整數 rag_quiz_id（llm-generate 錨點；相容後端別名） */
@@ -3825,7 +4054,16 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     String(quizUserPromptTextResolved ?? '').trim() !== '';
   const hasUsedSaveAndGradeOnce = gradingPrompt !== '';
   const personId = getPersonId(authStore);
-  const quiz_history_list = resolveQuizHistoryForRagQuiz(personId, quiz);
+  const generateMode = ragQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal';
+  const anchor = quizHistoryAnchorFromRow({
+    rag_tab_id: rtid,
+    rag_unit_id: ruid,
+    rag_quiz_id: positiveRagQuizIdFromQuizRow(quiz),
+    quizGenerateMode: generateMode,
+  });
+  const resolvedHistory = anchor
+    ? resolveRichQuizHistoryForAnchor(personId, anchor, quiz)
+    : parseRichQuizHistoryListFromSource(quiz);
   const card = {
     id: nextCardId(),
     quiz: quiz.quiz_content ?? '',
@@ -3857,16 +4095,19 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
     answer_id,
     gradingPrompt,
     quizName: quizNameResolved,
-    quiz_history_list,
-    quiz_followup_history_list: parseFollowupHistoryListFromSource(quiz),
-    ...(hasUsedSaveAndGenerateOnce
-      ? { quizGenerateMode: ragQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal' }
-      : {}),
+    quiz_history_list: generateMode === 'normal' ? resolvedHistory : [],
+    quiz_followup_history_list:
+      generateMode === 'followup'
+        ? resolvedHistory
+        : parseRichQuizHistoryListFromSource(quiz.quiz_followup_history_list ?? quiz),
+    ...(hasUsedSaveAndGenerateOnce ? { quizGenerateMode: generateMode } : {}),
   };
+  if (anchor) {
+    applyCreateBankQuizDraftToCard(card, personId, quizHistoryAnchorKey(anchor));
+  }
   syncQuizCardPromptBaselines(card);
-  if (quiz_history_list.length > 0) {
-    const anchor = quizHistoryAnchorFromRow(card);
-    if (anchor) persistQuizHistoryForAnchor(personId, anchor, quiz_history_list);
+  if (resolvedHistory.length > 0 && anchor) {
+    persistQuizHistoryForAnchor(personId, anchor, resolvedHistory);
   }
   return card;
 }
@@ -4935,9 +5176,8 @@ async function submitUnitQuizLlmGenerate(slotIndex, quizCardRow = null) {
       return;
     }
 
-    /** 同一題重新產生：立即清空作答／批改（合併 setCardAtSlot 亦會清空，避免 overlay 關閉前短暫殘留） */
+    /** 同一題重新產生：合併 setCardAtSlot 會快照問答併入先前出題，不在此清空（避免歷史只剩題幹） */
     if (quizCardRow != null && typeof quizCardRow === 'object') {
-      clearCardAnswerAndGradingState(quizCardRow);
       quizCardRow.hasUsedSaveAndGenerateOnce = true;
       quizCardRow.quizGenerateMode =
         ragQuizApiRowIsFollowUp(data) || followupMode ? 'followup' : 'normal';
@@ -5049,7 +5289,7 @@ async function submitUnitQuizLlmGenerateDb(slotIndex, quizCardRow = null) {
     }
 
     if (quizCardRow != null && typeof quizCardRow === 'object') {
-      clearCardAnswerAndGradingState(quizCardRow);
+      quizCardRow.hasUsedSaveAndGenerateOnce = true;
     }
 
     slotState.unitDraftRagQuizId = null;
@@ -5242,19 +5482,19 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
     }
     if (idx >= 0) {
       const prev = sub[idx];
+      const prevRoundSnapshot = followupHistoryEntryFromQuizCard(prev);
       card.id = prev.id;
-      card.quiz_history_list = appendStemToQuizHistory(
-        parseQuizHistoryListFromSource(prev),
-        prev.quiz
-      );
+      card.quiz_history_list = followupMode
+        ? parseRichQuizHistoryListFromSource(prev.quiz_history_list)
+        : appendRichQuizHistory(prev.quiz_history_list, prevRoundSnapshot ?? prev);
       card.quiz_followup_history_list = followupMode
         ? appendFollowupToQuizHistory(
             parseFollowupHistoryListFromSource(prev),
-            followupHistoryEntryFromQuizCard(prev),
+            prevRoundSnapshot ?? followupHistoryEntryFromQuizCard(prev),
           )
-        : parseFollowupHistoryListFromSource(prev);
+        : parseRichQuizHistoryListFromSource(prev.quiz_followup_history_list);
       /** 重新產生題目時須帶入新題的暫存參考答案；勿沿用上一版題幹留在答案欄的內容 */
-      clearCardAnswerAndGradingState(card);
+      clearCardAnswerAndGradingState(card, slotIndex);
       card.hintVisible = prev.hintVisible ?? false;
       card.referenceAnswerVisible = prev.referenceAnswerVisible ?? false;
       card.quizUserPromptText = promptSnap || prev.quizUserPromptText || '';
@@ -5285,16 +5525,22 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
           ? 'followup'
           : (followupMode ? 'followup' : 'normal'));
       const merged = { ...prev, ...card };
-      clearCardAnswerAndGradingState(merged);
+      clearCardAnswerAndGradingState(merged, slotIndex);
       merged.quizGeneratedAt = Date.now();
       applyQuizHistoryToCard(merged, generateQuizResponseJson, slotIndex);
       syncQuizCardPromptBaselines(merged);
+      if (String(merged.quiz ?? '').trim()) {
+        merged.hasUsedSaveAndGenerateOnce = true;
+      }
       sub[idx] = merged;
     } else {
-      clearCardAnswerAndGradingState(card);
+      clearCardAnswerAndGradingState(card, slotIndex);
       card.quizGeneratedAt = Date.now();
       applyQuizHistoryToCard(card, generateQuizResponseJson, slotIndex);
       syncQuizCardPromptBaselines(card);
+      if (String(card.quiz ?? '').trim()) {
+        card.hasUsedSaveAndGenerateOnce = true;
+      }
       sub.push(card);
     }
     state.unitSlotQuizCards[slotIndex - 1] = sortUnitQuizCardsByRagQuizId(sub);
@@ -5396,12 +5642,15 @@ async function confirmAnswerGradeDb(item) {
   }
   gradingSubmittingCardId.value = item.id;
   gradingSubmittingOverlayKind.value = 'llm-grade-db';
+  persistQuizDraftAnswerToCookie(item, activeUnitSlotIndex.value);
   try {
     await submitGrade(item, { sourceTabId, ragId }, { ragGradeUsesStoredPrompt: true });
     if (item.confirmed) {
       item.gradingPromptBaseline = String(item.gradingPrompt ?? '');
       item.quizAnswerBaseline = String(item.quiz_answer ?? '');
       item.hasUsedSaveAndGradeOnce = true;
+      persistQuizDraftCritiqueToCookie(item, activeUnitSlotIndex.value);
+      persistGradedRoundToQuizHistory(item, activeUnitSlotIndex.value);
     }
   } finally {
     gradingSubmittingCardId.value = null;
@@ -5441,12 +5690,15 @@ async function confirmAnswer(item) {
   }
   gradingSubmittingCardId.value = item.id;
   gradingSubmittingOverlayKind.value = 'llm-grade';
+  persistQuizDraftAnswerToCookie(item, activeUnitSlotIndex.value);
   try {
     await submitGrade(item, { sourceTabId, ragId }, {});
     if (item.confirmed) {
       item.gradingPromptBaseline = String(item.gradingPrompt ?? '');
       item.quizAnswerBaseline = String(item.quiz_answer ?? '');
       item.hasUsedSaveAndGradeOnce = true;
+      persistQuizDraftCritiqueToCookie(item, activeUnitSlotIndex.value);
+      persistGradedRoundToQuizHistory(item, activeUnitSlotIndex.value);
     }
   } finally {
     gradingSubmittingCardId.value = null;
@@ -6962,43 +7214,19 @@ async function confirmAnswer(item) {
                       class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
                     >
                       <LogoGradientPillButton
-                        v-if="!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)"
                         tone="generate"
                         :gradient-bias="work3LogoGradientBias"
-                        :id-prefix="`bank-generate-quiz-mark-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                        :id-prefix="`bank-generate-quiz-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                         extra-class="my-design-quiz-generate-btn"
                         :title="designSidePanelOnLeft
-                          ? '使用後端已儲存之出題規則開始出題；須曾成功「儲存規則並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存規則並產生題目」，或於編輯 Modal 內重設'
-                          : '使用後端已儲存之出題規則產生題目；須曾成功「儲存規則並產生題目」且未在編輯器中改動出題規則。若已修改出題規則請先按「儲存規則並產生題目」，或於編輯 Modal 內重設'"
+                          ? '出題規則已改動時會先儲存規則再出題；否則使用後端已儲存之出題規則出題'
+                          : '出題規則已改動時會先儲存規則再產生題目；否則使用後端已儲存之出題規則產生題目'"
                         :aria-label="generateDbButtonLabel"
-                        @click="submitUnitQuizLlmGenerateDb(activeUnitSlotIndex, activeUnitQuizCard)"
+                        :disabled="unitQuizGenerateButtonDisabled(activeUnitQuizCard, activeUnitSlotIndex)"
+                        :aria-busy="!!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading"
+                        @click="submitUnitQuizGenerateMerged(activeUnitSlotIndex, activeUnitQuizCard)"
                       >
                         {{ generateDbButtonLabel }}
-                      </LogoGradientPillButton>
-                      <LogoGradientPillButton
-                        v-if="!isRagQuizMarkedForExam(activeUnitQuizCard) && !getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading && canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex)"
-                        tone="generate"
-                        :gradient-bias="work3LogoGradientBias"
-                        :id-prefix="`bank-save-generate-quiz-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                        extra-class="my-design-quiz-generate-btn"
-                        aria-label="儲存規則並產生題目"
-                        @click="submitUnitQuizLlmGenerate(activeUnitSlotIndex, activeUnitQuizCard)"
-                      >
-                        儲存規則並產生題目
-                      </LogoGradientPillButton>
-                      <LogoGradientPillButton
-                        v-if="
-                          (getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || !canEnableUnitQuizGenerateFromDb(activeUnitQuizCard, activeUnitSlotIndex)) &&
-                          (isRagQuizMarkedForExam(activeUnitQuizCard) || getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading || !canEnableUnitQuizGenerate(activeUnitQuizCard, activeUnitSlotIndex))
-                        "
-                        tone="generate"
-                        :gradient-bias="work3LogoGradientBias"
-                        :id-prefix="`bank-save-generate-quiz-disabled-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                        extra-class="my-design-quiz-generate-btn"
-                        aria-label="儲存規則並產生題目"
-                        disabled
-                      >
-                        儲存規則並產生題目
                       </LogoGradientPillButton>
                     </div>
                     <div
