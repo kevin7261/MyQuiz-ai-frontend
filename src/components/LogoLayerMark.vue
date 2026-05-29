@@ -28,11 +28,11 @@ const wrapStyle = computed(() => ({
   width: `${props.sizePt}pt`,
 }));
 
-/** Q／A 分層標誌：淡灰單色、無漸層 */
+/** Q＝黑；A＝gray-2（比 gray-3／my-bgcolor-gray-4 深一級） */
 const logoColors = {
   background: 'transparent',
-  primary: 'var(--my-color-gray-1)',
-  secondary: 'var(--my-color-gray-1)',
+  primary: 'var(--my-color-black)',
+  secondary: 'var(--my-color-gray-2)',
 };
 </script>
 
