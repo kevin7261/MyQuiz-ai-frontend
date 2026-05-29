@@ -166,7 +166,7 @@ const centerCellsLogoWidth = centerCellsWidth(240);
               SVG 尺寸：240 × 180 px
             -->
             <section class="my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+              <div class="rounded-4 my-bgcolor-gray-4 p-4 mb-5">
                 <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
                   01 · 3×2 方格格網
                 </div>
@@ -218,7 +218,7 @@ const centerCellsLogoWidth = centerCellsWidth(240);
 
             <!-- ===== 02 · 各種變化 ===== -->
             <section class="my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+              <div class="rounded-4 my-bgcolor-gray-4 p-4 mb-5">
                 <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
                   02 · 各種變化
                 </div>
@@ -319,7 +319,7 @@ const centerCellsLogoWidth = centerCellsWidth(240);
 
             <!-- ===== 03 · 各種大小 ===== -->
             <section class="my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+              <div class="rounded-4 my-bgcolor-gray-4 p-4 mb-5">
                 <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
                   03 · 各種大小
                 </div>
@@ -366,7 +366,7 @@ const centerCellsLogoWidth = centerCellsWidth(240);
 
             <!-- ===== 04 · 分層（黑／灰） ===== -->
             <section class="my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 mb-5">
+              <div class="rounded-4 my-bgcolor-gray-4 p-4 mb-5">
                 <div role="heading" aria-level="2" class="my-font-lg-600 my-color-black text-break mb-4">
                   04 · 分層（黑／灰）
                 </div>

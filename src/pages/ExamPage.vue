@@ -690,9 +690,9 @@ watch(
 </template>
 
 <style scoped>
-/* exam_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-2） */
+/* exam_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-3） */
 .exam-2--side-panel-left .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 

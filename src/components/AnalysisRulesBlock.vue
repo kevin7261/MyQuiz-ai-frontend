@@ -36,7 +36,7 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
   <div
     :class="props.design3
       ? 'w-100 min-w-0 text-start mb-0 py-4 analysis-page-3-section analysis-page-3-rules my-design--side-panel-left'
-      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start mb-4'"
+      : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 text-start mb-4'"
   >
     <!-- ── design3：卡片預覽 + 動作按鈕 ── -->
     <template v-if="props.design3">
@@ -49,7 +49,7 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
               <section class="my-design-quiz-question-prompt-block w-100 min-w-0" aria-label="分析規則">
                 <header class="my-design-quiz-question-prompt-block__head">
                   <div class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2">
-                    <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0">
+                    <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-3 mb-0">
                       分析規則
                     </h3>
                     <button

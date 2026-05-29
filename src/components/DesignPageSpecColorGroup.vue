@@ -12,13 +12,13 @@ const props = defineProps({
   hexForClass: { type: Function, required: true },
 });
 
-const LIGHT_SWATCH_HEX = new Set(['#ffffff', '#fdfdfd', '#f2f2f2', '#f5f5f5', '#e2e2e2']);
+const LIGHT_SWATCH_HEX = new Set(['#ffffff', '#fdfdfd', '#f2f2f2', '#f5f5f5', '#dddddd']);
 
 function swatchDotStyle(className) {
   const hex = (props.hexForClass(className) || '').toLowerCase();
   const style = { backgroundColor: hex || undefined };
   if (!hex || LIGHT_SWATCH_HEX.has(hex)) {
-    style.border = '1px solid var(--my-color-gray-2, #e2e2e2)';
+    style.border = '1px solid var(--my-color-gray-3, #dddddd)';
   }
   return style;
 }

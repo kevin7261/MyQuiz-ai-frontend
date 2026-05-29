@@ -1,7 +1,7 @@
 <script setup>
 /**
  * 出題區「選擇單元」：Bootstrap 5 dropdown；行為等同原生 select + v-model。
- * 與 Design 08 一致：外層 .my-design-08-dropdown；觸發 rounded-2、my-button-white（白底、gray-2 邊）；選單 .dropdown-menu Bootstrap 預設。
+ * 與 Design 08 一致：外層 .my-design-08-dropdown；觸發 rounded-2、my-button-white（白底、gray-3 邊）；選單 .dropdown-menu Bootstrap 預設。
  * omitEmptyChoice：不列「清空」項，適用必選之單元切換列。
  */
 import { computed, ref, nextTick, onMounted } from 'vue';

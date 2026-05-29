@@ -259,7 +259,7 @@ onActivated(() => {
             </template>
 
             <div v-else class="text-start my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0">
+              <div class="rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0">
                 <div class="mb-3">
                   <p class="text-center mb-0 my-font-sm-400 my-color-gray-4">
                     共 {{ count }} 筆使用者
@@ -365,7 +365,7 @@ onActivated(() => {
 }
 
 .user-mgmt-page-3 .bank-list-row--read-only:hover {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 .user-mgmt-page-3 .user-mgmt-bank-col--name {

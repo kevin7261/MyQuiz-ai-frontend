@@ -207,7 +207,7 @@
 .my-system-header__action-btn--active:hover,
 .my-system-header__action-btn--active:focus-visible {
   color: var(--my-color-black);
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 .my-system-header__user-menu {

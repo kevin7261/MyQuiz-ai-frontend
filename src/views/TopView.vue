@@ -206,7 +206,7 @@
   max-width: 10rem;
   color: var(--my-color-black) !important;
   background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-2) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none;
 }
 
@@ -216,6 +216,6 @@
 .my-course-header .my-design-08-dropdown .btn.my-button-white.show {
   color: var(--my-color-black) !important;
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white)) !important;
-  border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2)) !important;
+  border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3)) !important;
 }
 </style>

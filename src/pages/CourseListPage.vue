@@ -107,6 +107,6 @@ function onCourseSelect(course) {
 
 <style scoped>
 .course-list .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 </style>

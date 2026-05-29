@@ -154,9 +154,9 @@ const designSecondarySmallPillClass = computed(() =>
   (isWork3Design.value ? 'my-button-transparent-borderless' : 'my-btn-outline-gray-1'),
 );
 
-/** design_3：history／詳細資訊／批改規則 pill（禁用 my-button-gray-3） */
+/** design_3：history／詳細資訊／批改規則 pill（禁用 my-button-gray-4） */
 const designHistorySmallPillClass = computed(() =>
-  (isWork3Design.value ? 'my-button-transparent-borderless' : 'my-button-gray-3'),
+  (isWork3Design.value ? 'my-button-transparent-borderless' : 'my-button-gray-4'),
 );
 
 function designStemTabBtnClass(isActive) {
@@ -838,7 +838,7 @@ const quizAnswerFieldDisabled = computed(
           ? 'w-100 min-w-0'
           : [
             designUi
-              ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-3 rounded-4 p-4 mb-0 w-100 min-w-0')
+              ? (designEmbedded ? 'w-100 min-w-0 mb-0' : 'my-bgcolor-gray-4 rounded-4 p-4 mb-0 w-100 min-w-0')
               : ['my-bgcolor-page-block rounded-3 p-3 p-lg-4', 'mb-4'],
             { 'mt-4': !designUi && slotIndex > 1 },
           ],
@@ -1528,7 +1528,7 @@ const quizAnswerFieldDisabled = computed(
                 <div
                   class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
                 >
-                  <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0">
+                  <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-3 mb-0">
                     批改規則
                   </h3>
                   <button
@@ -1908,17 +1908,17 @@ const quizAnswerFieldDisabled = computed(
 /* 稿頁答案子區塊：白底、淡灰框（與 create-exam-bank_design 頁內 :deep 規則一致） */
 :deep(.form-control.my-design-quiz-answer-input) {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   color: var(--my-color-black);
 }
 :deep(.form-control.my-design-quiz-answer-input:focus) {
   background-color: var(--my-color-white);
-  border-color: var(--my-color-gray-2);
+  border-color: var(--my-color-gray-3);
   box-shadow: none;
 }
 :deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-3);
-  border-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-3);
   opacity: 1;
 }
 /* 稿頁「開始批改」pill（批改子區左下） */
@@ -1979,7 +1979,7 @@ const quizAnswerFieldDisabled = computed(
   color: var(--my-color-white);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
-  color: var(--my-color-gray-2);
+  color: var(--my-color-gray-3);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),

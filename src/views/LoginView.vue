@@ -18,6 +18,7 @@
   } from '../utils/logoDiamondGradient.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
+  import { setSystemHeaderLogoGradientsFromLogin } from '../composables/useSystemHeaderLogoGradients.js';
 
   /** 登入頁漸層僅線性（不用徑向／錐形／mesh） */
   const LOGIN_GRADIENT_OPTIONS = { linearOnly: true };
@@ -154,6 +155,7 @@
           const userData = data.user != null ? data.user : data;
           authStore.setUser(userData);
           authStore.setCourses(data.courses ?? []);
+          setSystemHeaderLogoGradientsFromLogin(loginLogoColors.value);
           router.push(authStore.currentCourse ? '/exam' : '/courses');
         } catch (e) {
           error.value = e.message || '無法連線，請檢查網路或稍後再試';
@@ -211,7 +213,7 @@
                 :colors="loginLogoColors"
               />
             </button>
-            <p class="my-login-view-brand my-font-xl-600 text-break mb-0 mt-3">
+            <p class="my-login-view-brand my-font-family-code my-font-xl-600 text-break mb-0 mt-3">
               <span
                 class="my-login-view-brand-part"
                 :style="{ backgroundImage: loginBrandMyquizCss }"
@@ -260,7 +262,7 @@
       </div>
     </div>
     </div>
-    <p class="my-login-view-version my-font-sm-400 my-color-gray-1 text-center mb-0 px-3 py-3 flex-shrink-0">
+    <p class="my-login-view-version my-font-family-code my-font-sm-400 my-color-gray-1 text-center mb-0 px-3 py-3 flex-shrink-0">
       v{{ currentVersion }}
     </p>
   </div>
@@ -286,7 +288,6 @@
 .my-login-view-version {
   position: relative;
   z-index: 1;
-  font-family: var(--my-font-family-code);
 }
 
 .my-login-view-card {
@@ -317,27 +318,77 @@
   color: transparent;
   -webkit-text-fill-color: transparent;
 }
+</style>
 
-.my-login-view-submit-btn {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black);
-  border: 1px solid var(--my-color-gray-2) !important;
+<style>
+/* 漸層底上：輸入／登入鈕須實心白底（Bootstrap --bs-* 與透明 .btn 預設會透出背景） */
+.my-login-view-shell #login-person-id,
+.my-login-view-shell #login-password {
+  --bs-body-bg: #ffffff;
+  background-color: #ffffff !important;
+}
+
+.my-login-view-shell #login-person-id::placeholder,
+.my-login-view-shell #login-password::placeholder {
+  color: var(--my-color-gray-3);
+  opacity: 1;
+}
+
+.my-login-view-shell #login-person-id:focus,
+.my-login-view-shell #login-password:focus,
+.my-login-view-shell #login-person-id:disabled,
+.my-login-view-shell #login-password:disabled {
+  background-color: #ffffff !important;
+  color: var(--my-color-gray-3);
+  -webkit-text-fill-color: var(--my-color-gray-3);
+  opacity: 1;
+}
+
+.my-login-view-shell #login-person-id:-webkit-autofill,
+.my-login-view-shell #login-person-id:-webkit-autofill:hover,
+.my-login-view-shell #login-person-id:-webkit-autofill:focus,
+.my-login-view-shell #login-password:-webkit-autofill,
+.my-login-view-shell #login-password:-webkit-autofill:hover,
+.my-login-view-shell #login-password:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--my-color-black);
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  transition: background-color 9999s ease-out 0s;
+}
+
+.my-login-view-shell .btn.my-login-view-submit-btn {
+  --bs-btn-bg: #ffffff;
+  --bs-btn-hover-bg: #ffffff;
+  --bs-btn-active-bg: #ffffff;
+  --bs-btn-disabled-bg: #ffffff;
+  --bs-btn-border-color: var(--my-color-gray-3);
+  --bs-btn-hover-border-color: var(--my-color-gray-3);
+  --bs-btn-active-border-color: var(--my-color-gray-3);
+  background-color: #ffffff !important;
+  color: var(--my-color-black) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }
 
-.my-login-view-submit-btn:hover:not(:disabled) {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black);
-  border-color: var(--my-color-gray-2) !important;
+.my-login-view-shell .btn.my-login-view-submit-btn:hover:not(:disabled),
+.my-login-view-shell .btn.my-login-view-submit-btn:focus-visible:not(:disabled) {
+  background-color: #ffffff !important;
+  color: var(--my-color-black) !important;
+  border-color: var(--my-color-gray-3) !important;
   box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
 }
 
-.my-login-view-submit-btn:active:not(:disabled) {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black);
+.my-login-view-shell .btn.my-login-view-submit-btn:active:not(:disabled) {
+  background-color: #ffffff !important;
+  color: var(--my-color-black) !important;
 }
 
-.my-login-view-submit-btn:disabled {
-  opacity: 0.55;
+.my-login-view-shell .btn.my-login-view-submit-btn:disabled {
+  --bs-btn-disabled-bg: #ffffff;
+  --bs-btn-disabled-border-color: var(--my-color-gray-3);
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  background-color: #ffffff !important;
+  color: var(--my-color-gray-3) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
+  opacity: 1;
 }
 </style>

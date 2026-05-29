@@ -155,7 +155,7 @@ const {
             >
               <button
                 type="button"
-                :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-3']"
+                :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-4']"
                 title="開始作答分析"
                 aria-label="開始作答分析"
                 :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
@@ -185,7 +185,7 @@ const {
                     v-if="weaknessReport"
                     :class="props.design3
                       ? 'w-100 min-w-0 d-flex flex-column gap-4 text-start py-4 analysis-page-3-section'
-                      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start'"
+                      : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start'"
                   >
                     <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
                       課程作答分析報告
@@ -255,7 +255,7 @@ const {
                         <section class="my-design-quiz-question-prompt-block w-100 min-w-0" aria-label="分析規則">
                           <header class="my-design-quiz-question-prompt-block__head">
                             <div class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2">
-                              <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0">
+                              <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-3 mb-0">
                                 分析規則
                               </h3>
                             </div>
@@ -280,7 +280,7 @@ const {
                     :key="`${item.exam_quiz_id ?? item.rag_quiz_id ?? idx}-${item.person_id ?? ''}`"
                     :class="props.design3
                       ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4 analysis-page-3-section'
-                      : 'rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
+                      : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
                   >
                     <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
                       第 {{ idx + 1 }} 題

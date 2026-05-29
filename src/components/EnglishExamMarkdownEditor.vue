@@ -328,7 +328,7 @@ onBeforeUnmount(() => {
               v-else
               class="english-exam-md-preview-empty min-w-0 my-font-md-400"
               :class="[
-                previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4',
+                previewDesignDark ? 'my-color-gray-3' : 'my-color-gray-4',
                 previewDesignDarkEmbedded ? 'p-3' : 'px-3 py-2',
               ]"
               role="status"
@@ -394,7 +394,7 @@ onBeforeUnmount(() => {
 .english-exam-md-editor-wrap :deep(.EasyMDEContainer) {
   border-radius: 0.25rem;
   overflow: visible;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 .english-exam-md-editor-wrap :deep(.editor-toolbar) {
   border-radius: 0.25rem 0.25rem 0 0;
@@ -420,7 +420,7 @@ onBeforeUnmount(() => {
 
 /* 唯讀預覽：高度隨內容伸縮，不設 max-height（出題／批改規則等長文一次看完） */
 .english-exam-md-preview-panel--surface {
-  border-color: var(--my-color-gray-2) !important;
+  border-color: var(--my-color-gray-3) !important;
   overflow-x: auto;
   overflow-y: visible;
   -webkit-overflow-scrolling: touch;
@@ -521,8 +521,8 @@ onBeforeUnmount(() => {
   color: var(--my-color-white);
 }
 .english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(blockquote) {
-  border-left-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2);
+  border-left-color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3);
 }
 .english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(th),
 .english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(td) {
@@ -564,7 +564,7 @@ onBeforeUnmount(() => {
   border-radius: 0.25rem;
   overflow-x: auto;
   font-size: 0.875rem;
-  background: var(--my-color-gray-3);
+  background: var(--my-color-gray-4);
 }
 .english-exam-md-preview-body :deep(code) {
   font-size: 0.9em;
@@ -573,12 +573,12 @@ onBeforeUnmount(() => {
 .english-exam-md-preview-body :deep(li code) {
   padding: 0.1em 0.35em;
   border-radius: 0.2rem;
-  background: var(--my-color-gray-3);
+  background: var(--my-color-gray-4);
 }
 .english-exam-md-preview-body :deep(blockquote) {
   margin: 0.5rem 0;
   padding-left: 0.75rem;
-  border-left: 3px solid var(--my-color-gray-2);
+  border-left: 3px solid var(--my-color-gray-3);
   color: var(--my-color-gray-1);
 }
 .english-exam-md-preview-body :deep(table) {
@@ -589,7 +589,7 @@ onBeforeUnmount(() => {
 }
 .english-exam-md-preview-body :deep(th),
 .english-exam-md-preview-body :deep(td) {
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   padding: 0.25rem 0.5rem;
 }
 .english-exam-md-preview-body :deep(a) {

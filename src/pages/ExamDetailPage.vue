@@ -106,10 +106,10 @@ const quizBankNoun = computed(() => '試卷');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
 const examAddQuestionConfirmLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
-/** design_3 核准填色 pill（exam_3 禁用 my-button-gray-3／my-button-black） */
-const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+/** design_3 核准填色 pill（exam_3 禁用 my-button-gray-4／my-button-black） */
+const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-4'));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
-const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
+const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-4'));
 
 const messageModal = useMessageModal();
 const {
@@ -3337,7 +3337,7 @@ onActivated(() => {
               <button
                 v-else
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-3 px-4 py-3"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-4 px-4 py-3"
                 title="新增題目"
                 aria-label="新增題目"
                 :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
@@ -3481,7 +3481,7 @@ onActivated(() => {
                                       left: 0,
                                       right: 0,
                                       height: '64px',
-                                      background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-3)'})`,
+                                      background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-4)'})`,
                                       pointerEvents: 'none',
                                     }"
                                   />
@@ -3509,7 +3509,7 @@ onActivated(() => {
                                   </button>
                                 </div>
                               </section>
-                              <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
+                              <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
                               <!-- 追問歷史輪次（唯讀，舊→新順序） -->
                               <template v-if="activeExamSlotFollowupRoundCards.length">
                                 <template
@@ -3545,7 +3545,7 @@ onActivated(() => {
                                       class="my-design-quiz-sub-block rounded-4"
                                       :class="[
                                         designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                        designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                                        designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
                                       ]"
                                     >
                                       <div class="w-100 min-w-0">
@@ -3577,7 +3577,7 @@ onActivated(() => {
                                       </div>
                                     </div>
                                   </div>
-                                  <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
+                                  <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
                                 </template>
                               </template>
                               <!-- 子區塊：題目（exam_3 外層 py-2，對齊答案區塊） -->
@@ -3613,7 +3613,7 @@ onActivated(() => {
                                   class="my-design-quiz-sub-block rounded-4"
                                   :class="[
                                     designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                    designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                                    designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
                                   ]"
                                 >
                                   <div class="w-100 min-w-0">
@@ -3828,12 +3828,12 @@ onActivated(() => {
   flex-wrap: nowrap;
 }
 .my-design-tab-side-panel {
-  border-color: var(--my-color-gray-2) !important;
+  border-color: var(--my-color-gray-3) !important;
 }
 .my-design-tab-side-panel-header {
   flex-shrink: 0;
   z-index: 31;
-  border-bottom: 1px solid var(--my-color-gray-2);
+  border-bottom: 1px solid var(--my-color-gray-3);
 }
 .my-design-tab-left-view,
 .my-design-tab-right-view {
@@ -3849,13 +3849,13 @@ onActivated(() => {
 .my-design-tab-left-view--white-canvas {
   background-color: var(--my-color-white) !important;
 }
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4,
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
-  background-color: var(--my-color-gray-3) !important;
+  background-color: var(--my-color-gray-4) !important;
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 /* exam_3：題目／答案 tab 列不加 pt-2 */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
@@ -3901,7 +3901,7 @@ onActivated(() => {
   width: 100%;
   min-width: 0;
   gap: 0;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   border-radius: 0.75rem;
 }
 .my-design-right-nav--flat {
@@ -3912,7 +3912,7 @@ onActivated(() => {
   border-radius: 0;
 }
 .my-design-right-nav--flat .my-design-right-step-block--section-divide {
-  border-bottom: 1px solid var(--my-color-gray-2);
+  border-bottom: 1px solid var(--my-color-gray-3);
 }
 .my-design-right-nav--flat .my-design-right-step-block .nav-link {
   padding-left: 1rem;
@@ -3946,13 +3946,13 @@ onActivated(() => {
 }
 .my-design-right-nav .nav-link:not(.active):hover,
 .my-design-right-nav .nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
-/* 左欄（gray-4 底）：hover 須用 gray-3 才看得見 */
+/* 左欄（gray-4 底）：hover 須用 gray-4 才看得見 */
 .my-design-right-nav--flat button.nav-link:not(.active):hover,
 .my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-right-nav .nav-link.active,
 .my-design-right-nav .nav-link.active:hover,
@@ -3979,7 +3979,7 @@ onActivated(() => {
 }
 .my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 .my-design-quiz-field-inset,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
@@ -3987,7 +3987,7 @@ onActivated(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   border-radius: 0.5rem;
   background-color: var(--my-color-white);
 }
@@ -4023,7 +4023,7 @@ onActivated(() => {
 .my-design-quiz-field-inset__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
   border: 0;
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
   opacity: 1;
 }
 /* 題目子區塊頂部容器不留 pt */
@@ -4093,7 +4093,7 @@ onActivated(() => {
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  color: var(--my-color-gray-2);
+  color: var(--my-color-gray-3);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
@@ -4134,8 +4134,8 @@ onActivated(() => {
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
-  border-left-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2);
+  border-left-color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
@@ -4162,12 +4162,12 @@ onActivated(() => {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-3、無描邊 */
+/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-4、無描邊 */
 .btn.my-design-quiz-stem-history-btn,
 :deep(.btn.my-design-quiz-stem-history-btn) {
   border: none;
   white-space: nowrap;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
 .btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
@@ -4176,7 +4176,7 @@ onActivated(() => {
 :deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   color: var(--my-color-black);
 }
 .my-design-pack-unit-blocks :deep(.btn.rounded-pill),
@@ -4188,18 +4188,18 @@ onActivated(() => {
 .form-control.my-design-quiz-answer-input,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 .form-control.my-design-quiz-answer-input:focus,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
   background-color: var(--my-color-white);
-  border-color: var(--my-color-gray-2);
+  border-color: var(--my-color-gray-3);
   box-shadow: none;
 }
 .form-control.my-design-quiz-answer-input:disabled,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-3);
-  border-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-3);
   opacity: 1;
 }
 .btn.my-design-quiz-action-edit-btn,

@@ -815,9 +815,9 @@ watch(viewMode, (mode) => {
 </template>
 
 <style scoped>
-/* create-exam-bank_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-2） */
+/* create-exam-bank_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-3） */
 .create-exam-bank-2--side-panel-left .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 

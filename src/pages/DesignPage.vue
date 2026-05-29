@@ -145,10 +145,10 @@ const DESIGN3_CLASS_HEX = {
   'my-color-black': '#333333',
   'my-bgcolor-gray-1': '#888888',
   'my-color-gray-1': '#888888',
-  'my-bgcolor-gray-2': '#e2e2e2',
-  'my-color-gray-2': '#e2e2e2',
-  'my-bgcolor-gray-3': '#f2f2f2',
-  'my-color-gray-3': '#f2f2f2',
+  'my-bgcolor-gray-2': '#999999',
+  'my-color-gray-2': '#999999',
+  'my-bgcolor-gray-3': '#dddddd',
+  'my-color-gray-3': '#dddddd',
   'my-bgcolor-gray-4': '#f2f2f2',
   'my-color-gray-4': '#888888',
   'my-bgcolor-white': '#fdfdfd',
@@ -176,16 +176,21 @@ const DESIGN3_COLORS_GRAY = [
   },
   {
     name: 'color-gray-2',
-    usage: '邊線、表頭分隔、列表列框線',
-    rows: [{ className: 'my-bgcolor-gray-2' }, { className: 'my-color-gray-2' }],
+    usage: '中灰（#999999）',
+    rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-gray-3' }],
   },
   {
     name: 'color-gray-3',
-    usage: 'Design 參考區塊底、ZIP drop zone 底',
-    rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-black' }],
+    usage: '邊線、表頭分隔、列表列框線',
+    rows: [{ className: 'my-bgcolor-gray-3' }, { className: 'my-color-gray-3' }],
   },
   {
     name: 'color-gray-4',
+    usage: 'Design 參考區塊底、ZIP drop zone 底',
+    rows: [{ className: 'my-bgcolor-gray-4' }, { className: 'my-color-black' }],
+  },
+  {
+    name: 'color-gray-4-text',
     usage: '左側題目／流程清單（my-design-right-nav）· drop zone 提示文字、說明 ul 等最淡輔助字色',
     rows: [{ className: 'my-bgcolor-gray-4' }, { className: 'my-color-gray-4' }],
   },
@@ -306,7 +311,7 @@ const DESIGN3_TYPE_GROUPS = [
       {
         name: 'type-sm-on-dark-prompt',
         usage: '出題規則黑底區標題（create-exam-bank_3）',
-        colorClass: 'my-color-gray-2',
+        colorClass: 'my-color-gray-3',
         previewKind: 'prompt-block-title',
         previewText: '出題規則',
       },
@@ -327,7 +332,7 @@ function designTypeCss(group, item) {
 const DESIGN3_LIST_SPECS = [
   {
     name: 'list-bank-core',
-    usage: 'ExamPage2／CreateExamQuizBankPage2 grid 主頁列表（白底；hover → gray-3）',
+    usage: 'ExamPage2／CreateExamQuizBankPage2 grid 主頁列表（白底；hover → gray-4）',
     css: 'bank-list-wrap · bank-table-actions · bank-table-header · bank-table-sort-btn · bank-list · bank-list-row',
     copyText: 'bank-list-wrap',
   },
@@ -475,7 +480,7 @@ function designPackUnitTypeIconCss(unitType) {
                       <div
                         v-else-if="item.previewKind === 'stem-tabs'"
                         class="design-page-stem-tabs-preview d-inline-flex align-items-stretch gap-4 border-bottom mb-0"
-                        style="border-color: var(--my-color-gray-2) !important;"
+                        style="border-color: var(--my-color-gray-3) !important;"
                       >
                         <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--active my-font-sm-400 my-color-black">題目</button>
                         <button type="button" class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-gray-1">答案</button>
@@ -485,7 +490,7 @@ function designPackUnitTypeIconCss(unitType) {
                         class="design-page-prompt-block-preview rounded-2 overflow-hidden"
                       >
                         <div class="px-3 py-2">
-                          <span class="my-font-sm-400 my-color-gray-2 mb-0">{{ item.previewText }}</span>
+                          <span class="my-font-sm-400 my-color-gray-3 mb-0">{{ item.previewText }}</span>
                         </div>
                       </div>
                       <input
@@ -882,8 +887,8 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-quiz-mode-segment"
-                      usage="create-exam-bank_3 出題模式：一般／追問（my-quiz-generate-mode-segment--outline；選中 my-button-gray-3、未選 my-button-transparent-borderless my-color-black）"
-                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline gap-2 p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-3（選中）· my-button-transparent-borderless my-color-black（未選）"
+                      usage="create-exam-bank_3 出題模式：一般／追問（my-quiz-generate-mode-segment--outline；選中 my-button-gray-4、未選 my-button-transparent-borderless my-color-black）"
+                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline gap-2 p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-4（選中）· my-button-transparent-borderless my-color-black（未選）"
                     >
                       <div
                         class="d-inline-flex flex-wrap gap-2 p-1 my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline"
@@ -892,7 +897,7 @@ function designPackUnitTypeIconCss(unitType) {
                       >
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-gray-3 px-4 py-2"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-gray-4 px-4 py-2"
                           aria-pressed="true"
                         >
                           一般
@@ -1045,17 +1050,18 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="icon-unit-nav-row"
-                      usage="create-exam-bank_3 左側清單：單元名稱 + PackUnitTypeIcon（ms-2 flex-shrink-0）"
-                      css="my-design-right-unit-row-label · PackUnitTypeIcon · my-color-gray-1"
-                      copy-text="PackUnitTypeIcon"
+                      usage="create-exam-bank_3 左側清單：PackUnitTypeIcon（my-pack-unit-type-icon-slot 固定寬度置中）＋單元名稱"
+                      css="my-pack-unit-type-icon-slot · PackUnitTypeIcon · my-design-right-unit-row-label · my-color-gray-1"
+                      copy-text="my-pack-unit-type-icon-slot"
                     >
-                      <span class="my-font-md-400 my-color-black d-inline-flex align-items-center flex-wrap gap-0">
-                        範例單元
-                        <PackUnitTypeIcon
-                          :unit-type="UNIT_TYPE_RAG"
-                          color-class="my-color-gray-1"
-                          class="ms-2 flex-shrink-0"
-                        />
+                      <span class="my-font-md-400 my-color-black d-inline-flex align-items-center gap-2 min-w-0">
+                        <span class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0" aria-hidden="true">
+                          <PackUnitTypeIcon
+                            :unit-type="UNIT_TYPE_RAG"
+                            color-class="my-color-gray-1"
+                          />
+                        </span>
+                        <span class="my-design-right-unit-row-label min-w-0 text-start text-break">範例單元</span>
                       </span>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
@@ -1264,7 +1270,7 @@ function designPackUnitTypeIconCss(unitType) {
                     css="MessageModal · title 無法載入列表 · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
                     copy-text="MessageModal"
                   >
-                    <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);">
+                    <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-3, #dddddd);">
                       <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
                         <div class="modal-header border-bottom-0 p-0">
                           <h5 class="modal-title my-color-black mb-0">無法載入列表</h5>
@@ -1285,7 +1291,7 @@ function designPackUnitTypeIconCss(unitType) {
                     css="MessageModal · title 無法讀取來源內容 · my-color-red my-font-sm-400 mb-0 text-break · btn my-button-white"
                     copy-text="MessageModal"
                   >
-                    <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);">
+                    <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-3, #dddddd);">
                       <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
                         <div class="modal-header border-bottom-0 p-0">
                           <h5 class="modal-title my-color-black mb-0">無法讀取來源內容</h5>
@@ -1327,7 +1333,7 @@ function designPackUnitTypeIconCss(unitType) {
                   <p class="my-font-sm-400 my-color-gray-1 mb-3">
                     create-exam-bank_3 新增題庫；Teleport to body；
                     <code class="my-color-black">modal-dialog-centered modal-lg modal-dialog-scrollable</code>；
-                    drop zone 三種狀態（空 / 拖曳中 / 已選檔案）；淺灰底 gray-3
+                    drop zone 三種狀態（空 / 拖曳中 / 已選檔案）；淺灰底 gray-4
                   </p>
                   <button
                     type="button"
@@ -1339,7 +1345,7 @@ function designPackUnitTypeIconCss(unitType) {
                   </button>
 
                   <!-- 靜態三狀態預覽 -->
-                  <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-2, #e5e5e5);">
+                  <div class="rounded-4 p-3" style="border: 1px solid var(--my-color-gray-3, #dddddd);">
                     <div class="modal-content border-0 my-bgcolor-white d-flex flex-column gap-3 p-4">
                       <div class="modal-header border-bottom-0 p-0">
                         <h5 class="modal-title my-color-black mb-0">上傳檔案（靜態預覽）</h5>
@@ -1593,7 +1599,7 @@ function designPackUnitTypeIconCss(unitType) {
 
 .design-page-topview-preview :deep(.my-course-header-nav-btn) {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   box-shadow: none;
   text-decoration: none;
   padding-left: 1.5rem !important;
@@ -1603,13 +1609,13 @@ function designPackUnitTypeIconCss(unitType) {
 .design-page-topview-preview :deep(.my-course-header-nav-btn:hover),
 .design-page-topview-preview :deep(.my-course-header-nav-btn:focus-visible) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
   outline: none;
 }
 
-/* design_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-2） */
+/* design_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-3） */
 .design-page__list-preview--work3 .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 .design-page__page-preview--work3 {
@@ -1680,7 +1686,7 @@ function designPackUnitTypeIconCss(unitType) {
 }
 .my-design-pack-unit-name-title:hover:not(:disabled),
 .my-design-pack-unit-name-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3, #f5f5f5);
+  background-color: var(--my-color-gray-4, #f5f5f5);
 }
 .my-design-right-unit-count-badge {
   align-self: center;

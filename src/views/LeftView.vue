@@ -55,11 +55,11 @@
 
 <template>
   <aside
-    class="d-flex flex-column w-100 my-bgcolor-gray-3"
+    class="d-flex flex-column w-100 my-bgcolor-gray-4"
     :class="compact ? 'my-left-view-compact flex-shrink-0' : 'h-100'"
   >
     <div class="my-left-view-header flex-shrink-0 w-100 pt-3 pb-2 d-flex flex-column align-items-center">
-      <div class="w-100 m-0 p-0 text-center fw-semibold fs-5 lh-sm my-color-black">MyQuiz.ai</div>
+      <div class="w-100 m-0 p-0 text-center fw-semibold fs-5 lh-sm my-color-black my-brand-wordmark">MyQuiz.ai</div>
       <router-link
         to="/courses"
         class="my-left-view-course-btn d-block w-100 m-0 py-2 border-0 text-center my-font-md-400 my-color-black text-truncate text-decoration-none"
@@ -158,7 +158,7 @@
 }
 .my-left-view-nav .nav-link:not(.active):hover,
 .my-left-view-nav .nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
 .my-left-view-nav .nav-link.active,

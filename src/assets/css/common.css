@@ -1,10 +1,10 @@
 /**
  * 全域與共用 class：
- * 全站：html/body/#app（body 底為 gray-3）、連結無底線、捲軸
+ * 全站：html/body/#app（body 底為 gray-4）、連結無底線、捲軸
  * my-*：對應 --my-*；字級僅 var(--my-font-size-*)；字重僅 var(--my-font-weight-regular)／var(--my-font-weight-semibold)；body 字距 var(--my-letter-spacing)（variables.css）
- * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（若需次色另併 .my-color-gray-1）；其餘字色另併 .my-color-*；底 .my-bgcolor-*；業務內容區 .my-bgcolor-page-block（同 gray）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-2／.my-bgcolor-gray-3／.my-bgcolor-gray-4、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-green`／`.my-button-blue`／`.my-button-black`／`.my-button-gray-2`／`.my-button-gray-3`／`.my-button-white`（填色白＝黑底白字，與 black 同階；黑底稿頁內例外回淺底）；描邊 `.my-button-white-border`、無框 `.my-button-transparent-borderless`（預設黑字黑無框；黑底分頁列內例外淺字）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-transparent-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
- * Design 頁：章節外層 .my-design-page-section；規格項 .my-design-spec-item（名稱／使用位置／css；DesignPageSpecItem、DesignPageSpecColorGroup）；色階每組 .my-design-swatch-dots 左右兩色圓對應底／字 class；.my-design-swatch-row my-bgcolor-black＝黑底白字 class 示範（字級 --my-font-size-sm；內距同中型輸入 px-3 py-2；程式碼／可選取片語 font 併 --my-font-family-code）；08 下拉 class 列同黑底（併 .my-design-swatch-row my-bgcolor-black、複製鈕 on-light-bg false）；08 外層 .my-design-08-dropdown（觸發 rounded-2 同 my-input-md；白底 my-button-white 邊 gray-2；透明 my-button-transparent-borderless 無邊；選單 .dropdown-menu Bootstrap 預設）；其它區可併 .my-design-swatch-row--light（淺灰底）；02／03 加 .my-design-swatch-cell（單一色圓）＋ .my-design-swatch-rows 兩黑框橫向同一排（底／字分區、無中點）
- * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）；文字輸入 .form-control.my-input-md（白底、邊線 --my-color-gray-2；與中型膠囊同字級／px-3 py-2；單行／textarea 併 .rounded-2）；欄位標題／label 併 .my-color-gray-1（variables --my-color-gray-1）；標題與輸入／下拉間距見檔內「欄位標題與控件」規則（等同 Bootstrap mt-1）；.my-input-md--on-dark 僅相容舊 class、與預設同視覺；唯讀或 div 仿輸入併 .my-form-control-static（與 :read-only 同視覺，Design 06「輸入（停用）」；字色同 disabled 為 --my-color-black）
+ * 字階 .my-font-{xl|lg|md|sm}-{400|600}（僅字級字重）；網頁標題 .my-font-xl-400；區塊子標題 .my-font-lg-600 預設字色 --my-color-black（若需次色另併 .my-color-gray-1）；其餘字色另併 .my-color-*；底 .my-bgcolor-*；業務內容區 .my-bgcolor-page-block（同 gray）、rounded-3、p-3 p-lg-4、mb-4；淺灰三階底 .my-bgcolor-gray-2／.my-bgcolor-gray-3／.my-bgcolor-gray-4、mb-4；膠囊填色按鈕併 `.btn`：`.my-button-red`／`.my-button-green`／`.my-button-blue`／`.my-button-black`／`.my-button-gray-3`／`.my-button-gray-4`／`.my-button-white`（填色白＝黑底白字，與 black 同階；黑底稿頁內例外回淺底）；描邊 `.my-button-white-border`、無框 `.my-button-transparent-borderless`（預設黑字黑無框；黑底分頁列內例外淺字）；`.rounded-pill`（勿用 `.btn-sm`）；內距置末：小 `.px-3 .py-1`＋`my-font-sm-400`；中／大 `.px-3 .py-2`／`.px-4 .py-3`＋`my-font-md-400`；`.btn.my-btn-circle`（32×32 圓、併 .my-button-transparent-borderless；DesignPageCopyBtn 一鍵複製同規＋fa-copy、淺底見元件 scoped）；圓形圖示 `.btn` `.btn-link` `.rounded-circle`；表格 .my-table；下拉 .my-dropdown-*
+ * Design 頁：章節外層 .my-design-page-section；規格項 .my-design-spec-item（名稱／使用位置／css；DesignPageSpecItem、DesignPageSpecColorGroup）；色階每組 .my-design-swatch-dots 左右兩色圓對應底／字 class；.my-design-swatch-row my-bgcolor-black＝黑底白字 class 示範（字級 --my-font-size-sm；內距同中型輸入 px-3 py-2；程式碼／可選取片語 font 併 --my-font-family-code）；08 下拉 class 列同黑底（併 .my-design-swatch-row my-bgcolor-black、複製鈕 on-light-bg false）；08 外層 .my-design-08-dropdown（觸發 rounded-2 同 my-input-md；白底 my-button-white 邊 gray-3；透明 my-button-transparent-borderless 無邊；選單 .dropdown-menu Bootstrap 預設）；其它區可併 .my-design-swatch-row--light（淺灰底）；02／03 加 .my-design-swatch-cell（單一色圓）＋ .my-design-swatch-rows 兩黑框橫向同一排（底／字分區、無中點）
+ * 原生 select：.my-form-select-wrap 包 .my-form-select ＋ <i class="fa-solid fa-chevron-down my-form-select-caret">（箭頭勿用 data URI）；文字輸入 .form-control.my-input-md（白底、邊線 --my-color-gray-3；與中型膠囊同字級／px-3 py-2；單行／textarea 併 .rounded-2）；欄位標題／label 併 .my-color-gray-1（variables --my-color-gray-1）；標題與輸入／下拉間距見檔內「欄位標題與控件」規則（等同 Bootstrap mt-1）；.my-input-md--on-dark 僅相容舊 class、與預設同視覺；唯讀或 div 仿輸入併 .my-form-control-static（與 :read-only 同視覺，Design 06「輸入（停用）」；字色同 disabled 為 --my-color-black）
  * textarea／符合條件之 input／div.form-control：寬度撐滿父層（同 Bootstrap .w-100，見檔內「輸入／多行」規則）
  * 權杖下拉：選單項目用 Bootstrap `.dropdown-menu` 預設；`.my-dropdown-caret` 隱藏 ::after，箭頭 FA `.my-dropdown-toggle-caret`
  * .my-page-block-spacing：多個業務頁主要區塊（非權杖對照）
@@ -33,7 +33,7 @@ body {
   font-weight: var(--my-font-weight-regular);
   letter-spacing: var(--my-letter-spacing);
   color: var(--my-color-black);
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 /* Bootstrap Reboot 預設 <code> 為 $code-color（粉紅）；改繼承父層字色，才會吃到 .my-color-* 等權杖，避免非 variables 裝飾色 */
@@ -89,6 +89,17 @@ code {
   font-weight: var(--my-font-weight-semibold);
 }
 
+/* 品牌字標 MyQuiz.ai：Google Sans Code ＋字距 */
+.my-brand-wordmark {
+  font-family: var(--my-font-family-code);
+  letter-spacing: var(--my-brand-letter-spacing);
+}
+
+/* Google Sans Code（版本號、程式碼區等；不含品牌字距） */
+.my-font-family-code {
+  font-family: var(--my-font-family-code);
+}
+
 /* 併 my-color-gray-1 的按鈕 hover／focus 字色加深 */
 .btn.my-color-gray-1:hover:not(:disabled),
 .btn.my-color-gray-1:focus-visible:not(:disabled) {
@@ -108,7 +119,7 @@ code {
 .my-color-gray-3 {
   color: var(--my-color-gray-3);
 }
-/* 淺底輔助字色（同 gray-1 #888888；勿與淺底權杖 gray-3／my-bgcolor-gray-4 混淆） */
+/* 淺底輔助字色（同 gray-1 #666666；勿與淺底權杖 gray-4／my-bgcolor-gray-4 混淆） */
 .my-color-gray-4 {
   color: var(--my-color-gray-1);
 }
@@ -141,15 +152,15 @@ code {
   color: var(--my-color-black);
 }
 .my-bgcolor-gray-4 {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
 .my-bgcolor-white {
   background-color: var(--my-color-white);
 }
-/* 業務頁淺底主區（同 --my-color-gray-3） */
+/* 業務頁淺底主區（同 --my-color-gray-4） */
 .my-bgcolor-page-block {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-bgcolor-red {
   background-color: var(--my-color-red);
@@ -196,10 +207,10 @@ code {
 }
 /* 淺灰底：提示等次級內容；淺底為白混灰中；題目提示等 input 疊 .my-bgcolor-light-gray 時底略亮於稿灰 */
 .my-bgcolor-light-gray {
-  background-color: color-mix(in srgb, var(--my-color-gray-3) 22%, var(--my-color-white));
+  background-color: color-mix(in srgb, var(--my-color-gray-4) 22%, var(--my-color-white));
 }
 .form-control.my-input-md.my-bgcolor-light-gray {
-  background-color: color-mix(in srgb, var(--my-color-gray-3) 14%, var(--my-color-gray-2));
+  background-color: color-mix(in srgb, var(--my-color-gray-4) 14%, var(--my-color-gray-3));
 }
 
 /* 錯誤提示區塊（勿用 Bootstrap alert-danger） */
@@ -235,13 +246,13 @@ code {
 
 
 /* 線框按鈕（灰深邊線；勿用 Bootstrap btn-outline-*） */
-.btn.my-btn-outline-gray-2 {
+.btn.my-btn-outline-gray-3 {
   color: var(--my-color-black);
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
-.btn.my-btn-outline-gray-2:hover {
-  border-color: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-gray-2));
+.btn.my-btn-outline-gray-3:hover {
+  border-color: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-gray-3));
   background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
 }
 
@@ -351,24 +362,7 @@ code {
   opacity: 0.55;
 }
 
-/* 淺灰填色膠囊（併 .btn）：未選／非 highlight；底同 my-bgcolor-gray-2（字面 --my-color-gray-2）、字 --my-color-black。併 my-btn-group-pill 時分段線見該段 border */
-.btn.my-button-gray-2 {
-  background-color: var(--my-color-gray-2);
-  color: var(--my-color-black);
-  border-color: transparent;
-  box-shadow: none;
-}
-.btn.my-button-gray-2:hover,
-.btn.my-button-gray-2:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-2));
-  color: var(--my-color-black);
-  box-shadow: none;
-}
-.btn.my-button-gray-2:disabled {
-  opacity: 0.55;
-}
-
-/* 更淺填色膠囊（併 .btn）：底同 my-bgcolor-gray-3；字 --my-color-black。併 my-btn-group-pill 時分段線規則同 my-button-gray-2（border） */
+/* 淺灰填色膠囊（併 .btn）：未選／非 highlight；底同 my-bgcolor-gray-3（字面 --my-color-gray-3）、字 --my-color-black。併 my-btn-group-pill 時分段線見該段 border */
 .btn.my-button-gray-3 {
   background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
@@ -377,11 +371,28 @@ code {
 }
 .btn.my-button-gray-3:hover,
 .btn.my-button-gray-3:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
+  background-color: color-mix(in srgb, var(--my-color-black) 6%, var(--my-color-gray-3));
   color: var(--my-color-black);
   box-shadow: none;
 }
 .btn.my-button-gray-3:disabled {
+  opacity: 0.55;
+}
+
+/* 更淺填色膠囊（併 .btn）：底同 my-bgcolor-gray-4；字 --my-color-black。併 my-btn-group-pill 時分段線規則同 my-button-gray-3（border） */
+.btn.my-button-gray-4 {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn.my-button-gray-4:hover,
+.btn.my-button-gray-4:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  color: var(--my-color-black);
+  box-shadow: none;
+}
+.btn.my-button-gray-4:disabled {
   opacity: 0.55;
 }
 
@@ -400,7 +411,7 @@ code {
 .my-bgcolor-black .btn.my-button-white {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 
 /* Logo 隨機漸層 pill（開始出題／開始批改；按鈕本體漸層底；hover 陰影同登入鈕） */
@@ -436,27 +447,27 @@ code {
 .my-bgcolor-black .btn.my-button-white:active:not(:disabled) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
 }
 
 .btn.my-button-white:disabled {
   opacity: 0.55;
 }
 
-/* Design 08 · 下拉觸發：包於 .my-design-08-dropdown；白底示範邊 1px --my-color-gray-2；透明示範無邊框；圓角併 HTML .rounded-2（同 my-input-md）。選單 .dropdown-menu 不覆寫 */
+/* Design 08 · 下拉觸發：包於 .my-design-08-dropdown；白底示範邊 1px --my-color-gray-3；透明示範無邊框；圓角併 HTML .rounded-2（同 my-input-md）。選單 .dropdown-menu 不覆寫 */
 .my-design-08-dropdown .btn.my-button-white {
   --bs-btn-color: var(--my-color-black);
   --bs-btn-bg: var(--my-color-white);
-  --bs-btn-border-color: var(--my-color-gray-2);
+  --bs-btn-border-color: var(--my-color-gray-3);
   --bs-btn-hover-color: var(--my-color-black);
   --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  --bs-btn-hover-border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  --bs-btn-hover-border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
   --bs-btn-active-color: var(--my-color-black);
   --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  --bs-btn-active-border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  --bs-btn-active-border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
   color: var(--my-color-black);
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   box-shadow: none;
 }
 .my-design-08-dropdown .btn.my-button-white:hover,
@@ -465,7 +476,7 @@ code {
 .my-design-08-dropdown .btn.my-button-white.show {
   color: var(--my-color-black);
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
 }
 .my-design-08-dropdown .btn.my-button-transparent-borderless {
   --bs-btn-color: var(--my-color-black);
@@ -532,7 +543,7 @@ code {
 .my-btn-group-pill.btn-group {
   border-radius: var(--bs-border-radius, 0.375rem);
   overflow: hidden;
-  --my-btn-group-pill-ring: var(--my-color-gray-2);
+  --my-btn-group-pill-ring: var(--my-color-gray-3);
   border: 1px solid var(--my-btn-group-pill-ring);
   box-sizing: border-box;
 }
@@ -541,20 +552,7 @@ code {
   border: none !important;
   margin: 0 !important;
 }
-/* 未選分段：底 gray-2 或 gray-3（勿透明透出底層）；併設 --bs-btn-* 以免 Bootstrap .btn:hover／:active 蓋掉背景 */
-.my-btn-group-pill.btn-group > .btn.my-button-gray-2 {
-  --bs-btn-color: var(--my-color-black);
-  --bs-btn-bg: var(--my-color-gray-2);
-  --bs-btn-border-color: transparent;
-  --bs-btn-hover-color: var(--my-color-black);
-  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-2));
-  --bs-btn-hover-border-color: transparent;
-  --bs-btn-active-color: var(--my-color-black);
-  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-2));
-  --bs-btn-active-border-color: transparent;
-  color: var(--my-color-black);
-  background-color: var(--my-color-gray-2);
-}
+/* 未選分段：底 gray-3 或 gray-4（勿透明透出底層）；併設 --bs-btn-* 以免 Bootstrap .btn:hover／:active 蓋掉背景 */
 .my-btn-group-pill.btn-group > .btn.my-button-gray-3 {
   --bs-btn-color: var(--my-color-black);
   --bs-btn-bg: var(--my-color-gray-3);
@@ -568,25 +566,38 @@ code {
   color: var(--my-color-black);
   background-color: var(--my-color-gray-3);
 }
+.my-btn-group-pill.btn-group > .btn.my-button-gray-4 {
+  --bs-btn-color: var(--my-color-black);
+  --bs-btn-bg: var(--my-color-gray-4);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--my-color-black);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-4));
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--my-color-black);
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 12%, var(--my-color-gray-4));
+  --bs-btn-active-border-color: transparent;
+  color: var(--my-color-black);
+  background-color: var(--my-color-gray-4);
+}
 /* 左側分段線：僅第二段起（避免最左與群組外框重疊雙線） */
-.my-btn-group-pill.btn-group > .btn.my-button-gray-2:not(:first-child),
-.my-btn-group-pill.btn-group > .btn.my-button-gray-2:not(:first-child):hover,
-.my-btn-group-pill.btn-group > .btn.my-button-gray-2:not(:first-child):active:not(:disabled),
 .my-btn-group-pill.btn-group > .btn.my-button-gray-3:not(:first-child),
 .my-btn-group-pill.btn-group > .btn.my-button-gray-3:not(:first-child):hover,
-.my-btn-group-pill.btn-group > .btn.my-button-gray-3:not(:first-child):active:not(:disabled) {
+.my-btn-group-pill.btn-group > .btn.my-button-gray-3:not(:first-child):active:not(:disabled),
+.my-btn-group-pill.btn-group > .btn.my-button-gray-4:not(:first-child),
+.my-btn-group-pill.btn-group > .btn.my-button-gray-4:not(:first-child):hover,
+.my-btn-group-pill.btn-group > .btn.my-button-gray-4:not(:first-child):active:not(:disabled) {
   border-inline-start: 1px solid var(--my-btn-group-pill-ring) !important;
 }
-/* 底為 gray-2 時略加深線色，避免外框／分段線與底色糊成一塊 */
-.my-bgcolor-gray-2 .my-btn-group-pill.btn-group {
-  --my-btn-group-pill-ring: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-gray-2));
+/* 底為 gray-3 時略加深線色，避免外框／分段線與底色糊成一塊 */
+.my-bgcolor-gray-3 .my-btn-group-pill.btn-group {
+  --my-btn-group-pill-ring: color-mix(in srgb, var(--my-color-black) 22%, var(--my-color-gray-3));
 }
 
-/* 淺底分段群組：選中分段（my-button-white）白底深字；未選以 my-button-gray-3 為示範（my-button-gray-2 仍支援，見上段） */
+/* 淺底分段群組：選中分段（my-button-white）白底深字；未選以 my-button-gray-4 為示範（my-button-gray-3 仍支援，見上段） */
 .bg-white .my-btn-group-pill.btn-group > .btn.my-button-white,
 .my-bgcolor-surface .my-btn-group-pill.btn-group > .btn.my-button-white,
 .my-bgcolor-white .my-btn-group-pill.btn-group > .btn.my-button-white,
-.my-bgcolor-gray-3 .my-btn-group-pill.btn-group > .btn.my-button-white,
+.my-bgcolor-gray-4 .my-btn-group-pill.btn-group > .btn.my-button-white,
 .my-bgcolor-page-block .my-btn-group-pill.btn-group > .btn.my-button-white {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
@@ -597,8 +608,8 @@ code {
 .my-bgcolor-surface .my-btn-group-pill.btn-group > .btn.my-button-white:active:not(:disabled),
 .my-bgcolor-white .my-btn-group-pill.btn-group > .btn.my-button-white:hover,
 .my-bgcolor-white .my-btn-group-pill.btn-group > .btn.my-button-white:active:not(:disabled),
-.my-bgcolor-gray-3 .my-btn-group-pill.btn-group > .btn.my-button-white:hover,
-.my-bgcolor-gray-3 .my-btn-group-pill.btn-group > .btn.my-button-white:active:not(:disabled),
+.my-bgcolor-gray-4 .my-btn-group-pill.btn-group > .btn.my-button-white:hover,
+.my-bgcolor-gray-4 .my-btn-group-pill.btn-group > .btn.my-button-white:active:not(:disabled),
 .my-bgcolor-page-block .my-btn-group-pill.btn-group > .btn.my-button-white:hover,
 .my-bgcolor-page-block .my-btn-group-pill.btn-group > .btn.my-button-white:active:not(:disabled) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
@@ -627,7 +638,7 @@ code {
   width: 2.25rem;
   height: 1.25rem;
   border-radius: 50rem;
-  background-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-3);
   transition: background-color 0.15s ease-in-out;
 }
 .my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__track {
@@ -654,7 +665,7 @@ code {
 .my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label {
   color: var(--my-color-green);
 }
-/* 黑底出題規則標題列：軌／字色對齊同區塊 gray-2 標題、green 語意 */
+/* 黑底出題規則標題列：軌／字色對齊同區塊 gray-3 標題、green 語意 */
 .my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch__track {
   background-color: color-mix(in srgb, var(--my-color-white) 28%, transparent);
 }
@@ -662,7 +673,7 @@ code {
   background-color: var(--my-color-green);
 }
 .my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch .my-quiz-generate-mode-switch__label {
-  color: var(--my-color-gray-2);
+  color: var(--my-color-gray-3);
 }
 .my-design-quiz-question-prompt-block .my-quiz-generate-mode-switch--on .my-quiz-generate-mode-switch__label {
   color: var(--my-color-green);
@@ -677,14 +688,14 @@ code {
   color: var(--my-color-yellow);
 }
 
-/* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-3、未選 transparent-borderless */
+/* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-4、未選 transparent-borderless */
 .my-quiz-generate-mode-segment--outline {
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   border-radius: 9999px;
   box-sizing: border-box;
 }
 .my-quiz-generate-mode-segment--outline > .btn.my-button-white,
-.my-quiz-generate-mode-segment--outline > .btn.my-button-gray-3,
+.my-quiz-generate-mode-segment--outline > .btn.my-button-gray-4,
 .my-quiz-generate-mode-segment--outline > .btn.my-button-transparent-borderless {
   border: none !important;
   box-shadow: none;
@@ -709,7 +720,7 @@ code {
 .my-rag-tabs-bar.my-bgcolor-surface .nav-tabs,
 .my-rag-tabs-bar.my-bgcolor-gray-4 .nav-tabs,
 .my-rag-tabs-bar.my-bgcolor-white .nav-tabs {
-  border-bottom: 1px solid var(--my-color-gray-2) !important;
+  border-bottom: 1px solid var(--my-color-gray-3) !important;
   justify-content: center !important;
 }
 .my-rag-tabs-bar .nav-tabs .nav-link {
@@ -770,7 +781,7 @@ code {
   color: var(--my-color-black) !important;
 }
 .my-rag-tabs-bar--design .nav-tabs .nav-link {
-  color: var(--my-color-gray-3);
+  color: var(--my-color-gray-4);
 }
 .my-rag-tabs-bar--design .nav-tabs .nav-link.active {
   color: var(--my-color-white);
@@ -808,7 +819,7 @@ code {
 }
 /* 深色稿：未選／已選 hover 同一套（極淡底 + 未選字稍亮；不另加未選專用底線，與當前分頁一致） */
 .my-rag-tabs-bar--design .nav-tabs .nav-link:not(.active):hover {
-  color: color-mix(in srgb, var(--my-color-white) 42%, var(--my-color-gray-3)) !important;
+  color: color-mix(in srgb, var(--my-color-white) 42%, var(--my-color-gray-4)) !important;
   background-color: color-mix(in srgb, var(--my-color-white) 8%, transparent) !important;
   border-bottom-color: transparent !important;
 }
@@ -876,7 +887,7 @@ code {
 .my-test-section-heading-line {
   display: block;
   border: 0;
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
   flex: 1 1 0;
   min-width: 1rem;
 }
@@ -892,13 +903,13 @@ code {
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
-/* 建立測驗題庫／試卷設計 left 主欄及外層容器：統一 gray-3 底（#f2f2f2） */
+/* 建立測驗題庫／試卷設計 left 主欄及外層容器：統一 gray-4 底（#f2f2f2） */
 .my-design-tab-left-view,
 .my-design-tab-left-view-scroll {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 /* create-exam-bank_3：主內容區白底（覆寫上方 gray-4） */
 .my-design--side-panel-left .my-design-tab-left-view,
@@ -920,7 +931,7 @@ code {
 }
 
 .my-design--side-panel-left .my-design-right-nav {
-  background-color: var(--my-color-gray-3) !important;
+  background-color: var(--my-color-gray-4) !important;
 }
 
 .my-design--side-panel-left .my-design-right-nav .nav-link.active,
@@ -986,18 +997,18 @@ code {
 .my-table th,
 .my-table td {
   vertical-align: middle;
-  border-bottom: 1px solid color-mix(in srgb, var(--my-color-gray-2) 40%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--my-color-gray-3) 40%, transparent);
   text-align: start;
 }
 
 .my-table thead th {
   font-weight: var(--my-font-weight-semibold);
-  background-color: var(--my-color-gray-3);
-  border-bottom: 1px solid color-mix(in srgb, var(--my-color-gray-2) 40%, transparent);
+  background-color: var(--my-color-gray-4);
+  border-bottom: 1px solid color-mix(in srgb, var(--my-color-gray-3) 40%, transparent);
 }
 
 [data-bs-theme="dark"] .my-table thead th {
-  background-color: color-mix(in srgb, var(--my-color-white) 8%, var(--my-color-gray-2));
+  background-color: color-mix(in srgb, var(--my-color-white) 8%, var(--my-color-gray-3));
 }
 
 .my-table tbody tr:last-child td {
@@ -1011,19 +1022,19 @@ code {
 
 /* Bootstrap .table：表頭底／字色用權杖（勿用 .table-light） */
 .table thead.my-table-thead th {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
 
 [data-bs-theme="dark"] .table thead.my-table-thead th {
-  background-color: color-mix(in srgb, var(--my-color-white) 8%, var(--my-color-gray-2));
+  background-color: color-mix(in srgb, var(--my-color-white) 8%, var(--my-color-gray-3));
 }
 
 
-/* Design 頁章節外層（UI 元件參考 1／2／3）：白底 + gray-2 邊線；圓角併 HTML .rounded-4 */
+/* Design 頁章節外層（UI 元件參考 1／2／3）：白底 + gray-3 邊線；圓角併 HTML .rounded-4 */
 .my-design-page-section {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 
 /* Design 規格項：名稱／使用位置／css（DesignPageSpecItem、DesignPageSpecColorGroup） */
@@ -1096,7 +1107,7 @@ code {
 .my-design-gradient-swatch {
   width: 100%;
   height: 3.5rem;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 
 .my-design-gradient-stops {
@@ -1178,9 +1189,9 @@ label[for]:not(.btn) + div {
   margin-top: var(--my-field-label-input-gap);
 }
 
-/* 文字輸入（併 .form-control）：白底、邊線 --my-color-gray-2；字級／內距同中型按鈕；.my-input-md--on-dark 與預設同視覺（相容舊 class） */
+/* 文字輸入（併 .form-control）：白底、邊線 --my-color-gray-3；字級／內距同中型按鈕；.my-input-md--on-dark 與預設同視覺（相容舊 class） */
 .form-control.my-input-md {
-  --my-input-md-border: var(--my-color-gray-2);
+  --my-input-md-border: var(--my-color-gray-3);
   min-width: 0;
   box-sizing: border-box;
   padding: 0.5rem 1rem;
@@ -1207,7 +1218,7 @@ label[for]:not(.btn) + div {
   cursor: not-allowed;
   color: var(--my-color-black);
   -webkit-text-fill-color: var(--my-color-black);
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   border-color: var(--my-input-md-border);
   opacity: 1;
 }
@@ -1222,7 +1233,7 @@ label[for]:not(.btn) + div {
   cursor: text;
   color: var(--my-color-black);
   -webkit-text-fill-color: var(--my-color-black);
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   border-color: var(--my-input-md-border);
   opacity: 1;
 }
@@ -1233,7 +1244,7 @@ label[for]:not(.btn) + div {
   font-size: var(--my-font-size-md);
 }
 
-/* 檔案拖放區：外框與 .form-control.my-input-md 一致（淺灰底 gray-3、1px --my-color-gray-2、rounded-2、字級／內距同中型輸入） */
+/* 檔案拖放區：外框與 .form-control.my-input-md 一致（淺灰底 gray-4、1px --my-color-gray-3、rounded-2、字級／內距同中型輸入） */
 .my-zip-drop-zone {
   cursor: pointer;
   box-sizing: border-box;
@@ -1247,7 +1258,7 @@ label[for]:not(.btn) + div {
   line-height: 1.5;
   color: var(--my-color-black);
   background-color: var(--my-drop-zone-bg);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   border-radius: 0.375rem;
   transition:
     color 0.15s ease,
@@ -1270,8 +1281,8 @@ label[for]:not(.btn) + div {
   cursor: not-allowed;
   color: var(--my-color-black);
   -webkit-text-fill-color: var(--my-color-black);
-  background-color: var(--my-color-gray-3);
-  border-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-3);
 }
 
 /* 輸入／多行／div 仿輸入區塊：在區塊內滿版（同 .w-100；min-width:0 利於 flex 子項撐滿） */
@@ -1290,7 +1301,7 @@ div.form-control {
   border: none;
 }
 
-/* —— 捲軸（全站可捲動區）：軌道預設白底；黑底區見 .my-scrollbar-on-dark；滑塊 gray-2 —— */
+/* —— 捲軸（全站可捲動區）：軌道預設白底；黑底區見 .my-scrollbar-on-dark；滑塊 gray-3 —— */
 ::-webkit-scrollbar {
   width: var(--my-scrollbar-size);
   height: var(--my-scrollbar-size);
@@ -1342,10 +1353,10 @@ div.form-control {
 }
 
 /**
- * 分析頁 design_3：QuizCard 三子區塊（對齊 exam_3／create-exam-bank_3 題目／答案 tab + gray-2 邊框）
+ * 分析頁 design_3：QuizCard 三子區塊（對齊 exam_3／create-exam-bank_3 題目／答案 tab + gray-3 邊框）
  */
 .analysis-page-3-section {
-  border-bottom: 1px solid var(--my-color-gray-2);
+  border-bottom: 1px solid var(--my-color-gray-3);
 }
 
 .analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block-outer {
@@ -1364,18 +1375,18 @@ div.form-control {
 
 .analysis-page-3-quiz .my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3,
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4,
 .analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
-  background-color: var(--my-color-gray-3) !important;
-  border: 1px solid var(--my-color-gray-2);
+  background-color: var(--my-color-gray-4) !important;
+  border: 1px solid var(--my-color-gray-3);
 }
 
 .analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 
 .analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
@@ -1395,7 +1406,7 @@ div.form-control {
 
 .analysis-page-3-quiz .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
   border: 0;
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
   opacity: 1;
 }
 
@@ -1420,7 +1431,7 @@ div.form-control {
 }
 .analysis-page-3-rules.my-design--side-panel-left .my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 .analysis-page-3-rules.my-design--side-panel-left .my-design-quiz-stem-sub-block-top {
   padding-top: 0 !important;
@@ -1500,7 +1511,7 @@ div.form-control {
   font-family: var(--my-font-family-code);
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty {
-  color: var(--my-color-gray-2);
+  color: var(--my-color-gray-3);
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h1,
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h2,
@@ -1528,7 +1539,7 @@ div.form-control {
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote {
   border-left-color: color-mix(in srgb, var(--my-color-white) 40%, transparent);
-  color: var(--my-color-gray-2);
+  color: var(--my-color-gray-3);
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th,
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td {
@@ -1573,7 +1584,7 @@ div.form-control {
   border-radius: 0.25rem;
   overflow-x: auto;
   font-size: 0.875rem;
-  background: var(--my-color-gray-3);
+  background: var(--my-color-gray-4);
 }
 .my-markdown-rendered code {
   font-size: 0.9em;
@@ -1582,12 +1593,12 @@ div.form-control {
 .my-markdown-rendered li code {
   padding: 0.1em 0.35em;
   border-radius: 0.2rem;
-  background: var(--my-color-gray-3);
+  background: var(--my-color-gray-4);
 }
 .my-markdown-rendered blockquote {
   margin: 0.5rem 0;
   padding-left: 0.75rem;
-  border-left: 3px solid var(--my-color-gray-2);
+  border-left: 3px solid var(--my-color-gray-3);
   color: var(--my-color-gray-1);
 }
 .my-markdown-rendered table {
@@ -1598,7 +1609,7 @@ div.form-control {
 }
 .my-markdown-rendered th,
 .my-markdown-rendered td {
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   padding: 0.25rem 0.5rem;
 }
 .my-markdown-rendered a {
@@ -1647,6 +1658,15 @@ div.form-control {
   text-align: center;
   flex-shrink: 0;
 }
+/* 單元名稱前的類型 icon 欄：固定寬度、水平置中（左側清單／主標題列共用） */
+.my-pack-unit-type-icon-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 1rem;
+  min-width: 1rem;
+}
 .my-pack-unit-type-icon--inherit,
 .my-pack-unit-type-icon--inherit::before {
   color: inherit !important;
@@ -1669,16 +1689,16 @@ div.form-control {
   background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
   color: var(--my-color-black) !important;
 }
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3 {
-  background-color: var(--my-color-gray-3) !important;
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4 {
+  background-color: var(--my-color-gray-4) !important;
   color: var(--my-color-black) !important;
   border-color: transparent !important;
   box-shadow: none !important;
 }
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3:hover:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3:focus-visible:not(:disabled),
-.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-3:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3)) !important;
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4:hover:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4:focus-visible:not(:disabled),
+.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-gray-4:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
   color: var(--my-color-black) !important;
 }
 .my-pack-unit-type-segment .btn.my-pack-unit-type-btn.my-button-transparent-borderless {
@@ -1705,9 +1725,9 @@ div.form-control {
 /* 左欄清單底部刪除（exam_3／create-exam-bank_3）：固定於 list 下方；併 my-btn-outline-red-hollow，灰底上透明＋hover 淡紅 */
 .my-design-side-nav-delete {
   flex-shrink: 0;
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
   padding: 0.75rem 1rem;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow {
   background-color: transparent;
@@ -1772,7 +1792,7 @@ div.form-control {
 .my-weakness-report-md pre {
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   overflow-x: auto;
   margin-bottom: 0.5em;
 }
@@ -1780,13 +1800,13 @@ div.form-control {
 .my-weakness-report-md blockquote {
   margin: 0 0 0.5em;
   padding-left: 0.75rem;
-  border-left: 3px solid var(--my-color-gray-2);
+  border-left: 3px solid var(--my-color-gray-3);
   color: var(--my-color-gray-1);
 }
 .my-weakness-report-md table { width: 100%; margin-bottom: 0.5em; border-collapse: collapse; font-size: inherit; }
 .my-weakness-report-md th,
-.my-weakness-report-md td { border: 1px solid var(--my-color-gray-2); padding: 0.35rem 0.5rem; text-align: start; }
-.my-weakness-report-md hr { margin: 0.75em 0; border: 0; border-top: 1px solid var(--my-color-gray-2); }
+.my-weakness-report-md td { border: 1px solid var(--my-color-gray-3); padding: 0.35rem 0.5rem; text-align: start; }
+.my-weakness-report-md hr { margin: 0.75em 0; border: 0; border-top: 1px solid var(--my-color-gray-3); }
 .my-weakness-report-md-list > li p:last-child { margin-bottom: 0; }
 
 /* ── bank-list：題庫／測驗主頁清單（CreateExamQuizBankPage、ExamPage、DesignPage 共用） ── */
@@ -1834,12 +1854,12 @@ div.form-control {
   list-style: none;
   padding: 0;
   margin: 0;
-  border-bottom: 1px solid var(--my-color-gray-2);
+  border-bottom: 1px solid var(--my-color-gray-3);
 }
 
 .bank-list > li {
   display: block;
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
 }
 
 .bank-list-row {
@@ -1857,7 +1877,7 @@ div.form-control {
 }
 
 .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-3);
 }
 
 .bank-list-row:focus-visible {
@@ -1922,7 +1942,7 @@ div.form-control {
   grid-template-columns: 1fr minmax(0, 50%) 1fr;
   align-items: center;
   gap: 0.75rem;
-  border-color: var(--my-color-gray-2) !important;
+  border-color: var(--my-color-gray-3) !important;
   overflow: visible;
   position: relative;
   z-index: 30;
@@ -2012,7 +2032,7 @@ div.form-control {
 .exam-2-detail-bar__title:hover:not(:disabled),
 .create-exam-bank-2-detail-bar__title:focus:not(:disabled),
 .exam-2-detail-bar__title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 
 .create-exam-bank-2-detail-bar__title:focus,

@@ -230,7 +230,7 @@ onMounted(() => {
                       <table class="table table-sm table-borderless mb-0 my-font-sm-400">
                         <tbody>
                           <tr v-for="item in placeholdersForSection('rag')" :key="item.name">
-                            <th scope="row" class="text-nowrap align-top pe-3 font-monospace my-color-gray-2">
+                            <th scope="row" class="text-nowrap align-top pe-3 font-monospace my-color-gray-3">
                               &#123;{{ item.name }}&#125;
                             </th>
                             <td class="text-break my-color-black">{{ item.desc }}</td>
@@ -306,7 +306,7 @@ onMounted(() => {
                       <table class="table table-sm table-borderless mb-0 my-font-sm-400">
                         <tbody>
                           <tr v-for="item in placeholdersForSection(section.key)" :key="item.name">
-                            <th scope="row" class="text-nowrap align-top pe-3 font-monospace my-color-gray-2">
+                            <th scope="row" class="text-nowrap align-top pe-3 font-monospace my-color-gray-3">
                               &#123;{{ item.name }}&#125;
                             </th>
                             <td class="text-break my-color-black">{{ item.desc }}</td>
@@ -342,7 +342,7 @@ onMounted(() => {
                           <div
                             class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
                           >
-                            <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0">
+                            <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-3 mb-0">
                               {{ field.label }}
                             </h3>
                           </div>

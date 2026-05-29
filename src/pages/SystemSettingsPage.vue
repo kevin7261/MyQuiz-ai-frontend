@@ -42,7 +42,7 @@ defineProps({
             </template>
 
             <div v-else class="text-start my-page-block-spacing">
-              <div class="rounded-4 my-bgcolor-gray-3 p-4 w-100 min-w-0">
+              <div class="rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0">
                 <div class="mb-0">
                   <label class="form-label my-font-sm-600 my-color-gray-1 mb-0">服務位址（僅供查閱）</label>
                   <div

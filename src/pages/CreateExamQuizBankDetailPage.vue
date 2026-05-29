@@ -127,11 +127,11 @@ const quizBankNoun = computed(() => '測驗題庫');
 const work3LogoGradientBias = computed(() => (props.designSidePanelOnLeft ? 'work3' : 'default'));
 const generateDbButtonLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題' : '產生題目'));
 const generateDbOverlayLabel = computed(() => (props.designSidePanelOnLeft ? '開始出題中...' : '產生題目中...'));
-/** design_3 核准按鈕 class（create-exam-bank_3 禁用 gray-3／black／outline-gray-1） */
-const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
-/** 設定單元「加入資料夾」：work3 白底欄位用 gray-3 pill */
+/** design_3 核准按鈕 class（create-exam-bank_3 禁用 gray-4／black／outline-gray-1） */
+const d3FilledPillLg = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-4'));
+/** 設定單元「加入資料夾」：work3 白底欄位用 gray-4 pill */
 const d3PackUnitAddFolderPill = computed(() => (
-  props.designSidePanelOnLeft ? 'my-button-gray-3' : 'my-button-white'
+  props.designSidePanelOnLeft ? 'my-button-gray-4' : 'my-button-white'
 ));
 const d3ConfirmPillMd = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-black'));
 
@@ -150,11 +150,11 @@ provide('showMessageModal', (modalTitle, text, options = {}) => {
   });
 });
 const messageModalOpts = { confirmButtonClass: () => d3ConfirmPillMd.value };
-const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-3'));
-const d3SegmentSelected = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-3'));
+const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-button-gray-4'));
+const d3SegmentSelected = computed(() => (props.designSidePanelOnLeft ? 'my-button-white' : 'my-button-gray-4'));
 /** create-exam-bank_3：一般／追問 segmented 選中態（淺灰底） */
 const d3QuizModeSegmentSelected = computed(() => (
-  props.designSidePanelOnLeft ? 'my-button-gray-3' : 'my-button-white'
+  props.designSidePanelOnLeft ? 'my-button-gray-4' : 'my-button-white'
 ));
 const d3CircleIconBtnClass = computed(() => (
   props.designSidePanelOnLeft
@@ -6197,15 +6197,21 @@ async function confirmAnswer(item) {
                   設定單元
                 </div>
                 <div
-                  class="min-w-0 w-100"
+                  class="d-flex align-items-center gap-2 min-w-0 w-100"
                   role="heading"
                   aria-level="2"
                 >
+                  <span class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0" aria-hidden="true">
+                    <PackUnitTypeIcon
+                      :unit-type="packUnitTypeAt(activePackUnitGi)"
+                      color-class="my-color-gray-1"
+                    />
+                  </span>
                   <input
                     :key="'pack-unit-name-' + activePackUnitGi"
                     :value="activePackUnitDisplayLabel"
                     type="text"
-                    class="my-design-pack-unit-name-title my-design-pack-unit-main-title my-font-xl-400 my-color-black text-truncate mb-0 text-start w-100 px-0 py-1 rounded-2"
+                    class="my-design-pack-unit-name-title my-design-pack-unit-main-title my-font-xl-400 my-color-black text-truncate mb-0 text-start flex-grow-1 min-w-0 px-0 py-1 rounded-2"
                     maxlength="200"
                     autocomplete="off"
                     spellcheck="false"
@@ -6221,7 +6227,7 @@ async function confirmAnswer(item) {
             <div
               :key="'rg-' + activePackUnitGi"
               class="my-pack-unit-attrs-panel rounded-4 p-3 w-100 min-w-0 d-flex flex-column gap-4"
-              :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-3'"
+              :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
               role="group"
               aria-label="單元設定"
             >
@@ -6495,13 +6501,17 @@ async function confirmAnswer(item) {
             aria-level="2"
           >
             <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
-              <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ builtPackUnitSectionHeadingTitle }}</span>
-              <PackUnitTypeIcon
+              <span
                 v-if="activeReadonlyPackUnitRow?.unitType != null"
-                :unit-type="activeReadonlyPackUnitRow.unitType"
-                color-class="my-color-gray-1"
-                class="flex-shrink-0"
-              />
+                class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0"
+                aria-hidden="true"
+              >
+                <PackUnitTypeIcon
+                  :unit-type="activeReadonlyPackUnitRow.unitType"
+                  color-class="my-color-gray-1"
+                />
+              </span>
+              <span class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0">{{ builtPackUnitSectionHeadingTitle }}</span>
             </div>
             <button
               v-if="activeReadonlyPackUnitRow"
@@ -6579,7 +6589,7 @@ async function confirmAnswer(item) {
                     left: 0,
                     right: 0,
                     height: '64px',
-                    background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-3)'})`,
+                    background: `linear-gradient(to bottom, transparent, ${designSidePanelOnLeft ? 'var(--my-color-white)' : 'var(--my-color-gray-4)'})`,
                     pointerEvents: 'none',
                   }"
                 />
@@ -6607,7 +6617,7 @@ async function confirmAnswer(item) {
                 </button>
               </div>
             </section>
-            <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
+            <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
             <div
               class="my-pack-unit-settings-body w-100 min-w-0"
               :class="{ 'my-color-gray-4': ragGenerateDisabled }"
@@ -6699,7 +6709,7 @@ async function confirmAnswer(item) {
                       :class="
                         designSidePanelOnLeft
                           ? 'gap-2 p-1 my-quiz-generate-mode-segment--outline'
-                          : 'gap-1 rounded-pill my-bgcolor-gray-3 p-1'
+                          : 'gap-1 rounded-pill my-bgcolor-gray-4 p-1'
                       "
                       role="group"
                       aria-label="出題模式"
@@ -6812,7 +6822,7 @@ async function confirmAnswer(item) {
                           class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2"
                         >
                           <h3
-                            class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-2 mb-0"
+                            class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-3 mb-0"
                           >
                             出題規則
                           </h3>
@@ -6916,7 +6926,7 @@ async function confirmAnswer(item) {
                     class="my-design-quiz-sub-block rounded-4"
                     :class="[
                       designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                      designSidePanelOnLeft ? 'my-bgcolor-gray-3' : 'my-bgcolor-white',
+                      designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
                       { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                     ]"
                   >
@@ -7138,12 +7148,14 @@ async function confirmAnswer(item) {
                             :class="{ 'my-design-right-unit-expand-chevron--open': isDesignRightUnitExpanded(item.index) }"
                           />
                         </span>
-                        <span class="my-design-right-unit-row-label flex-grow-1 min-w-0 text-start text-break">
-                          {{ item.label }}<PackUnitTypeIcon
+                        <span class="my-pack-unit-type-icon-slot my-color-gray-1 flex-shrink-0" aria-hidden="true">
+                          <PackUnitTypeIcon
                             :unit-type="item.unitType"
                             color-class="my-color-gray-1"
-                            class="ms-2 flex-shrink-0"
                           />
+                        </span>
+                        <span class="my-design-right-unit-row-label flex-grow-1 min-w-0 text-start text-break">
+                          {{ item.label }}
                         </span>
                       </div>
                       <span
@@ -7308,7 +7320,7 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
-/* 出題模式：gray-3 軌＋選中白底（與原白軌＋gray-3 選中對調） */
+/* 出題模式：gray-4 軌＋選中白底（與原白軌＋gray-4 選中對調） */
 .my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white) {
   background-color: var(--my-color-white);
   color: var(--my-color-black);
@@ -7381,12 +7393,12 @@ async function confirmAnswer(item) {
   flex-wrap: nowrap;
 }
 .my-design-tab-side-panel {
-  border-color: var(--my-color-gray-2) !important;
+  border-color: var(--my-color-gray-3) !important;
 }
 .my-design-tab-side-panel-header {
   flex-shrink: 0;
   z-index: 31;
-  border-bottom: 1px solid var(--my-color-gray-2);
+  border-bottom: 1px solid var(--my-color-gray-3);
 }
 .my-design-tab-left-view,
 .my-design-tab-right-view {
@@ -7404,19 +7416,19 @@ async function confirmAnswer(item) {
 }
 
 .my-design-main-step-block--section-divide {
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
 }
 
 .my-design--side-panel-left .my-pack-unit-attrs-panel {
   background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-3 {
-  background-color: var(--my-color-gray-3) !important;
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4 {
+  background-color: var(--my-color-gray-4) !important;
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 /* create-exam-bank_3：題目／答案 tab 列不加 pt-2（區塊頂 pt-2 在父層 wrap） */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
@@ -7460,7 +7472,7 @@ async function confirmAnswer(item) {
   width: 100%;
   min-width: 0;
   gap: 0;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   border-radius: 0.75rem;
 }
 .my-design-right-nav--flat {
@@ -7471,7 +7483,7 @@ async function confirmAnswer(item) {
   border-radius: 0;
 }
 .my-design-right-nav--flat .my-design-right-step-block--section-divide {
-  border-bottom: 1px solid var(--my-color-gray-2);
+  border-bottom: 1px solid var(--my-color-gray-3);
 }
 
 .my-design-right-nav--flat .my-design-right-step-block .nav-link:not(.my-design-right-unit-quiz-link) {
@@ -7540,7 +7552,7 @@ async function confirmAnswer(item) {
 }
 .my-design-pack-unit-name-title:hover:not(:disabled),
 .my-design-pack-unit-name-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-pack-unit-name-title:focus {
   outline: none;
@@ -7601,13 +7613,13 @@ async function confirmAnswer(item) {
 }
 .my-design-right-nav button.nav-link:not(.active):hover,
 .my-design-right-nav button.nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
-/* 左欄（gray-4 底）：hover 須用 gray-3 才看得見 */
+/* 左欄（gray-4 底）：hover 須用 gray-4 才看得見 */
 .my-design-right-nav--flat button.nav-link:not(.active):hover,
 .my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-right-nav .nav-link.active,
 .my-design-right-nav .nav-link.active:hover,
@@ -7666,11 +7678,11 @@ async function confirmAnswer(item) {
 }
 .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
 .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
 .my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-right-unit-quiz-list {
   width: 100%;
@@ -7685,11 +7697,11 @@ async function confirmAnswer(item) {
 }
 .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
 .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
 .my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
   align-self: center;
@@ -7767,9 +7779,9 @@ async function confirmAnswer(item) {
   cursor: default;
 }
 .my-pack-folder-pick-chip {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-gray-1);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 .my-pack-folder-pick-chip:hover:not(:disabled) {
   color: var(--my-color-black);
@@ -7794,14 +7806,14 @@ async function confirmAnswer(item) {
   line-height: 1.5;
   color: var(--my-color-black);
   background-color: var(--my-pack-folder-field-bg) !important;
-  border: 1px solid var(--my-color-gray-2) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
   border-radius: 0.375rem;
 }
 .my-pack-folder-field-input:focus {
   outline: 0;
   box-shadow: none;
   background-color: var(--my-pack-folder-field-bg) !important;
-  border-color: var(--my-color-gray-2) !important;
+  border-color: var(--my-color-gray-3) !important;
 }
 .my-pack-drop-target.my-pack-drop-active {
   background-color: var(--my-drop-pack-active-bg) !important;
@@ -7860,7 +7872,7 @@ async function confirmAnswer(item) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 題型區三子區塊：題目＝白底 gray-2 邊框；答案＝gray-3 底；批改子區 inset 灰框 */
+/* 題型區三子區塊：題目＝白底 gray-3 邊框；答案＝gray-4 底；批改子區 inset 灰框 */
 .my-design-quiz-sub-block-outer {
   box-sizing: border-box;
   width: 100%;
@@ -7895,10 +7907,10 @@ async function confirmAnswer(item) {
   max-width: 100%;
   min-width: 0;
 }
-/* 題目子區塊：白底 + gray-2 邊框（同 tab 下方 hr） */
+/* 題目子區塊：白底 + gray-3 邊框（同 tab 下方 hr） */
 .my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 /* 稿頁三子區塊：題目／答案無框；批改規則／批改結果為灰框白底；出題規則為黑底區 */
 /* 灰框欄位：圓角灰邊白底（批改子區） */
@@ -7908,7 +7920,7 @@ async function confirmAnswer(item) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   border-radius: 0.5rem;
   background-color: var(--my-color-white);
 }
@@ -7945,7 +7957,7 @@ async function confirmAnswer(item) {
 .my-design-quiz-field-inset__rule,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
   border: 0;
-  border-top: 1px solid var(--my-color-gray-2);
+  border-top: 1px solid var(--my-color-gray-3);
   opacity: 1;
 }
 /*
@@ -7995,7 +8007,7 @@ async function confirmAnswer(item) {
 }
 .my-design-unit-quiz-type-title:hover:not(:disabled),
 .my-design-unit-quiz-type-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
 }
 .my-design-unit-quiz-type-title:focus {
   outline: none;
@@ -8063,7 +8075,7 @@ async function confirmAnswer(item) {
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  color: var(--my-color-gray-2);
+  color: var(--my-color-gray-3);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
@@ -8105,8 +8117,8 @@ async function confirmAnswer(item) {
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
-  border-left-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2);
+  border-left-color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
@@ -8134,12 +8146,12 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-3、無描邊 */
+/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-4、無描邊 */
 .btn.my-design-quiz-stem-history-btn,
 :deep(.btn.my-design-quiz-stem-history-btn) {
   border: none;
   white-space: nowrap;
-  background-color: var(--my-color-gray-3);
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
 }
 .btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
@@ -8148,25 +8160,25 @@ async function confirmAnswer(item) {
 :deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
 :deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-3));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   color: var(--my-color-black);
 }
-/* 答案子區塊：作答欄白底、淡灰框（--my-color-gray-2） */
+/* 答案子區塊：作答欄白底、淡灰框（--my-color-gray-3） */
 .form-control.my-design-quiz-answer-input,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
 }
 .form-control.my-design-quiz-answer-input:focus,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
   background-color: var(--my-color-white);
-  border-color: var(--my-color-gray-2);
+  border-color: var(--my-color-gray-3);
   box-shadow: none;
 }
 .form-control.my-design-quiz-answer-input:disabled,
 .my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-3);
-  border-color: var(--my-color-gray-2);
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-3);
   opacity: 1;
 }
 /* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕（僅稿頁；含 QuizCard 批改子區塊內按鈕） */

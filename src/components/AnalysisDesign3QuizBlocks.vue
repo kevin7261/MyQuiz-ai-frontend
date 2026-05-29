@@ -45,7 +45,7 @@ function quizCardBind() {
       </div>
     </div>
     <div class="my-design-quiz-sub-block-outer">
-      <div class="my-design-quiz-sub-block rounded-4 py-2 my-bgcolor-gray-3">
+      <div class="my-design-quiz-sub-block rounded-4 py-2 my-bgcolor-gray-4">
         <div class="w-100 min-w-0">
           <QuizCard
             v-bind="quizCardBind()"

@@ -48,7 +48,7 @@ const emit = defineEmits(['switch-exam']);
 
 .exam-page-exam-switch .btn.dropdown-toggle.my-course-header-nav-btn {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-2);
+  border: 1px solid var(--my-color-gray-3);
   box-shadow: none;
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
@@ -59,7 +59,7 @@ const emit = defineEmits(['switch-exam']);
 .exam-page-exam-switch .btn.dropdown-toggle:active:not(:disabled),
 .exam-page-exam-switch .btn.dropdown-toggle.show {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-2));
+  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
   outline: none;
 }
 </style>

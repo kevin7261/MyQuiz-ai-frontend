@@ -50,7 +50,7 @@ async function onCopy() {
 }
 
 .my-design-page-copy-btn:focus-visible {
-  outline: 2px solid var(--my-color-gray-2);
+  outline: 2px solid var(--my-color-gray-3);
   outline-offset: 2px;
 }
 </style>

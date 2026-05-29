@@ -92,14 +92,33 @@ export function logoDiamondGradientToCssLinear(gradient, options = {}) {
   return `linear-gradient(${angle}deg, ${stops})`;
 }
 
-function paletteToHeaderHalfStyle(palette) {
-  const color1 = palette.stops[0]?.color ?? '#000000';
+function gradientToHeaderHalfStyle(gradient) {
+  const color1 = gradient?.stops?.[0]?.color ?? '#000000';
+  const backgroundImage = gradient?.css ?? logoDiamondGradientToCssLinear(gradient);
   return {
     backgroundColor: color1,
-    backgroundImage: palette.css,
+    backgroundImage,
     backgroundRepeat: 'no-repeat',
     backgroundSize: '100% 100%',
     backgroundPosition: 'center',
+  };
+}
+
+function paletteToHeaderHalfStyle(palette) {
+  return gradientToHeaderHalfStyle(palette);
+}
+
+/**
+ * 登入頁 Logo 雙漸層 → 系統 header 左上左右半（secondary 左、primary 右）
+ * @param {{ primaryGradient?: object, secondaryGradient?: object }} logoColors
+ */
+export function logoColorsToSplitHeaderStyles(logoColors) {
+  const secondary = logoColors?.secondaryGradient;
+  const primary = logoColors?.primaryGradient;
+  if (!secondary?.stops?.length || !primary?.stops?.length) return null;
+  return {
+    left: gradientToHeaderHalfStyle(secondary),
+    right: gradientToHeaderHalfStyle(primary),
   };
 }
 
