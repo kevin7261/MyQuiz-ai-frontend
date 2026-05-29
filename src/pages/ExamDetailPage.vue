@@ -52,6 +52,7 @@ import MessageModal from '../components/MessageModal.vue';
 import QuizCard from '../components/QuizCard.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
+import DeleteButtonLabel from '../components/DeleteButtonLabel.vue';
 import ExamAddQuestionModal from '../components/ExamAddQuestionModal.vue';
 import {
   apiUpdateExamTabName,
@@ -3751,14 +3752,14 @@ onActivated(() => {
             >
               <button
                 type="button"
-                class="btn rounded-pill d-inline-flex align-items-center my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2"
                 title="刪除此試卷"
                 aria-label="刪除此試卷"
                 :disabled="sidePanelDeleteExamDisabled || sidePanelDeleteExamLoading"
                 :aria-busy="sidePanelDeleteExamLoading"
                 @click="emit('delete-exam')"
               >
-                刪除此試卷
+                <DeleteButtonLabel label="刪除此試卷" />
               </button>
             </div>
           </aside>

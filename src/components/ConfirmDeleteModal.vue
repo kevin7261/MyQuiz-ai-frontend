@@ -1,4 +1,6 @@
 <script setup>
+import DeleteButtonLabel from './DeleteButtonLabel.vue';
+
 /**
  * ConfirmDeleteModal — 刪除確認 Modal
  *
@@ -67,12 +69,12 @@ function onConfirm() {
             </button>
             <button
               type="button"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
               :disabled="deleting"
               :aria-busy="deleting"
               @click="onConfirm"
             >
-              {{ confirmLabel }}
+              <DeleteButtonLabel :label="confirmLabel" />
             </button>
           </div>
         </div>

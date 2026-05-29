@@ -243,8 +243,8 @@ const showStartGradeButton = computed(
 /** 題幹有文字才顯示作答／「開始批改」等（後端空白列或未產出題文時不應出現批改流程） */
 const hasQuizBody = computed(() => String(props.card?.quiz ?? '').trim() !== '');
 
-/** 無提示內容時不顯示「顯示提示」與空白提示區 */
-const hasHintText = computed(() => String(props.card?.hint ?? '').trim() !== '');
+/** 全站不顯示題目提示（quiz_hint）；後端仍可能回傳 hint，僅隱藏 UI */
+const hasHintText = computed(() => false);
 
 /** 測驗頁 hideGradingPrompt：顯示 llm-generate／Exam_Quiz 之出題模板（quiz_user_prompt_text） */
 const quizUserPromptSnapshotTrimmed = computed(() => {

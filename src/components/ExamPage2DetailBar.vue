@@ -124,12 +124,13 @@ function onTitleInput(e) {
             <li>
               <button
                 type="button"
-                class="dropdown-item my-color-red"
+                class="dropdown-item my-color-red d-flex align-items-center gap-2"
                 :disabled="detailHeaderActionsDisabled"
                 :aria-busy="deleteExamLoading"
                 @click="emit('delete-exam')"
               >
-                刪除此試卷
+                <i class="fa-solid fa-xmark flex-shrink-0" aria-hidden="true" />
+                <span>刪除此試卷</span>
               </button>
             </li>
           </ul>

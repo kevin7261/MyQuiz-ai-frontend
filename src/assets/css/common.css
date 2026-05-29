@@ -948,6 +948,48 @@ code {
   background-color: var(--my-color-gray-4) !important;
 }
 
+/* 左欄「單元」列表：無項目時於列表區塊正中央顯示「沒有單元」 */
+.my-design--side-panel-left .my-design-right-nav .my-design-right-step-block--units {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.my-design-right-unit-list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.my-design--side-panel-left .my-design-right-nav .my-design-right-unit-list {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.my-design-right-unit-list--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 4.5rem;
+  text-align: center;
+}
+
+.my-design--side-panel-left .my-design-right-nav .my-design-right-unit-list--empty {
+  min-height: 0;
+}
+
+.my-design-right-nav--flat .my-design-right-unit-list--empty {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.my-design-right-unit-empty {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
 .my-design--side-panel-left .my-design-right-nav .nav-link.active,
 .my-design--side-panel-left .my-design-right-nav .nav-link.active:hover,
 .my-design--side-panel-left .my-design-right-nav .nav-link.active:focus,
@@ -1396,8 +1438,12 @@ div.form-control {
 
 /* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（black 與 white 皆黑底白字，黑稿內 white 例外）；描邊 .my-button-white-border／.my-btn-outline-gray-1／.my-btn-outline-*-hollow；transparent-borderless 為黑無框（黑稿內例外淺字） —— */
 .btn.rounded-pill:not(.my-btn-outline-gray-1):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow):not(.my-button-logo-gradient):not(.my-btn-lg),
-.btn.rounded-circle {
+.btn.rounded-circle:not(.my-btn-outline-gray-1) {
   border: none;
+}
+.btn.rounded-circle.my-btn-outline-gray-1,
+.btn.my-btn-circle.my-btn-outline-gray-1 {
+  border: 1px solid color-mix(in srgb, var(--my-color-gray-1) 55%, transparent);
 }
 
 /* —— 捲軸（全站可捲動區）：軌道預設白底；黑底區見 .my-scrollbar-on-dark；滑塊 gray-3 —— */
@@ -1848,6 +1894,42 @@ div.form-control {
 .my-design-side-nav-delete__btn.btn.my-btn-outline-red-hollow:disabled {
   background-color: transparent;
   opacity: 0.45;
+}
+
+/* 底欄「+ 新增單元」：黑底膠囊分段（左 +／文字、右 chevron 選單；my-button-white） */
+.my-design-side-nav-delete .my-design-side-nav-add-unit-row {
+  width: 100%;
+}
+.my-design-side-nav-add-unit-group {
+  border-radius: 50rem;
+}
+
+/* 底欄在側欄最下方：選單向上展開，避免被 overflow 裁切 */
+.my-design-side-nav-delete .dropdown.dropup .dropdown-menu.my-design-side-nav-add-unit-dropdown-menu {
+  z-index: 1080;
+}
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 50rem 0 0 50rem;
+  border: none;
+}
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu {
+  flex: 0 0 auto;
+  align-self: stretch;
+  min-width: 2.75rem;
+  padding-inline: 0.875rem;
+  border-radius: 0 50rem 50rem 0;
+  border: none;
+  border-inline-start: 1px solid color-mix(in srgb, var(--my-color-white) 32%, transparent);
+}
+.my-design-side-nav-add-unit-icon {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+}
+.my-design-side-nav-add-unit-menu .my-dropdown-toggle-caret {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
 }
 
 /* ── 分析報告 Markdown 樣式（AnalysisWeaknessPage / StudentAnswerAnalysisPage 共用） ── */

@@ -83,6 +83,7 @@ import {
   ZIP_UPLOAD_DROP_PROMPT,
 } from '../utils/rag.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
+import DeleteButtonLabel from '../components/DeleteButtonLabel.vue';
 import { useRagList } from '../composables/useRagList.js';
 import { useMessageModal } from '../composables/useMessageModal.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
@@ -1019,8 +1020,8 @@ const designRightUploadFileLabel = computed(() => {
 /** 建置前尚無設定單元時，主區提示文案 */
 const packUnitEmptyStartHint = computed(() => {
   const name = String(designRightUploadFileLabel.value || uploadedZipDisplayName.value || '').trim();
-  if (name && name !== '（已上傳）') return `${name} 已上傳，請在左側選單設定單元`;
-  return '教材已上傳，請在左側選單設定單元';
+  if (name && name !== '（已上傳）') return `${name} 已上傳，請在左側選單下方新增單元`;
+  return '教材已上傳，請在左側選單下方新增單元';
 });
 
 /** 建置前尚無設定單元：主區空白引導（置中版面） */
@@ -1230,7 +1231,7 @@ const activePackUnitDisplayLabel = computed(() => {
 /** 建置完成後 left「設定單元」區塊標題：目前單元名稱（非「設定單元 (n/total)」） */
 const builtPackUnitSectionHeadingTitle = computed(() => {
   const row = activeReadonlyPackUnitRow.value;
-  if (!row) return '—';
+  if (!row) return '沒有單元';
   const name = String(row.unitNameDisplay ?? '').trim();
   if (name && name !== '—') return name;
   const navItem = packUnitListItemsForNav.value[activePackUnitGi.value];
@@ -5797,12 +5798,12 @@ async function confirmAnswer(item) {
                     <span class="my-zip-drop-zone-selected__name">{{ newBankUploadFileName }}</span>
                     <button
                       type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
-                      :disabled="createRagLoading"
-                      @click.stop="clearNewBankUploadFile"
-                    >
-                      刪除檔案
-                    </button>
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                    :disabled="createRagLoading"
+                    @click.stop="clearNewBankUploadFile"
+                  >
+                    <DeleteButtonLabel label="刪除檔案" />
+                  </button>
                   </div>
                 </template>
                 <template v-else>
@@ -5881,10 +5882,10 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
                 @click="confirmDeletePackUnit"
               >
-                刪除
+                <DeleteButtonLabel label="刪除" />
               </button>
             </div>
           </div>
@@ -5932,10 +5933,10 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
                 @click="confirmDeleteAllPackUnits"
               >
-                刪除
+                <DeleteButtonLabel label="刪除" />
               </button>
             </div>
           </div>
@@ -5984,12 +5985,12 @@ async function confirmAnswer(item) {
               </button>
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-3 py-2"
                 :disabled="deleteUnitQuizLoading"
                 :aria-busy="deleteUnitQuizLoading"
                 @click="confirmDeleteUnitQuiz"
               >
-                刪除
+                <DeleteButtonLabel label="刪除" />
               </button>
             </div>
           </div>
@@ -6149,7 +6150,7 @@ async function confirmAnswer(item) {
         v-if="bankWork3NoQuizTypesEmpty"
         class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
       >
-        <p class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break">
+        <p class="my-font-md-400 my-color-gray-2 mb-0 text-center text-break">
           目前沒有題型，請在左側選單的單元按 + 新增題型
         </p>
       </div>
@@ -6429,13 +6430,13 @@ async function confirmAnswer(item) {
             <div class="d-flex flex-column align-items-start gap-3 w-100 min-w-0">
               <button
                 type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                 title="刪除此單元"
                 aria-label="刪除此單元"
                 :disabled="packGroupsEditBlocked"
                 @click="openDeletePackUnitModal(activePackUnitGi)"
               >
-                刪除此單元
+                <DeleteButtonLabel label="刪除此單元" />
               </button>
               <div
                 v-if="!designSidePanelOnLeft"
@@ -6460,7 +6461,7 @@ async function confirmAnswer(item) {
               v-else
               class="my-pack-empty-start-panel d-flex flex-column align-items-center text-center gap-4 w-100 min-w-0"
             >
-              <p class="my-font-lg-400 my-color-gray-1 mb-0">
+              <p class="my-font-lg-400 my-color-gray-2 mb-0">
                 {{ packUnitEmptyStartHint }}
               </p>
               <div
@@ -6538,8 +6539,8 @@ async function confirmAnswer(item) {
           </div>
           <span
             v-if="!packUnitCarouselCountEffective"
-            class="my-font-md-400 my-color-black"
-          >—</span>
+            class="my-font-md-400 my-color-gray-2"
+          >沒有單元</span>
         </div>
         <template v-if="packUnitCarouselCountEffective">
             <section
@@ -6981,7 +6982,7 @@ async function confirmAnswer(item) {
                     <button
                       v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
                       type="button"
-                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
+                      class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                       title="刪除此題型"
                       aria-label="刪除此題型"
                       :disabled="
@@ -6995,7 +6996,7 @@ async function confirmAnswer(item) {
                       :aria-busy="deleteUnitQuizLoading"
                       @click="openDeleteUnitQuizModal(activeUnitQuizTypeIdxResolved)"
                     >
-                      刪除此題型
+                      <DeleteButtonLabel label="刪除此題型" />
                     </button>
                   </div>
                 </div>
@@ -7115,7 +7116,9 @@ async function confirmAnswer(item) {
               <div
                 v-if="hasUploadedFileMetadata"
                 class="my-design-right-step-block"
-                :class="designSidePanelOnLeft ? 'pb-2' : (hasBuiltRagSummary ? 'py-2' : 'pb-2')"
+                :class="[
+                  designSidePanelOnLeft ? 'pb-2 my-design-right-step-block--units' : (hasBuiltRagSummary ? 'py-2' : 'pb-2'),
+                ]"
               >
                 <div
                   class="my-design-right-step-block-head d-flex align-items-center min-w-0"
@@ -7123,6 +7126,10 @@ async function confirmAnswer(item) {
                 >
                   <div class="my-design-right-step-heading my-font-sm-400 my-color-gray-1 mb-0">{{ hasBuiltRagSummary ? '單元 / 題型' : '單元' }}</div>
                 </div>
+                <div
+                  class="my-design-right-unit-list w-100 min-w-0"
+                  :class="{ 'my-design-right-unit-list--empty': !designRightUnitSubTabItems.length }"
+                >
                 <template v-if="designRightUnitSubTabItems.length">
                   <div
                     v-for="item in designRightUnitSubTabItems"
@@ -7229,67 +7236,12 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </template>
-                <div
-                  v-if="!hasBuiltRagSummary"
-                  class="my-design-side-nav-add-unit-row px-3 pt-2 pb-3 d-flex align-items-stretch gap-2 min-w-0"
+                <p
+                  v-else
+                  class="my-design-right-unit-empty my-font-md-400 my-color-gray-2 mb-0"
                 >
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 flex-grow-1 min-w-0"
-                    :class="d3ConfirmPillMd"
-                    title="新增單元"
-                    aria-label="新增單元"
-                    :disabled="packGroupsEditBlocked"
-                    @click="onAddPackUnitClick"
-                  >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增單元
-                  </button>
-                  <div class="dropdown flex-shrink-0 d-flex">
-                    <button
-                      type="button"
-                      class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 lh-1 dropdown-toggle my-dropdown-caret my-design-side-nav-unit-menu-btn px-0 py-0"
-                      :class="designSidePanelOnLeft ? 'my-button-transparent-borderless' : 'my-color-gray-1 my-btn-outline-gray-1'"
-                      data-bs-toggle="dropdown"
-                      aria-expanded="false"
-                      aria-label="單元功能選單"
-                      :disabled="packGroupsEditBlocked"
-                    >
-                      <i class="fa-solid fa-chevron-down" aria-hidden="true" />
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end">
-                      <li>
-                        <button
-                          type="button"
-                          class="dropdown-item my-font-md-400"
-                          :disabled="!(currentState.packTasksList || []).length"
-                          title="清空所有設定單元（含空位）"
-                          @click="openDeleteAllPackUnitsModal"
-                        >
-                          刪除全部
-                        </button>
-                      </li>
-                      <li v-if="secondFoldersFull.length">
-                        <button
-                          type="button"
-                          class="dropdown-item my-font-md-400"
-                          @click="addAllSecondFoldersAsGroups"
-                        >
-                          每個資料夾獨立單元
-                        </button>
-                      </li>
-                      <li v-if="secondFoldersFull.length">
-                        <button
-                          type="button"
-                          class="dropdown-item my-font-md-400"
-                          title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
-                          @click="setAllSecondFoldersAsSingleGroup"
-                        >
-                          每個資料夾合併單元
-                        </button>
-                      </li>
-                    </ul>
-                  </div>
+                  沒有單元
+                </p>
                 </div>
               </div>
             </nav>
@@ -7299,6 +7251,74 @@ async function confirmAnswer(item) {
             >
               <div class="d-flex flex-column gap-2 w-100 min-w-0">
                 <template v-if="!hasBuiltRagSummary">
+                  <div class="my-design-side-nav-add-unit-row w-100 min-w-0">
+                    <div
+                      class="my-design-side-nav-add-unit-group d-flex align-items-stretch w-100 min-w-0"
+                      role="group"
+                      aria-label="新增單元與單元功能選單"
+                    >
+                      <button
+                        type="button"
+                        class="btn my-design-side-nav-add-unit-main d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 flex-grow-1 min-w-0"
+                        :class="d3ConfirmPillMd"
+                        title="新增單元"
+                        aria-label="新增單元"
+                        :disabled="packGroupsEditBlocked"
+                        @click="onAddPackUnitClick"
+                      >
+                        <i class="fa-solid fa-plus my-design-side-nav-add-unit-icon flex-shrink-0" aria-hidden="true" />
+                        <span>新增單元</span>
+                      </button>
+                      <div
+                        class="dropdown dropup flex-shrink-0 d-flex"
+                        data-bs-display="static"
+                      >
+                        <button
+                          type="button"
+                          class="btn my-design-side-nav-add-unit-menu d-inline-flex justify-content-center align-items-center my-font-md-400 lh-1 dropdown-toggle my-dropdown-caret px-0 py-2"
+                          :class="d3ConfirmPillMd"
+                          data-bs-toggle="dropdown"
+                          aria-expanded="false"
+                          aria-label="單元功能選單"
+                          :disabled="packGroupsEditBlocked"
+                        >
+                          <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
+                        </button>
+                      <ul class="dropdown-menu dropdown-menu-end my-design-side-nav-add-unit-dropdown-menu">
+                        <li>
+                          <button
+                            type="button"
+                            class="dropdown-item my-font-md-400 d-flex align-items-center gap-2"
+                            :disabled="!(currentState.packTasksList || []).length"
+                            title="清空所有設定單元（含空位）"
+                            @click="openDeleteAllPackUnitsModal"
+                          >
+                            <DeleteButtonLabel label="刪除全部" />
+                          </button>
+                        </li>
+                        <li v-if="secondFoldersFull.length">
+                          <button
+                            type="button"
+                            class="dropdown-item my-font-md-400"
+                            @click="addAllSecondFoldersAsGroups"
+                          >
+                            每個資料夾獨立單元
+                          </button>
+                        </li>
+                        <li v-if="secondFoldersFull.length">
+                          <button
+                            type="button"
+                            class="dropdown-item my-font-md-400"
+                            title="在現有設定單元之後追加一組，內含全部資料夾；打包時檔名以 + 連接"
+                            @click="setAllSecondFoldersAsSingleGroup"
+                          >
+                            每個資料夾合併單元
+                          </button>
+                        </li>
+                      </ul>
+                      </div>
+                    </div>
+                  </div>
                   <button
                     type="button"
                     class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2 w-100"
@@ -7314,14 +7334,14 @@ async function confirmAnswer(item) {
                 </template>
                 <button
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 w-100"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 w-100"
                   title="刪除此題庫"
                   aria-label="刪除此題庫"
                   :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
                   :aria-busy="sidePanelDeleteRagLoading"
                   @click="emit('delete-bank')"
                 >
-                  刪除此題庫
+                  <DeleteButtonLabel label="刪除此題庫" />
                 </button>
               </div>
             </div>
@@ -7738,11 +7758,6 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
 .my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
 .my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:active:not(:disabled),
-.my-design--side-panel-left .my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:hover:not(:disabled),
-.my-design--side-panel-left .my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
-.my-design--side-panel-left .my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:active:not(:disabled) {
-  color: var(--my-color-black);
-}
 .my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
 .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1 {
   color: var(--my-color-gray-1);
@@ -7750,11 +7765,6 @@ async function confirmAnswer(item) {
 .my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
 .my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
 .my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled),
-.my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:hover:not(:disabled),
-.my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:focus-visible:not(:disabled),
-.my-design-side-nav-add-unit-row .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:active:not(:disabled) {
-  color: var(--my-color-black);
-}
 .my-design-right-unit-quiz-for-exam-slot {
   width: 0.5rem;
   min-width: 0.5rem;
@@ -8224,14 +8234,4 @@ async function confirmAnswer(item) {
   color: inherit !important;
 }
 
-/* 左欄「+ 新增單元」列：右側圓形選單與 pill 同高 */
-.my-design-side-nav-add-unit-row > .dropdown > .my-design-side-nav-unit-menu-btn.btn {
-  align-self: stretch;
-  width: auto;
-  height: auto;
-  min-width: 0;
-  min-height: 0;
-  aspect-ratio: 1;
-  flex-shrink: 0;
-}
 </style>

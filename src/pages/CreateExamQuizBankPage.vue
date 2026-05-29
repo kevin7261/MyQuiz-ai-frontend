@@ -18,6 +18,7 @@ import {
 } from '../services/ragApi.js';
 import { deriveRagName, generateTabId, ZIP_UPLOAD_DROP_PROMPT } from '../utils/rag.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
+import DeleteButtonLabel from '../components/DeleteButtonLabel.vue';
 import CreateExamQuizBankDetailPage from './CreateExamQuizBankDetailPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -767,11 +768,11 @@ watch(viewMode, (mode) => {
                   <span class="my-zip-drop-zone-selected__name">{{ newBankUploadFileName }}</span>
                   <button
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
                     :disabled="createRagLoading"
                     @click.stop="clearNewBankUploadFile"
                   >
-                    刪除檔案
+                    <DeleteButtonLabel label="刪除檔案" />
                   </button>
                 </div>
               </template>

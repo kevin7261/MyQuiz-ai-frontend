@@ -20,6 +20,7 @@ import {
   ZIP_UPLOAD_DROP_PROMPT,
 } from '../utils/rag.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
+import DeleteButtonLabel from '../components/DeleteButtonLabel.vue';
 import { API_BASE } from '../constants/api.js';
 import { LOGO_GRADIENT_PALETTES } from '../constants/logoGradientPalettes.js';
 
@@ -815,11 +816,11 @@ function designPackUnitTypeIconCss(unitType) {
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       name="hint-empty-quiz-types"
-                      usage="create-exam-bank_3 建置後主內容無題型：flex 居中 my-font-md-400 my-color-gray-1"
-                      css="flex-grow-1 d-flex align-items-center justify-content-center · my-font-md-400 my-color-gray-1 mb-0 text-center text-break"
+                      usage="create-exam-bank_3 建置後主內容無題型：flex 居中 my-font-md-400 my-color-gray-2"
+                      css="flex-grow-1 d-flex align-items-center justify-content-center · my-font-md-400 my-color-gray-2 mb-0 text-center text-break"
                     >
                       <div class="d-flex align-items-center justify-content-center px-3 py-4 my-bgcolor-gray-4 rounded-3" style="min-height: 6rem; max-width: 20rem;">
-                        <p class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break">
+                        <p class="my-font-md-400 my-color-gray-2 mb-0 text-center text-break">
                           目前沒有題型，請在左側選單的單元按 + 新增題型
                         </p>
                       </div>
@@ -930,25 +931,32 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-add-pack-unit-row"
-                      usage="create-exam-bank_3 左側「+ 新增單元」列（my-design-side-nav-add-unit-row）：左 pill my-button-white；右圓形單元功能選單 my-button-transparent-borderless、與 pill 同高"
-                      css="my-design-side-nav-add-unit-row d-flex align-items-stretch gap-2 · btn rounded-pill my-font-md-400 my-button-white px-4 py-2 flex-grow-1 · btn rounded-circle my-design-side-nav-unit-menu-btn my-button-transparent-borderless my-font-md-400 px-0 py-0"
-                      copy-text="my-design-side-nav-add-unit-row"
+                      usage="create-exam-bank_3 左側底欄「+ 新增單元」列（my-design-side-nav-add-unit-group；位於「開始建立單元」上方）：黑底膠囊分段 my-button-white，左 fa-plus＋文字、右 dropup fa-chevron-down my-dropdown-toggle-caret"
+                      css="my-design-side-nav-add-unit-group d-flex · dropdown dropup · my-design-side-nav-add-unit-main my-button-white · my-design-side-nav-add-unit-menu my-button-white my-dropdown-caret"
+                      copy-text="my-design-side-nav-add-unit-group"
                     >
-                      <div class="my-design-side-nav-add-unit-row d-flex align-items-stretch gap-2 my-bgcolor-gray-4 p-3 rounded-3" style="max-width: 20rem;">
-                        <button
-                          type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-grow-1 min-w-0"
-                        >
-                          <i class="fa-solid fa-plus" aria-hidden="true" />
-                          新增單元
-                        </button>
-                        <button
-                          type="button"
-                          class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 lh-1 my-button-transparent-borderless my-design-side-nav-unit-menu-btn px-0 py-0"
-                          aria-label="單元功能選單（示意）"
-                        >
-                          <i class="fa-solid fa-chevron-down" aria-hidden="true" />
-                        </button>
+                      <div class="my-design-side-nav-delete my-bgcolor-gray-4 rounded-3 p-3" style="max-width: 20rem;">
+                        <div class="my-design-side-nav-add-unit-row w-100 min-w-0">
+                          <div class="my-design-side-nav-add-unit-group d-flex align-items-stretch w-100 min-w-0" role="group">
+                            <button
+                              type="button"
+                              class="btn my-design-side-nav-add-unit-main d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-grow-1 min-w-0"
+                            >
+                              <i class="fa-solid fa-plus my-design-side-nav-add-unit-icon flex-shrink-0" aria-hidden="true" />
+                              <span>新增單元</span>
+                            </button>
+                            <div class="dropdown dropup flex-shrink-0 d-flex">
+                              <button
+                                type="button"
+                                class="btn my-design-side-nav-add-unit-menu d-inline-flex justify-content-center align-items-center my-font-md-400 my-button-white lh-1 dropdown-toggle my-dropdown-caret py-2"
+                                data-bs-toggle="dropdown"
+                                aria-label="單元功能選單（示意）"
+                              >
+                                <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
@@ -969,7 +977,9 @@ function designPackUnitTypeIconCss(unitType) {
                       usage="刪除確認 Modal 刪除"
                       css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                     >
-                      <button type="button" class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-outline-red-hollow px-4 py-2">刪除</button>
+                      <button type="button" class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-4 py-2">
+                        <DeleteButtonLabel label="刪除" />
+                      </button>
                     </DesignPageSpecItem>
 
                     <div class="my-color-gray-4 my-font-sm-400 pt-2">大（my-font-lg-400）</div>
@@ -1389,9 +1399,9 @@ function designPackUnitTypeIconCss(unitType) {
                               <span class="my-zip-drop-zone-selected__name">example_bank.zip</span>
                               <button
                                 type="button"
-                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
                               >
-                                刪除檔案
+                                <DeleteButtonLabel label="刪除檔案" />
                               </button>
                             </div>
                           </div>
@@ -1435,8 +1445,7 @@ function designPackUnitTypeIconCss(unitType) {
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow px-4 py-2"
                     @click="openDeleteModal"
                   >
-                    <i class="fa-solid fa-trash" aria-hidden="true" />
-                    開啟刪除確認 Modal
+                    <DeleteButtonLabel label="開啟刪除確認 Modal" />
                   </button>
                 </div>
               </section>
@@ -1524,10 +1533,10 @@ function designPackUnitTypeIconCss(unitType) {
                   <span class="my-zip-drop-zone-selected__name">{{ uploadFileName }}</span>
                   <button
                     type="button"
-                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
                     @click.stop="clearUploadFile"
                   >
-                    刪除檔案
+                    <DeleteButtonLabel label="刪除檔案" />
                   </button>
                 </div>
               </template>
@@ -1667,23 +1676,6 @@ function designPackUnitTypeIconCss(unitType) {
 .design-page-prompt-block-preview {
   background-color: var(--my-color-black);
   max-width: 16rem;
-}
-
-/* 稿頁預覽：左欄「+ 新增單元」列（對齊 CreateExamQuizBankPage scoped） */
-.design-page-side-panel-preview .my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn,
-.my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn {
-  align-self: stretch;
-  width: auto;
-  height: auto;
-  min-width: 0;
-  min-height: 0;
-  aspect-ratio: 1;
-  flex-shrink: 0;
-  color: var(--my-color-gray-1);
-}
-.my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn:hover:not(:disabled),
-.my-design-side-nav-add-unit-row > .my-design-side-nav-unit-menu-btn.btn:focus-visible:not(:disabled) {
-  color: var(--my-color-black);
 }
 
 /* 稿頁預覽：設定單元名稱 inline 編輯、左欄單元列 badge */
