@@ -6,6 +6,7 @@
  * - /login → 登入頁（LoginView）
  * - /exam、/exam/:exam_id/:exam_quiz_id → 測驗 TopView 全寬版（work）
  * - /create-exam-bank、/create-exam-bank/:exam_id/:exam_quiz_id → 建立測驗題庫九宮格版（詳情含題型深連結）
+ * - /courses → 選擇課程頁（CourseListPage）
  * - /:view → 主區塊各功能（person-analysis、course-analysis、profile、design、manage-users 等），由 HomeView 依 view 渲染
  * - /main、/main/:view → 舊網址相容，重導向至 /exam 或 /:view
  *
@@ -41,6 +42,7 @@ const VIEW_TITLES = {
   settings: '系統設定 - MyQuiz.ai',
   log: '系統紀錄 - MyQuiz.ai',
   'prompt-text': 'Prompt 模板 - MyQuiz.ai',
+  courses: '選擇課程 - MyQuiz.ai',
 };
 
 const routes = [
@@ -190,6 +192,12 @@ const routes = [
     name: 'Design',
     component: HomeView,
     meta: { title: 'UI 元件參考 - MyQuiz.ai' },
+  },
+  {
+    path: '/courses',
+    name: 'Courses',
+    component: HomeView,
+    meta: { title: '選擇課程 - MyQuiz.ai' },
   },
   {
     path: '/design_2',

@@ -32,8 +32,8 @@
       userName: { type: String, default: '' },
       userType: { type: [Number, String], default: undefined },
     },
-    emits: ['open-course-modal'],
-    setup(props, { emit }) {
+    emits: [],
+    setup(props) {
       const route = useRoute();
       const systemHeaderGradientLeftStyle = ref({});
       const systemHeaderGradientRightStyle = ref({});
@@ -45,8 +45,6 @@
       }
 
       applyLogoGradients();
-
-      const onOpenCourseModal = () => emit('open-course-modal');
 
       const visibleMenuItems = computed(() =>
         SIDE_RAIL_MENU_ITEMS.filter(
@@ -65,7 +63,6 @@
         systemHeaderGradientLeftStyle,
         systemHeaderGradientRightStyle,
         regenerateLogoGradients: applyLogoGradients,
-        onOpenCourseModal,
         canSeeNavLink,
         visibleMenuItems,
         isMenuActive,
@@ -131,15 +128,15 @@
     </nav>
 
     <nav class="my-system-header__footer position-relative z-2 d-flex flex-column flex-shrink-0 overflow-visible" aria-label="系統功能">
-      <button
-        type="button"
+      <router-link
+        to="/courses"
         class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
+        active-class="my-system-header__action-btn--active"
         aria-label="課程"
         title="課程"
-        @click="onOpenCourseModal"
       >
         <i class="fa-solid fa-chalkboard" aria-hidden="true" />
-      </button>
+      </router-link>
 
       <router-link
         v-if="canSeeNavLink(userType, 'settings')"

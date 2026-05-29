@@ -13,8 +13,6 @@ const props = defineProps({
   },
   /** logo 寬度（pt）；高度依 viewBox 比例 */
   sizePt: { type: Number, default: 24 },
-  /** LogoGridSvg colors（含 primaryGradient／secondaryGradient） */
-  colors: { type: Object, default: null },
   idPrefix: { type: String, default: '' },
 });
 
@@ -30,11 +28,12 @@ const wrapStyle = computed(() => ({
   width: `${props.sizePt}pt`,
 }));
 
-const useGradient = computed(
-  () => !!(props.colors?.primaryGradient || props.colors?.secondaryGradient),
-);
-
-const logoColors = computed(() => props.colors ?? undefined);
+/** Q／A 分層標誌：淡灰單色、無漸層 */
+const logoColors = {
+  background: 'transparent',
+  primary: 'var(--my-color-gray-1)',
+  secondary: 'var(--my-color-gray-1)',
+};
 </script>
 
 <template>
@@ -47,7 +46,6 @@ const logoColors = computed(() => props.colors ?? undefined);
       :show-grid="false"
       :show-background="false"
       merge-cell5
-      :unified-primary-gradient="useGradient"
       :layer="layer"
       :colors="logoColors"
       :id-prefix="resolvedIdPrefix"

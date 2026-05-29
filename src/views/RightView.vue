@@ -18,6 +18,7 @@
   import SystemSettingsPage from '../pages/SystemSettingsPage.vue';
   import LogListPage from '../pages/LogListPage.vue';
   import PromptTextPage from '../pages/PromptTextPage.vue';
+  import CourseListPage from '../pages/CourseListPage.vue';
 
   /** 與 HomeView currentView 鍵一致；markRaw 避免把元件選項做成深度 reactive */
   const VIEW_COMPONENTS = {
@@ -32,6 +33,7 @@
     systemSettings: markRaw(SystemSettingsPage),
     logList: markRaw(LogListPage),
     promptText: markRaw(PromptTextPage),
+    courseList: markRaw(CourseListPage),
   };
 
   export default {
@@ -67,6 +69,7 @@
           || this.currentView === 'logList'
           || this.currentView === 'promptText'
           || this.currentView === 'logoPage'
+          || this.currentView === 'courseList'
         );
       },
     },

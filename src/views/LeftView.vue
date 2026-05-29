@@ -4,7 +4,7 @@
    *
    * 職責：
    * - 顯示品牌（MyQuiz.ai）
-   * - 品牌下方課程按鈕：顯示目前課程名稱；點擊開啟選課 Modal
+   * - 品牌下方課程按鈕：顯示目前課程名稱；點擊前往選課頁
    * - 主要導覽（測驗、作答弱點分析）
    * - 左下角使用者名下拉：其餘功能與登出（含建立測驗題庫介面稿、UI 元件參考）
    */
@@ -22,11 +22,10 @@
       /** true 時不撐滿高度，供嵌入左欄 header 區 */
       compact: { type: Boolean, default: false },
     },
-    emits: ['logout', 'open-course-modal'],
+    emits: ['logout'],
     setup(props, { emit }) {
       const authStore = useAuthStore();
       const onLogout = () => emit('logout');
-      const onOpenCourseModal = () => emit('open-course-modal');
 
       const currentCourseName = computed(() => {
         const c = authStore.currentCourse;
@@ -46,7 +45,6 @@
 
       return {
         onLogout,
-        onOpenCourseModal,
         canSeeNavLink,
         showDividerBeforeProfile,
         currentCourseName,
@@ -62,13 +60,12 @@
   >
     <div class="my-left-view-header flex-shrink-0 w-100 pt-3 pb-2 d-flex flex-column align-items-center">
       <div class="w-100 m-0 p-0 text-center fw-semibold fs-5 lh-sm my-color-black">MyQuiz.ai</div>
-      <button
-        type="button"
-        class="my-left-view-course-btn d-block w-100 m-0 py-2 border-0 text-center my-font-md-400 my-color-black text-truncate"
-        @click="onOpenCourseModal"
+      <router-link
+        to="/courses"
+        class="my-left-view-course-btn d-block w-100 m-0 py-2 border-0 text-center my-font-md-400 my-color-black text-truncate text-decoration-none"
       >
         {{ currentCourseName }}
-      </button>
+      </router-link>
     </div>
 
     <nav

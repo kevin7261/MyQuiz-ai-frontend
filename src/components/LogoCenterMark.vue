@@ -11,9 +11,11 @@ const props = defineProps({
   variant: {
     type: String,
     default: 'on-dark-button',
-    validator: (v) => ['on-dark-button', 'white-diamond-only', 'default'].includes(v),
+    validator: (v) => ['on-dark-button', 'white-diamond-only', 'default', 'match-text'].includes(v),
   },
   idPrefix: { type: String, default: '' },
+  /** 白菱形漸層（黑／灰區透明）；與按鈕描邊同色盤時傳入 */
+  diamondGradient: { type: Object, default: null },
 });
 
 logoCenterMarkSeq += 1;
@@ -27,6 +29,23 @@ const resolvedIdPrefix = computed(() => {
 const diamondOnly = computed(() => props.variant === 'white-diamond-only');
 
 const markColors = computed(() => {
+  if (props.variant === 'match-text') {
+    return {
+      primary: 'var(--my-color-black)',
+      secondary: 'var(--my-color-black)',
+      /** 避免透明底走 cutout 分支（菱形會誤用 primary 填色） */
+      background: 'var(--my-color-white)',
+      diamondFill: 'var(--my-color-black)',
+    };
+  }
+  if (props.diamondGradient) {
+    return {
+      primary: 'transparent',
+      secondary: 'transparent',
+      background: 'transparent',
+      backgroundGradient: props.diamondGradient,
+    };
+  }
   if (props.variant === 'on-dark-button' || props.variant === 'white-diamond-only') {
     return {
       /** 原 logo 白（52＋54）→ 透明 */
@@ -53,6 +72,7 @@ const wrapStyle = computed(() => ({
 <template>
   <span
     class="logo-center-mark d-inline-flex flex-shrink-0 align-items-center"
+    :class="{ 'logo-center-mark--match-text': variant === 'match-text' }"
     :style="wrapStyle"
     aria-hidden="true"
   >
@@ -71,5 +91,9 @@ const wrapStyle = computed(() => ({
 <style scoped>
 .logo-center-mark {
   line-height: 0;
+}
+
+.logo-center-mark--match-text {
+  color: inherit;
 }
 </style>

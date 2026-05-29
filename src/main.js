@@ -45,13 +45,26 @@ app.use(router);
  * - 舊網址 /main、/main/* 仍會觸發登入檢查後再重導向
  * - user_type 3：測驗／作答弱點分析／建立測驗題庫／設定（/exam、/person-analysis、/create-exam-bank、/profile）；其餘導向 /exam
  * - /log（系統紀錄）：僅 user_type 1；其餘導向 /exam
- * - 未定義路徑：已登入 → /exam；未登入 → /login
+ * - 未選課時強制導向 /courses；已登入造訪 /login 依是否已選課導向 /courses 或 /exam
  */
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
 
   if (to.name === 'Login' && authStore.user) {
-    next({ path: '/exam', replace: true });
+    next({
+      path: authStore.currentCourse ? '/exam' : '/courses',
+      replace: true,
+    });
+    return;
+  }
+
+  if (
+    authStore.user
+    && !authStore.currentCourse
+    && to.name !== 'Courses'
+    && to.name !== 'Login'
+  ) {
+    next({ path: '/courses', replace: true });
     return;
   }
 
@@ -66,6 +79,7 @@ router.beforeEach((to, _from, next) => {
     || to.name === 'CreateExamBank'
     || to.name === 'CreateExamBankDetail'
     || to.name === 'Design'
+    || to.name === 'Courses'
     || to.name === 'Main'
     || to.path === '/main'
     || to.path.startsWith('/main/');

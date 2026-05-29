@@ -403,22 +403,30 @@ code {
   border: 1px solid var(--my-color-gray-2);
 }
 
-/* Logo 隨機漸層 pill（產生題目／開始批改；與 TopView 品牌 icon 同色票機制） */
+/* Logo 隨機漸層 pill（開始出題／開始批改；按鈕本體漸層底；hover 陰影同登入鈕） */
 .btn.my-button-logo-gradient {
   --bs-btn-bg: transparent;
   --bs-btn-hover-bg: transparent;
   --bs-btn-active-bg: transparent;
   --bs-btn-disabled-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-border-color: transparent;
   background-color: transparent !important;
   color: var(--my-color-white) !important;
-  border-color: transparent !important;
-  box-shadow: none;
+  border: none !important;
+  box-shadow: none !important;
 }
 .btn.my-button-logo-gradient:hover:not(:disabled),
-.btn.my-button-logo-gradient:focus-visible:not(:disabled),
-.btn.my-button-logo-gradient:active:not(:disabled) {
-  filter: brightness(0.92);
+.btn.my-button-logo-gradient:focus-visible:not(:disabled) {
   color: var(--my-color-white) !important;
+  border: none !important;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
+}
+.btn.my-button-logo-gradient:active:not(:disabled) {
+  color: var(--my-color-white) !important;
+  border: none !important;
+  filter: brightness(0.92);
 }
 .btn.my-button-logo-gradient:disabled {
   opacity: 0.55;
@@ -1277,7 +1285,7 @@ div.form-control {
 }
 
 /* —— 膠囊／圓形圖示按鈕（與 Bootstrap .btn .rounded-pill／.rounded-circle 併用）：填色用 .my-button-*（black 與 white 皆黑底白字，黑稿內 white 例外）；描邊 .my-button-white-border／.my-btn-outline-gray-1／.my-btn-outline-*-hollow；transparent-borderless 為黑無框（黑稿內例外淺字） —— */
-.btn.rounded-pill:not(.my-btn-outline-gray-1):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow),
+.btn.rounded-pill:not(.my-btn-outline-gray-1):not(.my-btn-outline-green-hollow):not(.my-btn-outline-red-hollow):not(.my-button-logo-gradient),
 .btn.rounded-circle {
   border: none;
 }

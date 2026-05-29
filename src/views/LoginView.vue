@@ -154,7 +154,7 @@
           const userData = data.user != null ? data.user : data;
           authStore.setUser(userData);
           authStore.setCourses(data.courses ?? []);
-          router.push('/exam');
+          router.push(authStore.currentCourse ? '/exam' : '/courses');
         } catch (e) {
           error.value = e.message || '無法連線，請檢查網路或稍後再試';
         } finally {

@@ -458,7 +458,7 @@ watch(
     deleteExamLoading.value,
   ],
   () => {
-    if (props.sidePanelOnLeft) {
+    if (props.sidePanelOnLeft && viewMode.value === 'detail') {
       courseHeaderStore.setExamSwitcherVisible(true, {
         gridItems: gridItems.value,
         selectedExamTabId: selectedExamTabId.value,

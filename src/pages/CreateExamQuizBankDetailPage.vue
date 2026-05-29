@@ -99,7 +99,6 @@ import {
   readCreateBankTabUiPersisted,
   writeCreateBankTabUiPersisted,
 } from '../utils/createBankTabUiStorage.js';
-import { createLogoGridGradientColors } from '../utils/logoDiamondGradient.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -2585,20 +2584,6 @@ const activeUnitQuizTypeIdxResolved = computed(() => {
   if (!Number.isFinite(i) || i < 0 || i >= cards.length) return 0;
   return i;
 });
-
-/** create-exam-bank_3：題型 Q／A 標誌共用一組漸層（切換題型時重抽） */
-const activeUnitQuizLogoColors = ref(null);
-const activeUnitQuizLogoColorsKey = ref('');
-watch(
-  [activeUnitSlotIndex, activeUnitQuizTypeIdxResolved, work3LogoGradientBias],
-  ([slotIndex, quizTypeIdx, gradientBias]) => {
-    const key = `${slotIndex}-${quizTypeIdx}`;
-    if (key === activeUnitQuizLogoColorsKey.value) return;
-    activeUnitQuizLogoColorsKey.value = key;
-    activeUnitQuizLogoColors.value = createLogoGridGradientColors({ bias: gradientBias });
-  },
-  { immediate: true },
-);
 
 /** create-exam-bank_3：目前單元尚無題型時，主內容區置中提示 */
 const bankWork3NoQuizTypesEmpty = computed(
@@ -6806,7 +6791,6 @@ async function confirmAnswer(item) {
                     v-if="designSidePanelOnLeft"
                     layer="primary"
                     :size-pt="24"
-                    :colors="activeUnitQuizLogoColors"
                     :id-prefix="`bank-quiz-q-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                     class="my-design-quiz-sub-block-outer__logo"
                   />
@@ -6933,7 +6917,6 @@ async function confirmAnswer(item) {
                     v-if="designSidePanelOnLeft"
                     layer="secondary"
                     :size-pt="24"
-                    :colors="activeUnitQuizLogoColors"
                     :id-prefix="`bank-quiz-a-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                     class="my-design-quiz-sub-block-outer__logo"
                   />

@@ -1,4 +1,5 @@
 <script setup>
+import { computed, shallowRef, watch } from 'vue';
 import LogoCenterMark from './LogoCenterMark.vue';
 import { createRandomLogoGradientCss } from '../utils/logoDiamondGradient.js';
 
@@ -26,13 +27,28 @@ const props = defineProps({
 defineEmits(['click']);
 
 /** 每顆按鈕各一組隨機線性漸層（色域依 tone；僅 linear-gradient） */
-const buttonStyle = {
-  background: createRandomLogoGradientCss({
+const buttonGradientCss = shallowRef(
+  createRandomLogoGradientCss({
     tone: props.tone,
     bias: props.gradientBias,
     linearOnly: true,
   }),
-};
+);
+
+watch(
+  () => [props.tone, props.gradientBias],
+  ([tone, bias]) => {
+    buttonGradientCss.value = createRandomLogoGradientCss({
+      tone,
+      bias,
+      linearOnly: true,
+    });
+  },
+);
+
+const buttonStyle = computed(() => ({
+  background: buttonGradientCss.value,
+}));
 </script>
 
 <template>

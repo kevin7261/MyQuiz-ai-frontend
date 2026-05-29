@@ -43,6 +43,7 @@
 
       /** TopView 版面之頁面名稱（課程名稱 | 頁面名稱） */
       const pageTitle = computed(() => {
+        if (route.name === 'Courses') return '選擇課程';
         if (route.name === 'Exam' || route.name === 'ExamDetail') return '測驗';
         if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') {
           return '建立測驗題庫';
@@ -60,7 +61,7 @@
       });
 
       function onHeaderTitleClick() {
-        router.push('/exam');
+        router.push('/courses');
       }
 
       return {
