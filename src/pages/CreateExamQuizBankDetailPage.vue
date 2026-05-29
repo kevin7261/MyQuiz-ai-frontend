@@ -255,7 +255,7 @@ function willRestoreBankTabUiForTab(tabId) {
   );
 }
 
-/** 題型「先前出題」：localStorage 備援（GET 未帶 quiz_history_list 時重整仍可還原；與後端欄位合併） */
+/** 題型「先前出題」：localStorage 備援（鍵 rag_tab_id|rag_unit_id|rag_quiz_id；GET 未帶 quiz_history_list 時重整仍可還原） */
 const CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX = 'myquiz:createBankQuizHistory:v1:';
 
 function createBankQuizHistoryStorageKey(personId) {
@@ -268,7 +268,7 @@ function readRagQuizHistoryMap(personId) {
     const raw = localStorage.getItem(createBankQuizHistoryStorageKey(personId));
     if (!raw) return {};
     const o = JSON.parse(raw);
-    const map = o?.byRagQuizId ?? o?.by_rag_quiz_id;
+    const map = o?.byKey ?? o?.byRagQuizId ?? o?.by_rag_quiz_id;
     if (map && typeof map === 'object' && !Array.isArray(map)) return map;
     return {};
   } catch {
@@ -276,11 +276,11 @@ function readRagQuizHistoryMap(personId) {
   }
 }
 
-function writeRagQuizHistoryMap(personId, byRagQuizId) {
+function writeRagQuizHistoryMap(personId, byKey) {
   try {
     localStorage.setItem(
       createBankQuizHistoryStorageKey(personId),
-      JSON.stringify({ v: 1, byRagQuizId })
+      JSON.stringify({ v: 2, byKey })
     );
   } catch {
     /* private mode / quota */
@@ -300,45 +300,113 @@ function mergeQuizHistoryLists(...sources) {
   return out;
 }
 
-function storedQuizHistoryForRagQuiz(personId, ragQuizId) {
-  const rqid = ragQuizId != null ? Math.trunc(Number(ragQuizId)) : NaN;
-  if (!String(personId ?? '').trim() || !Number.isFinite(rqid) || rqid < 1) return [];
-  const map = readRagQuizHistoryMap(personId);
-  return parseQuizHistoryListFromSource(map[String(rqid)]);
+/** 先前出題錨點：rag_tab_id + rag_unit_id + rag_quiz_id 三者須齊全 */
+function quizHistoryAnchorFromRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  const rag_tab_id = String(row.rag_tab_id ?? '').trim();
+  const rag_unit_id = row.rag_unit_id != null ? Math.trunc(Number(row.rag_unit_id)) : NaN;
+  const rag_quiz_id = positiveRagQuizIdFromQuizRow(row);
+  if (!rag_tab_id || !Number.isFinite(rag_unit_id) || rag_unit_id < 1 || rag_quiz_id == null) {
+    return null;
+  }
+  return { rag_tab_id, rag_unit_id, rag_quiz_id };
+}
+
+function quizHistoryAnchorKey(anchor) {
+  if (!anchor) return '';
+  return `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}`;
+}
+
+function quizHistoryAnchorsEqual(a, b) {
+  if (!a || !b) return false;
+  return (
+    a.rag_tab_id === b.rag_tab_id
+    && a.rag_unit_id === b.rag_unit_id
+    && a.rag_quiz_id === b.rag_quiz_id
+  );
+}
+
+/** 同分頁內所有共用同一組 rag_tab_id／rag_unit_id／rag_quiz_id 的題卡 */
+function cardsSharingQuizHistoryAnchor(anchor) {
+  if (!anchor) return [];
+  const out = [];
+  const stacks = currentState.value.unitSlotQuizCards ?? [];
+  for (const stack of stacks) {
+    if (!Array.isArray(stack)) continue;
+    for (const card of stack) {
+      if (quizHistoryAnchorsEqual(quizHistoryAnchorFromRow(card), anchor)) out.push(card);
+    }
+  }
+  return out;
+}
+
+function storedQuizHistoryForAnchor(personId, anchor) {
+  const pid = String(personId ?? '').trim();
+  const key = quizHistoryAnchorKey(anchor);
+  if (!pid || !key) return [];
+  const map = readRagQuizHistoryMap(pid);
+  if (map[key] != null) return parseQuizHistoryListFromSource(map[key]);
+  /** 舊版僅 rag_quiz_id 鍵：遷移前資料仍可读 */
+  const legacyKey = String(anchor.rag_quiz_id);
+  if (legacyKey !== key && map[legacyKey] != null) {
+    return parseQuizHistoryListFromSource(map[legacyKey]);
+  }
+  return [];
 }
 
 function resolveQuizHistoryForRagQuiz(personId, ...sources) {
-  const rqid = sources.reduce(
-    (id, src) => (id != null ? id : positiveRagQuizIdFromQuizRow(src)),
-    null
-  );
-  const parts = sources.map((s) => parseQuizHistoryListFromSource(s));
-  if (rqid != null) parts.push(storedQuizHistoryForRagQuiz(personId, rqid));
+  let anchor = null;
+  const parts = [];
+  for (const src of sources) {
+    if (!anchor) anchor = quizHistoryAnchorFromRow(src);
+    parts.push(parseQuizHistoryListFromSource(src));
+  }
+  if (anchor) parts.push(storedQuizHistoryForAnchor(personId, anchor));
   return mergeQuizHistoryLists(...parts);
 }
 
-function persistQuizHistoryForRagQuiz(personId, ragQuizId, list) {
+function persistQuizHistoryForAnchor(personId, anchor, list) {
   const pid = String(personId ?? '').trim();
-  const rqid = ragQuizId != null ? Math.trunc(Number(ragQuizId)) : NaN;
-  if (!pid || !Number.isFinite(rqid) || rqid < 1) return;
+  const key = quizHistoryAnchorKey(anchor);
+  if (!pid || !key) return;
   const normalized = parseQuizHistoryListFromSource(list);
   const map = readRagQuizHistoryMap(pid);
-  map[String(rqid)] = normalized;
+  map[key] = normalized;
+  const legacyKey = String(anchor.rag_quiz_id);
+  if (legacyKey !== key && map[legacyKey] != null) {
+    delete map[legacyKey];
+  }
   writeRagQuizHistoryMap(pid, map);
 }
 
-/** 合併題卡／產題 API 之歷史並寫入 localStorage */
-function applyQuizHistoryToCard(card, generateQuizResponseJson = null) {
+/** 合併題卡／產題 API 之歷史並寫入 localStorage（鍵：rag_tab_id|rag_unit_id|rag_quiz_id） */
+function applyQuizHistoryToCard(card, generateQuizResponseJson = null, slotIndex = null) {
   if (!card || typeof card !== 'object') return;
   const personId = getPersonId(authStore);
+  if (!quizHistoryAnchorFromRow(card) && slotIndex != null) {
+    const meta = getRagQuizUnitMeta(slotIndex);
+    if (!String(card.rag_tab_id ?? '').trim() && meta.rag_tab_id) {
+      card.rag_tab_id = meta.rag_tab_id;
+    }
+    if (
+      (card.rag_unit_id == null || Number(card.rag_unit_id) < 1)
+      && meta.rag_unit_id >= 1
+    ) {
+      card.rag_unit_id = meta.rag_unit_id;
+    }
+  }
+  const anchor = quizHistoryAnchorFromRow(card) ?? quizHistoryAnchorFromRow(generateQuizResponseJson);
+  const historySources = anchor
+    ? cardsSharingQuizHistoryAnchor(anchor)
+    : [card];
+  if (historySources.length === 0) historySources.push(card);
   card.quiz_history_list = resolveQuizHistoryForRagQuiz(
     personId,
-    card,
+    ...historySources,
     generateQuizResponseJson
   );
-  const rqid = positiveRagQuizIdFromQuizRow(card);
-  if (card.quiz_history_list.length > 0) {
-    persistQuizHistoryForRagQuiz(personId, rqid, card.quiz_history_list);
+  if (card.quiz_history_list.length > 0 && anchor) {
+    persistQuizHistoryForAnchor(personId, anchor, card.quiz_history_list);
   }
 }
 
@@ -3563,25 +3631,23 @@ function appendFollowupToQuizHistory(existingHistory, pair) {
   return [...base, entry];
 }
 
-/** 供 Modal：目前題型 tab 過去出過的題幹（不含當前題幹） */
+/** 供 Modal：目前題型 tab 過去出過的題幹（不含當前題幹；同 rag_tab_id／rag_unit_id／rag_quiz_id） */
 function unitQuizHistoryListForDisplay(quizCardRow) {
-  return parseQuizHistoryListFromSource(quizCardRow);
+  const personId = getPersonId(authStore);
+  const anchor = quizHistoryAnchorFromRow(quizCardRow);
+  if (!anchor) return parseQuizHistoryListFromSource(quizCardRow);
+  const cards = cardsSharingQuizHistoryAnchor(anchor);
+  const sources = cards.length > 0 ? cards : [quizCardRow];
+  return resolveQuizHistoryForRagQuiz(personId, ...sources);
 }
 
-/** 供 llm-generate：含儲存歷史與當前題幹（重新產生時避免重複） */
+/** 供 llm-generate：含儲存歷史與當前題幹（重新產生時避免重複；同三 id 錨點） */
 function unitQuizHistoryListForLlm(quizCardRow) {
-  const seen = new Set();
-  const out = [];
-  const push = (stem) => {
-    const s = String(stem ?? '').trim();
-    if (!s || seen.has(s)) return;
-    seen.add(s);
-    out.push(s);
-  };
-  parseQuizHistoryListFromSource(quizCardRow).forEach(push);
-  if (quizCardRow && typeof quizCardRow === 'object') {
-    push(quizCardRow.quiz);
-  }
+  const base = unitQuizHistoryListForDisplay(quizCardRow);
+  const seen = new Set(base);
+  const out = [...base];
+  const stem = String(quizCardRow?.quiz ?? '').trim();
+  if (stem && !seen.has(stem)) out.push(stem);
   return out;
 }
 
@@ -3783,7 +3849,8 @@ function buildCardFromRagQuiz(quiz, ragName, ragIdFallback) {
   };
   syncQuizCardPromptBaselines(card);
   if (quiz_history_list.length > 0) {
-    persistQuizHistoryForRagQuiz(personId, card.rag_quiz_id, quiz_history_list);
+    const anchor = quizHistoryAnchorFromRow(card);
+    if (anchor) persistQuizHistoryForAnchor(personId, anchor, quiz_history_list);
   }
   return card;
 }
@@ -5213,11 +5280,11 @@ function setCardAtSlot(slotIndex, quizContent, hint, sourceFilename, referenceAn
           ? 'followup'
           : (followupMode ? 'followup' : 'normal'));
       const merged = { ...prev, ...card };
-      applyQuizHistoryToCard(merged, generateQuizResponseJson);
+      applyQuizHistoryToCard(merged, generateQuizResponseJson, slotIndex);
       syncQuizCardPromptBaselines(merged);
       sub[idx] = merged;
     } else {
-      applyQuizHistoryToCard(card, generateQuizResponseJson);
+      applyQuizHistoryToCard(card, generateQuizResponseJson, slotIndex);
       syncQuizCardPromptBaselines(card);
       sub.push(card);
     }
@@ -5673,6 +5740,14 @@ async function confirmAnswer(item) {
                 @click="resetBankPromptEditModalDraft"
               >
                 重設
+              </button>
+              <button
+                type="button"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
+                aria-label="取消"
+                @click="closeBankPromptEditModal"
+              >
+                取消
               </button>
               <button
                 type="button"
@@ -7373,9 +7448,9 @@ async function confirmAnswer(item) {
   padding-right: 1.5rem !important;
 }
 
-/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker 除外 */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
+/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker、顯示／隱藏文本（my-button-transparent-borderless）除外 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
@@ -8186,7 +8261,7 @@ async function confirmAnswer(item) {
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  color: var(--my-color-gray-3);
+  color: var(--my-color-gray-2);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),

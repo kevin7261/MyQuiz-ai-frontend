@@ -2,7 +2,7 @@
 /**
  * AnalysisEditModal — 編輯分析規則 Modal
  *
- * 以 Markdown Editor 修改分析規則，提供重設（還原）與確定（儲存並關閉）按鈕。
+ * 以 Markdown Editor 修改分析規則，提供重設（還原）、取消與確定（儲存並關閉）按鈕。
  * 用於 AnswerWeaknessAnalysisPage 與 StudentAnswerAnalysisPage。
  */
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
@@ -59,6 +59,14 @@ defineEmits(['update:modelValue', 'reset', 'apply', 'close']);
               @click="$emit('reset')"
             >
               重設
+            </button>
+            <button
+              type="button"
+              class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"
+              aria-label="取消"
+              @click="$emit('close')"
+            >
+              取消
             </button>
             <button
               type="button"

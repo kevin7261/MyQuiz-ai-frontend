@@ -52,9 +52,9 @@ const previewPanelRef = ref(null);
 const previewHadOverflow = ref(false);
 const previewExpanded = ref(false);
 
-/** 稿頁黑底預覽：未展開時最高 96pt，內容較少時高度隨內容 */
+/** 稿頁黑底預覽：有內容且未展開時最高 96pt；空狀態高度隨內容 */
 const previewDesignDarkFixed = computed(
-  () => props.previewDesignDark && props.previewOnly && !previewExpanded.value,
+  () => props.previewDesignDark && props.previewOnly && !previewExpanded.value && !previewEmpty.value,
 );
 
 const textareaRef = ref(null);
@@ -307,6 +307,7 @@ onBeforeUnmount(() => {
                     {
                       'english-exam-md-preview-panel--design-dark-fixed': previewDesignDarkFixed,
                       'english-exam-md-preview-panel--design-dark-expanded': previewExpanded,
+                      'english-exam-md-preview-panel--design-dark-empty': previewEmpty,
                     },
                   ]
                 : 'english-exam-md-preview-panel--surface my-bgcolor-surface border overflow-y-visible'
@@ -328,12 +329,12 @@ onBeforeUnmount(() => {
               v-else
               class="english-exam-md-preview-empty min-w-0 my-font-md-400"
               :class="[
-                previewDesignDark ? 'my-color-gray-3' : 'my-color-gray-4',
+                previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4',
                 previewDesignDarkEmbedded ? 'p-3' : 'px-3 py-2',
               ]"
               role="status"
             >
-              尚無內容
+              {{ previewDesignDark ? '未設定規則內容' : '尚無內容' }}
             </div>
           </div>
         </div>
@@ -443,6 +444,18 @@ onBeforeUnmount(() => {
   min-height: 0;
   max-height: none;
   overflow-y: visible;
+}
+/* 出題／批改／分析規則黑底區：未設定規則內容置中、gray-2、高度隨內容 */
+.english-exam-md-preview-panel--design-dark-empty {
+  display: block;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+.english-exam-md-preview-panel--design-dark-empty .english-exam-md-preview-empty {
+  width: 100%;
+  text-align: center;
+  color: var(--my-color-gray-2) !important;
 }
 /* 黑底預覽：內容區下方另起一排「…… 查看更多」／「收起」（不疊在內容上） */
 .english-exam-md-preview-more-row {

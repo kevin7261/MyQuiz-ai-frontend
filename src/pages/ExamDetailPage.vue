@@ -4095,7 +4095,7 @@ onActivated(() => {
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  color: var(--my-color-gray-3);
+  color: var(--my-color-gray-2);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),

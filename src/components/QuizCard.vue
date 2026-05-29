@@ -1979,7 +1979,7 @@ const quizAnswerFieldDisabled = computed(
   color: var(--my-color-white);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
-  color: var(--my-color-gray-3);
+  color: var(--my-color-gray-2);
 }
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
 .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),

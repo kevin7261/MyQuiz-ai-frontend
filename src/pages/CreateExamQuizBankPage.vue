@@ -870,15 +870,15 @@ watch(
   padding-right: 1.5rem !important;
 }
 
-/* create-exam-bank_3：小 pill 按鈕 px-2（覆寫上方 px-4）；類型／加入資料夾 picker 除外 */
-.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
-.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
+/* create-exam-bank_3：小 pill 按鈕 px-2（覆寫上方 px-4）；類型／加入資料夾 picker、顯示／隱藏文本（my-button-transparent-borderless）除外 */
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
 
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
