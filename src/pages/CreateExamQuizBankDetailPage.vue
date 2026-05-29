@@ -922,7 +922,7 @@ const packBuildOverlayLines = computed(() => {
   const cur = Number(st.packBuildCurrent) || 0;
   const repackKey = String(st.packBuildRepackFilename ?? '').trim();
   const ragKey = String(st.packBuildRagFilename ?? '').trim();
-  const lines = [`共 ${total} 個 RAG ZIP，已完成 ${done} 個`];
+  const lines = [`共 ${total} 個單元，已完成 ${done} 個`];
   if (cur > 0) lines.push(`目前建置：第 ${cur} / ${total} 個`);
   if (repackKey) lines.push(`儲存 repack：${repackKey}`);
   if (ragKey) lines.push(`儲存 RAG：${ragKey}`);
