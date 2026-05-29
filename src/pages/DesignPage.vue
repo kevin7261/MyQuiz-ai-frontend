@@ -279,7 +279,7 @@ const DESIGN3_TYPE_GROUPS = [
       },
       {
         name: 'type-md-gray-1',
-        usage: '圓形選單鈕；exam_3 空題目提示；create-exam-bank_3 主內容空題型居中提示',
+        usage: '圓形選單鈕；主畫面置中無資料提示請用 my-main-empty-hint（lg、gray-2）',
         colorClass: 'my-color-gray-1',
         previewText: '目前沒有題型，請在左側選單的單元按 + 新增題型',
       },
@@ -810,11 +810,11 @@ function designPackUnitTypeIconCss(unitType) {
                   <div class="d-flex flex-column gap-4">
                     <DesignPageSpecItem
                       name="hint-empty-quiz-types"
-                      usage="create-exam-bank_3 建置後主內容無題型：flex 居中 my-font-md-400 my-color-gray-2"
-                      css="flex-grow-1 d-flex align-items-center justify-content-center · my-font-md-400 my-color-gray-2 mb-0 text-center text-break"
+                      usage="create-exam-bank_3 建置後主內容無題型：flex 居中 my-main-empty-hint"
+                      css="flex-grow-1 d-flex align-items-center justify-content-center · my-main-empty-hint mb-0 text-center text-break"
                     >
                       <div class="d-flex align-items-center justify-content-center px-3 py-4 my-bgcolor-gray-4 rounded-3" style="min-height: 6rem; max-width: 20rem;">
-                        <p class="my-font-md-400 my-color-gray-2 mb-0 text-center text-break">
+                        <p class="my-main-empty-hint mb-0 text-center text-break">
                           目前沒有題型，請在左側選單的單元按 + 新增題型
                         </p>
                       </div>

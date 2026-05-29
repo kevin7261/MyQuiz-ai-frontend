@@ -13,6 +13,7 @@ import LogoCenterMark from '../components/LogoCenterMark.vue';
 import { canSeeNavLink } from '../router/permissions.js';
 import { useAppStore } from '../stores/appStore.js';
 import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
+import { buildCoursesPageLocation } from '../utils/courseScope.js';
 
 /** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
 const SIDE_RAIL_MENU_ITEMS = [
@@ -48,6 +49,8 @@ const isMenuActive = computed(() =>
     (item) => route.path === item.to || route.path.startsWith(`${item.to}/`),
   ),
 );
+
+const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
 </script>
 
 <template>
@@ -112,7 +115,7 @@ const isMenuActive = computed(() =>
 
     <nav class="my-system-header__footer position-relative z-2 d-flex flex-column flex-shrink-0 overflow-visible" aria-label="系統功能">
       <router-link
-        to="/courses"
+        :to="coursesPageLocation"
         class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
         active-class="my-system-header__action-btn--active"
         aria-label="課程"

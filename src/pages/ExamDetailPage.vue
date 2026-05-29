@@ -3331,7 +3331,7 @@ onActivated(() => {
             >
               <p
                 v-if="designSidePanelOnLeft"
-                class="my-font-md-400 my-color-gray-1 mb-0 text-center text-break"
+                class="my-main-empty-hint mb-0 text-center text-break"
               >
                 目前沒有題目，請在左側選單新增題目
               </p>

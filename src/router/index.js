@@ -16,6 +16,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
 import HomeView from '../views/HomeView.vue';
 import { buildPageHeaderTitle } from '../utils/pageHeaderTitle.js';
+import { useAuthStore } from '../stores/authStore.js';
 
 /** 允許的 view 參數（對應 /:view 的網址片段，用於側邊選單） */
 const VALID_VIEWS = [
@@ -257,9 +258,14 @@ const router = createRouter({
   },
 });
 
-/** 每次導航完成後設定 document.title */
+/** 每次導航完成後設定 document.title，並同步目前頁面的課程 scope */
 router.afterEach((to) => {
   document.title = buildPageHeaderTitle(to);
+  try {
+    useAuthStore().syncActiveCourseScopeFromRoute(to);
+  } catch {
+    /* Pinia 尚未就緒 */
+  }
 });
 
 export default router;

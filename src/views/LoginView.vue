@@ -11,6 +11,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import { useAppStore } from '../stores/appStore.js';
 import { API_BASE } from '../constants/api.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
+import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
 import { logoDiamondGradientToCssLinear } from '../utils/logoDiamondGradient.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import LogoGridSvg from '../components/LogoGridSvg.vue';
@@ -79,7 +80,11 @@ const onLogin = async () => {
     const userData = data.user != null ? data.user : data;
     authStore.setUser(userData);
     authStore.setCourses(data.courses ?? []);
-    router.push(authStore.currentCourse ? '/exam' : '/courses');
+    if (authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM)) {
+      router.push('/exam');
+    } else {
+      router.push({ path: '/courses', query: { scope: COURSE_SCOPE_KEYS.EXAM } });
+    }
   } catch (e) {
     error.value = e.message || '無法連線，請檢查網路或稍後再試';
   } finally {

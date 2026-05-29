@@ -3,29 +3,44 @@
  * CourseListPage — 選擇課程頁
  *
  * 左側系統 header 的課程 icon 可導向此頁，供切換課程。
- * 清單樣式與測驗主頁（ExamPage）一致。
+ * 以 query `scope` 指定要設定哪個功能頁的課程（各頁可不同）。
  */
 import { computed, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { userTypeLabel } from '../router/permissions.js';
+import {
+  COURSE_SCOPE_KEYS,
+  courseScopeReturnPath,
+  normalizeCourseScopeKey,
+} from '../utils/courseScope.js';
 
 defineProps({
   design3: { type: Boolean, default: false },
 });
 
 const authStore = useAuthStore();
+const route = useRoute();
 const router = useRouter();
 
 const sortOrder = ref('asc');
 
 const courses = computed(() => authStore.courses);
 
+const scopeKey = computed(
+  () => normalizeCourseScopeKey(route.query.scope) ?? COURSE_SCOPE_KEYS.EXAM,
+);
+
+const selectedCourse = computed(() => authStore.getCourseForScope(scopeKey.value));
+
 const sortedCourses = computed(() => {
   const items = courses.value.map((course) => ({
     course,
     label: course.course_name || '（未命名課程）',
     subtitle: userTypeLabel(course.user_type),
+    selected:
+      selectedCourse.value?.course_id === course.course_id
+      && selectedCourse.value?.course_user_id === course.course_user_id,
   }));
   return items.sort((a, b) =>
     sortOrder.value === 'asc'
@@ -39,17 +54,17 @@ function toggleSort() {
 }
 
 function onCourseSelect(course) {
-  const prev = authStore.currentCourse;
+  const prev = selectedCourse.value;
   const isDifferent =
-    !prev ||
-    prev.course_id !== course.course_id ||
-    prev.course_user_id !== course.course_user_id;
-  authStore.setCurrentCourse(course);
+    !prev
+    || prev.course_id !== course.course_id
+    || prev.course_user_id !== course.course_user_id;
+  authStore.setCourseForScope(scopeKey.value, course);
   if (isDifferent) {
-    window.location.href = '/exam';
+    router.push(courseScopeReturnPath(scopeKey.value));
     return;
   }
-  router.push('/exam');
+  router.push(courseScopeReturnPath(scopeKey.value));
 }
 </script>
 
@@ -62,7 +77,7 @@ function onCourseSelect(course) {
         v-if="courses.length === 0"
         class="flex-grow-1 d-flex justify-content-center align-items-center"
       >
-        <p class="my-font-md-400 my-color-gray-1 mb-0">
+        <p class="my-main-empty-hint mb-0 text-center text-break">
           目前沒有可用的課程
         </p>
       </div>
@@ -88,6 +103,7 @@ function onCourseSelect(course) {
             <button
               type="button"
               class="bank-list-row"
+              :class="{ 'bank-list-row--selected': item.selected }"
               @click="onCourseSelect(item.course)"
             >
               <span class="bank-list-row__label my-font-md-400 my-color-black">{{ item.label }}</span>
@@ -106,6 +122,9 @@ function onCourseSelect(course) {
 
 <style scoped>
 .course-list .bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-4);
+}
+.course-list .bank-list-row--selected {
   background-color: var(--my-color-gray-4);
 }
 </style>

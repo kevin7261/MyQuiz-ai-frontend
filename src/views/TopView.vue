@@ -11,6 +11,7 @@
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import { resolveBrandName, resolvePageName, isCourseScopedHeaderRoute } from '../utils/pageHeaderTitle.js';
+  import { buildCoursesPageLocation, resolveCourseScopeKey } from '../utils/courseScope.js';
 
   /** 右上角姓名下拉（測驗等四頁）僅在已選課程且為課程範圍頁面時顯示 */
   function shouldShowCourseUserNavDropdown(route, course) {
@@ -42,8 +43,13 @@
         examActionsDisabled,
       } = storeToRefs(courseHeaderStore);
 
+      const routeCourse = computed(() => {
+        const scope = resolveCourseScopeKey(route);
+        return scope ? authStore.getCourseForScope(scope) : authStore.currentCourse;
+      });
+
       const currentCourseName = computed(() =>
-        resolveBrandName(route, authStore.currentCourse),
+        resolveBrandName(route, routeCourse.value),
       );
 
       /** 非課程四頁左側為 MYQUIZ.ai：Google Sans Code，字寬與課程名稱相同 */
@@ -53,11 +59,11 @@
       const pageTitle = computed(() => resolvePageName(route));
 
       const showUserNavDropdown = computed(() =>
-        shouldShowCourseUserNavDropdown(route, authStore.currentCourse),
+        shouldShowCourseUserNavDropdown(route, routeCourse.value),
       );
 
       function onHeaderTitleClick() {
-        router.push('/courses');
+        router.push(buildCoursesPageLocation(route));
       }
 
       return {

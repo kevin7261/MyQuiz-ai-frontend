@@ -9,8 +9,10 @@
    * - 左下角使用者名下拉：其餘功能與登出（含建立測驗題庫介面稿、UI 元件參考）
    */
   import { computed } from 'vue';
+  import { useRoute } from 'vue-router';
   import { useAuthStore } from '../stores/authStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
+  import { buildCoursesPageLocation } from '../utils/courseScope.js';
 
   export default {
     name: 'LeftView',
@@ -25,12 +27,15 @@
     emits: ['logout'],
     setup(props, { emit }) {
       const authStore = useAuthStore();
+      const route = useRoute();
       const onLogout = () => emit('logout');
 
       const currentCourseName = computed(() => {
         const c = authStore.currentCourse;
         return c ? (c.course_name || `課程 ${c.course_id}`) : '選擇課程...';
       });
+
+      const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
 
       const showDividerBeforeProfile = computed(() => {
         const t = props.userType;
@@ -48,6 +53,7 @@
         canSeeNavLink,
         showDividerBeforeProfile,
         currentCourseName,
+        coursesPageLocation,
       };
     },
   };
@@ -61,7 +67,7 @@
     <div class="my-left-view-header flex-shrink-0 w-100 pt-3 pb-2 d-flex flex-column align-items-center">
       <div class="w-100 m-0 p-0 text-center my-font-lg-600 lh-sm my-color-black my-brand-wordmark">MYQUIZ.ai</div>
       <router-link
-        to="/courses"
+        :to="coursesPageLocation"
         class="my-left-view-course-btn d-block w-100 m-0 py-2 border-0 text-center my-font-md-400 my-color-black text-truncate text-decoration-none"
       >
         {{ currentCourseName }}

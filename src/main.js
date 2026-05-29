@@ -38,7 +38,11 @@ pinia.use(piniaPluginPersistedstate);
 // 否則首輪 beforeEach 可能在 store 尚未 hydrate 時讀到 user === null，誤判未登入而導向 /login（像「自動登出」）。
 app.use(pinia);
 const authStore = useAuthStore();
+authStore.migrateLegacyCourseState();
 authStore.validateCurrentCourse();
+if (router.currentRoute.value) {
+  authStore.syncActiveCourseScopeFromRoute(router.currentRoute.value);
+}
 applyFaviconFromLogoColors(loadOrCreateLogoGradientPayload().logoColors);
 app.use(router);
 

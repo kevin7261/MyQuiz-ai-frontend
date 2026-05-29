@@ -6152,7 +6152,7 @@ async function confirmAnswer(item) {
         v-if="bankWork3NoQuizTypesEmpty"
         class="flex-grow-1 d-flex align-items-center justify-content-center px-3 py-5 min-h-0 w-100"
       >
-        <p class="my-font-md-400 my-color-gray-2 mb-0 text-center text-break">
+        <p class="my-main-empty-hint mb-0 text-center text-break">
           目前沒有題型，請在左側選單的單元按 + 新增題型
         </p>
       </div>
@@ -6462,7 +6462,7 @@ async function confirmAnswer(item) {
               v-else
               class="my-pack-empty-start-panel d-flex flex-column align-items-center text-center gap-4 w-100 min-w-0"
             >
-              <p class="my-font-lg-400 my-color-gray-2 mb-0">
+              <p class="my-main-empty-hint mb-0">
                 {{ packUnitEmptyStartHint }}
               </p>
               <div
@@ -6483,7 +6483,7 @@ async function confirmAnswer(item) {
               </div>
               <p
                 v-else
-                class="my-font-md-400 my-color-gray-1 mb-0"
+                class="my-main-empty-hint mb-0"
               >
                 ZIP 內尚無可選資料夾
               </p>

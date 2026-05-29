@@ -67,6 +67,12 @@ code {
   font-size: var(--my-font-size-lg);
   font-weight: var(--my-font-weight-regular);
 }
+/* 主畫面置中無資料提示（lg 字級、gray-2；hover 無變化） */
+.my-main-empty-hint {
+  font-size: var(--my-font-size-lg);
+  font-weight: var(--my-font-weight-regular);
+  color: var(--my-color-gray-2);
+}
 .my-font-lg-600 {
   font-size: var(--my-font-size-lg);
   font-weight: var(--my-font-weight-semibold);

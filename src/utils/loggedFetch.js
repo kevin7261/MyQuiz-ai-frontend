@@ -3,7 +3,7 @@
  *
  * 所有指向 API_BASE 的 URL 會自動附加 query（與後端 OpenAPI 一致）：
  * - person_id：優先 authStore.user.person_id，缺則 fallback user_id／id；登入前可傳 `{ personId }` 覆寫
- * - course_id：來自 authStore.currentCourse；登入／選課前可傳 `{ omitCourseQuery: true }` 略過
+ * - course_id：來自 authStore 目前路由 scope 的課程（coursesByScope）；登入／選課前可傳 `{ omitCourseQuery: true }` 略過
  *
  * 若回應為 HTTP 500，會間隔延遲後重試同一請求（含 POST body），直到 status 不再是 500（通常為 200）。
  * 注意：開發者工具 Network／Console 仍可能對每次失敗的請求顯示紅字，此為瀏覽器行為，無法由前端關閉。
