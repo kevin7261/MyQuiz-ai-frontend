@@ -246,7 +246,7 @@
             <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break text-center" role="alert">{{ error }}</p>
             <button
               type="submit"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-login-view-submit-btn shadow px-4 py-2 w-100"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-login-view-submit-btn px-4 py-2 w-100"
               :disabled="loading || !canLogin"
               :aria-busy="loading"
             >
@@ -307,16 +307,21 @@
 }
 
 .my-login-view-submit-btn {
-  --bs-box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.28);
-  background-color: var(--my-color-white);
+  background-color: var(--my-color-white) !important;
   color: var(--my-color-black);
-  border-color: transparent;
-  box-shadow: var(--bs-box-shadow-lg) !important;
+  border: 1px solid var(--my-color-gray-2) !important;
+  box-shadow: none !important;
 }
 
-.my-login-view-submit-btn:hover:not(:disabled),
+.my-login-view-submit-btn:hover:not(:disabled) {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black);
+  border-color: var(--my-color-gray-2) !important;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
+}
+
 .my-login-view-submit-btn:active:not(:disabled) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  background-color: var(--my-color-white) !important;
   color: var(--my-color-black);
 }
 
