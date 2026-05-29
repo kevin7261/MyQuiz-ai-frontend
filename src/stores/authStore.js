@@ -12,7 +12,6 @@
  */
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { clearSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 
 export const useAuthStore = defineStore(
   'auth',
@@ -75,7 +74,6 @@ export const useAuthStore = defineStore(
       user.value = null;
       courses.value = [];
       currentCourse.value = null;
-      clearSystemHeaderLogoGradients();
     }
 
     return { user, courses, currentCourse, setUser, setCourses, setCurrentCourse, validateCurrentCourse, logout };

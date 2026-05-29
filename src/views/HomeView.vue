@@ -7,6 +7,7 @@ import RightView from './RightView.vue';
 import { useDataStore } from '../stores/dataStore.js';
 import { useAuthStore } from '../stores/authStore.js';
 import { userMayAccessRoute } from '../router/permissions.js';
+import { buildPageHeaderTitle } from '../utils/pageHeaderTitle.js';
 
 const MAIN_WORK_TAB_ID = 'main';
 
@@ -70,6 +71,13 @@ export default {
     onMounted(() => {
       dataStore.addWorkTab(MAIN_WORK_TAB_ID);
     });
+
+    watch(
+      () => route.fullPath,
+      () => {
+        document.title = buildPageHeaderTitle(route);
+      },
+    );
 
     watch(
       () => [route.fullPath, authStore.user],

@@ -15,6 +15,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/LoginView.vue';
 import HomeView from '../views/HomeView.vue';
+import { buildPageHeaderTitle } from '../utils/pageHeaderTitle.js';
 
 /** 允許的 view 參數（對應 /:view 的網址片段，用於側邊選單） */
 const VALID_VIEWS = [
@@ -28,22 +29,6 @@ const VALID_VIEWS = [
   'log',
   'prompt-text',
 ];
-
-/** 各 view 對應的瀏覽器頁籤標題 */
-const VIEW_TITLES = {
-  work: '測驗 - MyQuiz.ai',
-  'person-analysis': '作答弱點分析 - MyQuiz.ai',
-  'course-analysis': '學生作答分析 - MyQuiz.ai',
-  profile: '個人設定 - MyQuiz.ai',
-  'create-exam-bank': '建立測驗題庫 - MyQuiz.ai',
-  design: 'UI 元件參考 - MyQuiz.ai',
-  logo: 'Logo 繪製 - MyQuiz.ai',
-  'manage-users': '使用者管理 - MyQuiz.ai',
-  settings: '系統設定 - MyQuiz.ai',
-  log: '系統紀錄 - MyQuiz.ai',
-  'prompt-text': 'Prompt 模板 - MyQuiz.ai',
-  courses: '選擇課程 - MyQuiz.ai',
-};
 
 const routes = [
   { path: '/', redirect: '/login' },
@@ -197,7 +182,7 @@ const routes = [
     path: '/courses',
     name: 'Courses',
     component: HomeView,
-    meta: { title: '選擇課程 - MyQuiz.ai' },
+    meta: { title: 'MyQuiz.ai | 選擇課程' },
   },
   {
     path: '/design_2',
@@ -272,16 +257,9 @@ const router = createRouter({
   },
 });
 
-/** 每次導航時依路由設定 document.title，方便書籤與多分頁辨識 */
-router.beforeEach((to, _from, next) => {
-  if (to.name === 'Main' && to.params.view && VIEW_TITLES[to.params.view]) {
-    document.title = VIEW_TITLES[to.params.view];
-  } else if (to.meta.title) {
-    document.title = to.meta.title;
-  } else {
-    document.title = 'MyQuiz.ai';
-  }
-  next();
+/** 每次導航完成後設定 document.title，與 TopView header 一致 */
+router.afterEach((to) => {
+  document.title = buildPageHeaderTitle(to);
 });
 
 export default router;

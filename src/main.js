@@ -16,6 +16,8 @@ import App from './App.vue';
 import router from './router';
 import { userMayAccessRoute } from './router/permissions.js';
 import { useAuthStore } from './stores/authStore.js';
+import { loadOrCreateLogoGradientPayload } from './composables/useSystemHeaderLogoGradients.js';
+import { applyFaviconFromLogoColors } from './utils/faviconGradient.js';
 
 /* 第三方樣式與全域樣式 */
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -37,6 +39,7 @@ pinia.use(piniaPluginPersistedstate);
 app.use(pinia);
 const authStore = useAuthStore();
 authStore.validateCurrentCourse();
+applyFaviconFromLogoColors(loadOrCreateLogoGradientPayload().logoColors);
 app.use(router);
 
 /**
@@ -45,26 +48,13 @@ app.use(router);
  * - 舊網址 /main、/main/* 仍會觸發登入檢查後再重導向
  * - user_type 3：測驗／作答弱點分析／建立測驗題庫／設定（/exam、/person-analysis、/create-exam-bank、/profile）；其餘導向 /exam
  * - /log（系統紀錄）：僅 user_type 1；其餘導向 /exam
- * - 未選課時強制導向 /courses；已登入造訪 /login 依是否已選課導向 /courses 或 /exam
+ * - 已登入造訪 /login 導向 /exam
  */
 router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore();
 
   if (to.name === 'Login' && authStore.user) {
-    next({
-      path: authStore.currentCourse ? '/exam' : '/courses',
-      replace: true,
-    });
-    return;
-  }
-
-  if (
-    authStore.user
-    && !authStore.currentCourse
-    && to.name !== 'Courses'
-    && to.name !== 'Login'
-  ) {
-    next({ path: '/courses', replace: true });
+    next({ path: '/exam', replace: true });
     return;
   }
 

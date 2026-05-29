@@ -1,11 +1,13 @@
 import { shallowRef } from 'vue';
+import { buildRandomLogoGradientPayload } from '../utils/loginPageGradients.js';
 import {
-  createRandomLogoDiamondSplitHorizontalGradients,
-  logoColorsToSplitHeaderStyles,
-} from '../utils/logoDiamondGradient.js';
+  readLogoGradientCookie,
+  writeLogoGradientCookie,
+} from '../utils/logoGradientCookie.js';
+import { applyFaviconFromLogoColors } from '../utils/faviconGradient.js';
 
-const STORAGE_KEY = 'myquiz-system-header-logo-gradients';
-
+const loginLogoColors = shallowRef(null);
+const loginPageBgGradientCss = shallowRef('');
 const systemHeaderGradientLeftStyle = shallowRef({});
 const systemHeaderGradientRightStyle = shallowRef({});
 /** 與 header 左半漸層同色盤（開始出題） */
@@ -13,93 +15,63 @@ const generateButtonGradientCss = shallowRef('');
 /** 與 header 右半漸層同色盤（開始批改） */
 const gradeButtonGradientCss = shallowRef('');
 
-function readPersistedGradients() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data?.left?.backgroundImage || !data?.right?.backgroundImage) return null;
-    return data;
-  } catch {
-    return null;
-  }
+function applyHeaderSplit(headerSplit) {
+  if (!headerSplit?.left || !headerSplit?.right) return;
+  systemHeaderGradientLeftStyle.value = headerSplit.left;
+  systemHeaderGradientRightStyle.value = headerSplit.right;
+  generateButtonGradientCss.value = headerSplit.left.backgroundImage ?? '';
+  gradeButtonGradientCss.value = headerSplit.right.backgroundImage ?? '';
 }
 
-function persistGradients(left, right) {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        left,
-        right,
-      }),
-    );
-  } catch {
-    /* ignore quota / private mode */
-  }
+/**
+ * @param {{ logoColors: object, pageBgCss: string, headerSplit: object }} payload
+ */
+function applyLogoGradientPayload(payload) {
+  loginLogoColors.value = payload.logoColors;
+  loginPageBgGradientCss.value = payload.pageBgCss;
+  applyHeaderSplit(payload.headerSplit);
+  applyFaviconFromLogoColors(payload.logoColors);
 }
 
-function applySplitFromStyles(split) {
-  systemHeaderGradientLeftStyle.value = split.left;
-  systemHeaderGradientRightStyle.value = split.right;
-  generateButtonGradientCss.value = split.left.backgroundImage ?? '';
-  gradeButtonGradientCss.value = split.right.backgroundImage ?? '';
+function persistLogoGradientPayload(payload) {
+  writeLogoGradientCookie(payload);
 }
 
-function applySplitGradients() {
-  const split = createRandomLogoDiamondSplitHorizontalGradients();
-  applySplitFromStyles(split);
-  persistGradients(split.left, split.right);
+export function loadOrCreateLogoGradientPayload() {
+  const cached = readLogoGradientCookie();
+  if (cached) return cached;
+  const next = buildRandomLogoGradientPayload();
+  writeLogoGradientCookie(next);
+  return next;
 }
 
 let initialized = false;
 
 function ensureInitialized() {
   if (initialized) return;
-  const persisted = readPersistedGradients();
-  if (persisted) {
-    applySplitFromStyles({
-      left: persisted.left,
-      right: persisted.right,
-    });
-    initialized = true;
-    return;
-  }
-  applySplitGradients();
+  applyLogoGradientPayload(loadOrCreateLogoGradientPayload());
   initialized = true;
 }
 
-/**
- * 登入成功時寫入登入頁當下 Logo 漸層，系統 header 左上與之同色盤並持久化。
- * @param {{ primaryGradient?: object, secondaryGradient?: object }} logoColors
- */
-export function setSystemHeaderLogoGradientsFromLogin(logoColors) {
-  const split = logoColorsToSplitHeaderStyles(logoColors);
-  if (!split) return;
-  applySplitFromStyles(split);
-  persistGradients(split.left, split.right);
+/** 點擊 logo 或 cookie 不存在時：重新隨機並寫入 cookie */
+function regenerateAndPersistLogoGradients() {
+  const next = buildRandomLogoGradientPayload();
+  applyLogoGradientPayload(next);
+  persistLogoGradientPayload(next);
   initialized = true;
 }
 
-/** 登出時清除已儲存的 header 漸層 */
-export function clearSystemHeaderLogoGradients() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    /* ignore */
-  }
-  initialized = false;
-}
-
-/** 系統 header 左上角左右漸層；work3 開始出題／開始批改與其同色盤 */
+/** 系統 header／登入頁 Logo 漸層；work3 開始出題／開始批改與 header 左／右半同色盤 */
 export function useSystemHeaderLogoGradients() {
   ensureInitialized();
 
   return {
+    loginLogoColors,
+    loginPageBgGradientCss,
     systemHeaderGradientLeftStyle,
     systemHeaderGradientRightStyle,
     generateButtonGradientCss,
     gradeButtonGradientCss,
-    regenerateSystemHeaderLogoGradients: applySplitGradients,
+    regenerateSystemHeaderLogoGradients: regenerateAndPersistLogoGradients,
   };
 }

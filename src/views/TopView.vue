@@ -2,14 +2,14 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
+   * 課程切換由左側系統 header 負責；本列顯示「MyQuiz.ai | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
    */
   import { computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
   import { storeToRefs } from 'pinia';
-  import { useAuthStore } from '../stores/authStore.js';
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
+  import { resolveBrandName, resolvePageName } from '../utils/pageHeaderTitle.js';
   import CreateExamQuizBankBankSwitchDropdown from '../components/CreateExamQuizBankBankSwitchDropdown.vue';
   import ExamPageExamSwitchDropdown from '../components/ExamPageExamSwitchDropdown.vue';
 
@@ -21,7 +21,6 @@
       userType: { type: [Number, String], default: undefined },
     },
     setup() {
-      const authStore = useAuthStore();
       const route = useRoute();
       const router = useRouter();
       const courseHeaderStore = useCourseHeaderStore();
@@ -36,29 +35,10 @@
         examActionsDisabled,
       } = storeToRefs(courseHeaderStore);
 
-      const currentCourseName = computed(() => {
-        const c = authStore.currentCourse;
-        return c ? (c.course_name || `課程 ${c.course_id}`) : '選擇課程...';
-      });
+      const currentCourseName = computed(() => resolveBrandName());
 
-      /** TopView 版面之頁面名稱（課程名稱 | 頁面名稱） */
-      const pageTitle = computed(() => {
-        if (route.name === 'Courses') return '選擇課程';
-        if (route.name === 'Exam' || route.name === 'ExamDetail') return '測驗';
-        if (route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail') {
-          return '建立測驗題庫';
-        }
-        if (route.name === 'Design') return 'UI 元件參考';
-        if (route.params.view === 'person-analysis') return '作答弱點分析';
-        if (route.params.view === 'course-analysis') return '學生作答分析';
-        if (route.params.view === 'manage-users') return '使用者管理';
-        if (route.params.view === 'profile') return '個人設定';
-        if (route.params.view === 'settings') return '系統設定';
-        if (route.params.view === 'log') return '系統紀錄';
-        if (route.params.view === 'prompt-text') return 'Prompt 模板';
-        if (route.params.view === 'logo') return 'Logo 繪製';
-        return '';
-      });
+      /** TopView 版面之頁面名稱（MyQuiz.ai | 頁面名稱） */
+      const pageTitle = computed(() => resolvePageName(route));
 
       function onHeaderTitleClick() {
         router.push('/courses');

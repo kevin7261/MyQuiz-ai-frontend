@@ -94,7 +94,7 @@ export function logoDiamondGradientToCssLinear(gradient, options = {}) {
 
 function gradientToHeaderHalfStyle(gradient) {
   const color1 = gradient?.stops?.[0]?.color ?? '#000000';
-  const backgroundImage = gradient?.css ?? logoDiamondGradientToCssLinear(gradient);
+  const backgroundImage = logoDiamondGradientToCssLinear(gradient, { useStopsOnly: true });
   return {
     backgroundColor: color1,
     backgroundImage,

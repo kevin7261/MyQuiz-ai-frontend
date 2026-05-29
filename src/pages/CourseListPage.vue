@@ -2,8 +2,7 @@
 /**
  * CourseListPage — 選擇課程頁
  *
- * 登入後若尚未選課（currentCourse 為 null），路由守衛會導向此頁。
- * 左側系統 header 的課程 icon 亦導向此頁，供切換課程。
+ * 左側系統 header 的課程 icon 可導向此頁，供切換課程。
  * 清單樣式與測驗主頁（ExamPage）一致。
  */
 import { computed, ref } from 'vue';

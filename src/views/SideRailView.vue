@@ -68,13 +68,16 @@
 
 <template>
   <aside class="my-system-header position-relative d-flex flex-column h-100 align-self-stretch overflow-visible flex-shrink-0 my-bgcolor-white border-end" aria-label="系統 header">
-    <div class="my-system-header__gradient position-absolute top-0 start-0 z-0 d-flex w-100 pe-none" aria-hidden="true">
+    <div
+      class="my-system-header__gradient position-absolute top-0 start-0 z-0 d-flex w-100 pe-none overflow-hidden"
+      aria-hidden="true"
+    >
       <div
-        class="my-system-header__gradient-half w-50 h-100 min-w-0 overflow-hidden"
+        class="my-system-header__gradient-half w-50 h-100 min-w-0"
         :style="systemHeaderGradientLeftStyle"
       />
       <div
-        class="my-system-header__gradient-half w-50 h-100 min-w-0 overflow-hidden"
+        class="my-system-header__gradient-half w-50 h-100 min-w-0"
         :style="systemHeaderGradientRightStyle"
       />
     </div>

@@ -51,6 +51,11 @@ const props = defineProps({
    * 僅適用完整 logo（非 mergeCell5／裁切模式）
    */
   outerCellsWhiteOverlay: { type: Boolean, default: false },
+  /**
+   * true：centerCellsOnly／centerQuadOnly 時 unified 漸層仍以完整 logo（240×180）userSpace 計算
+   * （與登入頁 51–54／71–72 同色相同向量）
+   */
+  unifiedGradientFullLogoSpace: { type: Boolean, default: false },
 });
 
 function parsePctCoord(val) {
@@ -140,6 +145,9 @@ const useCenterCellsOnly = computed(
   () => props.centerCellsOnly && !props.mergeCell5 && !props.centerQuadOnly,
 );
 
+/** 完整 logo 座標系（與登入頁 unified 漸層一致） */
+const FULL_LOGO_GRADIENT_METRICS = { minX: 0, minY: 0, width: 240, height: 180 };
+
 /** 51–54 區塊高度（含 71–72 延伸列時為 100） */
 const centerBlockHeight = computed(() => (useCenterQuadOnly.value ? 80 : 100));
 
@@ -197,6 +205,12 @@ const useUnifiedSecondary = computed(
 );
 
 const unifiedGradientMetrics = computed(() => {
+  if (
+    props.unifiedGradientFullLogoSpace
+    && (useCenterCellsOnly.value || useCenterQuadOnly.value)
+  ) {
+    return FULL_LOGO_GRADIENT_METRICS;
+  }
   if (splitLayerUnifiedView.value) {
     return { minX: 0, minY: 0, width: 160, height: 180 };
   }
