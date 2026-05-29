@@ -1607,73 +1607,7 @@ function designPackUnitTypeIconCss(unitType) {
   outline: none;
 }
 
-/* ── list 入口預覽（對齊 ExamPage2／CreateExamQuizBankPage2 scoped bank-*） ── */
-.bank-list-wrap {
-  width: 100%;
-  max-width: 40rem;
-}
-
-.bank-table-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 0.75rem;
-}
-
-.bank-table-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0 1.25rem 0.5rem;
-}
-
-.bank-table-sort-btn {
-  background-color: transparent !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.bank-table-sort-btn:hover:not(:disabled),
-.bank-table-sort-btn:focus-visible:not(:disabled),
-.bank-table-sort-btn:active:not(:disabled) {
-  background-color: transparent !important;
-}
-
-.bank-table-header__dot-spacer {
-  display: inline-block;
-  width: calc(0.5rem + 0.75rem);
-  flex-shrink: 0;
-}
-
-.bank-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  border-bottom: 1px solid var(--my-color-gray-2, #e5e5e5);
-}
-
-.bank-list > li {
-  display: block;
-  border-top: 1px solid var(--my-color-gray-2, #e5e5e5);
-}
-
-.bank-list-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  padding: 0.875rem 1.25rem;
-  background: transparent;
-  border: none;
-  text-align: left;
-  cursor: pointer;
-  min-width: 0;
-  transition: background-color 0.12s ease;
-}
-
-.bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-2, #e5e5e5);
-}
-
+/* design_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-2） */
 .design-page__list-preview--work3 .bank-list-row:hover:not(:disabled) {
   background-color: var(--my-color-gray-3);
 }
@@ -1681,43 +1615,6 @@ function designPackUnitTypeIconCss(unitType) {
 .design-page__page-preview--work3 {
   width: 100%;
   max-width: 40rem;
-}
-
-.bank-list-row:focus-visible {
-  outline: 2px solid var(--my-color-black, #000);
-  outline-offset: -2px;
-}
-
-.bank-list-row__dot-col {
-  flex-shrink: 0;
-  width: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.bank-list-row__exam-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-}
-
-.bank-list-row__label {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.bank-list-row__subtitle {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.bank-list-row__chevron {
-  flex-shrink: 0;
-  font-size: 0.625rem;
-  opacity: 0.4;
 }
 
 /* ── 字階預覽：exam_3／create-exam-bank_3 語意標題（對齊 ExamPage／CreateExamQuizBankPage scoped） ── */

@@ -230,7 +230,7 @@ export function packUnitTypeDisplayLabel(unitType) {
 export function packUnitTypeIconClasses(unitType) {
   const ut = normalizePackUnitType(unitType);
   if (ut === UNIT_TYPE_TEXT) return 'fa-solid fa-a';
-  if (ut === UNIT_TYPE_MP3) return 'fa-solid fa-microphone';
+  if (ut === UNIT_TYPE_MP3) return 'fa-solid fa-headphones';
   if (ut === UNIT_TYPE_YOUTUBE) return 'fa-brands fa-youtube';
   return 'fa-solid fa-database';
 }

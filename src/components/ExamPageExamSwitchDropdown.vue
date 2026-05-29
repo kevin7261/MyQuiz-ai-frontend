@@ -23,7 +23,7 @@ const emit = defineEmits(['switch-exam']);
       <span>所有試卷</span>
       <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
     </button>
-    <ul class="dropdown-menu dropdown-menu-end exam-page-exam-switch-menu my-course-header__user-menu">
+    <ul class="dropdown-menu dropdown-menu-end exam-page-exam-switch-menu my-nav-switch-dropdown-menu my-course-header__user-menu">
       <li v-if="gridItems.length === 0">
         <span class="dropdown-item disabled">尚無測驗</span>
       </li>
@@ -43,21 +43,7 @@ const emit = defineEmits(['switch-exam']);
 
 <style scoped>
 .exam-page-exam-switch-menu {
-  min-width: 10rem;
-  max-height: min(60vh, 24rem);
-  overflow-x: hidden;
-  overflow-y: auto;
   z-index: 1100;
-}
-
-.exam-page-exam-switch-menu > li {
-  display: block;
-  width: 100%;
-}
-
-.exam-page-exam-switch-menu .dropdown-item {
-  width: 100%;
-  white-space: nowrap;
 }
 
 .exam-page-exam-switch .btn.dropdown-toggle.my-course-header-nav-btn {

@@ -1464,14 +1464,13 @@ div.form-control {
   min-width: 1.75rem;
   min-height: 1.75rem;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  border: none;
   background-color: transparent;
   color: var(--my-color-white);
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled) {
   color: var(--my-color-white);
-  border-color: var(--my-color-white);
   background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__edit-btn .fa-solid {
@@ -1781,4 +1780,253 @@ div.form-control {
 .my-weakness-report-md td { border: 1px solid var(--my-color-gray-2); padding: 0.35rem 0.5rem; text-align: start; }
 .my-weakness-report-md hr { margin: 0.75em 0; border: 0; border-top: 1px solid var(--my-color-gray-2); }
 .my-weakness-report-md-list > li p:last-child { margin-bottom: 0; }
+
+/* ── bank-list：題庫／測驗主頁清單（CreateExamQuizBankPage、ExamPage、DesignPage 共用） ── */
+.bank-list-wrap {
+  width: 100%;
+  max-width: 40rem;
+}
+
+.bank-table-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-bottom: 0.75rem;
+}
+
+.bank-table-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1.25rem 0.5rem;
+}
+
+.bank-table-header__dot-spacer {
+  display: inline-block;
+  width: calc(0.5rem + 0.75rem);
+  flex-shrink: 0;
+}
+
+.bank-table-sort-btn {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+  font-weight: var(--my-font-weight-regular);
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.bank-table-sort-btn:hover:not(:disabled),
+.bank-table-sort-btn:focus-visible:not(:disabled),
+.bank-table-sort-btn:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  font-weight: var(--my-font-weight-semibold);
+  background-color: transparent !important;
+}
+
+.bank-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--my-color-gray-2);
+}
+
+.bank-list > li {
+  display: block;
+  border-top: 1px solid var(--my-color-gray-2);
+}
+
+.bank-list-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: transparent;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+  transition: background-color 0.12s ease;
+}
+
+.bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-2);
+}
+
+.bank-list-row:focus-visible {
+  outline: 2px solid var(--my-color-black);
+  outline-offset: -2px;
+}
+
+.bank-list-row__dot-col {
+  flex-shrink: 0;
+  width: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bank-list-row__exam-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+
+.bank-list-row__label {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bank-list-row__subtitle {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.bank-list-row__chevron {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  opacity: 0.4;
+}
+
+/* ── my-nav-switch-dropdown-menu（題庫／測驗切換下拉；CreateExamQuizBankBankSwitchDropdown、ExamPageExamSwitchDropdown 等 4 個 dropdown 共用） ── */
+.my-nav-switch-dropdown-menu {
+  min-width: 10rem;
+  max-height: min(60vh, 24rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.my-nav-switch-dropdown-menu > li {
+  display: block;
+  width: 100%;
+}
+
+.my-nav-switch-dropdown-menu .dropdown-item {
+  width: 100%;
+  white-space: nowrap;
+}
+
+/* ── 2-detail-bar：CreateExamQuizBankPage2DetailBar、ExamPage2DetailBar 共用 ── */
+.create-exam-bank-2-detail-bar,
+.exam-2-detail-bar {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 50%) 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  border-color: var(--my-color-gray-2) !important;
+  overflow: visible;
+  position: relative;
+  z-index: 30;
+}
+
+.create-exam-bank-2-detail-bar--in-side-panel,
+.exam-2-detail-bar--in-side-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.create-exam-bank-2-detail-bar__top-row,
+.exam-2-detail-bar__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+
+.create-exam-bank-2-detail-bar__back-btn,
+.exam-2-detail-bar__back-btn {
+  color: var(--my-color-gray-1) !important;
+  background-color: transparent !important;
+  font-weight: var(--my-font-weight-regular);
+}
+
+.create-exam-bank-2-detail-bar__back-btn:hover:not(:disabled),
+.exam-2-detail-bar__back-btn:hover:not(:disabled),
+.create-exam-bank-2-detail-bar__back-btn:focus-visible:not(:disabled),
+.exam-2-detail-bar__back-btn:focus-visible:not(:disabled),
+.create-exam-bank-2-detail-bar__back-btn:active:not(:disabled),
+.exam-2-detail-bar__back-btn:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  font-weight: var(--my-font-weight-semibold);
+  background-color: transparent !important;
+}
+
+.create-exam-bank-2-detail-bar__back-chevron,
+.exam-2-detail-bar__back-chevron {
+  font-size: 1em;
+  line-height: 1;
+}
+
+.create-exam-bank-2-detail-bar__title-row,
+.exam-2-detail-bar__title-row {
+  min-width: 0;
+}
+
+.create-exam-bank-2-detail-bar__start,
+.exam-2-detail-bar__start {
+  justify-self: start;
+  min-width: 0;
+}
+
+.create-exam-bank-2-detail-bar__center,
+.exam-2-detail-bar__center {
+  justify-self: stretch;
+  width: 100%;
+  min-width: 0;
+}
+
+.create-exam-bank-2-detail-bar__end,
+.exam-2-detail-bar__end {
+  justify-self: end;
+  min-width: 0;
+}
+
+.create-exam-bank-2-detail-bar__title,
+.exam-2-detail-bar__title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+
+.create-exam-bank-2-detail-bar__title:hover:not(:disabled),
+.exam-2-detail-bar__title:hover:not(:disabled),
+.create-exam-bank-2-detail-bar__title:focus:not(:disabled),
+.exam-2-detail-bar__title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-3);
+}
+
+.create-exam-bank-2-detail-bar__title:focus,
+.exam-2-detail-bar__title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+
+.create-exam-bank-2-detail-bar__title:disabled,
+.exam-2-detail-bar__title:disabled {
+  opacity: 1;
+  color: var(--my-color-black);
+  background: transparent;
+}
+
+.create-exam-bank-2-detail-bar__menu-btn,
+.exam-2-detail-bar__menu-btn {
+  width: 2.375rem;
+  height: 2.375rem;
+  min-width: 2.375rem;
+  min-height: 2.375rem;
+  padding: 0;
+}
 

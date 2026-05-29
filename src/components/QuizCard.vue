@@ -1947,14 +1947,13 @@ const quizAnswerFieldDisabled = computed(
   min-width: 1.75rem;
   min-height: 1.75rem;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  border: none;
   background-color: transparent;
   color: var(--my-color-white);
 }
 .my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
 .my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled) {
   color: var(--my-color-white);
-  border-color: var(--my-color-white);
   background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
 }
 .my-design-quiz-question-prompt-block__edit-btn .fa-solid {

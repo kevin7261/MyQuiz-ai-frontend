@@ -342,25 +342,6 @@ onActivated(() => {
 </template>
 
 <style scoped>
-/* manage-users_3：design_3 清單（對齊 exam_3 bank-list） */
-.user-mgmt-page-3 .bank-list-wrap {
-  width: 100%;
-  max-width: 40rem;
-}
-
-.user-mgmt-page-3 .bank-table-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding-bottom: 0.75rem;
-}
-
-.user-mgmt-page-3 .bank-table-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0 1.25rem 0.5rem;
-}
-
 .user-mgmt-page-3 .user-mgmt-bank-table-header,
 .user-mgmt-page-3 .user-mgmt-bank-list-row {
   display: grid;
@@ -375,39 +356,8 @@ onActivated(() => {
 }
 
 .user-mgmt-page-3 .bank-table-sort-btn {
-  background-color: transparent !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
   min-width: 0;
   justify-self: start;
-}
-
-.user-mgmt-page-3 .bank-table-sort-btn:hover:not(:disabled),
-.user-mgmt-page-3 .bank-table-sort-btn:focus-visible:not(:disabled),
-.user-mgmt-page-3 .bank-table-sort-btn:active:not(:disabled) {
-  background-color: transparent !important;
-}
-
-.user-mgmt-page-3 .bank-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  border-bottom: 1px solid var(--my-color-gray-2);
-}
-
-.user-mgmt-page-3 .bank-list > li {
-  display: block;
-  border-top: 1px solid var(--my-color-gray-2);
-}
-
-.user-mgmt-page-3 .bank-list-row {
-  width: 100%;
-  padding: 0.875rem 1.25rem;
-  background: transparent;
-  border: none;
-  text-align: left;
-  min-width: 0;
-  transition: background-color 0.12s ease;
 }
 
 .user-mgmt-page-3 .bank-list-row--read-only {
@@ -418,20 +368,8 @@ onActivated(() => {
   background-color: var(--my-color-gray-3);
 }
 
-.user-mgmt-page-3 .bank-list-row__label {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .user-mgmt-page-3 .user-mgmt-bank-col--name {
   min-width: 0;
-}
-
-.user-mgmt-page-3 .bank-list-row__subtitle {
-  flex-shrink: 0;
-  white-space: nowrap;
 }
 
 .user-mgmt-page-3 .user-mgmt-bank-col--action {

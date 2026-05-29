@@ -87,6 +87,7 @@ import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
 import QuizCard from '../components/QuizCard.vue';
 import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
+import LogoLayerMark from '../components/LogoLayerMark.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import UnitSelectDropdown from '../components/UnitSelectDropdown.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
@@ -98,6 +99,7 @@ import {
   readCreateBankTabUiPersisted,
   writeCreateBankTabUiPersisted,
 } from '../utils/createBankTabUiStorage.js';
+import { createLogoGridGradientColors } from '../utils/logoDiamondGradient.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -2527,15 +2529,6 @@ function quizTypeTabLabel(row) {
   return DEFAULT_UNIT_QUIZ_DISPLAY_NAME;
 }
 
-const activeUnitQuizTypeIdxResolved = computed(() => {
-  const state = currentState.value;
-  const cards = activeUnitQuizCards.value;
-  let i = Number(state.activeUnitQuizTypeIndex ?? 0);
-  if (!Array.isArray(cards) || cards.length === 0) return 0;
-  if (!Number.isFinite(i) || i < 0 || i >= cards.length) return 0;
-  return i;
-});
-
 /** 後端軟刪或未同步清單時，題型列可能仍帶 deleted／deleted_at */
 function isRagQuizRowDeleted(row) {
   if (!row || typeof row !== 'object') return false;
@@ -2583,6 +2576,29 @@ function unitQuizCardsAtUnitIndex(unitIndex) {
 }
 
 const activeUnitQuizCards = computed(() => unitQuizCardsAtUnitIndex(activeUnitSlotIndex.value - 1));
+
+const activeUnitQuizTypeIdxResolved = computed(() => {
+  const state = currentState.value;
+  const cards = activeUnitQuizCards.value;
+  let i = Number(state.activeUnitQuizTypeIndex ?? 0);
+  if (!Array.isArray(cards) || cards.length === 0) return 0;
+  if (!Number.isFinite(i) || i < 0 || i >= cards.length) return 0;
+  return i;
+});
+
+/** create-exam-bank_3：題型 Q／A 標誌共用一組漸層（切換題型時重抽） */
+const activeUnitQuizLogoColors = ref(null);
+const activeUnitQuizLogoColorsKey = ref('');
+watch(
+  [activeUnitSlotIndex, activeUnitQuizTypeIdxResolved, work3LogoGradientBias],
+  ([slotIndex, quizTypeIdx, gradientBias]) => {
+    const key = `${slotIndex}-${quizTypeIdx}`;
+    if (key === activeUnitQuizLogoColorsKey.value) return;
+    activeUnitQuizLogoColorsKey.value = key;
+    activeUnitQuizLogoColors.value = createLogoGridGradientColors({ bias: gradientBias });
+  },
+  { immediate: true },
+);
 
 /** create-exam-bank_3：目前單元尚無題型時，主內容區置中提示 */
 const bankWork3NoQuizTypesEmpty = computed(
@@ -6782,7 +6798,19 @@ async function confirmAnswer(item) {
                   </div>
                 </div>
                 <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
-                <div class="my-design-quiz-sub-block-outer">
+                <div
+                  class="my-design-quiz-sub-block-outer"
+                  :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
+                >
+                  <LogoLayerMark
+                    v-if="designSidePanelOnLeft"
+                    layer="primary"
+                    :size-pt="24"
+                    :colors="activeUnitQuizLogoColors"
+                    :id-prefix="`bank-quiz-q-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                    class="my-design-quiz-sub-block-outer__logo"
+                  />
+                  <div class="my-design-quiz-sub-block-outer__content min-w-0 flex-grow-1">
                   <div
                     class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
                     :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
@@ -6893,12 +6921,23 @@ async function confirmAnswer(item) {
                     </div>
                     </div>
                   </div>
+                  </div>
                 </div>
                 <!-- 子區塊：答案 + 批改（合併） -->
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer"
+                  :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
                 >
+                  <LogoLayerMark
+                    v-if="designSidePanelOnLeft"
+                    layer="secondary"
+                    :size-pt="24"
+                    :colors="activeUnitQuizLogoColors"
+                    :id-prefix="`bank-quiz-a-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                    class="my-design-quiz-sub-block-outer__logo"
+                  />
+                  <div class="my-design-quiz-sub-block-outer__content min-w-0 flex-grow-1">
                   <div
                     class="my-design-quiz-sub-block rounded-4"
                     :class="[
@@ -6926,6 +6965,7 @@ async function confirmAnswer(item) {
                         @open-grading-prompt-edit="openBankGradingPromptEditModal"
                       />
                     </div>
+                  </div>
                   </div>
                 </div>
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
@@ -7845,6 +7885,24 @@ async function confirmAnswer(item) {
   max-width: 100%;
   min-width: 0;
 }
+.my-design-quiz-sub-block-outer--with-logo {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.my-design-quiz-sub-block-outer__logo {
+  flex: 0 0 24pt;
+  width: 24pt;
+  min-width: 24pt;
+  max-width: 24pt;
+  align-self: flex-start;
+}
+.my-design-quiz-sub-block-outer__content {
+  box-sizing: border-box;
+  min-width: 0;
+  flex: 1 1 0;
+}
 .my-design-quiz-sub-block {
   box-sizing: border-box;
   width: 100%;
@@ -7972,7 +8030,7 @@ async function confirmAnswer(item) {
   min-width: 1.75rem;
   min-height: 1.75rem;
   padding: 0;
-  border: 1px solid color-mix(in srgb, var(--my-color-white) 40%, transparent);
+  border: none;
   background-color: transparent;
   color: var(--my-color-white);
 }
@@ -7981,7 +8039,6 @@ async function confirmAnswer(item) {
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled)),
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled)) {
   color: var(--my-color-white);
-  border-color: var(--my-color-white);
   background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
 }
 .my-design-quiz-question-prompt-block__edit-btn .fa-solid,

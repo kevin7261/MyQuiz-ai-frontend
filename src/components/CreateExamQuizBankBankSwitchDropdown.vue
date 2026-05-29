@@ -36,7 +36,7 @@ const emit = defineEmits(['switch-bank']);
       <i class="fa-solid fa-chevron-down my-dropdown-toggle-caret flex-shrink-0" aria-hidden="true" />
     </button>
     <ul
-      class="dropdown-menu dropdown-menu-end create-exam-bank-bank-switch-menu"
+      class="dropdown-menu dropdown-menu-end create-exam-bank-bank-switch-menu my-nav-switch-dropdown-menu"
       :class="{ 'my-course-header__user-menu': variant === 'course-header-nav' }"
     >
       <li v-if="gridItems.length === 0">
@@ -66,23 +66,6 @@ const emit = defineEmits(['switch-bank']);
 </template>
 
 <style scoped>
-.create-exam-bank-bank-switch-menu {
-  min-width: 10rem;
-  max-height: min(60vh, 24rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-
-.create-exam-bank-bank-switch-menu > li {
-  display: block;
-  width: 100%;
-}
-
-.create-exam-bank-bank-switch-menu .dropdown-item {
-  width: 100%;
-  white-space: nowrap;
-}
-
 .create-exam-bank-bank-switch--detail-bar .btn.dropdown-toggle {
   white-space: nowrap;
 }

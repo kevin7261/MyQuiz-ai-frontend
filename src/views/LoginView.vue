@@ -246,7 +246,7 @@
             <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break text-center" role="alert">{{ error }}</p>
             <button
               type="submit"
-              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-login-view-submit-btn shadow-lg px-4 py-2 w-100"
+              class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-login-view-submit-btn shadow px-4 py-2 w-100"
               :disabled="loading || !canLogin"
               :aria-busy="loading"
             >
@@ -307,7 +307,7 @@
 }
 
 .my-login-view-submit-btn {
-  --bs-box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  --bs-box-shadow-lg: 0 1rem 3rem rgba(0, 0, 0, 0.28);
   background-color: var(--my-color-white);
   color: var(--my-color-black);
   border-color: transparent;

@@ -158,10 +158,21 @@ const primaryUnifiedMaskId = computed(() => `${props.idPrefix}-primary-unified-m
 const secondaryUnifiedMaskId = computed(() => `${props.idPrefix}-secondary-unified-mask`);
 const outerCellsWhiteOverlayMaskId = computed(() => `${props.idPrefix}-outer-white-overlay-mask`);
 
+/** mergeCell5 分層 + 整片合併漸層：統一 viewBox 原點，secondary mask 平移對齊 */
+const splitLayerUnifiedView = computed(
+  () => props.unifiedPrimaryGradient && useSplitLayerGrid.value,
+);
+
+const splitLayerUnifiedMaskTransform = computed(() => {
+  if (!splitLayerUnifiedView.value || props.layer !== 'secondary') return undefined;
+  return 'translate(-80, 0)';
+});
+
 const viewBox = computed(() => {
   if (useCenterQuadOnly.value) return '80 80 80 80';
   if (useCenterCellsOnly.value) return '80 80 80 100';
   if (useSplitLayerGrid.value) {
+    if (splitLayerUnifiedView.value) return '0 0 160 180';
     return props.layer === 'primary' ? '0 0 160 180' : '80 0 160 180';
   }
   return '0 0 240 180';
@@ -185,6 +196,13 @@ const useUnifiedSecondary = computed(
   () => props.unifiedPrimaryGradient && c.value.secondaryGradient && showSecondary.value,
 );
 
+const unifiedGradientMetrics = computed(() => {
+  if (splitLayerUnifiedView.value) {
+    return { minX: 0, minY: 0, width: 160, height: 180 };
+  }
+  return viewBoxMetrics.value;
+});
+
 function gradientAttrs(gradient, useUnified) {
   if (!gradient) return null;
   if (!useUnified) {
@@ -196,7 +214,7 @@ function gradientAttrs(gradient, useUnified) {
       y2: gradient.y2 ?? '100%',
     };
   }
-  const { minX, minY, width, height } = viewBoxMetrics.value;
+  const { minX, minY, width, height } = unifiedGradientMetrics.value;
   return {
     gradientUnits: 'userSpaceOnUse',
     x1: minX + (parsePctCoord(gradient.x1) / 100) * width,
@@ -215,6 +233,9 @@ const secondaryGradientAttrs = computed(() =>
 );
 
 const unifiedLayerMaskBounds = computed(() => {
+  if (splitLayerUnifiedView.value) {
+    return { x: 0, y: 0, width: 160, height: 180 };
+  }
   const { minX, minY, width, height } = viewBoxMetrics.value;
   return { x: minX, y: minY, width, height };
 });
@@ -269,7 +290,7 @@ const svgStyle = computed(() => {
         maskContentUnits="userSpaceOnUse"
       >
         <template v-if="mergeCell5">
-          <g>
+          <g :transform="splitLayerUnifiedMaskTransform">
             <path d="M 20 80 A 60 60 0 0 1 80 20" fill="none" stroke="white" stroke-width="40" />
             <path d="M 80 20 A 60 60 0 0 1 140 80" fill="none" stroke="white" stroke-width="40" />
             <path d="M 20 80 A 60 60 0 0 0 80 140" fill="none" stroke="white" stroke-width="40" />
@@ -309,7 +330,7 @@ const svgStyle = computed(() => {
         maskContentUnits="userSpaceOnUse"
       >
         <template v-if="mergeCell5">
-          <g>
+          <g :transform="splitLayerUnifiedMaskTransform">
             <path d="M 100 80 A 60 60 0 0 1 160 20" fill="none" stroke="white" stroke-width="40" />
             <path d="M 160 20 A 60 60 0 0 1 220 80" fill="none" stroke="white" stroke-width="40" />
             <path d="M 220 80 A 60 60 0 0 1 160 140" fill="none" stroke="white" stroke-width="40" />

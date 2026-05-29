@@ -51,7 +51,31 @@ export function createRandomLogoDiamondGradientPair(options = {}) {
 }
 
 /**
- * 將漸層物件轉為 CSS linear-gradient
+ * LogoGridSvg colors：primary／secondary 各一組漸層（Q／A 分層標誌等）
+ * @param {{ tone?: string, bias?: string, excludeIds?: string[] }} [options]
+ */
+export function createLogoGridGradientColors(options = {}) {
+  const { primary, secondary } = createRandomLogoDiamondGradientPair(options);
+  return {
+    background: 'transparent',
+    primaryGradient: {
+      x1: primary.x1,
+      y1: primary.y1,
+      x2: primary.x2,
+      y2: primary.y2,
+      stops: primary.stops,
+    },
+    secondaryGradient: {
+      x1: secondary.x1,
+      y1: secondary.y1,
+      x2: secondary.x2,
+      y2: secondary.y2,
+      stops: secondary.stops,
+    },
+  };
+}
+
+/**
  * @param {object} [gradient]
  * @param {{ useStopsOnly?: boolean }} [options] useStopsOnly：依 x1–y2 與 stops（與 SVG 一致），忽略 css
  */
