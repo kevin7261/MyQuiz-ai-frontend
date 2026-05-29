@@ -48,7 +48,7 @@ const isMenuActive = computed(() =>
 </script>
 
 <template>
-  <aside class="my-system-header position-relative d-flex flex-column h-100 align-self-stretch overflow-visible flex-shrink-0 my-bgcolor-white border-end" aria-label="系統 header">
+  <aside class="my-system-header position-relative d-flex flex-column h-100 align-self-stretch overflow-visible flex-shrink-0 my-bgcolor-white" aria-label="系統 header">
     <div
       class="my-system-header__gradient position-absolute top-0 start-0 z-0 d-flex w-100 pe-none overflow-hidden"
       aria-hidden="true"
@@ -145,11 +145,23 @@ const isMenuActive = computed(() =>
 
 <style scoped>
 .my-system-header {
-  z-index: 50;
+  /* 高於 TopView（50），右側直線分隔線 ::after 需蓋過欄內漸層與按鈕 */
+  z-index: 51;
   width: 64px;
   min-width: 64px;
   max-width: 64px;
   min-height: 0;
+}
+
+.my-system-header::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  border-right: 1px solid var(--bs-border-color);
+  z-index: 10;
+  pointer-events: none;
 }
 
 .my-system-header__gradient {
