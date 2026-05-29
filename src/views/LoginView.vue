@@ -3,7 +3,7 @@
    * LoginView - 登入頁
    *
    * 版面對齊 DesignPage profile_3（白底、label + input、my-button-white）。
-   * 以 person_id（使用者 ID）與 password 呼叫 POST /user/login。
+   * 以 person_id（使用者帳號）與 password 呼叫 POST /user/login。
    */
   import { ref, computed } from 'vue';
   import { useRouter } from 'vue-router';
@@ -12,14 +12,43 @@
   import { loggedFetch } from '../utils/loggedFetch.js';
   import {
     createRandomLogoDiamondGradientPair,
-    createRandomLogoGradientCss,
     logoDiamondGradientToCssLinear,
+    pickDistinctRandomLogoGradientPalettes,
   } from '../utils/logoDiamondGradient.js';
   import LoadingOverlay from '../components/LoadingOverlay.vue';
   import LogoGridSvg from '../components/LogoGridSvg.vue';
 
   /** 登入頁漸層僅線性（不用徑向／錐形／mesh） */
   const LOGIN_GRADIENT_OPTIONS = { linearOnly: true };
+
+  const LOGIN_CORNER_GRADIENT_POSITIONS = [
+    'top left',
+    'top right',
+    'bottom left',
+    'bottom right',
+  ];
+
+  function hexToRgba(hex, alpha) {
+    const normalized = String(hex ?? '').replace('#', '');
+    if (normalized.length !== 6) return `rgba(0, 0, 0, ${alpha})`;
+    const r = Number.parseInt(normalized.slice(0, 2), 16);
+    const g = Number.parseInt(normalized.slice(2, 4), 16);
+    const b = Number.parseInt(normalized.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  /** 四角徑向漸層：角落 20% 不透明，往中心漸變至 0%（全透明） */
+  function buildLoginCornerGradientsCss(excludeIds = []) {
+    const palettes = pickDistinctRandomLogoGradientPalettes(4, {
+      ...LOGIN_GRADIENT_OPTIONS,
+      excludeIds,
+    });
+    return LOGIN_CORNER_GRADIENT_POSITIONS.map((at, index) => {
+      const color = palettes[index]?.stops?.[0]?.color ?? '#60a5fa';
+      const cornerColor = hexToRgba(color, 0.2);
+      return `radial-gradient(ellipse 85% 85% at ${at}, ${cornerColor} 0%, transparent 70%)`;
+    }).join(', ');
+  }
 
   function buildLoginLogoColors() {
     const { primary, secondary } = createRandomLogoDiamondGradientPair(LOGIN_GRADIENT_OPTIONS);
@@ -53,10 +82,7 @@
       logoColors.primaryGradient.paletteId,
       logoColors.secondaryGradient.paletteId,
     ].filter(Boolean);
-    const pageBgCss = createRandomLogoGradientCss({
-      ...LOGIN_GRADIENT_OPTIONS,
-      excludeIds,
-    });
+    const pageBgCss = buildLoginCornerGradientsCss(excludeIds);
     return { logoColors, pageBgCss };
   }
 
@@ -91,6 +117,10 @@
         logoDiamondGradientToCssLinear(loginLogoColors.value.primaryGradient, {
           useStopsOnly: true,
         }),
+      );
+
+      const canLogin = computed(
+        () => personId.value.trim() !== '' && password.value.trim() !== '',
       );
 
       const onLogin = async () => {
@@ -135,6 +165,7 @@
         password,
         loading,
         error,
+        canLogin,
         onLogin,
         loginLogoColors,
         refreshLoginLogoGradient,
@@ -189,13 +220,13 @@
           </div>
           <form class="d-flex flex-column gap-4 w-100 min-w-0 text-start" @submit.prevent="onLogin">
             <div class="d-flex flex-column gap-0 mb-0">
-              <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者 ID</label>
+              <label class="form-label my-font-sm-400 my-color-gray-1 mb-0" for="login-person-id">使用者帳號</label>
               <input
                 id="login-person-id"
                 v-model="personId"
                 type="text"
                 class="form-control my-input-md rounded-2 w-100 px-3 py-2"
-                placeholder="請輸入使用者 ID"
+                placeholder="請輸入使用者帳號"
                 autocomplete="username"
                 :disabled="loading"
               >
@@ -212,11 +243,11 @@
                 :disabled="loading"
               >
             </div>
-            <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break" role="alert">{{ error }}</p>
+            <p v-if="error" class="my-color-red my-font-sm-400 mb-0 text-break text-center" role="alert">{{ error }}</p>
             <button
               type="submit"
               class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-white px-4 py-2 w-100"
-              :disabled="loading"
+              :disabled="loading || !canLogin"
               :aria-busy="loading"
             >
               登入
@@ -236,18 +267,9 @@
 
 .my-login-view-page-gradient {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  bottom: 0;
+  inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.2;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 100%);
-  mask-image: linear-gradient(to bottom, transparent 0%, #000 100%);
 }
 
 .my-login-view-content {
