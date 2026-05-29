@@ -155,7 +155,7 @@ const {
             >
               <button
                 type="button"
-                :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-4']"
+                :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-5 py-3', props.design3 ? 'my-button-white' : 'my-button-gray-4']"
                 title="開始作答分析"
                 aria-label="開始作答分析"
                 :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"

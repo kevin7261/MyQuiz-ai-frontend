@@ -5792,8 +5792,8 @@ async function confirmAnswer(item) {
                   <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
                     <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
                     <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                    <li class="mb-0">mp3：該資料夾內只能有一個.mp3檔</li>
-                    <li class="mb-0">youtube：.md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                    <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
+                    <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
                   </ul>
                 </div>
               </div>
@@ -6147,7 +6147,7 @@ async function confirmAnswer(item) {
         <button
           v-if="!ragListLoading"
           type="button"
-          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
           :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
           :title="`新增${quizBankNoun}`"
           :aria-label="`新增${quizBankNoun}`"
@@ -6630,7 +6630,7 @@ async function confirmAnswer(item) {
               <div class="w-100 d-flex justify-content-center align-items-center px-3 py-5 min-w-0">
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
           :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
                   title="新增題型"
                   aria-label="新增題型"
@@ -7034,7 +7034,7 @@ async function confirmAnswer(item) {
             >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
           :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
                 title="新增題目"
                 aria-label="新增題目"

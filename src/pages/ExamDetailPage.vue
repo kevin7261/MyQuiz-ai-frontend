@@ -3292,7 +3292,7 @@ onActivated(() => {
         <button
           v-if="!examListLoading"
           type="button"
-          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-4 py-3"
+          class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 px-5 py-3"
           :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400', d3FilledPillLg]"
           :title="`新增${quizBankNoun}`"
           :aria-label="`新增${quizBankNoun}`"
@@ -3337,7 +3337,7 @@ onActivated(() => {
               <button
                 v-else
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-4 px-4 py-3"
+                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-gray-4 px-5 py-3"
                 title="新增題目"
                 aria-label="新增題目"
                 :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"

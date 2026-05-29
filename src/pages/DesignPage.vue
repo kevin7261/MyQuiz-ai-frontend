@@ -959,9 +959,9 @@ function designPackUnitTypeIconCss(unitType) {
                     <DesignPageSpecItem
                       name="btn-add-empty-list"
                       usage="空清單居中新增試卷"
-                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3"
                     >
-                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-4 py-3">
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-button-white px-5 py-3">
                         <i class="fa-solid fa-plus" aria-hidden="true" />
                         新增試卷
                       </button>
@@ -1362,8 +1362,8 @@ function designPackUnitTypeIconCss(unitType) {
                               <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
                                 <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
                                 <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                                <li class="mb-0">mp3：該資料夾內只能有一個.mp3檔</li>
-                                <li class="mb-0">youtube：.md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                                <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
+                                <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
                               </ul>
                             </div>
                           </div>
@@ -1513,8 +1513,8 @@ function designPackUnitTypeIconCss(unitType) {
                   <ul class="my-font-sm-400 my-color-gray-4 mb-0 ps-3">
                     <li class="mb-0">RAG：.pdf、.doc、.docx、.ppt、.pptx</li>
                     <li class="mb-0">文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx</li>
-                    <li class="mb-0">mp3：該資料夾內只能有一個.mp3檔</li>
-                    <li class="mb-0">youtube：.md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
+                    <li class="mb-0">MP3：該資料夾內只能有一個 .mp3 檔</li>
+                    <li class="mb-0">YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx（檔內須為 YouTube 網址）</li>
                   </ul>
                 </div>
               </template>
