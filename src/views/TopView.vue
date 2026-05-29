@@ -2,7 +2,7 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」（測驗等四頁）或「MyQuiz.ai | 頁面名稱」，右側為題庫／試卷切換（詳情時）與使用者下拉選單。
+   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」（測驗等四頁）或「MyQuiz.ai | 頁面名稱」。右側題庫／試卷切換（詳情時）與使用者下拉選單僅在已選課程之課程四頁顯示；其餘頁面（選課、系統／個人設定、左欄開發者選單等）僅顯示姓名。
    */
   import { computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
@@ -11,6 +11,11 @@
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import { resolveBrandName, resolvePageName, isCourseScopedHeaderRoute } from '../utils/pageHeaderTitle.js';
+
+  /** 右上角姓名下拉（測驗等四頁）僅在已選課程且為課程範圍頁面時顯示 */
+  function shouldShowCourseUserNavDropdown(route, course) {
+    return isCourseScopedHeaderRoute(route) && course?.course_id != null;
+  }
   import CreateExamQuizBankBankSwitchDropdown from '../components/CreateExamQuizBankBankSwitchDropdown.vue';
   import ExamPageExamSwitchDropdown from '../components/ExamPageExamSwitchDropdown.vue';
 
@@ -47,6 +52,10 @@
       /** TopView 版面之頁面名稱（課程名稱 | 頁面名稱） */
       const pageTitle = computed(() => resolvePageName(route));
 
+      const showUserNavDropdown = computed(() =>
+        shouldShowCourseUserNavDropdown(route, authStore.currentCourse),
+      );
+
       function onHeaderTitleClick() {
         router.push('/courses');
       }
@@ -56,6 +65,7 @@
         currentCourseName,
         useBrandCodeFont,
         pageTitle,
+        showUserNavDropdown,
         onHeaderTitleClick,
         showBankSwitcher,
         bankGridItems,
@@ -113,7 +123,10 @@
           />
         </nav>
 
-        <div class="my-course-header__user-dropdown my-design-08-dropdown dropdown flex-shrink-0 position-static">
+        <div
+          v-if="showUserNavDropdown"
+          class="my-course-header__user-dropdown my-design-08-dropdown dropdown flex-shrink-0 position-static"
+        >
           <button
             type="button"
             class="btn rounded-pill d-inline-flex align-items-center gap-3 dropdown-toggle my-dropdown-caret my-font-md-400 my-button-white min-w-0 px-4 py-2 text-start"
@@ -153,6 +166,10 @@
             </li>
           </ul>
         </div>
+        <span
+          v-else
+          class="my-course-header__user-name my-font-md-400 my-color-black overflow-hidden text-truncate text-start flex-shrink-0 px-4 py-2"
+        >{{ userName || '—' }}</span>
       </div>
     </div>
   </header>
@@ -189,6 +206,11 @@
 
 .my-course-header-course-name {
   cursor: pointer;
+}
+
+.my-course-header__user-name {
+  max-width: 10rem;
+  line-height: 1.35;
 }
 
 .my-course-header .my-design-08-dropdown .btn.my-button-white {

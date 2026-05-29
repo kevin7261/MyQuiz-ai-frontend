@@ -5,12 +5,13 @@
  * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
  * 頂部 64×(64+16)pt：51–54、71–72 漸層與白色菱形 logo（點擊重繪隨機漸層）。
  * 中段：開發者功能選單（dropend；測驗等四項僅在 TopView 右上角姓名下拉）。
- * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）。
+ * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）；其下顯示目前版本。
  */
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import LogoCenterMark from '../components/LogoCenterMark.vue';
 import { canSeeNavLink } from '../router/permissions.js';
+import { useAppStore } from '../stores/appStore.js';
 import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 
 /** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
@@ -28,6 +29,8 @@ const props = defineProps({
 });
 
 const route = useRoute();
+const appStore = useAppStore();
+const currentVersion = appStore.currentVersion;
 const {
   systemHeaderGradientLeftStyle,
   systemHeaderGradientRightStyle,
@@ -139,6 +142,9 @@ const isMenuActive = computed(() =>
       >
         <i class="fa-solid fa-user" aria-hidden="true" />
       </router-link>
+      <p class="my-system-header__version my-font-family-code my-font-sm-400 my-color-gray-1 text-center mb-0 px-1 pb-2">
+        v{{ currentVersion }}
+      </p>
     </nav>
   </aside>
 </template>
@@ -222,5 +228,10 @@ const isMenuActive = computed(() =>
 .my-system-header__user-menu {
   z-index: 1100;
   min-width: 12rem;
+}
+
+.my-system-header__version {
+  line-height: 1.2;
+  word-break: break-all;
 }
 </style>

@@ -1,5 +1,5 @@
 /**
- * TopView 頂部「課程名稱 | 頁面名稱」（課程四頁）或「MyQuiz.ai | 頁面名稱」與 document.title 共用邏輯。
+ * TopView 頂部「課程名稱 | 頁面名稱」（課程四頁）或「MyQuiz.ai | 頁面名稱」；document.title 僅頁面名稱。
  */
 
 /** @param {import('vue-router').RouteLocationNormalizedLoaded} route */
@@ -55,12 +55,11 @@ export function resolveBrandName(route, course) {
 }
 
 /**
+ * document.title：僅頁面名稱（不含課程名稱或 MYQUIZ.ai 前綴）。
  * @param {import('vue-router').RouteLocationNormalizedLoaded} route
- * @param {{ course_name?: string, course_id?: number } | null | undefined} [course]
  */
-export function buildPageHeaderTitle(route, course) {
-  const left = resolveBrandName(route, course);
-  const right = resolvePageName(route);
-  if (right) return `${left} | ${right}`;
-  return left;
+export function buildPageHeaderTitle(route) {
+  const pageName = resolvePageName(route);
+  if (pageName) return pageName;
+  return 'MyQuiz.ai';
 }

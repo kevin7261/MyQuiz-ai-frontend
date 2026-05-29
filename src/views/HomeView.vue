@@ -73,9 +73,9 @@ export default {
     });
 
     watch(
-      () => [route.fullPath, authStore.currentCourse?.course_id],
+      () => route.fullPath,
       () => {
-        document.title = buildPageHeaderTitle(route, authStore.currentCourse);
+        document.title = buildPageHeaderTitle(route);
       },
     );
 

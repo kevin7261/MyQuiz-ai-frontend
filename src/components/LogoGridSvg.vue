@@ -47,7 +47,7 @@ const props = defineProps({
    */
   unifiedPrimaryGradient: { type: Boolean, default: false },
   /**
-   * true：於格 1、2、3、4、6 的 logo 圖形上疊加 60% 白（不含空白／格 5）
+   * true：於格 1、2、3、4、6 的 logo 圖形上疊加 75% 白（不含空白／格 5）
    * 僅適用完整 logo（非 mergeCell5／裁切模式）
    */
   outerCellsWhiteOverlay: { type: Boolean, default: false },
@@ -602,7 +602,7 @@ const svgStyle = computed(() => {
       :width="unifiedLayerMaskBounds.width"
       :height="unifiedLayerMaskBounds.height"
       fill="#ffffff"
-      fill-opacity="0.6"
+      fill-opacity="0.75"
       pointer-events="none"
       :mask="`url(#${outerCellsWhiteOverlayMaskId})`"
     />
