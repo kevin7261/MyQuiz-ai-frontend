@@ -158,7 +158,7 @@ const d3QuizModeSegmentSelected = computed(() => (
 const d3CircleIconBtnClass = computed(() => (
   props.designSidePanelOnLeft
     ? 'my-button-transparent-borderless my-btn-circle'
-    : 'my-color-gray-1 my-btn-outline-gray-1 my-btn-circle'
+    : 'my-color-gray-2 my-btn-outline-gray-1 my-btn-circle'
 ));
 
 // ─── 純輔助函式（不依賴 Vue 狀態） ────────────────────────────────────────────
@@ -7825,31 +7825,34 @@ async function confirmAnswer(item) {
   align-self: center;
   margin-right: 0;
   background-color: transparent !important;
-  color: var(--my-color-gray-1);
 }
-.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
-.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled),
-.my-design-right-unit-row .my-design-right-unit-add-quiz-btn:active:not(:disabled) {
-  background-color: transparent !important;
-  border-color: color-mix(in srgb, var(--my-color-gray-1) 55%, transparent);
-  color: var(--my-color-black);
-}
-/* 單元／題型區圓形 +、選單：預設 gray-1；hover 改 black（列上「新增題型」見 .my-design-right-unit-add-quiz-btn） */
-/* 單元／題型區圓形 +、選單：design_3 用 transparent-borderless */
+/* 單元／題型區圓形 +：預設 gray-2；hover 改 black */
+.my-design-right-nav .my-design-right-unit-add-quiz-btn,
 .my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle,
-.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless {
-  color: var(--my-color-gray-1);
-}
-.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
-.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
-.my-design--side-panel-left .my-design-right-step-block-head .my-button-transparent-borderless.my-btn-circle:active:not(:disabled),
 .my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
-.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1 {
-  color: var(--my-color-gray-1);
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1,
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless {
+  color: var(--my-color-gray-2) !important;
 }
-.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
-.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
-.my-design-right-step-block-head .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled),
+.my-design-right-nav .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
+.my-design-right-nav .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled),
+.my-design-right-nav .my-design-right-unit-add-quiz-btn:active:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:active:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled),
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:hover:not(:disabled),
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:focus-visible:not(:disabled),
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:active:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:hover:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--my-color-gray-2) 55%, transparent);
+}
 .my-design-right-unit-quiz-for-exam-slot {
   width: 0.5rem;
   min-width: 0.5rem;

@@ -268,20 +268,20 @@ code {
   background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
 }
 
-/* 白底 gray-3 框膠囊；預設字色同 .my-color-gray-4（#666）；hover 陰影＋黑字 */
+/* 白底 gray-3 框膠囊；預設 gray-2 字；hover 陰影＋黑字 */
 .btn.my-btn-login-submit {
   --bs-btn-bg: var(--my-color-white);
   --bs-btn-hover-bg: var(--my-color-white);
   --bs-btn-active-bg: var(--my-color-white);
   --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-color: var(--my-color-gray-2);
   --bs-btn-hover-color: var(--my-color-black);
   --bs-btn-active-color: var(--my-color-black);
   --bs-btn-border-color: var(--my-color-gray-3);
   --bs-btn-hover-border-color: var(--my-color-gray-3);
   --bs-btn-active-border-color: var(--my-color-gray-3);
   background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-1) !important;
+  color: var(--my-color-gray-2) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }
@@ -2425,13 +2425,13 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   padding: 0;
 }
 
-/* —— 大按鈕 .my-btn-lg（併 .px-5 .py-3）：預設／hover 同登入鈕（白底、gray-3 邊；hover 加陰影） —— */
+/* —— 大按鈕 .my-btn-lg（併 .px-5 .py-3）：預設 gray-2 字；hover 陰影＋黑字（同登入鈕） —— */
 .btn.my-btn-lg {
   --bs-btn-bg: var(--my-color-white);
   --bs-btn-hover-bg: var(--my-color-white);
   --bs-btn-active-bg: var(--my-color-white);
   --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-color: var(--my-color-gray-2);
   --bs-btn-hover-color: var(--my-color-black);
   --bs-btn-active-color: var(--my-color-black);
   --bs-btn-border-color: var(--my-color-gray-3);
@@ -2440,7 +2440,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   --bs-btn-disabled-border-color: var(--my-color-gray-3);
   --bs-btn-disabled-color: var(--my-color-gray-3);
   background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-1) !important;
+  color: var(--my-color-gray-2) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }
