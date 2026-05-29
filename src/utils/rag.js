@@ -199,15 +199,20 @@ export function serializePackTasksList(list) {
   }).join(',');
 }
 
+/** ZIP 上傳 drop zone：拖曳／點擊提示 */
+export const ZIP_UPLOAD_DROP_PROMPT = '拖曳 .zip 檔到這裡，或點擊選擇檔案';
+/** ZIP 上傳 drop zone：檔案大小限制 */
+export const ZIP_UPLOAD_SIZE_NOTE = '注意：.zip 檔不可超過 50 MB';
+
 /** 出題單元類型（與後端 unit_types／unit_type_list 對齊）：0 舊資料相容→文字、1 rag、2 文字、3 mp3、4 youtube（新單元預設 rag） */
 export const ZIP_UPLOAD_UNIT_TYPE_INTRO =
-  '請在「設定單元」為 ZIP 內各資料夾分別選單元類型；各資料夾裡，後端會讀取的副檔名依類型如下：';
+  '.zip 檔內有一個外層「主資料夾」，內有各「子資料夾」存放課程教材資料，各「子資料夾」中系統可讀取的副檔名依類型如下：';
 /** ZIP 上傳 Modal drop zone：各單元類型檔案規則 */
 export const ZIP_UPLOAD_UNIT_TYPE_RULES = [
-  'RAG：可放 .pdf、.doc、.docx、.ppt、.pptx、.md，同資料夾可有多個檔案',
-  '文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx',
-  'MP3：該資料夾內須有一個 .mp3 檔與一個 .md、.txt、.doc 或 .docx 逐字稿',
-  'YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx，第一行須為 YouTube 網址，第二行起為逐字稿',
+  'RAG：可放 .pdf、.doc、.docx、.ppt、.pptx、.md 檔，同資料夾可有多個檔案',
+  '文字：該資料夾內只能有一個 .md、.txt、.doc 或 .docx 檔',
+  'MP3：該資料夾內須有一個 .mp3 檔與一個 .md、.txt、.doc 或 .docx 檔逐字稿',
+  'YouTube：該資料夾內只能有一個 .md、.txt、.doc 或 .docx 檔，第一行須為 YouTube 網址，第二行起為逐字稿',
 ];
 
 export const UNIT_TYPE_RAG = 1;

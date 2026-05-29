@@ -16,7 +16,7 @@ import {
   apiDeleteRag,
   is504OrNetworkError,
 } from '../services/ragApi.js';
-import { deriveRagName, generateTabId } from '../utils/rag.js';
+import { deriveRagName, generateTabId, ZIP_UPLOAD_DROP_PROMPT } from '../utils/rag.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import CreateExamQuizBankDetailPage from './CreateExamQuizBankDetailPage.vue';
 import CreateExamQuizBankPage2DetailBar from '../components/CreateExamQuizBankPage2DetailBar.vue';
@@ -412,6 +412,21 @@ function openNewBankUploadFileDialog() {
   newBankUploadFileInputRef.value?.click();
 }
 
+function onNewBankUploadDropZoneClick() {
+  if (createRagLoading.value || newBankUploadFileName.value) return;
+  openNewBankUploadFileDialog();
+}
+
+function clearNewBankUploadFile(e) {
+  e?.stopPropagation?.();
+  e?.preventDefault?.();
+  if (createRagLoading.value) return;
+  setNewBankUploadFileFromFile(null);
+  if (newBankUploadFileInputRef.value) {
+    newBankUploadFileInputRef.value.value = '';
+  }
+}
+
 async function confirmNewBankUpload() {
   if (createRagLoading.value) return;
   if (!newBankUploadFile.value) {
@@ -736,23 +751,34 @@ watch(viewMode, (mode) => {
               @change="onNewBankUploadZipChange"
             >
             <div
-              class="my-zip-drop-zone text-center position-relative"
-              :class="{ 'my-zip-drop-zone-over': newBankUploadZipDragOver }"
+              class="my-zip-drop-zone text-center position-relative rounded-4 p-3"
+              :class="{
+                'my-zip-drop-zone-over': newBankUploadZipDragOver,
+                'my-zip-drop-zone-has-file': !!newBankUploadFileName,
+              }"
               @dragover="onNewBankUploadZipDragOver"
               @dragenter="onNewBankUploadZipDragOver"
               @dragleave="onNewBankUploadZipDragLeave"
               @drop="onNewBankUploadZipDrop"
-              @click="openNewBankUploadFileDialog"
+              @click="onNewBankUploadDropZoneClick"
             >
               <template v-if="newBankUploadFileName">
-                <span class="my-font-sm-400 my-color-black">{{ newBankUploadFileName }}</span>
-                <div class="my-font-sm-400 my-color-gray-4 mt-1">點擊可重新選擇檔案</div>
+                <div class="my-zip-drop-zone-selected">
+                  <span class="my-zip-drop-zone-selected__name">{{ newBankUploadFileName }}</span>
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                    :disabled="createRagLoading"
+                    @click.stop="clearNewBankUploadFile"
+                  >
+                    刪除檔案
+                  </button>
+                </div>
               </template>
-              <span v-else class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
-              <div class="my-font-sm-400 my-color-gray-4 mt-2">
-                單檔不可超過 50 MB
-              </div>
-              <ZipUploadUnitTypeHints />
+              <template v-else>
+                <span class="my-zip-upload-drop-prompt my-color-gray-4">{{ ZIP_UPLOAD_DROP_PROMPT }}</span>
+                <ZipUploadUnitTypeHints />
+              </template>
             </div>
             <div
               v-if="newBankUploadError"

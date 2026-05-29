@@ -1258,14 +1258,13 @@ label[for]:not(.btn) + div {
   font-size: var(--my-font-size-md);
 }
 
-/* 檔案拖放區：外框與 .form-control.my-input-md 一致（淺灰底 gray-4、1px --my-color-gray-3、rounded-2、字級／內距同中型輸入） */
+/* 檔案拖放區：外框與 .form-control.my-input-md 一致（淺灰底 gray-4、1px --my-color-gray-3；圓角併 .rounded-4；內距併 .p-3） */
 .my-zip-drop-zone {
   cursor: pointer;
   box-sizing: border-box;
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 0.5rem 1rem;
   font-family: inherit;
   font-size: var(--my-font-size-md);
   font-weight: var(--my-font-weight-regular);
@@ -1273,43 +1272,73 @@ label[for]:not(.btn) + div {
   color: var(--my-color-black);
   background-color: var(--my-drop-zone-bg);
   border: 1px solid var(--my-color-gray-3);
-  border-radius: 0.375rem;
   transition:
     color 0.15s ease,
     background-color 0.15s ease,
     border-color 0.15s ease;
 }
-.my-zip-drop-zone:hover:not(.my-zip-drop-zone-disabled):not(.my-zip-drop-zone-over) {
-  border-color: var(--my-color-gray-1);
+.my-zip-drop-zone.my-zip-drop-zone-has-file {
+  cursor: default;
+}
+.my-zip-drop-zone-selected {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+.btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear {
+  font-size: var(--my-font-size-sm);
+  font-weight: var(--my-font-weight-regular);
+  color: var(--my-color-gray-1);
+}
+.btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear:hover:not(:disabled),
+.btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear:focus-visible:not(:disabled),
+.btn.my-button-transparent-borderless.my-zip-drop-zone-selected__clear:active:not(:disabled) {
+  color: var(--my-color-gray-1);
+  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
+}
+.my-zip-drop-zone-selected__name {
+  font-size: var(--my-font-size-md);
+  font-weight: var(--my-font-weight-regular);
+  color: var(--my-color-black);
+  line-height: 1.5;
+  word-break: break-word;
+}
+.my-zip-drop-zone:hover:not(.my-zip-drop-zone-disabled):not(.my-zip-drop-zone-over):not(.my-zip-drop-zone-has-file) {
+  border-color: var(--my-color-gray-2);
   background-color: var(--my-drop-zone-hover-bg);
 }
 .my-zip-drop-zone.my-zip-drop-zone-over:not(.my-zip-drop-zone-disabled) {
-  border-color: var(--my-color-black) !important;
+  border-color: var(--my-color-gray-1) !important;
   background-color: var(--my-drop-zone-active-bg) !important;
 }
 .my-zip-drop-zone:focus-visible:not(.my-zip-drop-zone-over) {
   outline: 0;
-  border-color: var(--my-color-black);
+  border-color: var(--my-color-gray-1);
 }
 
-/* ZIP 上傳 drop zone 內：單元類型說明（ZipUploadUnitTypeHints） */
-.my-zip-upload-unit-hints {
-  max-width: 28rem;
-  margin-top: 0.75rem;
-  text-align: start;
+/* ZIP 上傳 drop zone：拖曳提示（較大字級；與下方說明空一行） */
+.my-zip-upload-drop-prompt {
+  display: block;
+  font-size: var(--my-font-size-lg);
+  font-weight: var(--my-font-weight-regular);
+  line-height: 1.5;
+  margin-bottom: 1em;
 }
-.my-zip-upload-unit-hints__panel {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-  border-radius: 0.375rem;
-  padding: 0.75rem 1rem;
+
+/* ZIP 上傳 drop zone 內：單元類型說明（ZipUploadUnitTypeHints；區塊間 gap 空一行，避免 margin 塌陷） */
+.my-zip-upload-unit-hints {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  max-width: 32rem;
+  text-align: start;
 }
 .my-zip-upload-unit-hints__intro {
   font-size: var(--my-font-size-sm);
   font-weight: var(--my-font-weight-regular);
   color: var(--my-color-gray-1);
   line-height: 1.5;
-  margin-bottom: 0.75rem;
 }
 .my-zip-upload-unit-hints__list {
   list-style: none;
@@ -1317,34 +1346,34 @@ label[for]:not(.btn) + div {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.25rem;
 }
 .my-zip-upload-unit-hints__item {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  column-gap: 0.625rem;
-  row-gap: 0.125rem;
-  align-items: start;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
 }
-.my-zip-upload-unit-hints__head {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  white-space: nowrap;
+.my-zip-upload-unit-hints__icon {
+  margin-top: 0.125rem;
 }
-.my-zip-upload-unit-hints__label {
-  font-size: var(--my-font-size-sm);
-  font-weight: var(--my-font-weight-semibold);
-  color: var(--my-color-black);
-  line-height: 1.4;
-}
-.my-zip-upload-unit-hints__text {
+.my-zip-upload-unit-hints__line {
   font-size: var(--my-font-size-sm);
   font-weight: var(--my-font-weight-regular);
   color: var(--my-color-gray-1);
   line-height: 1.5;
-  text-align: start;
   min-width: 0;
+  text-align: start;
+}
+.my-zip-upload-unit-hints__label {
+  font-weight: var(--my-font-weight-semibold);
+  color: var(--my-color-black);
+}
+.my-zip-upload-unit-hints__note {
+  font-size: var(--my-font-size-sm);
+  font-weight: var(--my-font-weight-regular);
+  color: var(--my-color-gray-1);
+  line-height: 1.5;
 }
 
 .my-zip-drop-zone-disabled {

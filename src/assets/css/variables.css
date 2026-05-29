@@ -53,7 +53,7 @@
   --my-color-yellow: #ffd000;
   --my-color-yellow-hover: #e8bc00;
 
-  /* ZIP／檔案拖放區（淺灰底 gray-4；hover 混黑；拖曳中 my-zip-drop-zone-over 混黑、黑框） */
+  /* ZIP／檔案拖放區（淺灰底 gray-4；hover 外框 gray-2；拖曳中外框 gray-1；hover／拖曳中背景混黑） */
   --my-drop-zone-border: color-mix(in srgb, var(--my-color-black) 20%, transparent);
   --my-drop-zone-bg: var(--my-color-gray-4);
   --my-drop-zone-hover-bg: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-gray-4));

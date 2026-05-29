@@ -153,7 +153,7 @@ async function submit() {
               @change="onExcelChange"
             >
             <div
-              class="my-zip-drop-zone text-center position-relative"
+              class="my-zip-drop-zone text-center position-relative rounded-4 p-3"
               :class="{ 'my-zip-drop-zone-over': isExcelDragOver }"
               @dragover.prevent="onExcelDragOver"
               @dragenter.prevent="onExcelDragOver"

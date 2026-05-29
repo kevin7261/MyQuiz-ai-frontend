@@ -17,6 +17,7 @@ import {
   UNIT_TYPE_MP3,
   UNIT_TYPE_YOUTUBE,
   packUnitTypeIconClasses,
+  ZIP_UPLOAD_DROP_PROMPT,
 } from '../utils/rag.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import { API_BASE } from '../constants/api.js';
@@ -98,6 +99,15 @@ function onUploadFileChange(e) {
 function onUploadConfirm() {
   if (!uploadFileName.value) { uploadError.value = '請先選擇要上傳的檔案'; return; }
   closeUploadModal();
+}
+function onUploadDropZoneClick(e) {
+  if (uploadFileName.value) return;
+  e.currentTarget.previousElementSibling?.click();
+}
+function clearUploadFile(e) {
+  e?.stopPropagation?.();
+  uploadFileName.value = '';
+  uploadError.value = '';
 }
 
 // ── 刪除確認 Modal ───────────────────────────────────────
@@ -378,8 +388,8 @@ const DESIGN3_MODAL_SPECS = [
   { name: 'modal-header', usage: 'Modal 標題列', css: 'modal-header border-bottom-0 p-0' },
   { name: 'modal-title', usage: 'Modal 標題字', css: 'modal-title my-color-black' },
   { name: 'modal-body', usage: 'Modal 內文區', css: 'modal-body p-0 min-w-0' },
-  { name: 'modal-drop-zone', usage: 'ZIP 拖放區（空／已選）', css: 'my-zip-drop-zone text-center position-relative' },
-  { name: 'modal-drop-zone-over', usage: 'ZIP 拖放區拖曳中', css: 'my-zip-drop-zone my-zip-drop-zone-over' },
+  { name: 'modal-drop-zone', usage: 'ZIP 拖放區（空／已選）', css: 'my-zip-drop-zone text-center position-relative rounded-4 p-3' },
+  { name: 'modal-drop-zone-over', usage: 'ZIP 拖放區拖曳中', css: 'my-zip-drop-zone my-zip-drop-zone-over text-center position-relative rounded-4 p-3' },
   { name: 'modal-footer', usage: 'Modal 底部按鈕列', css: 'modal-footer border-top-0 d-flex justify-content-end gap-2 w-100 p-0' },
   { name: 'modal-message-component', usage: 'MessageModal：頁面級錯誤／警告（列表、建立、pack、出題、來源內容逐字稿等）；work3 :confirm-button-class=my-button-white', css: 'MessageModal · modal fade show d-block my-modal-backdrop · modal-dialog modal-dialog-centered · modal-title my-color-black · my-color-red my-font-sm-400 mb-0 text-break', copyText: 'MessageModal' },
   { name: 'modal-error-text', usage: 'MessageModal 內文；上傳 Modal 內 newBankUploadError；ConfirmDeleteModal :error（取代 my-alert-warning-soft／my-alert-danger-soft 與「來源內容」下方 inline 紅字）', css: 'my-color-red my-font-sm-400 mb-0 text-break' },
@@ -1361,23 +1371,29 @@ function designPackUnitTypeIconCss(unitType) {
                       <div class="modal-body p-0 min-w-0 d-flex flex-column gap-4">
                         <div>
                           <p class="my-font-sm-400 my-color-gray-1 mb-2">狀態 A · 空</p>
-                          <div class="my-zip-drop-zone text-center position-relative">
-                            <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
-                            <div class="my-font-sm-400 my-color-gray-4 mt-2">單檔不可超過 50 MB</div>
+                          <div class="my-zip-drop-zone text-center position-relative rounded-4 p-3">
+                            <span class="my-zip-upload-drop-prompt my-color-gray-4">{{ ZIP_UPLOAD_DROP_PROMPT }}</span>
                             <ZipUploadUnitTypeHints />
                           </div>
                         </div>
                         <div>
                           <p class="my-font-sm-400 my-color-gray-1 mb-2">狀態 B · 拖曳中（my-zip-drop-zone-over）</p>
-                          <div class="my-zip-drop-zone my-zip-drop-zone-over text-center position-relative">
-                            <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
+                          <div class="my-zip-drop-zone my-zip-drop-zone-over text-center position-relative rounded-4 p-3">
+                            <span class="my-zip-upload-drop-prompt my-color-gray-4">{{ ZIP_UPLOAD_DROP_PROMPT }}</span>
                           </div>
                         </div>
                         <div>
                           <p class="my-font-sm-400 my-color-gray-1 mb-2">狀態 C · 已選檔案</p>
-                          <div class="my-zip-drop-zone text-center position-relative">
-                            <span class="my-font-sm-400 my-color-black">example_bank.zip</span>
-                            <div class="my-font-sm-400 my-color-gray-4 mt-1">點擊可重新選擇檔案</div>
+                          <div class="my-zip-drop-zone text-center position-relative rounded-4 p-3">
+                            <div class="my-zip-drop-zone-selected">
+                              <span class="my-zip-drop-zone-selected__name">example_bank.zip</span>
+                              <button
+                                type="button"
+                                class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                              >
+                                刪除檔案
+                              </button>
+                            </div>
                           </div>
                         </div>
                         <div>
@@ -1492,21 +1508,31 @@ function designPackUnitTypeIconCss(unitType) {
           <div class="modal-body p-0 min-w-0">
             <input type="file" accept=".zip" class="d-none" @change="onUploadFileChange">
             <div
-              class="my-zip-drop-zone text-center position-relative"
-              :class="{ 'my-zip-drop-zone-over': uploadDragOver }"
+              class="my-zip-drop-zone text-center position-relative rounded-4 p-3"
+              :class="{
+                'my-zip-drop-zone-over': uploadDragOver,
+                'my-zip-drop-zone-has-file': !!uploadFileName,
+              }"
               @dragover="onUploadDragOver"
               @dragenter="onUploadDragOver"
               @dragleave="onUploadDragLeave"
               @drop="onUploadDrop"
-              @click="$event.currentTarget.previousElementSibling?.click()"
+              @click="onUploadDropZoneClick"
             >
               <template v-if="uploadFileName">
-                <span class="my-font-sm-400 my-color-black">{{ uploadFileName }}</span>
-                <div class="my-font-sm-400 my-color-gray-4 mt-1">點擊可重新選擇檔案</div>
+                <div class="my-zip-drop-zone-selected">
+                  <span class="my-zip-drop-zone-selected__name">{{ uploadFileName }}</span>
+                  <button
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-zip-drop-zone-selected__clear my-button-transparent-borderless px-3 py-1"
+                    @click.stop="clearUploadFile"
+                  >
+                    刪除檔案
+                  </button>
+                </div>
               </template>
               <template v-else>
-                <span class="my-font-sm-400 my-color-gray-4">拖曳.zip檔到這裡，或點擊選擇檔案</span>
-                <div class="my-font-sm-400 my-color-gray-4 mt-2">單檔不可超過 50 MB</div>
+                <span class="my-zip-upload-drop-prompt my-color-gray-4">{{ ZIP_UPLOAD_DROP_PROMPT }}</span>
                 <ZipUploadUnitTypeHints />
               </template>
             </div>
