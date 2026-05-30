@@ -2698,7 +2698,7 @@ function getRagQuizUnitMeta(slotIndex) {
 
 // ─── 題目卡片：for_exam 標記與 Quiz Sub-Tab 管理 ──────────────────────────────
 
-/** 切換 Rag_Quiz.for_exam；「設為測驗用」置於題型區塊最下方常駐，未出題或未批改時按鈕 disabled（見 isRagQuizForExamToolbarButtonDisabled） */
+/** 切換 Rag_Quiz.for_exam；「設為測驗用」置於題型區塊最下方常駐，出題／批改規則皆已有內容時可啟用（見 isRagQuizForExamToolbarButtonDisabled） */
 async function onMarkRagQuizForExam(card) {
   if (!card || typeof card !== 'object') return;
   const personId = getPersonId(authStore);
@@ -3093,10 +3093,19 @@ function isRagQuizMarkedForExam(card) {
   return card.rag_quiz_for_exam === true || card.rag_quiz_for_exam === 1;
 }
 
+/** 出題規則與批改規則皆已有內容（trim 後非空） */
+function hasRagQuizPromptRulesForExam(card) {
+  if (!card || typeof card !== 'object') return false;
+  return (
+    String(card.quizUserPromptText ?? '').trim() !== ''
+    && String(card.gradingPrompt ?? '').trim() !== ''
+  );
+}
+
 /**
  * 「設為測驗用」常駐顯示；不可操作時為 true。
- * — 標為測驗用後「取消設為測驗用」仍應可操作（不依賴當前有無題文／批改）。
- * — 標記前須已有題目與批改結果；送批改中／API 請求中也停用。
+ * — 標為測驗用後「取消設為測驗用」仍應可操作。
+ * — 標記前須出題規則、批改規則皆有資料；送批改中／API 請求中也停用。
  */
 function isRagQuizForExamToolbarButtonDisabled(card) {
   if (!card || typeof card !== 'object') return true;
@@ -3113,9 +3122,7 @@ function isRagQuizForExamToolbarButtonDisabled(card) {
 
   if (isRagQuizMarkedForExam(card)) return false;
 
-  const hasQuiz = String(card.quiz ?? '').trim() !== '';
-  const hasGrade = String(card.gradingResult ?? '').trim() !== '';
-  return !hasQuiz || !hasGrade;
+  return !hasRagQuizPromptRulesForExam(card);
 }
 
 /** 題卡與「上次載入／產生／批改成功」對齊之比對欄位（重設還原用） */

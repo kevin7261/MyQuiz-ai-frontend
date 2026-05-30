@@ -153,9 +153,9 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
       </ol>
       <p
         v-else
-        class="my-font-md-400 my-color-gray-1 mb-0"
+        class="quiz-history-panel__empty my-font-md-400 my-color-gray-2 mb-0 w-100 text-center"
       >
-        尚無先前的出題。
+        沒有先前出題
       </p>
     </div>
   </div>
@@ -172,6 +172,13 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
   padding-left: 1.25rem;
   margin-left: 0;
   list-style-position: outside;
+}
+
+.quiz-history-panel__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 6rem;
 }
 
 .quiz-history-panel__list > li + li {
