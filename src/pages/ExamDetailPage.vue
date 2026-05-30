@@ -1150,6 +1150,7 @@ const designRightQuizSubTabItems = computed(() => {
       key: `exam-slot-${i}`,
       label: examQuizNavDisplayLabel(i),
       unitLabel: examSlotUnitLabelForHistoryModal(i),
+      unitType: examSlotUnitType(i),
       quizTypeLabel: examSlotHeadingBreadcrumbQuizTypeName(i),
       breadcrumb: examSlotHeadingBreadcrumb(i),
       followup: examSlotIsFollowupMode(i),
@@ -3917,6 +3918,16 @@ onActivated(() => {
                             class="exam-quiz-nav-breadcrumb my-font-sm-400 my-color-gray-1 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
                             aria-hidden="true"
                           >
+                            <span
+                              v-if="item.unitType != null"
+                              class="my-pack-unit-type-icon-slot flex-shrink-0"
+                              aria-hidden="true"
+                            >
+                              <PackUnitTypeIcon
+                                :unit-type="item.unitType"
+                                decorative
+                              />
+                            </span>
                             <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
                             <i
                               class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
