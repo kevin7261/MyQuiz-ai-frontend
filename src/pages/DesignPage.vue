@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed, onMounted } from 'vue';
 import DesignPageSpecItem from '../components/DesignPageSpecItem.vue';
 import DesignPageSpecColorGroup from '../components/DesignPageSpecColorGroup.vue';
 import ConfirmDeleteModal from '../components/ConfirmDeleteModal.vue';
@@ -18,27 +18,156 @@ import {
   UNIT_TYPE_YOUTUBE,
   packUnitTypeIconClasses,
   ZIP_UPLOAD_DROP_PROMPT,
+  normalizeRagListResponse,
+  normalizeExamListResponse,
+  deriveRagName,
+  deriveRagNameFromTabId,
 } from '../utils/rag.js';
+import { ragQuizApiRowIsForExam } from '../utils/ragExamRows.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import DeleteButtonLabel from '../components/DeleteButtonLabel.vue';
-import { API_BASE } from '../constants/api.js';
+import { API_BASE, API_RAG_LIST, API_EXAM_TESTS, isFrontendLocalHost } from '../constants/api.js';
 import { LOGO_GRADIENT_PALETTES } from '../constants/logoGradientPalettes.js';
+import { loggedFetch } from '../utils/loggedFetch.js';
+import { useAuthStore } from '../stores/authStore.js';
+import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
+import { getPersonId } from '../services/ragApi.js';
 
 defineProps({
   tabId: { type: String, default: '' },
   design3: { type: Boolean, default: false },
 });
 
-const demoExamLabel = ref('範例試卷 A');
-const demoBankLabel = ref('範例題庫 B');
-const demoExamGridItems = [
+// ── 從 API 取得的真實列表資料 ────────────────────────────────
+const authStore = useAuthStore();
+const examList = ref([]);
+const ragList = ref([]);
+
+function deriveExamGridItem(exam) {
+  const tabId = String(exam.exam_tab_id ?? exam.test_tab_id ?? exam.id ?? '');
+  const raw = exam.tab_name ?? exam.exam_name ?? exam.test_name;
+  const name = raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
+  const label = name || deriveRagNameFromTabId(tabId) || tabId || '測驗';
+  const quizzes = exam.quizzes ?? exam.Quizzes ?? [];
+  const units = exam.units ?? exam.Units ?? [];
+  const subtitle =
+    Array.isArray(quizzes) && quizzes.length > 0 ? `${quizzes.length} 題` :
+    Array.isArray(units) && units.length > 0 ? `${units.length} 個單元` : '';
+  return { tabId, label, subtitle };
+}
+
+function ragRowIsExam(rag) {
+  if (!rag || typeof rag !== 'object') return false;
+  if (rag.for_exam === true || rag.for_exam === 1) return true;
+  const units = Array.isArray(rag.units) ? rag.units : [];
+  for (const unit of units) {
+    const quizzes = unit.quizzes ?? unit.quiz_list ?? unit.Quizzes ?? [];
+    if (Array.isArray(quizzes) && quizzes.some(ragQuizApiRowIsForExam)) return true;
+  }
+  const topQuizzes = rag.quizzes ?? rag.quiz_list ?? [];
+  if (Array.isArray(topQuizzes) && topQuizzes.some(ragQuizApiRowIsForExam)) return true;
+  return false;
+}
+
+function deriveRagGridItem(rag) {
+  const tabId = String(rag.rag_tab_id ?? rag.id ?? rag);
+  const label = deriveRagName(rag) || tabId || '測驗題庫';
+  const isExam = ragRowIsExam(rag);
+  const units = Array.isArray(rag.units) ? rag.units : [];
+  const subtitle =
+    units.length > 0 ? `${units.length} 個單元` :
+    String(rag.file_metadata?.filename ?? rag.filename ?? '').trim();
+  return { tabId, label, isExam, subtitle };
+}
+
+const FALLBACK_EXAM_ITEMS = [
   { tabId: 'exam-a', label: '範例試卷 A', subtitle: '5 題' },
   { tabId: 'exam-b', label: '其他試卷', subtitle: '3 題' },
 ];
-const demoBankGridItems = [
+const FALLBACK_BANK_ITEMS = [
   { tabId: 'bank-a', label: '範例題庫 B', subtitle: '3 個單元', isExam: false },
   { tabId: 'bank-b', label: '試卷用題庫', subtitle: '', isExam: true },
 ];
+
+const examGridItems = computed(() =>
+  examList.value.length > 0
+    ? examList.value.map(deriveExamGridItem)
+    : FALLBACK_EXAM_ITEMS,
+);
+
+const bankGridItems = computed(() =>
+  ragList.value.length > 0
+    ? ragList.value.map(deriveRagGridItem)
+    : FALLBACK_BANK_ITEMS,
+);
+
+const demoExamTabId = computed(() => examGridItems.value[0]?.tabId ?? 'exam-a');
+const demoBankTabId = computed(() => bankGridItems.value[0]?.tabId ?? 'bank-a');
+
+// v-model 用的 label refs，初始值由第一筆資料更新
+const demoExamLabel = ref(FALLBACK_EXAM_ITEMS[0].label);
+const demoBankLabel = ref(FALLBACK_BANK_ITEMS[0].label);
+
+watch(examGridItems, (items) => {
+  if (items.length > 0) demoExamLabel.value = items[0].label;
+}, { immediate: true });
+watch(bankGridItems, (items) => {
+  if (items.length > 0) demoBankLabel.value = items[0].label;
+}, { immediate: true });
+
+async function fetchDesignExamList() {
+  const personId = getPersonId(authStore);
+  if (!personId) return;
+  const course = authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM);
+  const courseId = course?.course_id != null ? String(course.course_id) : null;
+  if (!courseId) return;
+  try {
+    const params = new URLSearchParams();
+    params.set('person_id', personId);
+    params.set('local', String(isFrontendLocalHost()));
+    const res = await loggedFetch(
+      `${API_BASE}${API_EXAM_TESTS}?${params}`,
+      { method: 'GET', headers: { 'X-Person-Id': personId } },
+      { courseId },
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    examList.value = normalizeExamListResponse(data);
+  } catch {
+    /* 取不到時沿用 fallback */
+  }
+}
+
+async function fetchDesignRagList() {
+  const course =
+    authStore.getCourseForScope(COURSE_SCOPE_KEYS.CREATE_EXAM_BANK)
+    ?? authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM);
+  const courseId = course?.course_id != null ? String(course.course_id) : null;
+  if (!courseId) return;
+  try {
+    const params = new URLSearchParams();
+    params.set('local', String(isFrontendLocalHost()));
+    const res = await loggedFetch(
+      `${API_BASE}${API_RAG_LIST}?${params}`,
+      { method: 'GET' },
+      { courseId },
+    );
+    if (!res.ok) return;
+    const data = await res.json();
+    ragList.value = normalizeRagListResponse(data);
+  } catch {
+    /* 取不到時沿用 fallback */
+  }
+}
+
+onMounted(() => {
+  fetchDesignExamList();
+  fetchDesignRagList();
+});
+
+// ── 原 demo refs（保留相容；改由 examGridItems / bankGridItems 驅動） ──
+const demoExamGridItems = examGridItems;
+const demoBankGridItems = bankGridItems;
 
 // ── Tab 狀態（sessionStorage 還原） ─────────────────────────────
 const DESIGN_ACTIVE_TAB_STORAGE_KEY = 'myquiz:designPage:activeTab:v1';
@@ -655,11 +784,11 @@ function designPackUnitTypeIconCss(unitType) {
                       <div class="my-course-header-inner__end d-flex align-items-center justify-content-end gap-2 min-w-0 flex-shrink-0">
                         <ExamPageExamSwitchDropdown
                           :grid-items="demoExamGridItems"
-                          selected-exam-tab-id="exam-a"
+                          :selected-exam-tab-id="demoExamTabId"
                         />
                         <CreateExamQuizBankBankSwitchDropdown
                           :grid-items="demoBankGridItems"
-                          selected-bank-tab-id="bank-b"
+                          :selected-bank-tab-id="demoBankTabId"
                         />
                       </div>
                     </div>
@@ -681,7 +810,7 @@ function designPackUnitTypeIconCss(unitType) {
                     <ExamPage2DetailBar
                       v-model:selected-exam-label="demoExamLabel"
                       :grid-items="demoExamGridItems"
-                      selected-exam-tab-id="exam-a"
+                      :selected-exam-tab-id="demoExamTabId"
                       in-side-panel
                     />
                     <div class="my-bgcolor-gray-4 px-3 py-4 my-font-sm-400 my-color-gray-1 border-top">題目清單（my-design-right-nav）</div>
@@ -703,7 +832,7 @@ function designPackUnitTypeIconCss(unitType) {
                     <CreateExamQuizBankPage2DetailBar
                       v-model:selected-bank-label="demoBankLabel"
                       :grid-items="demoBankGridItems"
-                      selected-bank-tab-id="bank-a"
+                      :selected-bank-tab-id="demoBankTabId"
                       in-side-panel
                     />
                     <div class="my-bgcolor-gray-4 px-3 py-4 my-font-sm-400 my-color-gray-1 border-top">流程清單（my-design-right-nav）</div>
@@ -1002,7 +1131,7 @@ function designPackUnitTypeIconCss(unitType) {
                       usage="TopView 試卷／題庫切換觸發鈕（同 dropdown-header-trigger）"
                       css="btn rounded-pill d-inline-flex align-items-center dropdown-toggle my-dropdown-caret flex-shrink-0 text-nowrap my-font-md-400 my-course-header-nav-btn gap-2 px-4 py-2"
                     >
-                      <ExamPageExamSwitchDropdown :grid-items="demoExamGridItems" selected-exam-tab-id="exam-a" />
+                      <ExamPageExamSwitchDropdown :grid-items="demoExamGridItems" :selected-exam-tab-id="demoExamTabId" />
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-list-row"
@@ -1156,14 +1285,14 @@ function designPackUnitTypeIconCss(unitType) {
                       <p class="my-font-sm-400 my-color-gray-1 mb-2">ExamPageExamSwitchDropdown</p>
                       <ExamPageExamSwitchDropdown
                         :grid-items="demoExamGridItems"
-                        selected-exam-tab-id="exam-a"
+                        :selected-exam-tab-id="demoExamTabId"
                       />
                     </div>
                     <div>
                       <p class="my-font-sm-400 my-color-gray-1 mb-2">CreateExamQuizBankBankSwitchDropdown</p>
                       <CreateExamQuizBankBankSwitchDropdown
                         :grid-items="demoBankGridItems"
-                        selected-bank-tab-id="bank-b"
+                        :selected-bank-tab-id="demoBankTabId"
                       />
                     </div>
                   </div>
