@@ -5246,7 +5246,7 @@ async function confirmAnswer(item) {
                         <button
                           type="button"
                           role="tab"
-                          class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                          class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                           :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'text')"
                           :aria-selected="packUnitDetailModalTab === 'text'"
                           @click="packUnitDetailModalTab = 'text'"
@@ -5256,7 +5256,7 @@ async function confirmAnswer(item) {
                         <button
                           type="button"
                           role="tab"
-                          class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                          class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                           :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'folders')"
                           :aria-selected="packUnitDetailModalTab === 'folders'"
                           @click="packUnitDetailModalTab = 'folders'"
@@ -5266,7 +5266,7 @@ async function confirmAnswer(item) {
                         <button
                           type="button"
                           role="tab"
-                          class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                          class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                           :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'json')"
                           :aria-selected="packUnitDetailModalTab === 'json'"
                           @click="packUnitDetailModalTab = 'json'"
@@ -6579,7 +6579,7 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：題目區（出題規則 wrap py-2；題目／先前出題內文另見 field-inset-body） -->
+                <!-- 子區塊：題目區（出題規則 wrap；題目／先前出題內文另見 field-inset-body） -->
                 <div
                   class="my-design-quiz-sub-block-outer"
                   :class="{
@@ -6619,14 +6619,13 @@ async function confirmAnswer(item) {
                     </template>
                   </div>
                   <div
-                    class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                    :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                    class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0"
                   >
                     <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div
                       class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
-                    <div class="my-design-quiz-question-prompt-wrap px-3 py-2 w-100 min-w-0">
+                    <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
                       <section
                         class="my-design-quiz-question-prompt-block w-100 min-w-0"
                         aria-label="出題規則"
@@ -6672,7 +6671,7 @@ async function confirmAnswer(item) {
                       </section>
                     </div>
                     <div
-                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2"
+                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 py-3"
                     >
                       <LogoGradientPillButton
                         tone="generate"
@@ -6722,11 +6721,7 @@ async function confirmAnswer(item) {
                     class="my-design-quiz-sub-block-outer__logo"
                   />
                   <div
-                    class="my-design-quiz-sub-block rounded-4"
-                    :class="[
-                      designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                      designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                    ]"
+                    class="my-design-quiz-sub-block my-design-quiz-sub-block--answer rounded-4 p-0"
                   >
                     <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div class="w-100 min-w-0">
@@ -6994,18 +6989,18 @@ async function confirmAnswer(item) {
                         @keydown.enter.prevent="onDesignRightSubTabClick(qItem)"
                         @keydown.space.prevent="onDesignRightSubTabClick(qItem)"
                       >
-                        <div class="my-design-right-unit-quiz-link w-100 text-start d-flex align-items-center min-w-0 gap-2 ps-5">
+                        <div class="my-design-right-unit-quiz-link w-100 text-start d-flex align-items-center min-w-0 ps-5">
                           <div class="d-flex align-items-center flex-wrap gap-2 min-w-0 flex-grow-1">
                             <span class="min-w-0 text-break">{{ qItem.label }}</span>
                             <span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0">追問</span>
                           </div>
                           <span
                             v-if="qItem.forExam"
-                            class="my-design-right-unit-quiz-for-exam-slot flex-shrink-0 d-inline-flex align-items-center justify-content-center"
+                            class="my-design-right-unit-quiz-for-exam-slot flex-shrink-0"
                             title="測驗用題型"
                           >
                             <span
-                              class="my-design-right-unit-quiz-for-exam-dot rounded-circle d-inline-block my-bgcolor-green"
+                              class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot"
                               role="img"
                               aria-label="測驗用題型"
                             />

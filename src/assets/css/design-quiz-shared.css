@@ -63,10 +63,10 @@
 }
 .my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
+  border: none;
 }
 
-/* 灰框白底欄位（批改子區）；題目／答案無框；標籤不換行 */
+/* 灰框白底欄位（批改子區）；題目／答案子區外層與 field-inset--plain 無框；標籤不換行 */
 .my-design-quiz-field-inset,
 .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
   box-sizing: border-box;
@@ -95,14 +95,87 @@
   white-space: nowrap;
 }
 
-/* 出題／答案／批改規則：標題列統一 px-3 py-2 */
+/* 黑底區（出題／批改規則）：標題列與預覽內文保留 px-3 */
 .my-design-quiz-question-prompt-block__title-row,
-.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row),
-.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3:not(.my-design-quiz-stem-tabs-row)) {
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row) {
   padding-top: 0.5rem !important;
   padding-bottom: 0.5rem !important;
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+.my-design-quiz-question-prompt-block__head > .px-3,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__head > .px-3),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__head > .px-3) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* 題目／答案／批改子區（非黑底區）：內容列不加 px-3 */
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2:not(.my-design-quiz-stem-tabs-row)) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .d-flex),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex) {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* tab 內文（field-inset-body）：pt-2 pb-4 */
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 1.5rem !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 開始出題／開始批改列：無 px-3、保留 py-3（對齊 Bootstrap py-3） */
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row),
+.my-design-quiz-sub-block :deep(.my-design-quiz-generate-action-row:not(.my-design-quiz-generate-action-row--no-pad)),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row:not(.my-design-quiz-generate-action-row--no-pad)) {
+  padding-top: 1rem !important;
+  padding-bottom: 1rem !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 繼續出題等：不加 py-3 */
+.my-design-quiz-generate-action-row--no-pad,
+.my-design-quiz-sub-block :deep(.my-design-quiz-generate-action-row--no-pad),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row--no-pad) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* 答案子區塊：無底色（題目 --stem 仍白底） */
+.my-design-quiz-sub-block--answer,
+.my-design-quiz-sub-block:not(.my-design-quiz-sub-block--stem) {
+  background-color: transparent !important;
+}
+.my-design-quiz-sub-block--answer :deep(.my-design-quiz-field-inset),
+.my-design-quiz-sub-block--answer :deep(.my-design-quiz-field-inset--plain),
+.my-design-quiz-sub-block--answer :deep(.my-design-quiz-field-inset-body),
+.my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body) {
+  background-color: transparent !important;
+}
+.my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input),
+.my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input:focus),
+.my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input:disabled) {
+  background-color: transparent !important;
 }
 
 /* 灰框白底：標題列下方橫線 */

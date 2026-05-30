@@ -3203,8 +3203,7 @@ onActivated(() => {
                                   </svg>
                                 </div>
                                 <div
-                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                                  :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0"
                                 >
                                   <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                     <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
@@ -3239,11 +3238,7 @@ onActivated(() => {
                                   class="my-design-quiz-sub-block-outer__logo"
                                 />
                                 <div
-                                  class="my-design-quiz-sub-block rounded-4"
-                                  :class="[
-                                    designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                    designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                                  ]"
+                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--answer rounded-4 p-0"
                                 >
                                   <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                     <div class="w-100 min-w-0">
@@ -3319,8 +3314,7 @@ onActivated(() => {
                               </template>
                             </div>
                             <div
-                              class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                              :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                              class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4 p-0"
                             >
                               <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                 <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
@@ -3356,11 +3350,7 @@ onActivated(() => {
                               class="my-design-quiz-sub-block-outer__logo"
                             />
                             <div
-                              class="my-design-quiz-sub-block rounded-4"
-                              :class="[
-                                designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                              ]"
+                              class="my-design-quiz-sub-block my-design-quiz-sub-block--answer rounded-4 p-0"
                             >
                               <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                 <div class="w-100 min-w-0">
@@ -3400,7 +3390,7 @@ onActivated(() => {
                               class="my-design-quiz-sub-block-outer__logo"
                             />
                             <div
-                              class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 min-w-0 flex-grow-1"
+                              class="my-design-quiz-generate-action-row my-design-quiz-generate-action-row--no-pad d-flex justify-content-start align-items-center flex-wrap gap-2 min-w-0 flex-grow-1"
                             >
                               <LogoGradientPillButton
                                 tone="generate"

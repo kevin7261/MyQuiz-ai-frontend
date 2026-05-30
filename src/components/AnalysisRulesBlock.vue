@@ -78,7 +78,7 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
             </div>
 
             <!-- 開始分析按鈕群 -->
-            <div class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-2">
+            <div class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 px-3 py-3">
               <!-- 已有儲存規則：直接開始 -->
               <LogoGradientPillButton
                 v-if="props.canStartFromSavedRules"

@@ -1664,6 +1664,7 @@ div.form-control {
 }
 
 .btn.my-design-quiz-stem-tab {
+  padding-top: 0;
   border: none;
   border-bottom: 2pt solid transparent;
   border-radius: 0;
@@ -1688,9 +1689,9 @@ div.form-control {
   padding-top: 0 !important;
 }
 
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
+.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body) {
   padding-top: 0.5rem !important;
+  padding-bottom: 1.5rem !important;
 }
 
 .analysis-page-3-quiz .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {

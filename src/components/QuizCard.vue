@@ -138,15 +138,6 @@ function designStemTabsRowHeadClass(useTabs) {
     : 'my-design-quiz-stem-tabs-row align-items-end pt-2 pb-0';
 }
 
-/** exam_3／create-exam-bank_3：hr 下方內文 pt-2 */
-const designFieldInsetBodyClass = computed(() => {
-  const base = 'min-w-0 lh-base';
-  if (props.logoGradientBias === 'work3') {
-    return `${base} px-3 pt-2 pb-2`;
-  }
-  return `${base} px-3 pb-2`;
-});
-
 /** exam_3／create-exam-bank_3：出題／批改規則黑底區標題列下方不顯示橫線 */
 const showDesignPromptBlockRule = computed(() => props.logoGradientBias !== 'work3');
 
@@ -501,6 +492,20 @@ const useDesignFieldLabelInset = computed(
   () => props.createExamBankDesignLayout && isDesignSubBlockFragment.value,
 );
 
+/** exam_3／create-exam-bank_3：tab 內文 pt-2 pb-4；子區塊內列不加 px-3 */
+const designFieldInsetBodyClass = computed(() => {
+  const base = 'min-w-0 lh-base';
+  if (props.logoGradientBias === 'work3') {
+    return useDesignFieldLabelInset.value ? `${base} pt-2 pb-4` : `${base} px-3 pt-2 pb-2`;
+  }
+  return `${base} px-3 pb-2`;
+});
+
+/** 題目／答案／批改 field-inset 標題列與 hr 包裝：子區塊不加 px-3 */
+const designFieldInsetPxClass = computed(() =>
+  (useDesignFieldLabelInset.value ? '' : 'px-3'),
+);
+
 /** exam_design（測驗頁）：題目區 tab「出題規則」（取代 pill／Modal） */
 const showExamDesignQuestionRuleTab = computed(
   () =>
@@ -591,15 +596,6 @@ const showDesignStemToolbarRow = computed(
 );
 
 const designStemToolbarJustifyClass = computed(() => 'justify-content-start');
-
-/** exam_design 題目子區：讚／差列內距 */
-const designStemToolbarRowPaddingClass = computed(() =>
-  isDesignSubBlockFragment.value
-  && props.designSubBlock === 'question'
-  && showExamRatingVisible.value
-    ? 'px-3 pt-2'
-    : '',
-);
 
 const bankQuizHistoryListResolved = computed(() => {
   if (!Array.isArray(props.bankQuizHistoryList)) return [];
@@ -958,8 +954,7 @@ const quizAnswerFieldDisabled = computed(
           >
             <header class="my-design-quiz-field-inset__head">
               <div
-                class="d-flex justify-content-between gap-2 px-3"
-                :class="designStemTabsRowHeadClass(showQuestionStemTabs)"
+                :class="['d-flex justify-content-between gap-2', designFieldInsetPxClass, designStemTabsRowHeadClass(showQuestionStemTabs)]"
               >
                 <div
                   v-if="showQuestionStemTabs"
@@ -970,7 +965,7 @@ const quizAnswerFieldDisabled = computed(
                   <button
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(questionStemTab === 'current')"
                     :aria-selected="questionStemTab === 'current'"
                     @click="questionStemTab = 'current'"
@@ -981,7 +976,7 @@ const quizAnswerFieldDisabled = computed(
                     v-if="showBankQuizHistoryTabs"
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(questionStemTab === 'history')"
                     :aria-selected="questionStemTab === 'history'"
                     @click="questionStemTab = 'history'"
@@ -992,7 +987,7 @@ const quizAnswerFieldDisabled = computed(
                     v-if="showExamDesignQuestionRuleTab"
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(questionStemTab === 'rule')"
                     :aria-selected="questionStemTab === 'rule'"
                     @click="questionStemTab = 'rule'"
@@ -1022,13 +1017,14 @@ const quizAnswerFieldDisabled = computed(
                   </button>
                 </div>
               </div>
-              <div class="px-3 py-0">
+              <div :class="[designFieldInsetPxClass, 'py-0']">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
             <div
               v-if="showQuestionRuleBody"
-              class="my-design-quiz-field-inset-body min-w-0 w-100 px-3 pt-2 pb-2"
+              class="my-design-quiz-field-inset-body min-w-0 w-100"
+              :class="designFieldInsetBodyClass"
             >
               <div class="my-design-quiz-question-prompt-block w-100 min-w-0">
                 <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
@@ -1083,7 +1079,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 type="button"
                 role="tab"
-                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                 :class="designStemTabBtnClass(questionStemTab === 'current')"
                 :aria-selected="questionStemTab === 'current'"
                 @click="questionStemTab = 'current'"
@@ -1093,7 +1089,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 type="button"
                 role="tab"
-                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                 :class="designStemTabBtnClass(questionStemTab === 'history')"
                 :aria-selected="questionStemTab === 'history'"
                 @click="questionStemTab = 'history'"
@@ -1145,7 +1141,7 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="showDesignStemToolbarRow"
             class="d-flex flex-row flex-nowrap align-items-center gap-2 w-100 min-w-0"
-            :class="[designStemToolbarJustifyClass, designStemToolbarRowPaddingClass]"
+            :class="designStemToolbarJustifyClass"
           >
             <div
               v-if="showExamRatingVisible"
@@ -1355,8 +1351,7 @@ const quizAnswerFieldDisabled = computed(
           >
             <header class="my-design-quiz-field-inset__head">
               <div
-                class="d-flex justify-content-between gap-2 px-3"
-                :class="designStemTabsRowHeadClass(showAnswerSectionInsetTabs)"
+                :class="['d-flex justify-content-between gap-2', designFieldInsetPxClass, designStemTabsRowHeadClass(showAnswerSectionInsetTabs)]"
               >
                 <div
                   v-if="showAnswerSectionInsetTabs"
@@ -1367,7 +1362,7 @@ const quizAnswerFieldDisabled = computed(
                   <button
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(answerSectionAnswerTabActive())"
                     :aria-selected="answerSectionAnswerTabActive()"
                     @click="answerSectionTab = 'answer'"
@@ -1378,7 +1373,7 @@ const quizAnswerFieldDisabled = computed(
                     v-if="hasHintText"
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(answerSectionTab === 'hint')"
                     :aria-selected="answerSectionTab === 'hint'"
                     @click="answerSectionTab = 'hint'"
@@ -1389,7 +1384,7 @@ const quizAnswerFieldDisabled = computed(
                     v-if="hasReferenceAnswerText"
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(answerSectionTab === 'reference')"
                     :aria-selected="answerSectionTab === 'reference'"
                     @click="answerSectionTab = 'reference'"
@@ -1404,7 +1399,7 @@ const quizAnswerFieldDisabled = computed(
                   您的答案
                 </h3>
               </div>
-              <div class="px-3 py-0">
+              <div :class="[designFieldInsetPxClass, 'py-0']">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
@@ -1483,7 +1478,7 @@ const quizAnswerFieldDisabled = computed(
               <button
                 type="button"
                 role="tab"
-                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                 :class="designStemTabBtnClass(answerSectionAnswerTabActive())"
                 :aria-selected="answerSectionAnswerTabActive()"
                 @click="answerSectionTab = 'answer'"
@@ -1494,7 +1489,7 @@ const quizAnswerFieldDisabled = computed(
                 v-if="hasHintText"
                 type="button"
                 role="tab"
-                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                 :class="designStemTabBtnClass(answerSectionTab === 'hint')"
                 :aria-selected="answerSectionTab === 'hint'"
                 @click="answerSectionTab = 'hint'"
@@ -1505,7 +1500,7 @@ const quizAnswerFieldDisabled = computed(
                 v-if="hasReferenceAnswerText"
                 type="button"
                 role="tab"
-                class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                 :class="designStemTabBtnClass(answerSectionTab === 'reference')"
                 :aria-selected="answerSectionTab === 'reference'"
                 @click="answerSectionTab = 'reference'"
@@ -1621,7 +1616,6 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="!hideExamRulePills && !hideGradingPrompt"
             class="my-design-quiz-question-prompt-wrap w-100 min-w-0"
-            :class="useDesignFieldLabelInset ? 'px-3 py-2' : ''"
           >
             <section
               class="my-design-quiz-question-prompt-block w-100 min-w-0"
@@ -1666,7 +1660,7 @@ const quizAnswerFieldDisabled = computed(
           <template v-if="useDesignFieldLabelInset">
             <div
               v-if="showDesignGradingStartRow"
-              class="d-flex justify-content-start align-items-center flex-nowrap gap-2 px-3 py-2 my-design-quiz-grading-start-row"
+              :class="['d-flex justify-content-start align-items-center flex-nowrap gap-2 py-3 my-design-quiz-grading-start-row', designFieldInsetPxClass]"
             >
               <LogoGradientPillButton
                 tone="grade"
@@ -1692,8 +1686,7 @@ const quizAnswerFieldDisabled = computed(
               >
                 <header class="my-design-quiz-field-inset__head">
                   <div
-                    class="d-flex justify-content-between gap-2 px-3"
-                    :class="designStemTabsRowHeadClass(showGradingResultInsetTabs)"
+                    :class="['d-flex justify-content-between gap-2', designFieldInsetPxClass, designStemTabsRowHeadClass(showGradingResultInsetTabs)]"
                   >
                     <div
                       v-if="showGradingResultInsetTabs"
@@ -1704,7 +1697,7 @@ const quizAnswerFieldDisabled = computed(
                       <button
                         type="button"
                         role="tab"
-                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                        class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                         :class="designStemTabBtnClass(gradingSectionTab === 'result')"
                         :aria-selected="gradingSectionTab === 'result'"
                         @click="gradingSectionTab = 'result'"
@@ -1715,7 +1708,7 @@ const quizAnswerFieldDisabled = computed(
                         v-if="showExamDesignGradingRuleTab"
                         type="button"
                         role="tab"
-                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                        class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                         :class="designStemTabBtnClass(gradingSectionTab === 'rule')"
                         :aria-selected="gradingSectionTab === 'rule'"
                         @click="gradingSectionTab = 'rule'"
@@ -1730,13 +1723,14 @@ const quizAnswerFieldDisabled = computed(
                       批改結果
                     </h3>
                   </div>
-                  <div class="px-3 py-0">
+                  <div :class="[designFieldInsetPxClass, 'py-0']">
                     <hr class="my-design-quiz-field-inset__rule m-0">
                   </div>
                 </header>
                 <div
                   v-if="showGradingRuleBody"
-                  class="my-design-quiz-field-inset-body min-w-0 w-100 px-3 pt-2 pb-2"
+                  class="my-design-quiz-field-inset-body min-w-0 w-100"
+                  :class="designFieldInsetBodyClass"
                 >
                   <div class="my-design-quiz-question-prompt-block w-100 min-w-0">
                     <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
@@ -1898,8 +1892,7 @@ const quizAnswerFieldDisabled = computed(
           >
             <header class="my-design-quiz-field-inset__head">
               <div
-                class="d-flex justify-content-between gap-2 px-3"
-                :class="designStemTabsRowHeadClass(showGradingResultInsetTabs)"
+                :class="['d-flex justify-content-between gap-2', designFieldInsetPxClass, designStemTabsRowHeadClass(showGradingResultInsetTabs)]"
               >
                 <div
                   v-if="showGradingResultInsetTabs"
@@ -1910,7 +1903,7 @@ const quizAnswerFieldDisabled = computed(
                   <button
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(gradingSectionTab === 'result')"
                     :aria-selected="gradingSectionTab === 'result'"
                     @click="gradingSectionTab = 'result'"
@@ -1921,7 +1914,7 @@ const quizAnswerFieldDisabled = computed(
                     v-if="showExamDesignGradingRuleTab"
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(gradingSectionTab === 'rule')"
                     :aria-selected="gradingSectionTab === 'rule'"
                     @click="gradingSectionTab = 'rule'"
@@ -1936,13 +1929,14 @@ const quizAnswerFieldDisabled = computed(
                   批改結果
                 </h3>
               </div>
-              <div class="px-3 py-0">
+              <div :class="[designFieldInsetPxClass, 'py-0']">
                 <hr class="my-design-quiz-field-inset__rule m-0">
               </div>
             </header>
             <div
               v-if="showGradingRuleBody"
-              class="my-design-quiz-field-inset-body min-w-0 w-100 px-3 pt-2 pb-2"
+              class="my-design-quiz-field-inset-body min-w-0 w-100"
+              :class="designFieldInsetBodyClass"
             >
               <div class="my-design-quiz-question-prompt-block w-100 min-w-0">
                 <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
