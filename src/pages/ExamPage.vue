@@ -4,7 +4,7 @@
  *
  * 首屏以九宮格顯示各測驗；點方塊進入測驗內容（嵌入 ExamDetailPage）。
  */
-import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { COURSE_SCOPE_KEYS } from '../utils/courseScope.js';
@@ -248,7 +248,12 @@ function examTabNameForInput(tabId, displayLabel = '') {
   return tabNameLabelForInput(displayLabel, id);
 }
 
+function isActiveExamRoute() {
+  return route.name === 'Exam' || route.name === 'ExamDetail';
+}
+
 function applyRouteExamId() {
+  if (!isActiveExamRoute()) return;
   const examId = routeExamIdFromParams.value;
   if (!examId) {
     viewMode.value = 'grid';
@@ -442,18 +447,14 @@ async function confirmDeleteExam() {
   }
 }
 
-onMounted(() => {
+function registerExamCourseHeader() {
   courseHeaderStore.clearBankSwitcher();
   courseHeaderStore.registerExamSwitcherHandlers({
     onSwitch: switchExamDetail,
     onDelete: openDeleteExamModal,
     onBackToHome: backToGrid,
   });
-});
-
-onUnmounted(() => {
-  courseHeaderStore.clearExamSwitcher();
-});
+}
 
 watch(
   () => [
@@ -463,8 +464,10 @@ watch(
     selectedExamTabId.value,
     detailHeaderActionsDisabled.value,
     deleteExamLoading.value,
+    route.name,
   ],
   () => {
+    if (!isActiveExamRoute()) return;
     if (props.sidePanelOnLeft && viewMode.value === 'detail') {
       courseHeaderStore.setExamSwitcherVisible(true, {
         gridItems: gridItems.value,
@@ -479,15 +482,26 @@ watch(
   { immediate: true },
 );
 
+onUnmounted(() => {
+  courseHeaderStore.clearExamSwitcher();
+});
+
+onDeactivated(() => {
+  courseHeaderStore.clearExamSwitcher();
+});
+
 onActivated(() => {
+  registerExamCourseHeader();
   bootstrapExamRoute();
 });
 
 onMounted(() => {
+  registerExamCourseHeader();
   bootstrapExamRoute();
 });
 
 async function bootstrapExamRoute() {
+  if (!isActiveExamRoute()) return;
   const examId = routeExamIdFromParams.value;
   if (examId) {
     if (examList.value.length === 0 && !examListLoading.value) {
@@ -507,6 +521,7 @@ watch(
     ? [route.params.exam_id, route.params.exam_quiz_id]
     : route.params.exam_id),
   async (params) => {
+    if (!isActiveExamRoute()) return;
     const examId = props.useExamDetailRoute
       ? String(params?.[0] ?? '').trim()
       : String(params ?? '').trim();
@@ -522,6 +537,7 @@ watch(
 );
 
 watch(examList, () => {
+  if (!isActiveExamRoute()) return;
   if (routeExamIdFromParams.value) {
     applyRouteExamId();
   }

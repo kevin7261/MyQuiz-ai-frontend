@@ -74,7 +74,12 @@
 
       function onPageTitleClick() {
         if (!pageTitleClickable.value) return;
-        courseHeaderStore.backToPageHome();
+        const name = route.name;
+        if (name === 'Exam' || name === 'ExamDetail') {
+          courseHeaderStore.backToExamHome();
+        } else if (name === 'CreateExamBank' || name === 'CreateExamBankDetail') {
+          courseHeaderStore.backToBankHome();
+        }
       }
 
       return {

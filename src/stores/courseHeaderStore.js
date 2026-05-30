@@ -14,12 +14,12 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
   /** @type {(() => void) | null} */
   let onDeleteBank = null;
   /** @type {(() => void) | null} */
-  let onBackToPageHome = null;
+  let onBackToBankHome = null;
 
   function registerBankSwitcherHandlers({ onSwitch, onDelete, onBackToHome }) {
     onSwitchBank = onSwitch ?? null;
     onDeleteBank = onDelete ?? null;
-    onBackToPageHome = onBackToHome ?? null;
+    onBackToBankHome = onBackToHome ?? null;
   }
 
   function setBankSwitcherVisible(visible, state = {}) {
@@ -54,11 +54,11 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     deleteRagLoading.value = false;
     onSwitchBank = null;
     onDeleteBank = null;
-    onBackToPageHome = null;
+    onBackToBankHome = null;
   }
 
-  function backToPageHome() {
-    onBackToPageHome?.();
+  function backToBankHome() {
+    onBackToBankHome?.();
   }
 
   const showExamSwitcher = ref(false);
@@ -71,11 +71,13 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
   let onSwitchExam = null;
   /** @type {(() => void) | null} */
   let onDeleteExam = null;
+  /** @type {(() => void) | null} */
+  let onBackToExamHome = null;
 
   function registerExamSwitcherHandlers({ onSwitch, onDelete, onBackToHome }) {
     onSwitchExam = onSwitch ?? null;
     onDeleteExam = onDelete ?? null;
-    onBackToPageHome = onBackToHome ?? null;
+    onBackToExamHome = onBackToHome ?? null;
   }
 
   function setExamSwitcherVisible(visible, state = {}) {
@@ -103,7 +105,11 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     deleteExamLoading.value = false;
     onSwitchExam = null;
     onDeleteExam = null;
-    onBackToPageHome = null;
+    onBackToExamHome = null;
+  }
+
+  function backToExamHome() {
+    onBackToExamHome?.();
   }
 
   return {
@@ -118,7 +124,7 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     switchBank,
     deleteBank,
     clearBankSwitcher,
-    backToPageHome,
+    backToBankHome,
     showExamSwitcher,
     examGridItems,
     selectedExamTabId,
@@ -129,5 +135,6 @@ export const useCourseHeaderStore = defineStore('courseHeader', () => {
     switchExam,
     deleteExam,
     clearExamSwitcher,
+    backToExamHome,
   };
 });

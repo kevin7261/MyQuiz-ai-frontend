@@ -4,7 +4,7 @@
  *
  * 首屏以九宮格顯示各題庫；點方塊進入題庫內容（嵌入 CreateExamQuizBankDetailPage）。
  */
-import { ref, computed, watch, onActivated, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
@@ -191,7 +191,12 @@ function bankDetailPath(bankTabId, examQuizId = '0') {
   return `${props.routeBase}/${encodeURIComponent(id)}`;
 }
 
+function isActiveBankRoute() {
+  return route.name === 'CreateExamBank' || route.name === 'CreateExamBankDetail';
+}
+
 function applyRouteBankId() {
+  if (!isActiveBankRoute()) return;
   const bankId = routeBankIdFromParams.value;
   if (!bankId) {
     viewMode.value = 'grid';
@@ -482,16 +487,25 @@ async function confirmNewBankUpload() {
   }
 }
 
-onMounted(() => {
+function registerBankCourseHeader() {
   courseHeaderStore.clearExamSwitcher();
   courseHeaderStore.registerBankSwitcherHandlers({
     onSwitch: switchBankDetail,
     onDelete: openDeleteBankModal,
     onBackToHome: backToGrid,
   });
+}
+
+onMounted(() => {
+  registerBankCourseHeader();
+  bootstrapBankRoute();
 });
 
 onUnmounted(() => {
+  courseHeaderStore.clearBankSwitcher();
+});
+
+onDeactivated(() => {
   courseHeaderStore.clearBankSwitcher();
 });
 
@@ -503,8 +517,10 @@ watch(
     selectedBankTabId.value,
     detailHeaderActionsDisabled.value,
     deleteRagLoading.value,
+    route.name,
   ],
   () => {
+    if (!isActiveBankRoute()) return;
     if (props.sidePanelOnLeft && viewMode.value === 'detail') {
       courseHeaderStore.setBankSwitcherVisible(true, {
         gridItems: gridItems.value,
@@ -520,14 +536,12 @@ watch(
 );
 
 onActivated(() => {
-  bootstrapBankRoute();
-});
-
-onMounted(() => {
+  registerBankCourseHeader();
   bootstrapBankRoute();
 });
 
 async function bootstrapBankRoute() {
+  if (!isActiveBankRoute()) return;
   const bankId = routeBankIdFromParams.value;
   if (bankId) {
     if (ragList.value.length === 0 && !ragListLoading.value) {
@@ -547,6 +561,7 @@ watch(
     ? [route.params.exam_id, route.params.exam_quiz_id]
     : route.params.rag_id),
   async (params) => {
+    if (!isActiveBankRoute()) return;
     const bankId = props.useExamDetailRoute
       ? String(params?.[0] ?? '').trim()
       : String(params ?? '').trim();
@@ -562,6 +577,7 @@ watch(
 );
 
 watch(ragList, () => {
+  if (!isActiveBankRoute()) return;
   if (routeBankIdFromParams.value) {
     applyRouteBankId();
   }
