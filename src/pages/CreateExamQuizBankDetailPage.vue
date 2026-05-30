@@ -5614,7 +5614,7 @@ async function generateQuiz(slotIndex) {
     return;
   }
   if (!generateQuizUnits.value.length) {
-    slotState.error = '請先在「設定單元」按「開始建立單元」完成題庫建立，或重新整理頁面';
+    slotState.error = '請先在「設定單元」按「開始建立題庫」完成題庫建立，或重新整理頁面';
     return;
   }
   slotState.loading = true;
@@ -6883,14 +6883,15 @@ async function confirmAnswer(item) {
               >
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-green px-4 py-2 w-100"
                   :disabled="startPackUnitBuildDisabled"
                   :aria-busy="currentState.packLoading"
-                  title="開始建立單元"
-                  aria-label="開始建立單元"
+                  title="開始建立題庫"
+                  aria-label="開始建立題庫"
                   @click="confirmPack"
                 >
-                  開始建立單元
+                  <i class="fa-solid fa-check flex-shrink-0" aria-hidden="true" />
+                  開始建立題庫
                 </button>
               </div>
             </div>
@@ -7442,15 +7443,14 @@ async function confirmAnswer(item) {
               </div>
             </template>
 
-            <!-- 新增題目按鈕：無單元子分頁時固定在最下面；與「新增測驗題庫」同款灰底膠囊＋加號 -->
+            <!-- 新增題目按鈕：無單元子分頁時固定在最下面；同登入 my-btn-login-submit -->
             <div
               v-if="(currentState.unitTabOrder || []).length === 0"
               class="d-flex justify-content-center pt-2 mb-0"
             >
               <button
                 type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-btn-lg px-5 py-3"
-          :class="[designSidePanelOnLeft ? 'my-font-lg-400' : 'my-font-md-400']"
+                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2"
                 title="新增題目"
                 aria-label="新增題目"
                 @click="openNextQuizSlot"
@@ -7719,29 +7719,33 @@ async function confirmAnswer(item) {
                       </div>
                     </div>
                   </div>
+                </template>
+                <div class="d-flex flex-wrap align-items-stretch gap-2 w-100 min-w-0">
                   <button
                     type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 flex-grow-1 min-w-0"
+                    title="刪除此題庫"
+                    aria-label="刪除此題庫"
+                    :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
+                    :aria-busy="sidePanelDeleteRagLoading"
+                    @click="emit('delete-bank')"
+                  >
+                    <DeleteButtonLabel label="刪除此題庫" />
+                  </button>
+                  <button
+                    v-if="!hasBuiltRagSummary"
+                    type="button"
+                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-green px-4 py-2 flex-grow-1 min-w-0"
                     :disabled="startPackUnitBuildDisabled"
                     :aria-busy="currentState.packLoading"
-                    title="開始建立單元"
-                    aria-label="開始建立單元"
+                    title="開始建立題庫"
+                    aria-label="開始建立題庫"
                     @click="confirmPack"
                   >
-                    開始建立單元
+                    <i class="fa-solid fa-check flex-shrink-0" aria-hidden="true" />
+                    開始建立題庫
                   </button>
-                </template>
-                <button
-                  type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 w-100"
-                  title="刪除此題庫"
-                  aria-label="刪除此題庫"
-                  :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
-                  :aria-busy="sidePanelDeleteRagLoading"
-                  @click="emit('delete-bank')"
-                >
-                  <DeleteButtonLabel label="刪除此題庫" />
-                </button>
+                </div>
               </div>
             </div>
           </aside>

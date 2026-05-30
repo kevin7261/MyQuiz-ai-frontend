@@ -3753,8 +3753,7 @@ onActivated(() => {
               <div class="d-flex flex-column gap-2 w-100 min-w-0">
                 <button
                   type="button"
-                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 w-100"
-                  :class="d3ConfirmPillMd"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
                   title="新增題目"
                   aria-label="新增題目"
                   :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"

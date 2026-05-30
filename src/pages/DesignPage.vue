@@ -925,7 +925,7 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-add-pack-unit-row"
-                      usage="create-exam-bank_3 左側底欄「+ 新增單元」列（my-design-side-nav-add-unit-group；位於「開始建立單元」上方）：同登入 my-btn-login-submit 白底 gray-3 框；左 fa-plus＋文字、右 dropup fa-chevron-down my-dropdown-toggle-caret，兩段各自 hover 陰影＋黑字"
+                      usage="create-exam-bank_3 左側底欄「+ 新增單元」列（my-design-side-nav-add-unit-group；位於「開始建立題庫」上方）：同登入 my-btn-login-submit 白底 gray-3 框；左 fa-plus＋文字、右 dropup fa-chevron-down my-dropdown-toggle-caret，兩段各自 hover 陰影＋黑字"
                       css="my-design-side-nav-add-unit-group d-flex · dropdown dropup · my-design-side-nav-add-unit-main my-btn-login-submit · my-design-side-nav-add-unit-menu my-btn-login-submit my-dropdown-caret"
                       copy-text="my-design-side-nav-add-unit-group"
                     >
@@ -955,16 +955,24 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-start-pack-build"
-                      usage="create-exam-bank_3 左側底欄「開始建立單元」（建置前；同登入 my-btn-login-submit 白底 gray-3 框、hover 陰影）"
-                      css="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
+                      usage="create-exam-bank_3 左側底欄「開始建立題庫」（建置前；my-button-green 綠底白字、無框無陰影；字前 fa-check；與「刪除此題庫」同一排、置於其後）"
+                      css="d-flex gap-2 · btn my-btn-outline-red-hollow my-design-side-nav-delete__btn · btn my-button-green（各 flex-grow-1 min-w-0 rounded-pill px-4 py-2）"
                     >
-                      <button
-                        type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit px-4 py-2 w-100"
-                        style="max-width: 20rem;"
-                      >
-                        開始建立單元
-                      </button>
+                      <div class="d-flex flex-wrap align-items-stretch gap-2 w-100 min-w-0" style="max-width: 20rem;">
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 flex-grow-1 min-w-0"
+                        >
+                          <DeleteButtonLabel label="刪除此題庫" />
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-green px-4 py-2 flex-grow-1 min-w-0"
+                        >
+                          <i class="fa-solid fa-check flex-shrink-0" aria-hidden="true" />
+                          開始建立題庫
+                        </button>
+                      </div>
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-delete-confirm"
