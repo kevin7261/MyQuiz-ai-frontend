@@ -3623,9 +3623,11 @@ onActivated(() => {
                       >
                         <div
                           :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
-                          class="my-font-sm-400 my-color-gray-1 mb-2"
+                          class="mb-2"
                         >
-                          題目
+                          <span
+                            class="badge my-bgcolor-gray-3 my-color-black border-0 user-select-none my-font-sm-400 rounded px-2 py-1"
+                          >{{ examQuizNavDisplayLabel(activeExamSlotIndex1) }}</span>
                         </div>
                         <div
                           class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
