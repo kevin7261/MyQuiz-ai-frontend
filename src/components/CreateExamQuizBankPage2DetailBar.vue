@@ -48,7 +48,7 @@ function onTitleInput(e) {
           <span>{{ backLabel }}</span>
         </button>
       </div>
-      <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0 ps-5 pb-2">
+      <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0 px-3 pb-2">
         <input
           :value="selectedBankLabel"
           type="text"
