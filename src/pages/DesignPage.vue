@@ -356,7 +356,7 @@ const DESIGN3_LIST_SPECS = [
   },
   {
     name: 'list-bank-exam-dot',
-    usage: 'create-exam-bank_3 試卷用題庫列前綠點（僅 isExam；bank-list-wrap--no-lead-gap 不預留表頭空白）',
+    usage: 'create-exam-bank_3 試卷用題庫列末綠點（僅 isExam；bank-list-wrap--no-lead-gap 不預留表頭空白）',
     css: 'bank-list-wrap--no-lead-gap · bank-list-row__dot-col · bank-list-row__exam-dot rounded-circle d-inline-block my-bgcolor-green',
     copyText: 'bank-list-wrap--no-lead-gap',
   },
@@ -770,11 +770,11 @@ function designPackUnitTypeIconCss(unitType) {
                       <ul class="bank-list">
                         <li>
                           <button type="button" class="bank-list-row">
+                            <span class="bank-list-row__label my-font-md-400 my-color-black">試卷用題庫</span>
+                            <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">3 個單元</span>
                             <span class="bank-list-row__dot-col" aria-label="試卷用題庫">
                               <span class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot" />
                             </span>
-                            <span class="bank-list-row__label my-font-md-400 my-color-black">試卷用題庫</span>
-                            <span class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1">3 個單元</span>
                           </button>
                         </li>
                         <li>
@@ -900,10 +900,10 @@ function designPackUnitTypeIconCss(unitType) {
                     <DesignPageSpecItem
                       name="btn-quiz-mode-segment"
                       usage="create-exam-bank_3 出題模式：一般／追問（my-quiz-generate-mode-segment--outline；選中 my-button-gray-4、未選 my-button-transparent-borderless my-color-black）"
-                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline gap-2 p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-4（選中）· my-button-transparent-borderless my-color-black（未選）"
+                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-4（選中）· my-button-transparent-borderless my-color-black（未選）"
                     >
                       <div
-                        class="d-inline-flex flex-wrap gap-2 p-1 my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline"
+                        class="d-inline-flex flex-wrap p-1 my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline"
                         role="group"
                         aria-label="出題模式"
                       >

@@ -18,7 +18,13 @@ import {
 } from '../constants/api.js';
 import { getPersonId } from '../services/ragApi.js';
 import { apiUpdateExamTabName } from '../services/examApi.js';
-import { deriveRagNameFromTabId, generateTabId, normalizeExamListResponse } from '../utils/rag.js';
+import {
+  deriveRagNameFromTabId,
+  generateTabId,
+  normalizeExamListResponse,
+  resolveExamTabNameForInput,
+  tabNameLabelForInput,
+} from '../utils/rag.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import ExamDetailPage from './ExamDetailPage.vue';
 import ExamPage2DetailBar from '../components/ExamPage2DetailBar.vue';
@@ -234,6 +240,14 @@ function findExamByTabId(tabId) {
   return examList.value.find((e) => getExamTabId(e) === id) ?? null;
 }
 
+/** 試卷 tab 名稱輸入框：僅 tab_name 等；不以 exam_tab_id 或列表用 id 標籤填入 */
+function examTabNameForInput(tabId, displayLabel = '') {
+  const id = String(tabId ?? '').trim();
+  const fromRecord = resolveExamTabNameForInput(findExamByTabId(id));
+  if (fromRecord) return fromRecord;
+  return tabNameLabelForInput(displayLabel, id);
+}
+
 function applyRouteExamId() {
   const examId = routeExamIdFromParams.value;
   if (!examId) {
@@ -243,11 +257,9 @@ function applyRouteExamId() {
     return;
   }
   const item = gridItems.value.find((i) => i.tabId === examId);
-  const exam = findExamByTabId(examId);
-  const label = item?.label ?? ((exam ? getExamTabLabel(exam) : '') || examId);
   persistExamTabSelection(getPersonId(authStore), examId);
   selectedExamTabId.value = examId;
-  selectedExamLabel.value = label;
+  selectedExamLabel.value = examTabNameForInput(examId, item?.label);
   viewMode.value = 'detail';
 }
 
@@ -273,7 +285,7 @@ function openExamDetail(tabId, label, examQuizId = '0') {
   if (!id) return;
   persistExamTabSelection(getPersonId(authStore), id);
   selectedExamTabId.value = id;
-  selectedExamLabel.value = label || id;
+  selectedExamLabel.value = examTabNameForInput(id, label);
   viewMode.value = 'detail';
   const target = examDetailPath(id, examQuizId);
   if (route.path !== target) {
@@ -286,7 +298,7 @@ function switchExamDetail(tabId, label) {
   if (!id || id === String(selectedExamTabId.value ?? '')) return;
   persistExamTabSelection(getPersonId(authStore), id);
   selectedExamTabId.value = id;
-  selectedExamLabel.value = label || id;
+  selectedExamLabel.value = examTabNameForInput(id, label);
   const qid = props.useExamDetailRoute ? routeExamQuizIdFromParams.value || '0' : '';
   const target = examDetailPath(id, qid);
   if (route.path !== target) {
@@ -422,13 +434,7 @@ async function confirmDeleteExam() {
     }
     deleteExamModalOpen.value = false;
     await fetchExamList({ silent: true });
-    const remaining = gridItems.value;
-    if (remaining.length === 0) {
-      backToGrid();
-      return;
-    }
-    const next = remaining[0];
-    switchExamDetail(next.tabId, next.label);
+    backToGrid();
   } catch (err) {
     deleteExamError.value = err.message || '刪除試卷失敗';
   } finally {

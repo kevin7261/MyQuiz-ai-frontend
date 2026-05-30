@@ -61,6 +61,49 @@ export function deriveRagName(o) {
 }
 
 /**
+ * 分頁名稱輸入框初值：僅 tab_name／rag_name，不以 rag_tab_id 填入。
+ * @param {object} [o]
+ * @returns {string}
+ */
+export function resolveRagTabNameForInput(o) {
+  if (!o || typeof o !== 'object') return '';
+  const t = o.tab_name;
+  if (t != null && String(t).trim() !== '') return String(t).trim();
+  const r = o.rag_name;
+  if (r != null && String(r).trim() !== '') return String(r).trim();
+  return '';
+}
+
+/**
+ * 測驗分頁名稱輸入框初值：僅 tab_name／exam_name／test_name。
+ * @param {object} [exam]
+ * @returns {string}
+ */
+export function resolveExamTabNameForInput(exam) {
+  if (!exam || typeof exam !== 'object') return '';
+  const t = exam.tab_name ?? exam.exam_name ?? exam.test_name;
+  if (t != null && String(t).trim() !== '') return String(t).trim();
+  return '';
+}
+
+/**
+ * 列表顯示用 label 轉輸入框值：若等同 tabId 或 tabId 底線後綴則留空。
+ * @param {string} [displayLabel]
+ * @param {string} [tabId]
+ * @returns {string}
+ */
+export function tabNameLabelForInput(displayLabel, tabId) {
+  const label = String(displayLabel ?? '').trim();
+  if (!label) return '';
+  const id = String(tabId ?? '').trim();
+  if (!id) return label;
+  if (label === id) return '';
+  const suffix = deriveRagNameFromTabId(id);
+  if (suffix && label === suffix) return '';
+  return label;
+}
+
+/**
  * 「產生題目」單元下拉的 v-model：優先 unit_name（與 tab/quiz/create 一致，tab/build-rag-zip 前後較不易因 rag_tab_id 重算而失效）
  * @param {object} [opt]
  * @returns {string}

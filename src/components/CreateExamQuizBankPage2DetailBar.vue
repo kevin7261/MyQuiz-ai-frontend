@@ -115,7 +115,8 @@ function onTitleInput(e) {
                 :class="{ active: item.tabId === selectedBankTabId }"
                 @click="emit('switch-bank', item.tabId, item.label)"
               >
-                <span class="d-flex align-items-center gap-2">
+                <span class="d-flex align-items-center gap-2 w-100 min-w-0">
+                  <span class="text-truncate flex-grow-1 min-w-0">{{ item.label }}</span>
                   <span
                     v-if="item.isExam"
                     class="rounded-circle d-inline-block flex-shrink-0 my-bgcolor-green"
@@ -123,7 +124,6 @@ function onTitleInput(e) {
                     title="試卷用題庫"
                     aria-label="試卷用題庫"
                   />
-                  <span class="text-truncate">{{ item.label }}</span>
                 </span>
               </button>
             </li>

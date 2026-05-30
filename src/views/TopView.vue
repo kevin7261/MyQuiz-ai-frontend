@@ -2,7 +2,7 @@
   /**
    * TopView - 課程 header（create-exam-bank_3 等全寬版面頂部橫欄）
    *
-   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」（測驗等四頁）或「MyQuiz.ai | 頁面名稱」。右側題庫／試卷切換（詳情時）與使用者下拉選單僅在已選課程之課程四頁顯示；其餘頁面（選課、系統／個人設定、左欄開發者選單等）僅顯示姓名。
+   * 課程切換由左側系統 header 負責；本列顯示「課程名稱 | 頁面名稱」（測驗等四頁）或「MyQuiz.ai | 頁面名稱」。課程名稱點擊回選課；頁面名稱為「建立測驗題庫」或「測驗」時點擊回該頁九宮格主頁。右側題庫／試卷切換（詳情時）與使用者下拉選單僅在已選課程之課程四頁顯示；其餘頁面（選課、系統／個人設定、左欄開發者選單等）僅顯示姓名。
    */
   import { computed } from 'vue';
   import { useRoute, useRouter } from 'vue-router';
@@ -66,13 +66,26 @@
         router.push(buildCoursesPageLocation(route));
       }
 
+      /** 「課程名稱 | 頁面名稱」之頁面名稱：建立測驗題庫／測驗可點擊回該頁九宮格主頁 */
+      const pageTitleClickable = computed(() => {
+        const t = pageTitle.value;
+        return t === '建立測驗題庫' || t === '測驗';
+      });
+
+      function onPageTitleClick() {
+        if (!pageTitleClickable.value) return;
+        courseHeaderStore.backToPageHome();
+      }
+
       return {
         canSeeNavLink,
         currentCourseName,
         useBrandCodeFont,
         pageTitle,
+        pageTitleClickable,
         showUserNavDropdown,
         onHeaderTitleClick,
+        onPageTitleClick,
         showBankSwitcher,
         bankGridItems,
         selectedBankTabId,
@@ -103,7 +116,14 @@
           >{{ currentCourseName }}</span>
           <template v-if="pageTitle">
             <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
-            <span class="my-font-lg-400">{{ pageTitle }}</span>
+            <span
+              class="my-font-lg-400"
+              :class="{ 'my-course-header-page-name': pageTitleClickable }"
+              :role="pageTitleClickable ? 'button' : undefined"
+              :tabindex="pageTitleClickable ? 0 : undefined"
+              @click="onPageTitleClick"
+              @keydown.enter.prevent="onPageTitleClick"
+            >{{ pageTitle }}</span>
           </template>
         </p>
       </div>
@@ -210,7 +230,8 @@
   line-height: 1.35;
 }
 
-.my-course-header-course-name {
+.my-course-header-course-name,
+.my-course-header-page-name {
   cursor: pointer;
 }
 

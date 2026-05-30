@@ -1943,7 +1943,7 @@ function openExamRenameModal(examTabId) {
   const eid = exam?.exam_id ?? exam?.test_id;
   examRenameDraftExamId.value =
     eid != null && String(eid).trim() !== '' ? Number(eid) : null;
-  examRenameInitialName.value = getExamTabNameForEdit(exam) || getExamTabLabel(exam);
+  examRenameInitialName.value = getExamTabNameForEdit(exam);
   examRenameError.value = '';
   examRenameModalOpen.value = true;
 }
@@ -2468,8 +2468,9 @@ async function deleteExam(examTabId) {
       throw new Error(msg);
     }
     examList.value = examList.value.filter((t) => getExamTabId(t) !== examTabId);
-    if (activeTabId.value === examTabId) {
-      activeTabId.value = examList.value.length > 0 ? getExamTabId(examList.value[0]) : null;
+    const examHome = String(props.routeDetailBase ?? '').trim() || '/exam';
+    if (route.path !== examHome) {
+      router.push(examHome);
     }
   } catch (err) {
     deleteExamError.value = err.message || '刪除測驗失敗';

@@ -216,6 +216,8 @@ const unitQuizTitleBeforeEdit = ref('');
 const packBuildSuccessModalOpen = ref(false);
 /** 建置完成後：唯讀單元屬性 Modal */
 const packUnitDetailModalOpen = ref(false);
+/** 詳細資訊 Modal：文本／資料夾組合（對齊 QuizCard 題目／先前出題 tab） */
+const packUnitDetailModalTab = ref('text');
 /** 設定單元 sub-tab 更名（本機 packUnitNames；inline blur 儲存，對齊題庫名稱） */
 const packUnitTitleBeforeEdit = ref('');
 /** 刪除設定單元確認 Modal */
@@ -1554,16 +1556,27 @@ watch(hasBuiltRagSummary, (built) => {
 
 watch(activePackUnitGi, () => {
   packUnitDetailModalOpen.value = false;
+  packUnitDetailModalTab.value = 'text';
   bankUnitContentCollapsed.value = false;
 });
 
+function packUnitDetailModalStemTabClass(isActive) {
+  return {
+    'my-design-quiz-stem-tab--active': isActive,
+    'my-color-black': isActive,
+    'my-color-gray-1': !isActive,
+  };
+}
+
 function openPackUnitDetailModal() {
   if (!activeReadonlyPackUnitRow.value) return;
+  packUnitDetailModalTab.value = 'text';
   packUnitDetailModalOpen.value = true;
 }
 
 function closePackUnitDetailModal() {
   packUnitDetailModalOpen.value = false;
+  packUnitDetailModalTab.value = 'text';
 }
 
 /** 建置完成後：上方設定單元 tab 驅動「設定單元題型」之 activeUnitTabId */
@@ -4311,14 +4324,9 @@ async function deleteRag(rag, e) {
   try {
     await apiDeleteRag(fileId);
     await fetchRagList();
-    if (activeTabId.value === (rag?.rag_tab_id ?? rag?.id ?? String(fileId))) {
-      if (ragList.value.length > 0) {
-        activeTabId.value = ragList.value[0].rag_tab_id ?? ragList.value[0].id ?? ragList.value[0];
-      } else if (newTabIds.value.length > 0) {
-        activeTabId.value = newTabIds.value[0];
-      } else {
-        activeTabId.value = null;
-      }
+    const bankHome = String(props.routeDetailBase ?? '').trim() || '/create-exam-bank';
+    if (route.path !== bankHome) {
+      router.push(bankHome);
     }
   } catch (err) {
     alert('刪除失敗：' + (err.message || String(err)));
@@ -4537,7 +4545,7 @@ function openRenameRagTab(tabId) {
   const rid = rag?.rag_id;
   renameRagTabDraftRagId.value =
     rid != null && String(rid).trim() !== '' ? Number(rid) : null;
-  renameRagTabInitialName.value = getRagTabNameForEdit(rag) || getRagTabLabel(rag);
+  renameRagTabInitialName.value = getRagTabNameForEdit(rag);
   renameRagTabError.value = '';
   renameRagTabModalOpen.value = true;
 }
@@ -5860,15 +5868,27 @@ async function confirmAnswer(item) {
           class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
           @click.stop
         >
-          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3 my-pack-unit-detail-modal">
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="pack-unit-detail-modal-title"
-                class="modal-title my-color-black text-break"
-              >{{ builtPackUnitSectionHeadingTitle }}</h5>
+                class="modal-title d-flex align-items-center gap-2 my-color-black text-break mb-0 min-w-0 flex-grow-1"
+              >
+                <span
+                  v-if="activeReadonlyPackUnitRow.unitType != null"
+                  class="my-pack-unit-type-icon-slot flex-shrink-0"
+                  aria-hidden="true"
+                >
+                  <PackUnitTypeIcon
+                    :unit-type="activeReadonlyPackUnitRow.unitType"
+                    decorative
+                  />
+                </span>
+                <span class="text-truncate">{{ builtPackUnitSectionHeadingTitle }}</span>
+              </h5>
               <button
                 type="button"
-                class="btn-close"
+                class="btn-close flex-shrink-0"
                 aria-label="關閉"
                 @click="closePackUnitDetailModal"
               />
@@ -5878,14 +5898,127 @@ async function confirmAnswer(item) {
                 :key="'pack-unit-detail-' + activeReadonlyPackUnitRow.key"
                 class="my-design-pack-unit-blocks w-100 min-w-0"
               >
-                <div class="row g-3 w-100 min-w-0">
-                  <div class="col-12 min-w-0">
-                    <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
-                        資料夾組合
-                      </div>
+                <section
+                  class="my-design-quiz-field-inset my-design-quiz-field-inset--plain w-100 min-w-0"
+                  aria-label="詳細資訊"
+                >
+                  <header class="my-design-quiz-field-inset__head">
+                    <div
+                      class="d-flex justify-content-between gap-2 my-design-quiz-stem-tabs-row align-items-end pb-0"
+                    >
                       <div
-                        class="d-flex flex-wrap align-items-center justify-content-center gap-2 w-100 min-w-0"
+                        class="my-design-quiz-stem-tabs d-inline-flex align-items-stretch flex-shrink-0 gap-4"
+                        role="tablist"
+                        aria-label="詳細資訊分頁"
+                      >
+                        <button
+                          type="button"
+                          role="tab"
+                          class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                          :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'text')"
+                          :aria-selected="packUnitDetailModalTab === 'text'"
+                          @click="packUnitDetailModalTab = 'text'"
+                        >
+                          文本
+                        </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                          :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'folders')"
+                          :aria-selected="packUnitDetailModalTab === 'folders'"
+                          @click="packUnitDetailModalTab = 'folders'"
+                        >
+                          資料夾組合
+                        </button>
+                      </div>
+                    </div>
+                    <div class="py-0">
+                      <hr class="my-design-quiz-field-inset__rule m-0">
+                    </div>
+                  </header>
+                  <div
+                    class="my-design-quiz-field-inset-body min-w-0 lh-base pt-2 pb-2"
+                    role="tabpanel"
+                    :aria-label="packUnitDetailModalTab === 'text' ? '文本' : '資料夾組合'"
+                  >
+                    <template v-if="packUnitDetailModalTab === 'text'">
+                      <div class="d-flex flex-column gap-3 w-100 min-w-0">
+                        <div
+                          v-for="(och, oi) in activeReadonlyPackUnitRow.outlineChunkFields"
+                          :key="activeReadonlyPackUnitRow.key + '-ochunk-' + oi"
+                          class="w-100 min-w-0"
+                        >
+                          <div class="my-font-sm-400 my-color-gray-1 mb-2">
+                            {{ och.label }}
+                          </div>
+                          <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
+                            {{ och.value }}
+                          </div>
+                        </div>
+                        <div
+                          v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_TEXT"
+                          class="w-100 min-w-0"
+                        >
+                          <div
+                            v-if="bankUnitTranscriptMdHtml"
+                            class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                            v-html="bankUnitTranscriptMdHtml"
+                          />
+                          <span
+                            v-else
+                            class="my-font-md-400 my-color-black"
+                          >—</span>
+                        </div>
+                        <div
+                          v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_YOUTUBE"
+                          class="w-100 min-w-0"
+                        >
+                          <div
+                            v-if="bankUnitYoutubeEmbedUrl"
+                            class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
+                          >
+                            <iframe
+                              class="border-0"
+                              title="YouTube 影片"
+                              :src="bankUnitYoutubeEmbedUrl"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              referrerpolicy="strict-origin-when-cross-origin"
+                              allowfullscreen
+                            />
+                          </div>
+                          <span
+                            v-else
+                            class="my-font-md-400 my-color-black text-break"
+                          >{{ bankUnitTranscriptSection?.sourceDisplay }}</span>
+                        </div>
+                        <div
+                          v-if="bankUnitMp3PlayerProps"
+                          class="w-100 min-w-0"
+                        >
+                          <RagTabUnitMp3Player
+                            :rag-tab-id="bankUnitMp3PlayerProps.ragTabId"
+                            :rag-unit-id="bankUnitMp3PlayerProps.ragUnitId"
+                          />
+                        </div>
+                        <div
+                          v-if="bankUnitTranscriptMdHtml && bankUnitTranscriptSection && (bankUnitTranscriptSection.unitType === UNIT_TYPE_MP3 || bankUnitTranscriptSection.unitType === UNIT_TYPE_YOUTUBE)"
+                          class="w-100 min-w-0"
+                        >
+                          <div
+                            class="my-markdown-rendered my-font-md-400 my-color-black text-break"
+                            v-html="bankUnitTranscriptMdHtml"
+                          />
+                        </div>
+                        <span
+                          v-if="!activeReadonlyPackUnitRow.outlineChunkFields?.length && !bankShowUnitTranscriptUi"
+                          class="my-font-md-400 my-color-black"
+                        >—</span>
+                      </div>
+                    </template>
+                    <template v-else>
+                      <div
+                        class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                         role="group"
                         aria-label="資料夾組合"
                       >
@@ -5901,69 +6034,12 @@ async function confirmAnswer(item) {
                         </template>
                         <span
                           v-else
-                          class="my-font-md-400 my-color-black lh-base text-break text-center w-100 min-w-0"
+                          class="my-font-md-400 my-color-black lh-base text-break text-start w-100 min-w-0"
                         >{{ activeReadonlyPackUnitRow.title }}</span>
                       </div>
-                    </div>
+                    </template>
                   </div>
-                  <div
-                    v-for="(och, oi) in activeReadonlyPackUnitRow.outlineChunkFields"
-                    :key="activeReadonlyPackUnitRow.key + '-ochunk-' + oi"
-                    class="col-12 col-md-6 min-w-0"
-                  >
-                    <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
-                        {{ och.label }}
-                      </div>
-                      <div class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0">
-                        {{ och.value }}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_YOUTUBE"
-                    class="col-12 min-w-0"
-                  >
-                    <div
-                      v-if="bankUnitYoutubeEmbedUrl"
-                      class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                    >
-                      <iframe
-                        class="border-0"
-                        title="YouTube 影片"
-                        :src="bankUnitYoutubeEmbedUrl"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                        referrerpolicy="strict-origin-when-cross-origin"
-                        allowfullscreen
-                      />
-                    </div>
-                    <span
-                      v-else
-                      class="my-font-md-400 my-color-black text-break"
-                    >{{ bankUnitTranscriptSection?.sourceDisplay }}</span>
-                  </div>
-                  <div
-                    v-if="bankUnitMp3PlayerProps"
-                    class="col-12 min-w-0"
-                  >
-                    <RagTabUnitMp3Player
-                      :rag-tab-id="bankUnitMp3PlayerProps.ragTabId"
-                      :rag-unit-id="bankUnitMp3PlayerProps.ragUnitId"
-                    />
-                  </div>
-                  <div
-                    v-if="bankUnitTranscriptMdHtml && bankUnitTranscriptSection && (bankUnitTranscriptSection.unitType === UNIT_TYPE_MP3 || bankUnitTranscriptSection.unitType === UNIT_TYPE_YOUTUBE)"
-                    class="col-12 min-w-0"
-                  >
-                    <div class="my-design-pack-unit-section w-100 min-w-0">
-                      <div class="my-font-sm-400 my-color-gray-1 mb-2">逐字稿</div>
-                      <div
-                        class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                        v-html="bankUnitTranscriptMdHtml"
-                      />
-                    </div>
-                  </div>
-                </div>
+                </section>
               </div>
             </div>
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
@@ -7068,8 +7144,8 @@ async function confirmAnswer(item) {
                         class="d-inline-flex flex-wrap flex-shrink-0 align-self-start my-quiz-generate-mode-segment"
                         :class="
                           designSidePanelOnLeft
-                            ? 'gap-2 p-1 my-quiz-generate-mode-segment--outline'
-                            : 'gap-1 rounded-pill my-bgcolor-gray-4 p-1'
+                            ? 'p-1 my-quiz-generate-mode-segment--outline'
+                            : 'rounded-pill my-bgcolor-gray-4 p-1'
                         "
                         role="group"
                         aria-label="出題模式"
@@ -8683,6 +8759,40 @@ async function confirmAnswer(item) {
   --bs-btn-disabled-color: var(--my-color-gray-2);
   color: var(--my-color-gray-2) !important;
   -webkit-text-fill-color: var(--my-color-gray-2) !important;
+}
+
+/* 詳細資訊 Modal：題目／先前出題同款 tab */
+.my-pack-unit-detail-modal .my-design-quiz-stem-tabs-row .my-design-quiz-stem-tab {
+  position: relative;
+  z-index: 0;
+  margin-bottom: -1px;
+}
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab {
+  border: none;
+  border-bottom: 2pt solid transparent;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.25;
+  box-shadow: none;
+}
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active,
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:hover,
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:focus,
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:focus-visible {
+  z-index: 1;
+  padding-bottom: calc(0.5rem + 1px);
+  border-bottom-color: var(--my-color-black);
+  background-color: transparent;
+  box-shadow: none;
+}
+.my-pack-unit-detail-modal .my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2,
+.my-pack-unit-detail-modal .my-design-quiz-field-inset__head > .d-flex.my-design-quiz-stem-tabs-row {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.my-pack-unit-detail-modal .my-design-quiz-field-inset-body {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
 </style>

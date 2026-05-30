@@ -274,20 +274,20 @@ code {
   background-color: color-mix(in srgb, var(--my-color-black) 4%, var(--my-color-white));
 }
 
-/* 白底 gray-3 框膠囊；預設 gray-2 字；hover 陰影＋黑字 */
+/* 白底 gray-3 框膠囊；預設 gray-1 字；hover 陰影＋黑字 */
 .btn.my-btn-login-submit {
   --bs-btn-bg: var(--my-color-white);
   --bs-btn-hover-bg: var(--my-color-white);
   --bs-btn-active-bg: var(--my-color-white);
   --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-color: var(--my-color-gray-1);
   --bs-btn-hover-color: var(--my-color-black);
   --bs-btn-active-color: var(--my-color-black);
   --bs-btn-border-color: var(--my-color-gray-3);
   --bs-btn-hover-border-color: var(--my-color-gray-3);
   --bs-btn-active-border-color: var(--my-color-gray-3);
   background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }
@@ -771,6 +771,10 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
   color: var(--my-color-yellow);
 }
 
+/* 一般／追問 segmented pill：按鈕之間不留 gap */
+.my-quiz-generate-mode-segment {
+  gap: 0;
+}
 /* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-4、未選 transparent-borderless */
 .my-quiz-generate-mode-segment--outline {
   border: 1px solid var(--my-color-gray-3);
@@ -2228,7 +2232,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   flex-shrink: 0;
 }
 
-/* 題庫／測驗主頁列表：列首不預留空白；綠點僅在 isExam 列顯示，間距用 margin */
+/* 題庫／測驗主頁列表：列首不預留空白；綠點僅在 isExam 列末顯示，間距用 margin */
 .bank-list-wrap--no-lead-gap .bank-table-header {
   gap: 0;
 }
@@ -2236,7 +2240,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   gap: 0;
 }
 .bank-list-wrap--no-lead-gap .bank-list-row__dot-col {
-  margin-right: 0.75rem;
+  margin-left: 0.75rem;
 }
 .bank-list-wrap--no-lead-gap .bank-list-row__subtitle {
   margin-left: 0.75rem;
@@ -2466,13 +2470,13 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   padding: 0;
 }
 
-/* —— 大按鈕 .my-btn-lg（併 .px-5 .py-3）：預設 gray-2 字；hover 陰影＋黑字（同登入鈕） —— */
+/* —— 大按鈕 .my-btn-lg（併 .px-5 .py-3）：預設 gray-1 字；hover 陰影＋黑字（同登入鈕） —— */
 .btn.my-btn-lg {
   --bs-btn-bg: var(--my-color-white);
   --bs-btn-hover-bg: var(--my-color-white);
   --bs-btn-active-bg: var(--my-color-white);
   --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-color: var(--my-color-gray-1);
   --bs-btn-hover-color: var(--my-color-black);
   --bs-btn-active-color: var(--my-color-black);
   --bs-btn-border-color: var(--my-color-gray-3);
@@ -2481,7 +2485,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   --bs-btn-disabled-border-color: var(--my-color-gray-3);
   --bs-btn-disabled-color: var(--my-color-gray-3);
   background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
   border: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
 }

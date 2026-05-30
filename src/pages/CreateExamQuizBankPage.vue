@@ -17,7 +17,13 @@ import {
   apiDeleteRag,
   is504OrNetworkError,
 } from '../services/ragApi.js';
-import { deriveRagName, generateTabId, ZIP_UPLOAD_DROP_PROMPT } from '../utils/rag.js';
+import {
+  deriveRagName,
+  generateTabId,
+  resolveRagTabNameForInput,
+  tabNameLabelForInput,
+  ZIP_UPLOAD_DROP_PROMPT,
+} from '../utils/rag.js';
 import ZipUploadUnitTypeHints from '../components/ZipUploadUnitTypeHints.vue';
 import DeleteButtonLabel from '../components/DeleteButtonLabel.vue';
 import CreateExamQuizBankDetailPage from './CreateExamQuizBankDetailPage.vue';
@@ -194,11 +200,9 @@ function applyRouteBankId() {
     return;
   }
   const item = gridItems.value.find((i) => i.tabId === bankId);
-  const rag = findRagByTabId(bankId);
-  const label = item?.label ?? ((rag ? deriveRagName(rag) : '') || bankId);
   persistCreateBankTabSelection(bankId);
   selectedBankTabId.value = bankId;
-  selectedBankLabel.value = label;
+  selectedBankLabel.value = bankTabNameForInput(bankId, item?.label);
   viewMode.value = 'detail';
 }
 
@@ -207,7 +211,7 @@ function openBankDetail(tabId, label, examQuizId = '0') {
   if (!id) return;
   persistCreateBankTabSelection(id);
   selectedBankTabId.value = id;
-  selectedBankLabel.value = label || id;
+  selectedBankLabel.value = bankTabNameForInput(id, label);
   viewMode.value = 'detail';
   const target = bankDetailPath(id, examQuizId);
   if (route.path !== target) {
@@ -220,7 +224,7 @@ function switchBankDetail(tabId, label) {
   if (!id || id === String(selectedBankTabId.value ?? '')) return;
   persistCreateBankTabSelection(id);
   selectedBankTabId.value = id;
-  selectedBankLabel.value = label || id;
+  selectedBankLabel.value = bankTabNameForInput(id, label);
   const qid = props.useExamDetailRoute ? routeExamQuizIdFromParams.value || '0' : '';
   const target = bankDetailPath(id, qid);
   if (route.path !== target) {
@@ -242,6 +246,14 @@ function findRagByTabId(tabId) {
   const id = String(tabId ?? '').trim();
   if (!id) return null;
   return ragList.value.find((r) => String(r.rag_tab_id ?? r.id ?? r) === id) ?? null;
+}
+
+/** 題庫 tab 名稱輸入框：僅 tab_name／rag_name；不以 rag_tab_id 或列表用 id 標籤填入 */
+function bankTabNameForInput(tabId, displayLabel = '') {
+  const id = String(tabId ?? '').trim();
+  const fromRecord = resolveRagTabNameForInput(findRagByTabId(id));
+  if (fromRecord) return fromRecord;
+  return tabNameLabelForInput(displayLabel, id);
 }
 
 function onBankTitleFocus() {
@@ -312,13 +324,7 @@ async function confirmDeleteBank() {
     await apiDeleteRag(fileId);
     deleteBankModalOpen.value = false;
     await fetchRagList();
-    const remaining = gridItems.value;
-    if (remaining.length === 0) {
-      backToGrid();
-      return;
-    }
-    const next = remaining[0];
-    switchBankDetail(next.tabId, next.label);
+    backToGrid();
   } catch (err) {
     deleteBankError.value = err.message || String(err) || '刪除失敗';
   } finally {
@@ -653,6 +659,11 @@ watch(
                 class="bank-list-row"
                 @click="openBankDetail(item.tabId, item.label)"
               >
+                <span class="bank-list-row__label my-font-md-400 my-color-black">{{ item.label }}</span>
+                <span
+                  v-if="item.subtitle"
+                  class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1"
+                >{{ item.subtitle }}</span>
                 <span
                   v-if="item.isExam"
                   class="bank-list-row__dot-col"
@@ -660,11 +671,6 @@ watch(
                 >
                   <span class="rounded-circle d-inline-block my-bgcolor-green bank-list-row__exam-dot" />
                 </span>
-                <span class="bank-list-row__label my-font-md-400 my-color-black">{{ item.label }}</span>
-                <span
-                  v-if="item.subtitle"
-                  class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1"
-                >{{ item.subtitle }}</span>
               </button>
             </li>
           </ul>
