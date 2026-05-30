@@ -437,7 +437,6 @@ code {
 .btn.my-button-gray-3:disabled {
   opacity: 0.55;
 }
-
 /* 更淺填色膠囊（併 .btn）：底同 my-bgcolor-gray-4；字 --my-color-black。併 my-btn-group-pill 時分段線規則同 my-button-gray-3（border） */
 .btn.my-button-gray-4 {
   background-color: var(--my-color-gray-4);
@@ -453,6 +452,29 @@ code {
 }
 .btn.my-button-gray-4:disabled {
   opacity: 0.55;
+}
+/* gray-4 填色膠囊＋ gray-2 字（顯示／隱藏文本等；蓋過預設黑字與 side-panel 灰字規則） */
+.btn.my-button-gray-4.my-color-gray-2 {
+  --bs-btn-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+}
+.btn.my-button-gray-4.my-color-gray-2:hover,
+.btn.my-button-gray-4.my-color-gray-2:focus-visible:not(:disabled),
+.btn.my-button-gray-4.my-color-gray-2:active:not(:disabled) {
+  --bs-btn-hover-color: var(--my-color-gray-2);
+  --bs-btn-active-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+}
+.btn.my-button-gray-4.my-color-gray-2 .fa-solid {
+  color: inherit !important;
+}
+/* 顯示／隱藏文本：gray-4 底、gray-2 字、水平內距 px-3（1rem） */
+button.btn.my-unit-content-toggle-btn.rounded-pill,
+button.btn.my-unit-content-toggle-btn.rounded-2 {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
 }
 
 /* （大按鈕 .my-btn-lg 規則見檔案末，同登入鈕 hover） */

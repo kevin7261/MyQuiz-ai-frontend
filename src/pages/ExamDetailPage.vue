@@ -3494,7 +3494,7 @@ onActivated(() => {
                                 >
                                   <button
                                     type="button"
-                                    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                                    class="btn d-inline-flex align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless exam-2-detail-bar__back-btn px-3 pt-3 pb-2"
                                     :title="examUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
                                     :aria-label="examUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
                                     :aria-expanded="!examUnitContentCollapsed"
@@ -3782,22 +3782,23 @@ onActivated(() => {
 }
 
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距 */
-:deep(button.btn.rounded-pill.px-3),
-:deep(button.btn.rounded-2.px-3) {
+:deep(button.btn.rounded-pill.px-3:not(.my-unit-content-toggle-btn)),
+:deep(button.btn.rounded-2.px-3:not(.my-unit-content-toggle-btn)) {
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
 }
 
-/* exam_3：小 pill 按鈕 px-2（對齊 create-exam-bank_3）；出題規則（my-design-quiz-history-btn）和顯示／隱藏文本（my-button-transparent-borderless）維持 px-3 */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless)) {
+/* exam_3：小 pill 按鈕 px-2（對齊 create-exam-bank_3）；出題規則（my-design-quiz-history-btn）和顯示／隱藏文本（my-unit-content-toggle-btn）維持 px-3 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-unit-content-toggle-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-unit-content-toggle-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400) {
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }

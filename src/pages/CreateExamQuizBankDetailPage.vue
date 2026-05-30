@@ -6977,7 +6977,7 @@ async function confirmAnswer(item) {
               >
                 <button
                   type="button"
-                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-button-transparent-borderless px-3 py-1"
+                  class="btn d-inline-flex align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-color-gray-1 my-button-transparent-borderless create-exam-bank-2-detail-bar__back-btn px-3 pt-3 pb-2"
                   :title="bankUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
                   :aria-label="bankUnitContentCollapsed ? '顯示文本' : '隱藏文本'"
                   :aria-expanded="!bankUnitContentCollapsed"
@@ -7031,7 +7031,11 @@ async function confirmAnswer(item) {
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                   <div
                     class="w-100 min-w-0 mb-3"
-                    :class="designSidePanelOnLeft ? 'd-flex align-items-center justify-content-between gap-2' : ''"
+                    :class="
+                      designSidePanelOnLeft
+                        ? 'd-flex align-items-center flex-wrap gap-2'
+                        : 'd-flex flex-column gap-2'
+                    "
                     role="heading"
                     aria-level="3"
                   >
@@ -7054,119 +7058,98 @@ async function confirmAnswer(item) {
                     <span
                       v-else
                       class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0 min-w-0"
-                      :class="designSidePanelOnLeft ? 'flex-grow-1' : ''"
+                      :class="designSidePanelOnLeft ? 'flex-grow-1' : 'w-100'"
                     >{{ quizTypeTabLabel(activeUnitQuizCard) }}</span>
-                    <button
-                      v-if="designSidePanelOnLeft"
-                      type="button"
-                      role="switch"
-                      class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
-                      :class="{
-                        'my-quiz-generate-mode-switch--on': isRagQuizMarkedForExam(activeUnitQuizCard),
-                      }"
-                      :aria-checked="isRagQuizMarkedForExam(activeUnitQuizCard)"
-                      :aria-label="
-                        isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'
-                      "
-                      :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
-                      :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
-                      @click="onMarkRagQuizForExam(activeUnitQuizCard)"
-                    >
-                      <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
-                        <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
-                      </span>
-                      <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
-                    </button>
-                  </div>
-                  <div
-                    class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
-                  >
                     <div
-                      class="d-inline-flex flex-wrap flex-shrink-0 align-self-start my-quiz-generate-mode-segment"
-                      :class="
-                        designSidePanelOnLeft
-                          ? 'gap-2 p-1 my-quiz-generate-mode-segment--outline'
-                          : 'gap-1 rounded-pill my-bgcolor-gray-4 p-1'
-                      "
-                      role="group"
-                      aria-label="出題模式"
+                      class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0"
+                      :class="designSidePanelOnLeft ? 'ms-auto' : ''"
                     >
-                      <button
-                        type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
+                      <div
+                        class="d-inline-flex flex-wrap flex-shrink-0 align-self-start my-quiz-generate-mode-segment"
                         :class="
                           designSidePanelOnLeft
-                            ? (
-                              !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? d3QuizModeSegmentSelected
-                                : 'my-button-transparent-borderless my-color-black'
-                            )
-                            : (
-                              !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? 'my-button-white'
-                                : 'my-button-transparent-borderless'
-                            )
+                            ? 'gap-2 p-1 my-quiz-generate-mode-segment--outline'
+                            : 'gap-1 rounded-pill my-bgcolor-gray-4 p-1'
                         "
-                        :disabled="
-                          !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                          || isRagQuizMarkedForExam(activeUnitQuizCard)
-                          || activeUnitQuizCard.ragQuizFollowupLoading
-                        "
-                        :aria-busy="activeUnitQuizCard.ragQuizFollowupLoading"
-                        :aria-pressed="!isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
-                        @click="onSetUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
+                        role="group"
+                        aria-label="出題模式"
                       >
-                        一般
-                      </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1 my-quiz-generate-mode-segment-btn"
+                          :class="
+                            designSidePanelOnLeft
+                              ? (
+                                !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                  ? d3QuizModeSegmentSelected
+                                  : 'my-button-transparent-borderless my-color-black'
+                              )
+                              : (
+                                !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                  ? 'my-button-white'
+                                  : 'my-button-transparent-borderless'
+                              )
+                          "
+                          :disabled="
+                            !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                            || isRagQuizMarkedForExam(activeUnitQuizCard)
+                            || activeUnitQuizCard.ragQuizFollowupLoading
+                          "
+                          :aria-busy="activeUnitQuizCard.ragQuizFollowupLoading"
+                          :aria-pressed="!isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
+                          @click="onSetUnitQuizGenerateMode(activeUnitSlotIndex, 'normal', activeUnitQuizCard)"
+                        >
+                          一般
+                        </button>
+                        <button
+                          type="button"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1 my-quiz-generate-mode-segment-btn"
+                          :class="
+                            designSidePanelOnLeft
+                              ? (
+                                isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                  ? d3QuizModeSegmentSelected
+                                  : 'my-button-transparent-borderless my-color-black'
+                              )
+                              : (
+                                isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
+                                  ? 'my-button-white'
+                                  : 'my-button-transparent-borderless'
+                              )
+                          "
+                          :disabled="
+                            !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
+                            || isRagQuizMarkedForExam(activeUnitQuizCard)
+                            || activeUnitQuizCard.ragQuizFollowupLoading
+                          "
+                          :aria-busy="activeUnitQuizCard.ragQuizFollowupLoading"
+                          :aria-pressed="isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
+                          @click="onSetUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
+                        >
+                          追問
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
-                        :class="
-                          designSidePanelOnLeft
-                            ? (
-                              isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? d3QuizModeSegmentSelected
-                                : 'my-button-transparent-borderless my-color-black'
-                            )
-                            : (
-                              isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                ? 'my-button-white'
-                                : 'my-button-transparent-borderless'
-                            )
+                        role="switch"
+                        class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
+                        :class="{
+                          'my-quiz-generate-mode-switch--on': isRagQuizMarkedForExam(activeUnitQuizCard),
+                        }"
+                        :aria-checked="isRagQuizMarkedForExam(activeUnitQuizCard)"
+                        :aria-label="
+                          isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'
                         "
-                        :disabled="
-                          !!getSlotFormState(activeUnitSlotIndex).unitQuizCreateLoading
-                          || isRagQuizMarkedForExam(activeUnitQuizCard)
-                          || activeUnitQuizCard.ragQuizFollowupLoading
-                        "
-                        :aria-busy="activeUnitQuizCard.ragQuizFollowupLoading"
-                        :aria-pressed="isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)"
-                        @click="onSetUnitQuizGenerateMode(activeUnitSlotIndex, 'followup', activeUnitQuizCard)"
+                        :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
+                        :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
+                        @click="onMarkRagQuizForExam(activeUnitQuizCard)"
                       >
-                        追問
+                        <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
+                          <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
+                        </span>
+                        <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
                       </button>
                     </div>
-                    <button
-                      v-if="!designSidePanelOnLeft"
-                      type="button"
-                      role="switch"
-                      class="my-quiz-generate-mode-switch d-inline-flex align-items-center gap-2 flex-shrink-0"
-                      :class="{
-                        'my-quiz-generate-mode-switch--on': isRagQuizMarkedForExam(activeUnitQuizCard),
-                      }"
-                      :aria-checked="isRagQuizMarkedForExam(activeUnitQuizCard)"
-                      :aria-label="
-                        isRagQuizMarkedForExam(activeUnitQuizCard) ? '取消測驗用' : '設為測驗用'
-                      "
-                      :disabled="isRagQuizForExamToolbarButtonDisabled(activeUnitQuizCard)"
-                      :aria-busy="activeUnitQuizCard.ragQuizForExamLoading"
-                      @click="onMarkRagQuizForExam(activeUnitQuizCard)"
-                    >
-                      <span class="my-quiz-generate-mode-switch__track" aria-hidden="true">
-                        <span class="my-quiz-generate-mode-switch__knob" aria-hidden="true" />
-                      </span>
-                      <span class="my-quiz-generate-mode-switch__label my-font-sm-400 flex-shrink-0">設為測驗用</span>
-                    </button>
                   </div>
                 </div>
                 <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
@@ -7707,23 +7690,30 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距（類型 picker 除外） */
-:deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
-:deep(button.btn.rounded-2.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
+/* 一般／追問：選中與未選皆維持小 pill px-3（1rem）＋ py-1；蓋過本頁 px-2／px-4 覆寫 */
+.my-quiz-generate-mode-segment :deep(> .btn.my-quiz-generate-mode-segment-btn) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距（類型 picker、出題模式 segment 除外） */
+:deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
+:deep(button.btn.rounded-2.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)) {
   padding-left: 1.5rem !important;
   padding-right: 1.5rem !important;
 }
 
-/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker、顯示／隱藏文本（my-button-transparent-borderless）除外 */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
+/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker、出題模式 segment、顯示／隱藏文本（my-unit-content-toggle-btn）除外 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
-/* create-exam-bank_3：詳細資訊 stem history、類型 segment pill 僅維持 px-3（底色由 common .my-pack-unit-type-segment 控制） */
+/* create-exam-bank_3：詳細資訊 stem history、類型 segment、出題模式 segment、顯示／隱藏文本 pill 維持 px-3 */
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400) {
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
