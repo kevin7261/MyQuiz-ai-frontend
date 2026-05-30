@@ -196,9 +196,10 @@
   padding-top: 0 !important;
 }
 
-/* 出題／批改規則黑底區 */
+/* 出題／批改規則黑底區：無「查看更多／收起內容」時底緣 pb-3；有則由 more-row 留白 */
 .my-design-quiz-question-prompt-block,
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block) {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -209,6 +210,12 @@
   border-radius: 0.5rem;
   background-color: var(--my-color-black);
   overflow: hidden;
+  padding-bottom: 0;
+}
+.my-design-quiz-question-prompt-block:not(:has(.english-exam-md-preview-more-row)),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block:not(:has(.english-exam-md-preview-more-row))),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block:not(:has(.english-exam-md-preview-more-row))) {
+  padding-bottom: 1rem;
 }
 .my-design-quiz-question-prompt-block__title,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {

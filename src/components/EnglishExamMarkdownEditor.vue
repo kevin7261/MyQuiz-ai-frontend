@@ -371,7 +371,7 @@ onBeforeUnmount(() => {
             aria-label="收起內容"
             @click="previewExpanded = false"
           >
-            收起
+            收起內容
             <i class="fa-solid fa-chevron-up" aria-hidden="true" />
           </button>
         </div>

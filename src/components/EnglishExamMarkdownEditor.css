@@ -98,7 +98,7 @@
   text-align: center;
   color: var(--my-color-gray-2) !important;
 }
-/* 黑底預覽：內容區下方另起一排「…… 查看更多」／「收起」（不疊在內容上） */
+/* 黑底預覽：內容區下方另起一排「…… 查看更多」／「收起內容」（不疊在內容上） */
 .english-exam-md-preview-more-row {
   display: flex;
   justify-content: flex-start;
@@ -115,7 +115,7 @@
   border: none;
   background: transparent;
   color: var(--my-color-white);
-  font-weight: 600;
+  font-weight: var(--my-font-weight-regular);
   line-height: 1.35;
   cursor: pointer;
   text-align: start;
@@ -123,6 +123,7 @@
 .english-exam-md-preview-more-btn:hover,
 .english-exam-md-preview-more-btn:focus-visible {
   color: var(--my-color-white);
+  font-weight: var(--my-font-weight-semibold);
   text-decoration: none;
   outline: none;
 }

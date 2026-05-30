@@ -66,7 +66,7 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 出題／批改規則黑底預覽區（gradingPromptInModal） */
+/* 出題／批改規則黑底預覽區（pb-3 規則見 design-quiz-shared.css :has more-row） */
 .my-design-quiz-question-prompt-block {
   box-sizing: border-box;
   display: flex;
@@ -78,6 +78,10 @@
   border-radius: 0.5rem;
   background-color: var(--my-color-black);
   overflow: hidden;
+  padding-bottom: 0;
+}
+.my-design-quiz-question-prompt-block:not(:has(.english-exam-md-preview-more-row)) {
+  padding-bottom: 1rem;
 }
 .my-design-quiz-question-prompt-block__edit-btn {
   box-sizing: border-box;

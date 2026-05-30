@@ -202,13 +202,13 @@
 .my-design--side-panel-left .my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body:has(.my-design-quiz-answer-input)) {
   padding-bottom: 0 !important;
 }
-/* create-exam-bank_3：出題／批改規則黑底區內文 pt-2（黑底區標題列下方無橫線；題目／答案／批改 tab 區仍保留橫線） */
+/* create-exam-bank_3：出題／批改規則黑底區內文 pt-2；底緣 pb-3 見 design-quiz-shared（有 more-row 則不加） */
 .my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
 .my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
   padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
+  padding-bottom: 0 !important;
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
