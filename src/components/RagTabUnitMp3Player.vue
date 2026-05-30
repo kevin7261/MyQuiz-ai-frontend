@@ -79,12 +79,22 @@ onBeforeUnmount(() => {
     >
       音訊載入中…
     </div>
-    <p
+    <div
       v-else-if="loadError"
-      class="my-font-sm-400 my-color-red mb-0"
+      class="d-flex flex-column align-items-start gap-2"
     >
-      {{ loadError }}
-    </p>
+      <p class="my-font-sm-400 my-color-red mb-0">
+        {{ loadError }}
+      </p>
+      <button
+        type="button"
+        class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
+        :disabled="isLoading"
+        @click="loadAudio"
+      >
+        重新載入
+      </button>
+    </div>
     <audio
       v-if="objectUrl"
       :key="objectUrl"

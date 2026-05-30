@@ -82,7 +82,10 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
         <span class="my-color-gray-1 my-font-sm-400">出題模式：一般</span>
       </div>
     </div>
-    <div class="quiz-history-panel__scroll w-100 min-w-0">
+    <div
+      class="quiz-history-panel__scroll w-100 min-w-0"
+      :class="{ 'quiz-history-panel__scroll--filled': historyEntriesDisplay.length > 0 }"
+    >
       <ol
         v-if="historyEntriesDisplay.length > 0"
         class="quiz-history-panel__list my-font-md-400 my-color-black text-break mb-0"
@@ -162,7 +165,7 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
 </template>
 
 <style scoped>
-.quiz-history-panel__scroll {
+.quiz-history-panel__scroll--filled {
   max-height: 320pt;
   overflow-y: auto;
   padding-inline-end: 0.25rem;
@@ -172,13 +175,6 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
   padding-left: 1.25rem;
   margin-left: 0;
   list-style-position: outside;
-}
-
-.quiz-history-panel__empty {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 6rem;
 }
 
 .quiz-history-panel__list > li + li {
