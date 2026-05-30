@@ -49,7 +49,9 @@ import {
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 import { youtubeEmbedUrlFromInput } from '../utils/youtubeEmbed.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
+import LogoLayerMark from '../components/LogoLayerMark.vue';
 import MessageModal from '../components/MessageModal.vue';
+import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
 import QuizCard from '../components/QuizCard.vue';
 import RagTabUnitMp3Player from '../components/RagTabUnitMp3Player.vue';
 import TabRenameModal from '../components/TabRenameModal.vue';
@@ -775,6 +777,18 @@ function examSlotUnitTranscriptSection(slotIndex) {
  * 文字／YouTube／MP3 單元之逐字稿與播放器：須先選妥單元與題型（條件對齊「產生題目」）；已產生題幹後一律顯示。
  * @param {number} slotIndex
  */
+/** 槽位對應單元 unit_type（1 RAG、2 文字、3 MP3、4 YouTube；對齊題庫頁 PackUnitTypeIcon） */
+function examSlotUnitType(slotIndex) {
+  const sec = examSlotUnitTranscriptSection(slotIndex);
+  if (sec?.unitType != null) return sec.unitType;
+  const slotState = getSlotFormState(slotIndex);
+  const uid = String(slotState.examUnitSelectId ?? '').trim();
+  const uitem = findExamUnitDropdownItemBySelectId(uid);
+  const raw = uitem?.examRagUnitSource;
+  if (raw && typeof raw === 'object') return examResolvedUnitType(raw);
+  return null;
+}
+
 function examSlotShowUnitTranscriptUi(slotIndex) {
   const sec = examSlotUnitTranscriptSection(slotIndex);
   if (!sec) return false;
@@ -2242,6 +2256,133 @@ function examQuizHistoryListForSlot(slotIndex) {
   return examQuizHistoryListForLlm(ragUnitId, ragQuizId, slotIndex);
 }
 
+function examRichQuizHistoryDedupKey(entry) {
+  return [
+    entry.quiz_content,
+    entry.answer_content,
+    entry.quiz_answer_reference,
+    entry.answer_critique,
+  ].join('\0');
+}
+
+/** 先前出題單筆：題目／答案／參考答案／批改結果（相容舊版僅題幹字串） */
+function parseExamRichQuizHistoryListFromSource(source) {
+  let list = source;
+  if (source && typeof source === 'object' && !Array.isArray(source)) {
+    list =
+      source.quiz_followup_history_list
+      ?? source.quizFollowupHistoryList
+      ?? source.quiz_history_list
+      ?? source.quizHistoryList;
+  }
+  if (typeof list === 'string') {
+    const trimmed = list.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        list = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    } else {
+      return [];
+    }
+  }
+  if (!Array.isArray(list)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    if (typeof item === 'string') {
+      const s = item.trim();
+      if (!s || seen.has(s)) continue;
+      seen.add(s);
+      out.push({
+        quiz_content: s,
+        answer_content: '',
+        quiz_answer_reference: '',
+        answer_critique: '',
+      });
+      continue;
+    }
+    const normalized = normalizeFollowupHistoryItem(item);
+    if (!normalized) continue;
+    const key = examRichQuizHistoryDedupKey(normalized);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(normalized);
+  }
+  return out;
+}
+
+/** 將舊題問答併入歷史（同槽重新產題前；含題目／答案／參考答案／批改結果） */
+function appendExamRichQuizHistory(existingHistory, entrySource) {
+  const entry = examHistoryEntryFromRow(entrySource);
+  const base = parseExamRichQuizHistoryListFromSource(existingHistory);
+  if (!entry?.quiz_content) return base;
+  const key = examRichQuizHistoryDedupKey(entry);
+  if (base.some((item) => examRichQuizHistoryDedupKey(item) === key)) return base;
+  return [...base, entry];
+}
+
+/**
+ * 先前出題 tab：同一試卷分頁、相同單元與題型、此槽位之前（含同槽重新產題累積）的完整問答。
+ * @param {number} slotIndex 1-based
+ */
+function examQuizHistoryListForDisplay(slotIndex) {
+  const card = currentState.value.cardList[slotIndex - 1];
+  const prevName = String(card?.examQuizDisplayName ?? '').trim();
+  const { ragUnitId, ragQuizId } = examLlmRagIdsForSlot(slotIndex, prevName);
+  const rows = [];
+
+  if (ragUnitId >= 1 && ragQuizId >= 1) {
+    const cards = currentState.value.cardList;
+    if (Array.isArray(cards)) {
+      for (let i = 0; i < slotIndex - 1; i++) {
+        const c = cards[i];
+        if (!c || typeof c !== 'object') continue;
+        const ru = c.rag_unit_id != null ? Number(c.rag_unit_id) : NaN;
+        const rq = c.rag_quiz_id != null ? Number(c.rag_quiz_id) : NaN;
+        if (!Number.isFinite(ru) || ru !== ragUnitId || !Number.isFinite(rq) || rq !== ragQuizId) {
+          continue;
+        }
+        const priorSlot = i + 1;
+        if (resolveExamSlotGenerateMode(priorSlot, c) === 'followup') {
+          for (const row of examFollowupPredecessorRowsForSlot(priorSlot)) {
+            rows.push(row);
+          }
+        }
+        rows.push(c);
+      }
+    }
+  }
+
+  const slotState = getSlotFormState(slotIndex);
+  for (const item of parseExamRichQuizHistoryListFromSource(slotState.quiz_history_rich)) {
+    rows.push(item);
+  }
+
+  if (examSlotIsFollowupMode(slotIndex)) {
+    const currentId = Number(card?.exam_quiz_id ?? card?.quiz_id);
+    for (const row of examFollowupPredecessorRowsForSlot(slotIndex)) {
+      if (Number.isFinite(currentId) && currentId >= 1) {
+        const rid = Number(row.exam_quiz_id ?? row.quiz_id);
+        if (Number.isFinite(rid) && Math.trunc(rid) === Math.trunc(currentId)) continue;
+      }
+      rows.push(row);
+    }
+  }
+
+  let merged = examQuizFollowupHistoryListFromRows(rows);
+  const currentStem = String(card?.quiz ?? '').trim();
+  if (currentStem) {
+    merged = merged.filter(
+      (e) => String(e.quiz_content ?? '').trim() !== currentStem,
+    );
+  }
+  return merged;
+}
+
 /** 依槽位目前選取，同步 slot.quiz_history_list（產生題目時直接傳此欄位） */
 function syncExamSlotQuizHistoryList(slotIndex) {
   getSlotFormState(slotIndex).quiz_history_list = examQuizHistoryListForSlot(slotIndex);
@@ -2282,47 +2423,35 @@ function examSlotIsFollowupMode(slotIndex) {
   return resolveExamSlotGenerateMode(slotIndex) === 'followup';
 }
 
+/** 自題卡／API 列／快照物件解析「先前出題」單筆（含參考答案、您的答案、批改結果） */
+function examHistoryEntryFromRow(row) {
+  if (!row || typeof row !== 'object') return null;
+  if (row.quiz != null || row.referenceAnswer != null) {
+    return followupHistoryEntryFromQuizCard(row);
+  }
+  const isRawExamQuizApiRow =
+    row.exam_quiz_id != null
+    || row.quiz_id != null
+    || Array.isArray(row.answers);
+  if (isRawExamQuizApiRow) {
+    const fromApi = examQuizRowToFollowupHistoryItem(row);
+    if (fromApi) return fromApi;
+  }
+  return normalizeFollowupHistoryItem(row);
+}
+
 function examQuizFollowupHistoryListFromRows(rows) {
   const seen = new Set();
   const out = [];
-  const push = (item) => {
-    const normalized = normalizeFollowupHistoryItem(item);
-    if (!normalized) return;
-    const key = [
-      normalized.quiz_content,
-      normalized.answer_content,
-      normalized.quiz_answer_reference,
-      normalized.answer_critique,
-    ].join('\0');
-    if (seen.has(key)) return;
+  for (const row of rows) {
+    const normalized = examHistoryEntryFromRow(row);
+    if (!normalized) continue;
+    const key = examRichQuizHistoryDedupKey(normalized);
+    if (seen.has(key)) continue;
     seen.add(key);
     out.push(normalized);
-  };
-  for (const row of rows) {
-    if (row.quiz_content != null || row.quiz != null) {
-      push({
-        quiz_content: row.quiz_content ?? row.quiz,
-        answer_content: row.answer_content,
-        quiz_answer_reference: row.quiz_answer_reference,
-        answer_critique: row.answer_critique,
-      });
-    } else {
-      push(examQuizRowToFollowupHistoryItem(row));
-    }
   }
   return out;
-}
-
-/** 追問「先前出題」Modal：祖先／快照列，排除當前槽位這一題 */
-function examQuizFollowupHistoryListForDisplay(slotIndex) {
-  const card = currentState.value.cardList[slotIndex - 1];
-  const currentId = Number(card?.exam_quiz_id ?? card?.quiz_id);
-  const rows = examFollowupPredecessorRowsForSlot(slotIndex).filter((row) => {
-    if (!Number.isFinite(currentId) || currentId < 1) return true;
-    const rid = Number(row.exam_quiz_id ?? row.quiz_id);
-    return !(Number.isFinite(rid) && Math.trunc(rid) === Math.trunc(currentId));
-  });
-  return examQuizFollowupHistoryListFromRows(rows);
 }
 
 /** 追問出題：本槽前一題 follow_up 錨點（當前題卡 follow_up_exam_quiz_id；首題追問則為 exam_quiz_id） */
@@ -2493,6 +2622,8 @@ function getDefaultExamSlotForm() {
     responseJson: null,
     /** 本分頁、相同單元與題型、此槽位之前已出過的題幹；產生題目時原樣傳入 quiz_history_list */
     quiz_history_list: [],
+    /** 同槽重新產題累積之完整問答（供「先前出題」顯示） */
+    quiz_history_rich: [],
     /** 出題模式：`normal`＝一般出題；`followup`＝追問出題 */
     quizGenerateMode: 'normal',
     /** 追問出題：已完成批改之舊輪次快照（題目／答案／批改），繼續追問前存入 */
@@ -2512,6 +2643,7 @@ function getSlotFormState(slotIndex) {
     slot.examQuizNamePick = String(slot.quizNameDraft ?? '').trim();
   }
   if (!Array.isArray(slot.quiz_history_list)) slot.quiz_history_list = [];
+  if (!Array.isArray(slot.quiz_history_rich)) slot.quiz_history_rich = [];
   if (!Array.isArray(slot.followupRounds)) slot.followupRounds = [];
   if (slot.quizGenerateMode !== 'followup' && slot.quizGenerateMode !== 'normal') {
     slot.quizGenerateMode = 'normal';
@@ -2746,6 +2878,15 @@ async function generateQuiz(slotIndex, options = {}) {
     });
   }
 
+  // 一般模式重新產題：快照舊題問答供「先前出題」顯示
+  if (!useFollowupGenerate && existingCard && String(existingCard.quiz ?? '').trim()) {
+    if (!Array.isArray(slotState.quiz_history_rich)) slotState.quiz_history_rich = [];
+    slotState.quiz_history_rich = appendExamRichQuizHistory(
+      slotState.quiz_history_rich,
+      existingCard,
+    );
+  }
+
   // 追問 API 參數：直接從當前題卡或多槽 helper 取得，不依賴 ragUnitId 迴圈
   let followupApiExamQuizId = null;
   let followupApiHistoryList = [];
@@ -2962,9 +3103,7 @@ function designExamQuizCardBind(slotIndex) {
     hintReferenceInModal: true,
     showBankQuizHistoryButton: true,
     quizHistoryInline: true,
-    bankQuizHistoryList: examSlotIsFollowupMode(slotIndex)
-      ? examQuizFollowupHistoryListForDisplay(slotIndex)
-      : getSlotFormState(slotIndex).quiz_history_list,
+    bankQuizHistoryList: examQuizHistoryListForDisplay(slotIndex),
     bankQuizHistoryUnitLabel: examSlotUnitLabelForHistoryModal(slotIndex),
     bankQuizHistoryQuizTypeLabel: examSlotQuizTypeLabelForHistoryModal(slotIndex),
     bankQuizHistoryIsFollowup: examSlotIsFollowupMode(slotIndex),
@@ -3363,67 +3502,59 @@ onActivated(() => {
                       : 'col-12 col-lg-10 col-xl-8 col-xxl-6'
                   "
                 >
-                  <div
-                    v-if="activeTabId"
+                  <section
+                    v-if="activeTabId && (Number(currentState.quizSlotsCount) || 0) > 0"
                     class="text-start my-page-block-spacing"
                   >
-                    <template v-if="(Number(currentState.quizSlotsCount) || 0) > 0">
-                      <div class="my-design-pack-unit-blocks w-100 min-w-0">
+                    <div class="my-design-pack-unit-blocks w-100 min-w-0">
+                      <div
+                        :key="activeExamSlotIndex1"
+                        class="w-100 min-w-0 text-start flex-shrink-0"
+                        role="group"
+                        :aria-labelledby="`exam-slot-${activeExamSlotIndex1}-heading-label`"
+                      >
                         <div
-                          :key="activeExamSlotIndex1"
-                          class="w-100 min-w-0 text-start"
-                          role="group"
-                          :aria-labelledby="`exam-slot-${activeExamSlotIndex1}-heading-label`"
+                          :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
+                          class="my-font-sm-400 my-color-gray-1 mb-2"
                         >
-                          <div
-                            :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
-                            class="exam-slot-heading-breadcrumb my-font-sm-400 my-color-gray-1 mb-2 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
-                            :aria-label="`單元與題型：${examSlotHeadingBreadcrumb(activeExamSlotIndex1)}${examSlotIsFollowupMode(activeExamSlotIndex1) ? '，追問' : ''}`"
-                          >
-                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">
-                              {{ examSlotUnitLabelForHistoryModal(activeExamSlotIndex1) }}
-                            </span>
-                            <i
-                              class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
+                          題目
+                        </div>
+                        <div
+                          class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
+                          role="heading"
+                          aria-level="2"
+                        >
+                          <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden my-color-black">
+                            <span
+                              v-if="examSlotUnitType(activeExamSlotIndex1) != null"
+                              class="my-pack-unit-type-icon-slot flex-shrink-0"
                               aria-hidden="true"
-                            />
-                            <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
-                              <span class="exam-slot-heading-breadcrumb__segment text-truncate">
-                                {{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}
-                              </span>
-                              <span
-                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"
-                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-                              >追問</span>
-                            </span>
-                          </div>
-                          <div
-                            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
-                            role="heading"
-                            aria-level="2"
-                          >
-                            <div class="d-flex align-items-center gap-2 flex-nowrap min-w-0 flex-grow-1 overflow-hidden">
-                              <span
-                                class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0"
-                              >{{ examSlotHeadingQuestionTitle(activeExamSlotIndex1) }}</span>
-                            </div>
-                            <button
-                              v-if="examSlotDetailModalButtonVisible(activeExamSlotIndex1)"
-                              type="button"
-                              :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
-                              aria-label="詳細資訊"
-                              @click="openExamUnitDetailModal(activeExamSlotIndex1)"
                             >
-                              詳細資訊
-                            </button>
+                              <PackUnitTypeIcon
+                                :unit-type="examSlotUnitType(activeExamSlotIndex1)"
+                                decorative
+                              />
+                            </span>
+                            <span
+                              class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0"
+                            >{{ examSlotUnitLabelForHistoryModal(activeExamSlotIndex1) }}</span>
                           </div>
-                          <div class="my-pack-unit-settings-body w-100 min-w-0">
-                            <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
-                              <section
-                                v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1)"
-                                class="w-100 min-w-0 mb-3"
-                                aria-label="單元內容"
-                              >
+                          <button
+                            v-if="examSlotDetailModalButtonVisible(activeExamSlotIndex1)"
+                            type="button"
+                            :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
+                            aria-label="詳細資訊"
+                            @click="openExamUnitDetailModal(activeExamSlotIndex1)"
+                          >
+                            詳細資訊
+                          </button>
+                        </div>
+                      </div>
+                      <section
+                        v-if="examSlotShowUnitTranscriptUi(activeExamSlotIndex1)"
+                        class="w-100 min-w-0 mb-3"
+                        aria-label="單元內容"
+                      >
                                 <div
                                   class="min-w-0 pb-2 position-relative"
                                   :style="examUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
@@ -3511,21 +3642,56 @@ onActivated(() => {
                                     </template>
                                   </button>
                                 </div>
-                              </section>
-                              <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
-                              <!-- 追問歷史輪次（唯讀，舊→新順序） -->
-                              <template v-if="activeExamSlotFollowupRoundCards.length">
-                                <template
-                                  v-for="roundCard in activeExamSlotFollowupRoundCards"
-                                  :key="roundCard._roundId"
+                      </section>
+                      <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
+                      <div class="my-pack-unit-settings-body w-100 min-w-0">
+                        <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
+                          <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
+                            <div
+                              class="w-100 min-w-0"
+                              :class="designSidePanelOnLeft ? 'd-flex align-items-center flex-wrap gap-2' : 'd-flex flex-column gap-2'"
+                              role="heading"
+                              aria-level="3"
+                            >
+                              <span
+                                class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-2 rounded-2"
+                                :class="designSidePanelOnLeft ? 'flex-grow-1 min-w-0' : 'w-100'"
+                              >{{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}</span>
+                              <div
+                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"
+                                class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0"
+                                :class="designSidePanelOnLeft ? 'ms-auto' : ''"
+                              >
+                                <span
+                                  class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                                >追問</span>
+                              </div>
+                            </div>
+                          </div>
+                          <!-- 追問歷史輪次（唯讀，舊→新順序） -->
+                          <template v-if="activeExamSlotFollowupRoundCards.length">
+                            <template
+                              v-for="roundCard in activeExamSlotFollowupRoundCards"
+                              :key="roundCard._roundId"
+                            >
+                              <div class="my-design-quiz-sub-block-outer">
+                                <div
+                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                                  :class="[
+                                    designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                                    { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
+                                  ]"
                                 >
-                                  <div class="my-design-quiz-sub-block-outer">
-                                    <div
-                                      class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                                      :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
-                                    >
-                                      <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
-                                        <div class="w-100 min-w-0">
+                                  <LogoLayerMark
+                                    v-if="designSidePanelOnLeft"
+                                    layer="primary"
+                                    :size-pt="24"
+                                    :id-prefix="`exam-quiz-q-${activeExamSlotIndex1}-${roundCard._roundId}`"
+                                    class="my-design-quiz-sub-block__logo pt-2"
+                                  />
+                                  <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
+                                    <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
+                                      <div class="w-100 min-w-0">
                                         <QuizCard
                                           :card="roundCard"
                                           create-exam-bank-design-layout
@@ -3538,130 +3704,161 @@ onActivated(() => {
                                           :hint-reference-in-modal="true"
                                           :grading-prompt-in-modal="true"
                                         />
-                                        </div>
                                       </div>
-                                    </div>
-                                  </div>
-                                  <!-- 子區塊：答案 + 批改（合併） -->
-                                  <div class="my-design-quiz-sub-block-outer">
-                                    <div
-                                      class="my-design-quiz-sub-block rounded-4"
-                                      :class="[
-                                        designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                        designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                                      ]"
-                                    >
-                                      <div class="w-100 min-w-0">
-                                        <QuizCard
-                                          :card="roundCard"
-                                          create-exam-bank-design-layout
-                                          design-sub-block="answer"
-                                          :design-embedded="true"
-                                          :design-ui="true"
-                                          :hide-slot-index="true"
-                                          :read-only-answer="true"
-                                        />
-                                      </div>
-                                      <div
-                                        v-if="roundCard.gradingResult"
-                                        class="w-100 min-w-0"
-                                      >
-                                        <QuizCard
-                                          :card="roundCard"
-                                          create-exam-bank-design-layout
-                                          design-sub-block="grading"
-                                          :design-embedded="true"
-                                          :design-ui="true"
-                                          :hide-slot-index="true"
-                                          :hide-exam-rule-pills="true"
-                                          :grading-prompt-in-modal="true"
-                                          :hide-grading-prompt="true"
-                                        />
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
-                                </template>
-                              </template>
-                              <!-- 子區塊：題目（exam_3 外層 py-2，對齊答案區塊） -->
-                              <div class="my-design-quiz-sub-block-outer">
-                                <div
-                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                                  :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
-                                >
-                                  <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
-                                    <div
-                                      v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
-                                      class="w-100 min-w-0"
-                                    >
-                                      <QuizCard
-                                        v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
-                                        create-exam-bank-design-layout
-                                        design-sub-block="question"
-                                        @confirm-answer="confirmAnswer"
-                                        @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[activeExamSlotGi], dir)"
-                                        @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
-                                        @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
-                                      />
                                     </div>
                                   </div>
                                 </div>
                               </div>
                               <!-- 子區塊：答案 + 批改（合併） -->
-                              <div
-                                v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
-                                class="my-design-quiz-sub-block-outer"
-                              >
+                              <div class="my-design-quiz-sub-block-outer">
                                 <div
                                   class="my-design-quiz-sub-block rounded-4"
                                   :class="[
                                     designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
                                     designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
+                                    { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                                   ]"
                                 >
-                                  <div class="w-100 min-w-0">
-                                    <QuizCard
-                                      v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
-                                      create-exam-bank-design-layout
-                                      design-sub-block="answer"
-                                      @confirm-answer="confirmAnswer"
-                                      @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
-                                      @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
-                                    />
+                                  <LogoLayerMark
+                                    v-if="designSidePanelOnLeft"
+                                    layer="secondary"
+                                    :size-pt="24"
+                                    :id-prefix="`exam-quiz-a-${activeExamSlotIndex1}-${roundCard._roundId}`"
+                                    class="my-design-quiz-sub-block__logo pt-2"
+                                  />
+                                  <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
+                                    <div class="w-100 min-w-0">
+                                      <QuizCard
+                                        :card="roundCard"
+                                        create-exam-bank-design-layout
+                                        design-sub-block="answer"
+                                        :design-embedded="true"
+                                        :design-ui="true"
+                                        :hide-slot-index="true"
+                                        :read-only-answer="true"
+                                      />
+                                    </div>
+                                    <div
+                                      v-if="roundCard.gradingResult"
+                                      class="w-100 min-w-0"
+                                    >
+                                      <QuizCard
+                                        :card="roundCard"
+                                        create-exam-bank-design-layout
+                                        design-sub-block="grading"
+                                        :design-embedded="true"
+                                        :design-ui="true"
+                                        :hide-slot-index="true"
+                                        :hide-exam-rule-pills="true"
+                                        :grading-prompt-in-modal="true"
+                                        :hide-grading-prompt="true"
+                                      />
+                                    </div>
                                   </div>
-                                  <div class="w-100 min-w-0">
+                                </div>
+                              </div>
+                              <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
+                            </template>
+                          </template>
+                          <!-- 子區塊：題目 -->
+                          <div class="my-design-quiz-sub-block-outer">
+                            <div
+                              class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                              :class="[
+                                designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                                { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
+                              ]"
+                            >
+                              <LogoLayerMark
+                                v-if="designSidePanelOnLeft"
+                                layer="primary"
+                                :size-pt="24"
+                                :id-prefix="`exam-quiz-q-${activeExamSlotIndex1}`"
+                                class="my-design-quiz-sub-block__logo pt-2"
+                              />
+                              <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
+                                <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
+                                  <div
+                                    v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
+                                    class="w-100 min-w-0"
+                                  >
                                     <QuizCard
                                       v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
                                       create-exam-bank-design-layout
-                                      design-sub-block="grading"
+                                      design-sub-block="question"
                                       @confirm-answer="confirmAnswer"
+                                      @rate-quiz="(dir) => rateExamQuiz(currentState.cardList[activeExamSlotGi], dir)"
                                       @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
                                       @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
                                     />
                                   </div>
                                 </div>
                               </div>
-                              <!-- 繼續追問：追問出題模式且已有批改結果 -->
-                              <div
-                                v-if="examSlotIsFollowupMode(activeExamSlotIndex1) && activeExamSlotShowGradingSubBlock"
-                                class="d-flex justify-content-center w-100"
-                              >
-                                <button
-                                  type="button"
-                                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
-                                  :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
-                                  aria-label="繼續追問"
-                                  @click="generateQuiz(activeExamSlotIndex1)"
-                                >
-                                  繼續追問
-                                </button>
+                            </div>
+                          </div>
+                          <!-- 子區塊：答案 + 批改（合併） -->
+                          <div
+                            v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
+                            class="my-design-quiz-sub-block-outer"
+                          >
+                            <div
+                              class="my-design-quiz-sub-block rounded-4"
+                              :class="[
+                                designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
+                                designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
+                                { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
+                              ]"
+                            >
+                              <LogoLayerMark
+                                v-if="designSidePanelOnLeft"
+                                layer="secondary"
+                                :size-pt="24"
+                                :id-prefix="`exam-quiz-a-${activeExamSlotIndex1}`"
+                                class="my-design-quiz-sub-block__logo pt-2"
+                              />
+                              <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
+                                <div class="w-100 min-w-0">
+                                  <QuizCard
+                                    v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                                    create-exam-bank-design-layout
+                                    design-sub-block="answer"
+                                    @confirm-answer="confirmAnswer"
+                                    @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                                    @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
+                                  />
+                                </div>
+                                <div class="w-100 min-w-0">
+                                  <QuizCard
+                                    v-bind="designExamQuizCardBind(activeExamSlotIndex1)"
+                                    create-exam-bank-design-layout
+                                    design-sub-block="grading"
+                                    @confirm-answer="confirmAnswer"
+                                    @update:quiz_answer="(val) => { currentState.cardList[activeExamSlotGi].quiz_answer = val }"
+                                    @update:grading_prompt="(val) => { currentState.cardList[activeExamSlotGi].gradingPrompt = val }"
+                                  />
+                                </div>
                               </div>
                             </div>
                           </div>
+                          <!-- 繼續追問：追問出題模式且已有批改結果 -->
+                          <div
+                            v-if="examSlotIsFollowupMode(activeExamSlotIndex1) && activeExamSlotShowGradingSubBlock"
+                            class="d-flex justify-content-center w-100"
+                          >
+                            <button
+                              type="button"
+                              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                              :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
+                              aria-label="繼續追問"
+                              @click="generateQuiz(activeExamSlotIndex1)"
+                            >
+                              繼續追問
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </template>
-                  </div>
+                    </div>
+                  </section>
                 </div>
               </div>
             </div>
@@ -3986,6 +4183,28 @@ onActivated(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+}
+/* exam_3：Q／A 標誌在區塊內左側同一欄（對齊 create-exam-bank_3） */
+.my-design-quiz-sub-block--with-logo {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0;
+  padding-left: 1rem;
+  box-sizing: border-box;
+}
+.my-design-quiz-sub-block__logo {
+  flex: 0 0 24pt;
+  width: 24pt;
+  min-width: 24pt;
+  max-width: 24pt;
+  align-self: flex-start;
+  box-sizing: content-box;
+}
+.my-design-quiz-sub-block__body {
+  box-sizing: border-box;
+  min-width: 0;
+  flex: 1 1 0;
 }
 .my-design-quiz-sub-block {
   box-sizing: border-box;

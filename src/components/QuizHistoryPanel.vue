@@ -1,7 +1,7 @@
 <script setup>
 /**
  * QuizHistoryPanel — 「先前出題」內容區（Modal 與題目區 tab 內嵌共用）
- * 每筆含題目、參考答案、您的答案、評閱（一般／追問模式相同版面）。
+ * 每筆含題目、參考答案、您的答案、批改結果（一般／追問模式相同版面）。
  */
 import { computed } from 'vue';
 import { normalizeFollowupHistoryItem } from '../services/ragApi.js';
@@ -138,7 +138,7 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
             </div>
           </div>
           <div>
-            <div class="my-color-gray-1 my-font-sm-400">評閱</div>
+            <div class="my-color-gray-1 my-font-sm-400">批改結果</div>
             <div
               v-if="entry.critiqueHtml"
               class="my-markdown-rendered my-color-black lh-base text-break mt-1"

@@ -487,8 +487,9 @@ const showDesignAnswerPlainDisplay = computed(
   () => props.readOnlyAnswer || showDesignAnswerAsGradedDisplay.value,
 );
 
-/** 稿頁合併「開始批改」鈕文案：規則已改 → 儲存規則並開始批改（llm-grade）；否則 → 開始批改（llm-grade-db） */
+/** 稿頁合併「開始批改」鈕文案：規則已改 → 儲存規則並開始批改（llm-grade）；否則 → 開始批改（llm-grade-db）；測驗頁（exam_design）固定「開始批改」 */
 const mergedGradeButtonLabel = computed(() => {
+  if (isExamDesignGradingLayout.value) return '開始批改';
   if (props.gradeSaveAllowed === true) return '儲存規則並開始批改';
   if (props.gradeSaveAllowed !== undefined || props.gradeDbAllowed !== undefined) {
     return '開始批改';

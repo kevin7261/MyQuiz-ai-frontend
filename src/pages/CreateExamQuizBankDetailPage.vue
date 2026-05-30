@@ -7107,7 +7107,7 @@ async function confirmAnswer(item) {
               >
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                   <div
-                    class="w-100 min-w-0 mb-3"
+                    class="w-100 min-w-0"
                     :class="
                       designSidePanelOnLeft
                         ? 'd-flex align-items-center flex-wrap gap-2'
