@@ -889,21 +889,24 @@ watch(
   padding-right: 0.5rem !important;
 }
 
-/* create-exam-bank_3：詳細資訊等 stem history、設定單元類型／加入資料夾、出題模式 segment pill 維持 px-3 */
+/* create-exam-bank_3：詳細資訊等 stem history、設定單元類型／加入資料夾、顯示／隱藏文本 pill 維持 px-3；出題模式 segment px-4 */
 .create-exam-bank-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .create-exam-bank-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
 .create-exam-bank-2--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
 .create-exam-bank-2--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
 .create-exam-bank-2--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400),
-.create-exam-bank-2--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400),
 .create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
 .create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
 .create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400),
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400) {
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 
 .create-exam-bank-2--side-panel-left.create-exam-bank-2--detail,
@@ -915,11 +918,14 @@ watch(
   background-color: var(--my-color-white) !important;
 }
 
-/* 嵌入頁「類型」picker、「一般／追問」segment：強制 px-3（蓋過上方小 pill px-2／px-4 覆寫） */
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.rounded-pill),
-.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-quiz-generate-mode-segment > .btn.my-quiz-generate-mode-segment-btn) {
+/* 嵌入頁「類型」picker：強制 px-3；「一般／追問」segment：px-4（蓋過上方小 pill px-2 覆寫） */
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.rounded-pill) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-quiz-generate-mode-segment > .btn.my-quiz-generate-mode-segment-btn) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
 .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {

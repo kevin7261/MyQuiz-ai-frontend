@@ -7152,7 +7152,7 @@ async function confirmAnswer(item) {
                       >
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1 my-quiz-generate-mode-segment-btn"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-4 py-1 my-quiz-generate-mode-segment-btn"
                           :class="
                             designSidePanelOnLeft
                               ? (
@@ -7179,7 +7179,7 @@ async function confirmAnswer(item) {
                         </button>
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-3 py-1 my-quiz-generate-mode-segment-btn"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-sm-400 px-4 py-1 my-quiz-generate-mode-segment-btn"
                           :class="
                             designSidePanelOnLeft
                               ? (
@@ -7766,10 +7766,10 @@ async function confirmAnswer(item) {
   background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
   color: var(--my-color-black);
 }
-/* 一般／追問：選中與未選皆維持小 pill px-3（1rem）＋ py-1；蓋過本頁 px-2／px-4 覆寫 */
+/* 一般／追問：選中與未選皆維持小 pill px-4（1.5rem）＋ py-1；蓋過本頁 px-2／px-3 覆寫 */
 .my-quiz-generate-mode-segment :deep(> .btn.my-quiz-generate-mode-segment-btn) {
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 /* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距（類型 picker、出題模式 segment 除外） */
 :deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
@@ -7784,14 +7784,17 @@ async function confirmAnswer(item) {
   padding-left: 0.5rem !important;
   padding-right: 0.5rem !important;
 }
-/* create-exam-bank_3：詳細資訊 stem history、類型 segment、出題模式 segment、顯示／隱藏文本 pill 維持 px-3 */
+/* create-exam-bank_3：詳細資訊 stem history、類型 segment 維持 px-3；出題模式 segment px-4；顯示／隱藏文本 pill 維持 px-3 */
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400),
 .my-design--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
+}
+.my-design--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
 }
 /* 「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（蓋過 .form-control.my-input-md 黑字） */
 .my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
