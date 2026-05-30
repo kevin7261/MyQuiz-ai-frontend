@@ -16,6 +16,7 @@ import App from './App.vue';
 import router from './router';
 import { userMayAccessRoute } from './router/permissions.js';
 import { useAuthStore } from './stores/authStore.js';
+import { resolveCourseScopeKey } from './utils/courseScope.js';
 import { loadOrCreateLogoGradientPayload } from './composables/useSystemHeaderLogoGradients.js';
 import { applyFaviconFromLogoColors } from './utils/faviconGradient.js';
 
@@ -67,11 +68,11 @@ router.beforeEach((to, _from, next) => {
     return;
   }
 
+  const COURSE_SCOPED_NAMES = ['Exam', 'ExamDetail', 'CreateExamBank', 'CreateExamBankDetail', 'CourseView'];
+  const isCourseScoped = COURSE_SCOPED_NAMES.includes(to.name);
+
   const requiresAuth =
-    to.name === 'Exam'
-    || to.name === 'ExamDetail'
-    || to.name === 'CreateExamBank'
-    || to.name === 'CreateExamBankDetail'
+    isCourseScoped
     || to.name === 'Design'
     || to.name === 'Courses'
     || to.name === 'Main'
@@ -85,6 +86,16 @@ router.beforeEach((to, _from, next) => {
   if (requiresAuth && authStore.user && !userMayAccessRoute(authStore.user, to)) {
     next({ path: '/exam', replace: true });
     return;
+  }
+  // 課程頁的 course_id 不屬於此使用者的課程時，導向選課頁重新選擇
+  if (isCourseScoped && authStore.user && authStore.courses.length > 0) {
+    const cid = String(to.params.course_id ?? '').trim();
+    const known = authStore.courses.some((c) => String(c.course_id) === cid);
+    if (!known) {
+      const scope = resolveCourseScopeKey(to) ?? 'exam';
+      next({ path: '/courses', query: { scope }, replace: true });
+      return;
+    }
   }
   next();
 });

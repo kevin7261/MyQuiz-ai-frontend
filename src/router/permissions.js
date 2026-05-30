@@ -49,7 +49,7 @@ export function routeViewKey(to) {
   if (to.name === 'Exam' || to.name === 'ExamDetail') return 'work';
   if (to.name === 'CreateExamBank' || to.name === 'CreateExamBankDetail') return 'create-exam-bank';
   if (to.name === 'Design') return 'design';
-  if (to.name === 'Main' && to.params.view) return String(to.params.view);
+  if ((to.name === 'Main' || to.name === 'CourseView') && to.params.view) return String(to.params.view);
   return null;
 }
 

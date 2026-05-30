@@ -55,6 +55,7 @@
         showDividerBeforeProfile,
         currentCourseName,
         coursesPageLocation,
+        scopedRouteFor: authStore.scopedRouteFor,
       };
     },
   };
@@ -81,14 +82,14 @@
     >
       <router-link
         v-if="canSeeNavLink(userType, 'work')"
-        to="/exam"
+        :to="scopedRouteFor('exam')"
         class="nav-link"
         active-class="active"
         >測驗</router-link
       >
       <router-link
         v-if="canSeeNavLink(userType, 'person-analysis')"
-        to="/person-analysis"
+        :to="scopedRouteFor('person-analysis')"
         class="nav-link"
         active-class="active"
         >作答弱點分析</router-link
@@ -108,7 +109,7 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-start w-100">
           <li>
-            <router-link class="dropdown-item" to="/create-exam-bank" active-class="active">建立測驗題庫</router-link>
+            <router-link class="dropdown-item" :to="scopedRouteFor('create-exam-bank')" active-class="active">建立測驗題庫</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'design')">
             <router-link class="dropdown-item" to="/design" active-class="active">UI 元件參考</router-link>
@@ -117,7 +118,7 @@
             <router-link class="dropdown-item" to="/logo" active-class="active">Logo 繪製</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'course-analysis')">
-            <router-link class="dropdown-item" to="/course-analysis" active-class="active"
+            <router-link class="dropdown-item" :to="scopedRouteFor('course-analysis')" active-class="active"
               >學生作答分析</router-link
             >
           </li>
@@ -128,7 +129,7 @@
             <router-link class="dropdown-item" to="/settings" active-class="active">系統設定</router-link>
           </li>
           <li v-if="canSeeNavLink(userType, 'log')">
-            <router-link class="dropdown-item" to="/log" active-class="active">系統紀錄</router-link>
+            <router-link class="dropdown-item" :to="scopedRouteFor('log')" active-class="active">系統紀錄</router-link>
           </li>
           <li v-if="showDividerBeforeProfile">
             <hr class="dropdown-divider" />

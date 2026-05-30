@@ -84,6 +84,7 @@
 
       return {
         canSeeNavLink,
+        scopedRouteFor: authStore.scopedRouteFor,
         currentCourseName,
         useBrandCodeFont,
         pageTitle,
@@ -170,17 +171,17 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-end my-course-header__user-menu">
             <li v-if="canSeeNavLink(userType, 'work')">
-              <router-link class="dropdown-item" to="/exam" active-class="active">測驗</router-link>
+              <router-link class="dropdown-item" :to="scopedRouteFor('exam')" active-class="active">測驗</router-link>
             </li>
             <li>
-              <router-link class="dropdown-item" to="/create-exam-bank" active-class="active">
+              <router-link class="dropdown-item" :to="scopedRouteFor('create-exam-bank')" active-class="active">
                 建立測驗題庫
               </router-link>
             </li>
             <li v-if="canSeeNavLink(userType, 'person-analysis')">
               <router-link
                 class="dropdown-item"
-                to="/person-analysis"
+                :to="scopedRouteFor('person-analysis')"
                 active-class="active"
               >
                 作答弱點分析
@@ -189,7 +190,7 @@
             <li v-if="canSeeNavLink(userType, 'course-analysis')">
               <router-link
                 class="dropdown-item"
-                to="/course-analysis"
+                :to="scopedRouteFor('course-analysis')"
                 active-class="active"
               >
                 學生作答分析

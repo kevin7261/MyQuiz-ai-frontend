@@ -12,6 +12,7 @@ import { useRoute } from 'vue-router';
 import LogoCenterMark from '../components/LogoCenterMark.vue';
 import { canSeeNavLink } from '../router/permissions.js';
 import { useAppStore } from '../stores/appStore.js';
+import { useAuthStore } from '../stores/authStore.js';
 import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
 import { buildCoursesPageLocation } from '../utils/courseScope.js';
 
@@ -31,6 +32,7 @@ const props = defineProps({
 
 const route = useRoute();
 const appStore = useAppStore();
+const authStore = useAuthStore();
 const currentVersion = appStore.currentVersion;
 const {
   systemHeaderGradientLeftStyle,
@@ -39,15 +41,20 @@ const {
 } = useSystemHeaderLogoGradients();
 
 const visibleMenuItems = computed(() =>
-  SIDE_RAIL_MENU_ITEMS.filter(
-    (item) => item.perm == null || canSeeNavLink(props.userType, item.perm),
-  ),
+  SIDE_RAIL_MENU_ITEMS
+    .filter((item) => item.perm == null || canSeeNavLink(props.userType, item.perm))
+    // 系統紀錄為課程範圍頁，需帶目前 log scope 的 course_id 前綴
+    .map((item) => ({
+      ...item,
+      to: item.perm === 'log' ? authStore.scopedRouteFor('log') : item.to,
+    })),
 );
 
 const isMenuActive = computed(() =>
-  visibleMenuItems.value.some(
-    (item) => route.path === item.to || route.path.startsWith(`${item.to}/`),
-  ),
+  visibleMenuItems.value.some((item) => {
+    const toPath = typeof item.to === 'string' ? item.to : item.to?.path ?? '';
+    return route.path === toPath || route.path.startsWith(`${toPath}/`);
+  }),
 );
 
 const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
@@ -104,7 +111,7 @@ const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
           <i class="fa-solid fa-bars" aria-hidden="true" />
         </button>
         <ul class="dropdown-menu dropdown-menu-end my-system-header__user-menu">
-          <li v-for="item in visibleMenuItems" :key="item.to">
+          <li v-for="item in visibleMenuItems" :key="item.label">
             <router-link class="dropdown-item" :to="item.to" active-class="active">
               {{ item.label }}
             </router-link>

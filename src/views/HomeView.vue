@@ -50,17 +50,19 @@ export default {
 
     const setView = (type) => {
       if (type === 'work') {
-        if (route.name !== 'Exam' && route.name !== 'ExamDetail') router.push('/exam');
+        if (route.name !== 'Exam' && route.name !== 'ExamDetail') {
+          router.push(authStore.scopedRouteFor('exam'));
+        }
         return;
       }
       if (type === 'createExamQuizBank') {
         if (route.name !== 'CreateExamBank' && route.name !== 'CreateExamBankDetail') {
-          router.push('/create-exam-bank');
+          router.push(authStore.scopedRouteFor('create-exam-bank'));
         }
         return;
       }
-      const path = VIEW_TO_PATH[type] ?? 'work';
-      if (route.params.view !== path) router.push(`/${path}`);
+      const segment = VIEW_TO_PATH[type] ?? 'exam';
+      if (route.params.view !== segment) router.push(authStore.scopedRouteFor(segment));
     };
 
     const onLogout = () => {

@@ -16,6 +16,8 @@ import { ref, computed } from 'vue';
 import {
   ALL_COURSE_SCOPE_KEYS,
   COURSE_SCOPE_KEYS,
+  SCOPE_TO_VIEW_SEGMENT,
+  VIEW_SEGMENT_TO_SCOPE,
   normalizeCourseScopeKey,
   resolveCourseScopeKey,
 } from '../utils/courseScope.js';
@@ -88,6 +90,15 @@ export const useAuthStore = defineStore(
       }
       const scopeKey = resolveCourseScopeKey(route);
       activeCourseScopeKey.value = scopeKey;
+      // URL 為前後頁導航的真實來源：以網址前綴 course_id 回填此 scope 的課程
+      if (scopeKey) {
+        const rawCid = route.params?.course_id;
+        const cid = rawCid != null ? String(rawCid).trim() : '';
+        if (cid) {
+          const match = courses.value.find((c) => String(c.course_id) === cid);
+          if (match) setCourseForScope(scopeKey, match);
+        }
+      }
       // 建立測驗題庫與測驗同屬課程功能；若僅在 /exam 選過課，進入本頁時沿用 exam scope 的課程
       if (scopeKey === COURSE_SCOPE_KEYS.CREATE_EXAM_BANK) {
         const bankCourse = getCourseForScope(COURSE_SCOPE_KEYS.CREATE_EXAM_BANK);
@@ -98,6 +109,26 @@ export const useAuthStore = defineStore(
           }
         }
       }
+    }
+
+    /**
+     * 依「目前頁面記憶課程」產生帶 course_id 前綴的導航位置（供 router-link / push）。
+     * - 全域 view（profile、settings 等）回傳無前綴路徑
+     * - 課程 view 但該 scope 尚未選課 → 回傳選課頁位置（帶 scope query）
+     * @param {string} viewSegment - 網址 view 片段，如 'exam'、'person-analysis'、'profile'
+     * @returns {string | { path: string, query: { scope: string } }}
+     */
+    function scopedRouteFor(viewSegment) {
+      const seg = String(viewSegment ?? '').trim();
+      const scopeKey = VIEW_SEGMENT_TO_SCOPE[seg];
+      if (!scopeKey) return `/${seg}`;
+      let course = getCourseForScope(scopeKey);
+      // 建立測驗題庫尚未選課時沿用測驗 scope 的課程
+      if (!course?.course_id && scopeKey === COURSE_SCOPE_KEYS.CREATE_EXAM_BANK) {
+        course = getCourseForScope(COURSE_SCOPE_KEYS.EXAM);
+      }
+      if (!course?.course_id) return { path: '/courses', query: { scope: scopeKey } };
+      return `/${course.course_id}/${SCOPE_TO_VIEW_SEGMENT[scopeKey]}`;
     }
 
     /**
@@ -189,6 +220,7 @@ export const useAuthStore = defineStore(
       setCourses,
       getCourseForScope,
       setCourseForScope,
+      scopedRouteFor,
       syncActiveCourseScopeFromRoute,
       setCurrentCourse,
       validateCurrentCourse,

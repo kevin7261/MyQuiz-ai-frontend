@@ -47,11 +47,13 @@
         return VIEW_COMPONENTS[this.currentView] ?? ExamPage;
       },
       activePageProps() {
+        const cid = String(this.$route.params.course_id ?? '').trim();
+        const prefix = cid ? `/${cid}` : '';
         if (this.currentView === 'work') {
-          return { tabId: this.tabId, routeBase: '/exam', sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
+          return { tabId: this.tabId, routeBase: `${prefix}/exam`, sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
         }
         if (this.currentView === 'createExamQuizBank') {
-          return { tabId: this.tabId, routeBase: '/create-exam-bank', sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
+          return { tabId: this.tabId, routeBase: `${prefix}/create-exam-bank`, sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
         }
         return { design3: true };
       },

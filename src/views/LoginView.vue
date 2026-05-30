@@ -80,8 +80,9 @@ const onLogin = async () => {
     const userData = data.user != null ? data.user : data;
     authStore.setUser(userData);
     authStore.setCourses(data.courses ?? []);
-    if (authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM)) {
-      router.push('/exam');
+    const examCourse = authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM);
+    if (examCourse?.course_id) {
+      router.push(`/${examCourse.course_id}/exam`);
     } else {
       router.push({ path: '/courses', query: { scope: COURSE_SCOPE_KEYS.EXAM } });
     }

@@ -11,7 +11,7 @@ import { useAuthStore } from '../stores/authStore.js';
 import { userTypeLabel } from '../router/permissions.js';
 import {
   COURSE_SCOPE_KEYS,
-  courseScopeReturnPath,
+  courseScopedPath,
   normalizeCourseScopeKey,
 } from '../utils/courseScope.js';
 
@@ -54,17 +54,8 @@ function toggleSort() {
 }
 
 function onCourseSelect(course) {
-  const prev = selectedCourse.value;
-  const isDifferent =
-    !prev
-    || prev.course_id !== course.course_id
-    || prev.course_user_id !== course.course_user_id;
   authStore.setCourseForScope(scopeKey.value, course);
-  if (isDifferent) {
-    router.push(courseScopeReturnPath(scopeKey.value));
-    return;
-  }
-  router.push(courseScopeReturnPath(scopeKey.value));
+  router.push(courseScopedPath(scopeKey.value, course.course_id));
 }
 </script>
 

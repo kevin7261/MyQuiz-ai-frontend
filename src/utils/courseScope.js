@@ -17,6 +17,34 @@ export const COURSE_SCOPE_KEYS = {
 export const ALL_COURSE_SCOPE_KEYS = Object.values(COURSE_SCOPE_KEYS);
 
 /**
+ * scope key → 網址 view 片段（course_id 之後的那一段）。
+ * @type {Record<CourseScopeKey, string>}
+ */
+export const SCOPE_TO_VIEW_SEGMENT = {
+  [COURSE_SCOPE_KEYS.EXAM]: 'exam',
+  [COURSE_SCOPE_KEYS.CREATE_EXAM_BANK]: 'create-exam-bank',
+  [COURSE_SCOPE_KEYS.PERSON_ANALYSIS]: 'person-analysis',
+  [COURSE_SCOPE_KEYS.COURSE_ANALYSIS]: 'course-analysis',
+  [COURSE_SCOPE_KEYS.LOG]: 'log',
+};
+
+/**
+ * 網址 view 片段 → scope key（含舊鍵 work）。非課程片段查無對應 → undefined。
+ * @type {Record<string, CourseScopeKey>}
+ */
+export const VIEW_SEGMENT_TO_SCOPE = {
+  exam: COURSE_SCOPE_KEYS.EXAM,
+  work: COURSE_SCOPE_KEYS.EXAM,
+  'create-exam-bank': COURSE_SCOPE_KEYS.CREATE_EXAM_BANK,
+  'person-analysis': COURSE_SCOPE_KEYS.PERSON_ANALYSIS,
+  'course-analysis': COURSE_SCOPE_KEYS.COURSE_ANALYSIS,
+  log: COURSE_SCOPE_KEYS.LOG,
+};
+
+/** 走 /:course_id/:view 的課程範圍 view 片段（exam／create-exam-bank 另有專屬路由） */
+export const COURSE_SCOPED_VIEW_SEGMENTS = ['person-analysis', 'course-analysis', 'log'];
+
+/**
  * @param {unknown} raw
  * @returns {CourseScopeKey | null}
  */
@@ -46,26 +74,17 @@ export function resolveCourseScopeKey(route) {
 }
 
 /**
- * 選課完成後返回該 scope 對應的功能頁。
+ * 該 scope 對應功能頁的網址（course_id 為前綴）。無 course_id 則回選課頁。
  * @param {string | null | undefined} scopeKey
- * @returns {string}
+ * @param {number | string | null | undefined} courseId
+ * @returns {string | { path: string, query: { scope: CourseScopeKey } }}
  */
-export function courseScopeReturnPath(scopeKey) {
+export function courseScopedPath(scopeKey, courseId) {
   const key = normalizeCourseScopeKey(scopeKey) ?? COURSE_SCOPE_KEYS.EXAM;
-  switch (key) {
-    case COURSE_SCOPE_KEYS.EXAM:
-      return '/exam';
-    case COURSE_SCOPE_KEYS.CREATE_EXAM_BANK:
-      return '/create-exam-bank';
-    case COURSE_SCOPE_KEYS.PERSON_ANALYSIS:
-      return '/person-analysis';
-    case COURSE_SCOPE_KEYS.COURSE_ANALYSIS:
-      return '/course-analysis';
-    case COURSE_SCOPE_KEYS.LOG:
-      return '/log';
-    default:
-      return '/exam';
-  }
+  const segment = SCOPE_TO_VIEW_SEGMENT[key] ?? 'exam';
+  const cid = String(courseId ?? '').trim();
+  if (!cid) return { path: '/courses', query: { scope: key } };
+  return `/${cid}/${segment}`;
 }
 
 /**
