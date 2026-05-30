@@ -5861,31 +5861,28 @@ async function confirmAnswer(item) {
                 <div class="row g-3 w-100 min-w-0">
                   <div class="col-12 min-w-0">
                     <div class="my-design-pack-unit-section w-100 min-w-0">
+                      <div class="my-font-sm-400 my-color-gray-1 mb-2">
+                        資料夾組合
+                      </div>
                       <div
-                        class="my-pack-folder-field-input rounded-2 w-100 min-w-0 d-flex align-items-center gap-1 position-relative p-2"
-                        style="min-height: 2.5rem;"
+                        class="d-flex flex-wrap align-items-center justify-content-center gap-2 w-100 min-w-0"
                         role="group"
                         aria-label="資料夾組合"
                       >
-                        <div class="d-flex flex-column gap-1 flex-grow-1 w-100 min-w-0">
-                          <span class="my-font-sm-400 my-color-black">資料夾組合</span>
-                          <div class="d-flex flex-wrap align-items-center gap-1 w-100 min-w-0">
-                            <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
-                              <span
-                                v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
-                                :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
-                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
-                              >
-                                <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
-                                {{ tag }}
-                              </span>
-                            </template>
-                            <span
-                              v-else
-                              class="my-font-md-400 my-color-black lh-base text-break w-100 min-w-0"
-                            >{{ activeReadonlyPackUnitRow.title }}</span>
-                          </div>
-                        </div>
+                        <template v-if="activeReadonlyPackUnitRow.folderComboTags?.length">
+                          <span
+                            v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
+                            :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
+                            class="badge my-bgcolor-white my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
+                          >
+                            <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
+                            {{ tag }}
+                          </span>
+                        </template>
+                        <span
+                          v-else
+                          class="my-font-md-400 my-color-black lh-base text-break text-center w-100 min-w-0"
+                        >{{ activeReadonlyPackUnitRow.title }}</span>
                       </div>
                     </div>
                   </div>
