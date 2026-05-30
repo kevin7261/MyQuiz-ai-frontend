@@ -122,7 +122,7 @@ onMounted(() => {
                   :disabled="loading"
                   @click="fetchLogs"
                 >
-                  重新載入
+                  重抓
                 </button>
               </div>
               <div class="table-responsive">

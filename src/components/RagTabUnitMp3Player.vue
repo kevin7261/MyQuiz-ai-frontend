@@ -92,7 +92,7 @@ onBeforeUnmount(() => {
         :disabled="isLoading"
         @click="loadAudio"
       >
-        重新載入
+        重抓
       </button>
     </div>
     <audio

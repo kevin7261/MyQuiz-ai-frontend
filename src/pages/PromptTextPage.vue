@@ -210,7 +210,7 @@ onMounted(() => {
                 :disabled="loading"
                 @click="fetchTemplates"
               >
-                重新載入
+                重抓
               </button>
             </div>
             <div

@@ -98,6 +98,7 @@ import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import MessageModal from '../components/MessageModal.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
+import JsonTreeViewer from '../components/JsonTreeViewer.vue';
 import {
   readCreateBankTabUiPersisted,
   writeCreateBankTabUiPersisted,
@@ -157,8 +158,8 @@ const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-t
 /** 設定單元「類型」segment（role=group）：選中白底；未選 gray-2 字；hover gray-3 底 */
 const PACK_UNIT_TYPE_SELECTED_BTN = 'my-pack-unit-type-btn--selected';
 const PACK_UNIT_TYPE_UNSELECTED_BTN = 'my-button-transparent-borderless my-color-gray-2';
-/** create-exam-bank_3：一般／追問 segmented 選中態（gray-3 底） */
-const d3QuizModeSegmentSelected = 'my-button-gray-3';
+/** create-exam-bank_3：一般／追問 segmented 選中態（gray-4 底） */
+const d3QuizModeSegmentSelected = 'my-button-gray-4';
 const d3CircleIconBtnClass = computed(() => (
   props.designSidePanelOnLeft
     ? 'my-button-transparent-borderless my-btn-circle'
@@ -214,7 +215,7 @@ const unitQuizTitleBeforeEdit = ref('');
 const packBuildSuccessModalOpen = ref(false);
 /** 建置完成後：唯讀單元屬性 Modal */
 const packUnitDetailModalOpen = ref(false);
-/** 詳細資訊 Modal：文本／資料夾組合（對齊 QuizCard 題目／先前出題 tab） */
+/** 詳細資訊 Modal：文本／資料夾組合／JSON資料（對齊 QuizCard 題目／先前出題 tab） */
 const packUnitDetailModalTab = ref('text');
 /** 設定單元 sub-tab 更名（本機 packUnitNames；inline blur 儲存，對齊題庫名稱） */
 const packUnitTitleBeforeEdit = ref('');
@@ -1565,6 +1566,50 @@ function packUnitDetailModalStemTabClass(isActive) {
     'my-color-gray-1': !isActive,
   };
 }
+
+/** 詳細資訊 Modal「JSON資料」：合併 GET /rag/tabs 列與本頁編輯狀態（即時反映） */
+const packUnitDetailModalRagTabsData = computed(() => {
+  const state = currentState.value;
+  void state.packTasks;
+  void state.packTasksList;
+  void state.packUnitNames;
+  void state.packUnitTypes;
+  void state.packChunkSizes;
+  void state.packChunkOverlaps;
+  void state.packUnitMarkdownTexts;
+  void state.ragMetadata;
+  void state.unitTabOrder;
+  void state.unitSlotQuizCards;
+  void state.cardList;
+  void state.packResponseJson;
+  void state.zipResponseJson;
+  void ragList.value;
+  for (const stack of state.unitSlotQuizCards ?? []) {
+    if (!Array.isArray(stack)) continue;
+    for (const card of stack) {
+      if (!card || typeof card !== 'object') continue;
+      void card.quiz;
+      void card.hint;
+      void card.referenceAnswer;
+      void card.quiz_answer;
+      void card.quizName;
+      void card.quizUserPromptText;
+      void card.gradingPrompt;
+      void card.rag_quiz_for_exam;
+      void card.quizGenerateMode;
+      void card.quiz_history_list;
+      void card.quiz_followup_history_list;
+      void card.gradingResponseJson;
+    }
+  }
+  return buildLiveRagTabsRowSnapshot(state, currentRagItem.value);
+});
+
+const packUnitDetailModalTabPanelLabel = computed(() => {
+  if (packUnitDetailModalTab.value === 'folders') return '資料夾組合';
+  if (packUnitDetailModalTab.value === 'json') return 'JSON資料';
+  return '文本';
+});
 
 function openPackUnitDetailModal() {
   if (!activeReadonlyPackUnitRow.value) return;
@@ -3636,6 +3681,190 @@ function resolveUnitSlotTranscript(index, tabLike, state, rag) {
 function tabWithResolvedTranscript(tab, index, state, rag) {
   const tr = resolveUnitSlotTranscript(index, tab, state, rag);
   return { ...tab, transcript: tr };
+}
+
+/** 題卡 → GET /rag/tabs 或 /rag/tab/units 之 quizzes[] 列（供 JSON 快照） */
+function buildRagQuizRowFromCard(card, slotIndex) {
+  if (!card || typeof card !== 'object') return null;
+  const followUp = isUnitQuizFollowupMode(slotIndex, card);
+  const quizUserPrompt = promptTextForQuizRow(card, slotIndex);
+  const gradingPrompt = String(card.gradingPrompt ?? '').trim();
+  const row = {
+    quiz_content: String(card.quiz ?? ''),
+    quiz_hint: String(card.hint ?? ''),
+    quiz_answer_reference: String(card.referenceAnswer ?? ''),
+    quiz_name: String(card.quizName ?? '').trim() || DEFAULT_UNIT_QUIZ_DISPLAY_NAME,
+    quiz_user_prompt_text: quizUserPrompt,
+    answer_user_prompt_text: gradingPrompt,
+    file_name: card.sourceFilename ?? null,
+    rag_name: card.ragName ?? null,
+    rag_id: card.rag_id ?? null,
+    rag_tab_id: card.rag_tab_id != null ? String(card.rag_tab_id).trim() : '',
+    rag_unit_id: card.rag_unit_id != null ? Number(card.rag_unit_id) : 0,
+    for_exam: card.rag_quiz_for_exam === true || card.rag_quiz_for_exam === 1,
+    rag_quiz_for_exam: card.rag_quiz_for_exam === true || card.rag_quiz_for_exam === 1,
+    follow_up: followUp,
+    answer_content: String(card.quiz_answer ?? ''),
+  };
+  const rqid = positiveRagQuizIdFromQuizRow(card);
+  if (rqid != null) row.rag_quiz_id = rqid;
+  const historyNormal = parseRichQuizHistoryListFromSource(card.quiz_history_list ?? card);
+  const historyFollowup = parseRichQuizHistoryListFromSource(
+    card.quiz_followup_history_list ?? card,
+  );
+  if (followUp) {
+    if (historyFollowup.length) row.quiz_followup_history_list = historyFollowup;
+  } else if (historyNormal.length) {
+    row.quiz_history_list = historyNormal;
+  }
+  if (card.gradingResponseJson && typeof card.gradingResponseJson === 'object') {
+    row.answers = [card.gradingResponseJson];
+  } else if (String(card.quiz_answer ?? '').trim() || card.answer_id != null) {
+    row.answers = [{
+      answer_id: card.answer_id ?? null,
+      rag_answer_id: card.answer_id ?? null,
+      quiz_answer: String(card.quiz_answer ?? ''),
+      answer_content: String(card.quiz_answer ?? ''),
+    }];
+  }
+  const gj = card.generateQuizResponseJson;
+  if (gj && typeof gj === 'object') {
+    if (!String(row.quiz_content).trim() && gj.quiz_content != null) {
+      row.quiz_content = String(gj.quiz_content);
+    }
+    if (!String(row.quiz_hint).trim() && gj.quiz_hint != null) {
+      row.quiz_hint = String(gj.quiz_hint);
+    }
+    const ref = gj.quiz_answer_reference ?? gj.quiz_reference_answer;
+    if (!String(row.quiz_answer_reference).trim() && ref != null) {
+      row.quiz_answer_reference = String(ref);
+    }
+  }
+  return row;
+}
+
+/** 單元列：後端 units[] 為底，覆寫本頁 pack／題卡狀態 */
+function buildLiveUnitRowFromPageState(state, ragBase, unitIndex) {
+  const tab = state.unitTabOrder?.[unitIndex];
+  const baseUnits = extractUnitsFromRag(ragBase);
+  const base = baseUnits[unitIndex] && typeof baseUnits[unitIndex] === 'object'
+    ? { ...baseUnits[unitIndex] }
+    : {};
+  const group = state.packTasksList?.[unitIndex];
+  const folderLine = Array.isArray(group) ? group.filter(Boolean).join(' + ') : '';
+  const unitName = String(
+    state.packUnitNames?.[unitIndex]
+    ?? tab?.unitName
+    ?? base.unit_name
+    ?? base.rag_name
+    ?? '',
+  ).trim();
+  const ut = normalizePackUnitType(
+    state.packUnitTypes?.[unitIndex] ?? tab?.unitType ?? base.unit_type ?? UNIT_TYPE_RAG,
+  );
+  const transcript = resolveUnitSlotTranscript(unitIndex, tab, state, ragBase);
+  const cs = state.packChunkSizes?.[unitIndex] ?? tab?.ragChunkSize ?? base.rag_chunk_size;
+  const co = state.packChunkOverlaps?.[unitIndex] ?? tab?.ragChunkOverlap ?? base.rag_chunk_overlap;
+  const ragTabId = String(
+    tab?.ragTabId ?? base.rag_tab_id ?? ragBase?.rag_tab_id ?? state.zipTabId ?? '',
+  ).trim();
+  const ragUnitIdRaw = tab?.ragUnitDbId ?? base.rag_unit_id;
+  const ragUnitId = ragUnitIdRaw != null ? Number(ragUnitIdRaw) : NaN;
+  const slotIndex = unitIndex + 1;
+  const cards = Array.isArray(state.unitSlotQuizCards?.[unitIndex])
+    ? state.unitSlotQuizCards[unitIndex]
+    : [];
+  const quizzes = cards
+    .filter((c) => c && typeof c === 'object' && !isRagQuizRowDeleted(c))
+    .map((c) => buildRagQuizRowFromCard(c, slotIndex))
+    .filter(Boolean);
+  const folderCombo =
+    folderCombinationFromUnitRaw(base)
+    || folderCombinationFromUnitRaw(tab)
+    || (Array.isArray(group) && group.length ? group.filter(Boolean).join('/t') : folderLine);
+
+  return {
+    ...base,
+    ...(ragTabId ? { rag_tab_id: ragTabId } : {}),
+    ...(Number.isFinite(ragUnitId) && ragUnitId > 0 ? { rag_unit_id: ragUnitId } : {}),
+    ...(unitName
+      ? { unit_name: unitName, rag_name: String(tab?.ragName ?? base.rag_name ?? unitName).trim() || unitName }
+      : {}),
+    unit_type: ut,
+    ...(transcript ? { transcript } : {}),
+    ...(cs != null
+      ? { rag_chunk_size: ensureNumber(cs, DEFAULT_PACK_CHUNK_SIZE) }
+      : {}),
+    ...(co != null
+      ? { rag_chunk_overlap: ensureNumber(co, DEFAULT_PACK_CHUNK_OVERLAP) }
+      : {}),
+    ...(folderCombo ? { folder_combination: folderCombo } : {}),
+    ...(tab?.textFileName ? { text_file_name: tab.textFileName } : {}),
+    ...(tab?.mp3FileName ? { mp3_file_name: tab.mp3FileName } : {}),
+    ...(tab?.youtubeUrl ? { youtube_url: tab.youtubeUrl } : {}),
+    quizzes,
+  };
+}
+
+/** 合併 GET /rag/tabs 列與 tabState，供 JSON 檢視即時反映頁面內容 */
+function buildLiveRagTabsRowSnapshot(state, ragBase) {
+  const base = ragBase && typeof ragBase === 'object'
+    ? JSON.parse(JSON.stringify(ragBase))
+    : (state?.zipResponseJson && typeof state.zipResponseJson === 'object'
+      ? JSON.parse(JSON.stringify(state.zipResponseJson))
+      : {});
+
+  if (state?.packTasks?.trim()) {
+    base.unit_list = state.packTasks.trim();
+  }
+
+  const nUnits = Math.max(
+    state?.unitTabOrder?.length ?? 0,
+    state?.packTasksList?.length ?? 0,
+    state?.unitSlotQuizCards?.length ?? 0,
+    extractUnitsFromRag(base).length,
+  );
+
+  if (nUnits > 0) {
+    const groups = state.packTasksList ?? [];
+    const types = enforcePackUnitTypesForFolderGroups(
+      groups.length ? groups : Array.from({ length: nUnits }, () => []),
+      parsePackUnitTypesFromRag(state.packUnitTypes, nUnits),
+    );
+    base.unit_types = serializePackUnitTypesForApi(types);
+    base.unit_names = serializePackUnitNamesForApi(state.packUnitNames, nUnits);
+    const chunks = chunkSizesOverlapsStringsForBuildRagZip(
+      types,
+      state.packChunkSizes,
+      state.packChunkOverlaps,
+      DEFAULT_PACK_CHUNK_SIZE,
+      DEFAULT_PACK_CHUNK_OVERLAP,
+    );
+    base.rag_chunk_sizes = chunks.rag_chunk_sizes;
+    base.rag_chunk_overlaps = chunks.rag_chunk_overlaps;
+    base.units = Array.from({ length: nUnits }, (_, i) =>
+      buildLiveUnitRowFromPageState(state, ragBase, i),
+    );
+    if (base.units.some((u) => Array.isArray(u?.quizzes) && u.quizzes.length > 0)) {
+      delete base.quizzes;
+    }
+  } else if (Array.isArray(state?.cardList) && state.cardList.some(Boolean)) {
+    base.quizzes = state.cardList
+      .filter((c) => c && typeof c === 'object' && !isRagQuizRowDeleted(c))
+      .map((c, i) => buildRagQuizRowFromCard(c, i + 1))
+      .filter(Boolean);
+  }
+
+  if (state?.ragMetadata != null && String(state.ragMetadata).trim() !== '') {
+    base.rag_metadata = state.ragMetadata;
+  }
+
+  const packOut = state?.packResponseJson?.outputs;
+  if (Array.isArray(packOut) && packOut.length > 0) {
+    base.outputs = packOut;
+  }
+
+  return Object.keys(base).length > 0 ? base : null;
 }
 
 /**
@@ -5929,6 +6158,16 @@ async function confirmAnswer(item) {
                         >
                           資料夾組合
                         </button>
+                        <button
+                          type="button"
+                          role="tab"
+                          class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                          :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'json')"
+                          :aria-selected="packUnitDetailModalTab === 'json'"
+                          @click="packUnitDetailModalTab = 'json'"
+                        >
+                          JSON資料
+                        </button>
                       </div>
                     </div>
                     <div class="py-0">
@@ -5938,7 +6177,7 @@ async function confirmAnswer(item) {
                   <div
                     class="my-design-quiz-field-inset-body min-w-0 lh-base pt-2 pb-2"
                     role="tabpanel"
-                    :aria-label="packUnitDetailModalTab === 'text' ? '文本' : '資料夾組合'"
+                    :aria-label="packUnitDetailModalTabPanelLabel"
                   >
                     <template v-if="packUnitDetailModalTab === 'text'">
                       <div class="d-flex flex-column gap-3 w-100 min-w-0">
@@ -6014,7 +6253,7 @@ async function confirmAnswer(item) {
                         >—</span>
                       </div>
                     </template>
-                    <template v-else>
+                    <template v-else-if="packUnitDetailModalTab === 'folders'">
                       <div
                         class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                         role="group"
@@ -6035,6 +6274,12 @@ async function confirmAnswer(item) {
                           class="my-font-md-400 my-color-black lh-base text-break text-start w-100 min-w-0"
                         >{{ activeReadonlyPackUnitRow.title }}</span>
                       </div>
+                    </template>
+                    <template v-else>
+                      <JsonTreeViewer
+                        :data="packUnitDetailModalRagTabsData"
+                        :default-expand-depth="1"
+                      />
                     </template>
                   </div>
                 </section>
@@ -7161,7 +7406,7 @@ async function confirmAnswer(item) {
                               )
                               : (
                                 !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                  ? 'my-button-gray-3'
+                                  ? 'my-button-gray-4'
                                   : 'my-button-transparent-borderless'
                               )
                           "
@@ -7188,7 +7433,7 @@ async function confirmAnswer(item) {
                               )
                               : (
                                 isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                  ? 'my-button-gray-3'
+                                  ? 'my-button-gray-4'
                                   : 'my-button-transparent-borderless'
                               )
                           "
@@ -7754,16 +7999,16 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
-/* 出題模式（非 outline）：gray-4 軌＋選中 gray-3 底 */
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-3) {
-  background-color: var(--my-color-gray-3);
+/* 出題模式（非 outline）：gray-4 軌＋選中 gray-4 底 */
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4) {
+  background-color: var(--my-color-gray-4);
   color: var(--my-color-black);
   border-color: transparent;
   box-shadow: none;
 }
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-3:hover),
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-3:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-gray-3));
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4:hover),
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-gray-4));
   color: var(--my-color-black);
 }
 /* 一般／追問：選中與未選皆維持小 pill px-4（1.5rem）＋ py-1；蓋過本頁 px-2／px-3 覆寫 */
