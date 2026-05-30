@@ -2039,7 +2039,7 @@ const quizAnswerFieldDisabled = computed(
 
 <style scoped>
 /* 題幹 Markdown：末段底距與答案靜態框一致（避免 .my-markdown-rendered p 等同 mb-2 的留白） */
-/* 題目／先前出題 tab：選中 2pt 黑底線疊在下方 hr 灰線上（對齊 .my-rag-tabs-bar） */
+/* 題目／先前出題 tab：選中 2pt 黑底線疊蓋下方 hr 灰線；border-bottom 改由 hr 統一處理避免全寬雙線 */
 .my-design-quiz-stem-tabs-row .my-design-quiz-stem-tab {
   position: relative;
   z-index: 0;
@@ -2071,13 +2071,13 @@ const quizAnswerFieldDisabled = computed(
   order: 1;
   flex: 0 1 auto;
 }
-.my-design-quiz-stem-tab--active,
-.my-design-quiz-stem-tab--active:hover,
-.my-design-quiz-stem-tab--active:focus,
-.my-design-quiz-stem-tab--active:focus-visible {
+.btn.my-design-quiz-stem-tab--active,
+.btn.my-design-quiz-stem-tab--active:hover,
+.btn.my-design-quiz-stem-tab--active:focus,
+.btn.my-design-quiz-stem-tab--active:focus-visible {
   z-index: 1;
   padding-bottom: calc(0.5rem + 1px);
-  border-bottom-color: var(--my-color-black);
+  border-bottom: 2pt solid var(--my-color-black);
   background-color: transparent;
   box-shadow: none;
 }

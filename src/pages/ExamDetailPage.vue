@@ -2583,6 +2583,24 @@ function examSlotIsFollowupMode(slotIndex) {
   return resolveExamSlotGenerateMode(slotIndex) === 'followup';
 }
 
+/** 追問繼續出題：已批改題卡 → /tabs 相容快照（僅供 API；成功後才寫入 followupRounds 顯示） */
+function examFollowupRoundSnapshotFromCard(card) {
+  if (!card || !String(card.gradingResult ?? '').trim()) return null;
+  return {
+    exam_quiz_id: card.exam_quiz_id ?? card.quiz_id,
+    follow_up_exam_quiz_id: card.follow_up_exam_quiz_id,
+    quiz_content: card.quiz ?? '',
+    quiz_hint: card.hint ?? '',
+    quiz_answer_reference: card.referenceAnswer ?? '',
+    answer_content: card.quiz_answer ?? '',
+    answer_critique: card.gradingResult ?? '',
+    quiz_score: null,
+    unit_name: card.ragName ?? '',
+    rag_unit_id: card.rag_unit_id,
+    rag_quiz_id: card.rag_quiz_id,
+  };
+}
+
 /** 自題卡／API 列／快照物件解析「先前出題」單筆（含參考答案、您的答案、批改結果） */
 function examHistoryEntryFromRow(row) {
   if (!row || typeof row !== 'object') return null;
@@ -3020,23 +3038,11 @@ async function generateQuiz(slotIndex, options = {}) {
   const followupMode = examSlotIsFollowupMode(slotIndex);
   const useFollowupGenerate = followupMode || modalFollowUp;
 
-  // 追問模式：將當前已批改卡片快照進 followupRounds（/tabs 相容格式），再產生下一題
-  if (useFollowupGenerate && !modalFollowUp && existingCard && String(existingCard.gradingResult ?? '').trim()) {
-    if (!Array.isArray(slotState.followupRounds)) slotState.followupRounds = [];
-    slotState.followupRounds.push({
-      exam_quiz_id: existingCard.exam_quiz_id ?? existingCard.quiz_id,
-      follow_up_exam_quiz_id: existingCard.follow_up_exam_quiz_id,
-      quiz_content: existingCard.quiz ?? '',
-      quiz_hint: existingCard.hint ?? '',
-      quiz_answer_reference: existingCard.referenceAnswer ?? '',
-      answer_content: existingCard.quiz_answer ?? '',
-      answer_critique: existingCard.gradingResult ?? '',
-      quiz_score: null,
-      unit_name: existingCard.ragName ?? '',
-      rag_unit_id: existingCard.rag_unit_id,
-      rag_quiz_id: existingCard.rag_quiz_id,
-    });
-  }
+  // 追問繼續出題：快照僅供 API；勿提前寫入 followupRounds，避免畫面重複顯示目前題目
+  const pendingFollowupRoundSnapshot =
+    useFollowupGenerate && !modalFollowUp
+      ? examFollowupRoundSnapshotFromCard(existingCard)
+      : null;
 
   // 一般模式重新產題：快照舊題問答供「先前出題」顯示
   if (!useFollowupGenerate && existingCard && String(existingCard.quiz ?? '').trim()) {
@@ -3058,12 +3064,22 @@ async function generateQuiz(slotIndex, options = {}) {
     } else if (!createAndGenerate) {
       // 同槽重新產生追問：follow_up_exam_quiz_id 為前一題錨點
       followupApiExamQuizId = examFollowUpExamQuizIdForSlot(slotIndex);
-      followupApiHistoryList = examQuizFollowupHistoryListForLlm(slotIndex);
+      followupApiHistoryList = examQuizFollowupHistoryListFromRows(
+        mergeExamFollowupPredecessorRows(
+          examFollowupPredecessorRowsForSlot(slotIndex),
+          pendingFollowupRoundSnapshot ? [pendingFollowupRoundSnapshot] : [],
+        ),
+      );
     } else {
       // create-llm-generate-followup：首題追問為 0；繼續追問須帶前一題 follow_up 錨點
       const prevFollowUpId = examFollowUpExamQuizIdForSlot(slotIndex);
       followupApiExamQuizId = prevFollowUpId != null ? prevFollowUpId : 0;
-      followupApiHistoryList = examQuizFollowupHistoryListForLlm(slotIndex);
+      followupApiHistoryList = examQuizFollowupHistoryListFromRows(
+        mergeExamFollowupPredecessorRows(
+          examFollowupPredecessorRowsForSlot(slotIndex),
+          pendingFollowupRoundSnapshot ? [pendingFollowupRoundSnapshot] : [],
+        ),
+      );
     }
   }
   // 追問模式一律走 followup API
@@ -3143,6 +3159,13 @@ async function generateQuiz(slotIndex, options = {}) {
     }
     if (parsed.chainInfo?.rounds?.length > 0) {
       slotState.followupRounds = parsed.chainInfo.rounds;
+      slotState.quizGenerateMode = 'followup';
+    } else if (pendingFollowupRoundSnapshot) {
+      if (!Array.isArray(slotState.followupRounds)) slotState.followupRounds = [];
+      slotState.followupRounds = mergeExamFollowupPredecessorRows(
+        slotState.followupRounds,
+        [pendingFollowupRoundSnapshot],
+      );
       slotState.quizGenerateMode = 'followup';
     }
     slotState.responseJson = parsed.rawResponse;
@@ -3642,7 +3665,7 @@ onActivated(() => {
                           class="mb-2"
                         >
                           <span
-                            class="badge my-bgcolor-gray-3 my-color-black border-0 user-select-none my-font-sm-400 rounded px-2 py-1"
+                            class="badge my-design-quiz-slot-num-badge user-select-none my-font-sm-400 rounded px-2 py-1"
                           >{{ examQuizNavDisplayLabel(activeExamSlotIndex1) }}</span>
                         </div>
                         <div
@@ -3793,21 +3816,46 @@ onActivated(() => {
                               v-for="roundCard in activeExamSlotFollowupRoundCards"
                               :key="roundCard._roundId"
                             >
-                              <div class="my-design-quiz-sub-block-outer">
+                              <div
+                                class="my-design-quiz-sub-block-outer"
+                                :class="{
+                                  'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft,
+                                  'my-design-quiz-sub-block-outer--with-logo-q': designSidePanelOnLeft,
+                                }"
+                              >
                                 <div
-                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                                  :class="[
-                                    designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                    { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
-                                  ]"
+                                  v-if="designSidePanelOnLeft"
+                                  class="my-design-quiz-sub-block-outer__logo-col"
                                 >
                                   <LogoLayerMark
-                                    v-if="designSidePanelOnLeft"
                                     layer="primary"
                                     :size-pt="24"
                                     :id-prefix="`exam-quiz-q-${activeExamSlotIndex1}-${roundCard._roundId}`"
-                                    class="my-design-quiz-sub-block__logo pt-2"
+                                    class="my-design-quiz-sub-block-outer__logo"
                                   />
+                                  <div
+                                    class="my-design-quiz-sub-block-outer__logo-spacer pb-3"
+                                    aria-hidden="true"
+                                  />
+                                  <div class="my-design-quiz-sub-block-outer__logo-stem" aria-hidden="true" />
+                                  <svg
+                                    class="my-design-quiz-sub-block-outer__logo-arrowhead"
+                                    viewBox="0 0 24 12"
+                                    aria-hidden="true"
+                                  >
+                                    <path
+                                      d="M12 0 L12 12 M6 6 L12 12 M18 6 L12 12"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      stroke-width="1"
+                                      vector-effect="non-scaling-stroke"
+                                    />
+                                  </svg>
+                                </div>
+                                <div
+                                  class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                                  :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                                >
                                   <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                     <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
                                       <div class="w-100 min-w-0">
@@ -3829,22 +3877,24 @@ onActivated(() => {
                                 </div>
                               </div>
                               <!-- 子區塊：答案 + 批改（合併） -->
-                              <div class="my-design-quiz-sub-block-outer">
+                              <div
+                                class="my-design-quiz-sub-block-outer"
+                                :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
+                              >
+                                <LogoLayerMark
+                                  v-if="designSidePanelOnLeft"
+                                  layer="secondary"
+                                  :size-pt="24"
+                                  :id-prefix="`exam-quiz-a-${activeExamSlotIndex1}-${roundCard._roundId}`"
+                                  class="my-design-quiz-sub-block-outer__logo"
+                                />
                                 <div
                                   class="my-design-quiz-sub-block rounded-4"
                                   :class="[
                                     designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
                                     designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                                    { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                                   ]"
                                 >
-                                  <LogoLayerMark
-                                    v-if="designSidePanelOnLeft"
-                                    layer="secondary"
-                                    :size-pt="24"
-                                    :id-prefix="`exam-quiz-a-${activeExamSlotIndex1}-${roundCard._roundId}`"
-                                    class="my-design-quiz-sub-block__logo pt-2"
-                                  />
                                   <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                     <div class="w-100 min-w-0">
                                       <QuizCard
@@ -3855,6 +3905,7 @@ onActivated(() => {
                                         :design-ui="true"
                                         :hide-slot-index="true"
                                         :read-only-answer="true"
+                                        :hint-reference-in-modal="true"
                                       />
                                     </div>
                                     <div
@@ -3876,25 +3927,49 @@ onActivated(() => {
                                   </div>
                                 </div>
                               </div>
-                              <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
                             </template>
                           </template>
                           <!-- 子區塊：題目 -->
-                          <div class="my-design-quiz-sub-block-outer">
+                          <div
+                            class="my-design-quiz-sub-block-outer"
+                            :class="{
+                              'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft,
+                              'my-design-quiz-sub-block-outer--with-logo-q': designSidePanelOnLeft,
+                            }"
+                          >
                             <div
-                              class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                              :class="[
-                                designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                                { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
-                              ]"
+                              v-if="designSidePanelOnLeft"
+                              class="my-design-quiz-sub-block-outer__logo-col"
                             >
                               <LogoLayerMark
-                                v-if="designSidePanelOnLeft"
                                 layer="primary"
                                 :size-pt="24"
                                 :id-prefix="`exam-quiz-q-${activeExamSlotIndex1}`"
-                                class="my-design-quiz-sub-block__logo pt-2"
+                                class="my-design-quiz-sub-block-outer__logo"
                               />
+                              <div
+                                class="my-design-quiz-sub-block-outer__logo-spacer pb-3"
+                                aria-hidden="true"
+                              />
+                              <div class="my-design-quiz-sub-block-outer__logo-stem" aria-hidden="true" />
+                              <svg
+                                class="my-design-quiz-sub-block-outer__logo-arrowhead"
+                                viewBox="0 0 24 12"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M12 0 L12 12 M6 6 L12 12 M18 6 L12 12"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="1"
+                                  vector-effect="non-scaling-stroke"
+                                />
+                              </svg>
+                            </div>
+                            <div
+                              class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                              :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                            >
                               <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                 <div class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column">
                                   <div
@@ -3919,22 +3994,22 @@ onActivated(() => {
                           <div
                             v-if="examSlotQuizBodyTrim(activeExamSlotIndex1) !== ''"
                             class="my-design-quiz-sub-block-outer"
+                            :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
                           >
+                            <LogoLayerMark
+                              v-if="designSidePanelOnLeft"
+                              layer="secondary"
+                              :size-pt="24"
+                              :id-prefix="`exam-quiz-a-${activeExamSlotIndex1}`"
+                              class="my-design-quiz-sub-block-outer__logo"
+                            />
                             <div
                               class="my-design-quiz-sub-block rounded-4"
                               :class="[
                                 designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
                                 designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                                { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                               ]"
                             >
-                              <LogoLayerMark
-                                v-if="designSidePanelOnLeft"
-                                layer="secondary"
-                                :size-pt="24"
-                                :id-prefix="`exam-quiz-a-${activeExamSlotIndex1}`"
-                                class="my-design-quiz-sub-block__logo pt-2"
-                              />
                               <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                                 <div class="w-100 min-w-0">
                                   <QuizCard
@@ -4036,7 +4111,7 @@ onActivated(() => {
                           class="exam-quiz-nav-row my-font-sm-400 d-flex align-items-center gap-2 flex-nowrap min-w-0 w-100 overflow-hidden"
                         >
                           <span
-                            class="badge my-bgcolor-gray-3 my-color-black border-0 user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                            class="badge my-design-quiz-slot-num-badge user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
                           >{{ item.label }}</span>
                           <span
                             class="my-pack-unit-type-icon-slot flex-shrink-0"
@@ -4322,22 +4397,59 @@ onActivated(() => {
   max-width: 100%;
   min-width: 0;
 }
-/* exam_3：Q／A 標誌在區塊內左側同一欄（對齊 create-exam-bank_3） */
-.my-design-quiz-sub-block--with-logo {
+/* exam_3：Q／A 標誌在區塊外左側，靠上對齊（對齊 create-exam-bank_3） */
+.my-design-quiz-sub-block-outer--with-logo {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 0;
-  padding-left: 1rem;
+  gap: 1rem;
   box-sizing: border-box;
 }
-.my-design-quiz-sub-block__logo {
+.my-design-quiz-sub-block-outer--with-logo-q {
+  align-items: stretch;
+}
+.my-design-quiz-sub-block-outer__logo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 24pt;
+  width: 24pt;
+  min-width: 24pt;
+  max-width: 24pt;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+.my-design-quiz-sub-block-outer__logo-spacer {
+  flex-shrink: 0;
+  width: 100%;
+}
+.my-design-quiz-sub-block-outer__logo-stem {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 1px;
+  background-color: var(--my-color-gray-3);
+  margin-inline: auto;
+}
+.my-design-quiz-sub-block-outer__logo-arrowhead {
+  flex-shrink: 0;
+  display: block;
+  width: 100%;
+  height: 12pt;
+  margin-top: -1px;
+  color: var(--my-color-gray-3);
+  overflow: visible;
+}
+.my-design-quiz-sub-block-outer__logo {
   flex: 0 0 24pt;
   width: 24pt;
   min-width: 24pt;
   max-width: 24pt;
   align-self: flex-start;
   box-sizing: content-box;
+}
+.my-design-quiz-sub-block-outer--with-logo .my-design-quiz-sub-block {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .my-design-quiz-sub-block__body {
   box-sizing: border-box;

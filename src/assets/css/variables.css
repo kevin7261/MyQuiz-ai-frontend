@@ -34,9 +34,9 @@
   --my-font-weight-semibold: 600;
 
   /* 中性灰階：black 主字色；gray-1 次深字色；gray-2 中灰；gray-3 輕邊線；gray-4 淺底 #f2f2f2（canvas／區塊）；.my-color-gray-4 淺底輔助字 class 同 gray-1 */
-  --my-color-black: #333333;
-  --my-color-gray-1: #888888;
-  --my-color-gray-2: #c4c4c4;
+  --my-color-black: #343434;
+  --my-color-gray-1: #848484;
+  --my-color-gray-2: #949494;
   --my-color-gray-3: #e4e4e4;
   --my-color-gray-4: #f4f4f4;
   --my-color-white: #fdfdfd;

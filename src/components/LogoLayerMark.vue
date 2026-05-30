@@ -5,7 +5,7 @@ import LogoGridSvg from './LogoGridSvg.vue';
 let logoLayerMarkSeq = 0;
 
 const props = defineProps({
-  /** primary＝Q（gray-3）；secondary＝A（gray-2） */
+  /** primary＝Q（gray-3）；secondary＝A（gray-3，與 Q 同色） */
   layer: {
     type: String,
     required: true,
@@ -28,11 +28,11 @@ const wrapStyle = computed(() => ({
   width: `${props.sizePt}pt`,
 }));
 
-/** Q＝gray-3；A＝gray-2 */
+/** Q／A 皆 gray-3 */
 const logoColors = computed(() => ({
   background: 'transparent',
   primary: 'var(--my-color-gray-3)',
-  secondary: 'var(--my-color-gray-2)',
+  secondary: 'var(--my-color-gray-3)',
 }));
 </script>
 

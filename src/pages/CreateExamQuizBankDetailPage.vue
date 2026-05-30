@@ -7479,21 +7479,46 @@ async function confirmAnswer(item) {
                   </div>
                 </div>
                 <!-- 子區塊：題目區（出題規則 wrap py-2；題目／先前出題內文另見 field-inset-body） -->
-                <div class="my-design-quiz-sub-block-outer">
+                <div
+                  class="my-design-quiz-sub-block-outer"
+                  :class="{
+                    'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft,
+                    'my-design-quiz-sub-block-outer--with-logo-q': designSidePanelOnLeft,
+                  }"
+                >
                   <div
-                    class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
-                    :class="[
-                      designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
-                      { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
-                    ]"
+                    v-if="designSidePanelOnLeft"
+                    class="my-design-quiz-sub-block-outer__logo-col"
                   >
                     <LogoLayerMark
-                      v-if="designSidePanelOnLeft"
                       layer="primary"
                       :size-pt="24"
                       :id-prefix="`bank-quiz-q-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                      class="my-design-quiz-sub-block__logo pt-2"
+                      class="my-design-quiz-sub-block-outer__logo"
                     />
+                    <div
+                      class="my-design-quiz-sub-block-outer__logo-spacer pb-3"
+                      aria-hidden="true"
+                    />
+                    <div class="my-design-quiz-sub-block-outer__logo-stem" aria-hidden="true" />
+                    <svg
+                      class="my-design-quiz-sub-block-outer__logo-arrowhead"
+                      viewBox="0 0 24 12"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M12 0 L12 12 M6 6 L12 12 M18 6 L12 12"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1"
+                        vector-effect="non-scaling-stroke"
+                      />
+                    </svg>
+                  </div>
+                  <div
+                    class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
+                    :class="designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2'"
+                  >
                     <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div
                       class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column"
@@ -7584,22 +7609,22 @@ async function confirmAnswer(item) {
                 <div
                   v-if="activeUnitQuizHasGeneratedBody"
                   class="my-design-quiz-sub-block-outer"
+                  :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
                 >
+                  <LogoLayerMark
+                    v-if="designSidePanelOnLeft"
+                    layer="secondary"
+                    :size-pt="24"
+                    :id-prefix="`bank-quiz-a-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
+                    class="my-design-quiz-sub-block-outer__logo"
+                  />
                   <div
                     class="my-design-quiz-sub-block rounded-4"
                     :class="[
                       designSidePanelOnLeft ? 'py-2' : 'p-0 pb-2',
                       designSidePanelOnLeft ? 'my-bgcolor-gray-4' : 'my-bgcolor-white',
-                      { 'my-design-quiz-sub-block--with-logo': designSidePanelOnLeft },
                     ]"
                   >
-                    <LogoLayerMark
-                      v-if="designSidePanelOnLeft"
-                      layer="secondary"
-                      :size-pt="24"
-                      :id-prefix="`bank-quiz-a-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
-                      class="my-design-quiz-sub-block__logo pt-2"
-                    />
                     <div class="my-design-quiz-sub-block__body min-w-0 flex-grow-1">
                     <div class="w-100 min-w-0">
                       <QuizCard
@@ -8631,22 +8656,59 @@ async function confirmAnswer(item) {
   max-width: 100%;
   min-width: 0;
 }
-/* create-exam-bank_3：Q／A 標誌在區塊內左側同一欄 */
-.my-design-quiz-sub-block--with-logo {
+/* create-exam-bank_3：Q／A 標誌在區塊外左側，靠上對齊 */
+.my-design-quiz-sub-block-outer--with-logo {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 0;
-  padding-left: 1rem;
+  gap: 1rem;
   box-sizing: border-box;
 }
-.my-design-quiz-sub-block__logo {
+.my-design-quiz-sub-block-outer--with-logo-q {
+  align-items: stretch;
+}
+.my-design-quiz-sub-block-outer__logo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 24pt;
+  width: 24pt;
+  min-width: 24pt;
+  max-width: 24pt;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+.my-design-quiz-sub-block-outer__logo-spacer {
+  flex-shrink: 0;
+  width: 100%;
+}
+.my-design-quiz-sub-block-outer__logo-stem {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 1px;
+  background-color: var(--my-color-gray-3);
+  margin-inline: auto;
+}
+.my-design-quiz-sub-block-outer__logo-arrowhead {
+  flex-shrink: 0;
+  display: block;
+  width: 100%;
+  height: 12pt;
+  margin-top: -1px;
+  color: var(--my-color-gray-3);
+  overflow: visible;
+}
+.my-design-quiz-sub-block-outer__logo {
   flex: 0 0 24pt;
   width: 24pt;
   min-width: 24pt;
   max-width: 24pt;
   align-self: flex-start;
   box-sizing: content-box;
+}
+.my-design-quiz-sub-block-outer--with-logo .my-design-quiz-sub-block {
+  flex: 1 1 0;
+  min-width: 0;
 }
 .my-design-quiz-sub-block__body {
   box-sizing: border-box;
