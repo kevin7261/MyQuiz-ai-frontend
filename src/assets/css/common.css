@@ -1143,6 +1143,9 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
 .modal.show .modal-content {
   --bs-modal-bg: #fff;
   --bs-modal-color: var(--my-color-black);
+  /* Bootstrap 預設 lg（rounded-3, 0.5rem）；全站 Modal 視窗再圓一級 → xl（rounded-4, 1rem） */
+  --bs-modal-border-radius: var(--bs-border-radius-xl);
+  --bs-modal-inner-border-radius: calc(var(--bs-border-radius-xl) - var(--bs-border-width, 1px));
   color: var(--my-color-black);
 }
 
