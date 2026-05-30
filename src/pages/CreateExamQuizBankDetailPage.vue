@@ -1535,8 +1535,8 @@ const bankUnitMp3PlayerProps = computed(() => {
   return { ragTabId, ragUnitId: ru };
 });
 
-/** 單元內容區：預設展開；切換單元時還原 */
-const bankUnitContentCollapsed = ref(false);
+/** 單元內容區：預設隱藏文本；切換單元時還原 */
+const bankUnitContentCollapsed = ref(true);
 
 function toggleBankUnitContentCollapsed() {
   bankUnitContentCollapsed.value = !bankUnitContentCollapsed.value;
@@ -1557,7 +1557,7 @@ watch(hasBuiltRagSummary, (built) => {
 watch(activePackUnitGi, () => {
   packUnitDetailModalOpen.value = false;
   packUnitDetailModalTab.value = 'text';
-  bankUnitContentCollapsed.value = false;
+  bankUnitContentCollapsed.value = true;
 });
 
 function packUnitDetailModalStemTabClass(isActive) {

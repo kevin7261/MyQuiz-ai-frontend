@@ -162,8 +162,8 @@ watch(
   { immediate: true },
 );
 
-/** 規則 tab 前 logo 尺寸（對齊 LogoGradientPillButton 內 LogoCenterMark） */
-const ruleTabLogoSizePt = 16;
+/** 規則 tab 前 logo 尺寸 16×16 px */
+const ruleTabLogoSizePx = 16;
 
 const showMessageModal = inject('showMessageModal', null);
 
@@ -1033,7 +1033,7 @@ const quizAnswerFieldDisabled = computed(
                       :id-prefix="`quiz-rule-tab-gen-${card.id}`"
                       variant="gradient-diamond-only"
                       :diamond-gradient="ruleTabGenerateDiamondGradient"
-                      :size-pt="ruleTabLogoSizePt"
+                      :size-px="ruleTabLogoSizePx"
                     />
                     <span class="my-design-quiz-stem-tab__label">出題規則</span>
                   </button>
@@ -1761,7 +1761,7 @@ const quizAnswerFieldDisabled = computed(
                           :id-prefix="`quiz-rule-tab-grade-${card.id}`"
                           variant="gradient-diamond-only"
                           :diamond-gradient="ruleTabGradeDiamondGradient"
-                          :size-pt="ruleTabLogoSizePt"
+                          :size-px="ruleTabLogoSizePx"
                         />
                         <span class="my-design-quiz-stem-tab__label">批改規則</span>
                       </button>
@@ -1970,7 +1970,7 @@ const quizAnswerFieldDisabled = computed(
                       :id-prefix="`quiz-rule-tab-grade2-${card.id}`"
                       variant="gradient-diamond-only"
                       :diamond-gradient="ruleTabGradeDiamondGradient"
-                      :size-pt="ruleTabLogoSizePt"
+                      :size-px="ruleTabLogoSizePx"
                     />
                     <span class="my-design-quiz-stem-tab__label">批改規則</span>
                   </button>
@@ -2082,7 +2082,9 @@ const quizAnswerFieldDisabled = computed(
 }
 .my-design-quiz-stem-tab--with-logo .logo-center-mark {
   order: 0;
-  flex: 0 0 auto;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
   margin-top: 0;
 }
 .my-design-quiz-stem-tab--with-logo .my-design-quiz-stem-tab__label {

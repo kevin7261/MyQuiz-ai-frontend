@@ -5,8 +5,10 @@ import LogoGridSvg from './LogoGridSvg.vue';
 let logoCenterMarkSeq = 0;
 
 const props = defineProps({
-  /** 圖示寬度（pt）；51–54 為正方形；含 71–72 時高為 sizePt × 5/4 */
+  /** 圖示寬度（pt）；51–54 為正方形；含 71–72 時高為 sizePt × 5/4；sizePx 有值時優先 */
   sizePt: { type: Number, default: 16 },
+  /** 圖示寬高（px）；指定時優先於 sizePt */
+  sizePx: { type: Number, default: null },
   /** true：含 71–72 延伸列（80×100 格網，高 = 64pt + 16pt 當 sizePt = 64） */
   includeExtensionRow: { type: Boolean, default: false },
   /** true：寬高 100% 撐滿外層容器 */
@@ -90,6 +92,21 @@ const markColors = computed(() => {
 const wrapStyle = computed(() => {
   if (props.sizeToContainer) {
     return { width: '100%', height: '100%' };
+  }
+  const sizePx = props.sizePx != null && Number.isFinite(Number(props.sizePx))
+    ? Number(props.sizePx)
+    : null;
+  if (sizePx != null) {
+    if (props.includeExtensionRow) {
+      return {
+        width: `${sizePx}px`,
+        height: `${sizePx * 5 / 4}px`,
+      };
+    }
+    return {
+      height: `${sizePx}px`,
+      width: `${sizePx}px`,
+    };
   }
   if (props.includeExtensionRow) {
     return {

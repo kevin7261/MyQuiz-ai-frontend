@@ -1264,7 +1264,9 @@ const activeExamSlotGi = computed(() => {
 const activeExamSlotIndex1 = computed(() => activeExamSlotGi.value + 1);
 
 function examQuizNavDisplayLabel(slotIndex) {
-  return examSlotHeadingQuestionTitle(slotIndex);
+  const n = Math.trunc(Number(slotIndex));
+  if (!Number.isFinite(n) || n < 1) return '—';
+  return `#${n}`;
 }
 
 /** 稿頁題目區 breadcrumb 題型名（不含出題模式括號） */
@@ -1273,16 +1275,9 @@ function examSlotHeadingBreadcrumbQuizTypeName(slotIndex) {
   return fullLabel.replace(/ \((?:一般出題|追問出題)\)$/, '');
 }
 
-/** 稿頁題目區標題：小字 breadcrumb「單元 > 題型」（aria 用文字；畫面用 icon 分隔） */
+/** 稿頁題目區 breadcrumb「單元 > 題型」（aria 用文字；畫面用 icon 分隔） */
 function examSlotHeadingBreadcrumb(slotIndex) {
   return `${examSlotUnitLabelForHistoryModal(slotIndex)} > ${examSlotHeadingBreadcrumbQuizTypeName(slotIndex)}`;
-}
-
-/** 稿頁題目區主標題：第 1 題、第 2 題… */
-function examSlotHeadingQuestionTitle(slotIndex) {
-  const n = Math.trunc(Number(slotIndex));
-  if (!Number.isFinite(n) || n < 1) return '—';
-  return `第 ${n} 題`;
 }
 
 /** 右側欄：題目子分頁 */
@@ -1392,15 +1387,15 @@ watch(activeTabId, () => {
   activeExamSlotIndex.value = 0;
 });
 
-/** 單元內容區：預設展開；切換題目時還原 */
-const examUnitContentCollapsed = ref(false);
+/** 單元內容區：預設隱藏文本；切換題目時還原 */
+const examUnitContentCollapsed = ref(true);
 
 function toggleExamUnitContentCollapsed() {
   examUnitContentCollapsed.value = !examUnitContentCollapsed.value;
 }
 
 watch(activeExamSlotGi, () => {
-  examUnitContentCollapsed.value = false;
+  examUnitContentCollapsed.value = true;
 });
 
 /** 題目區標題列：有槽位時顯示「詳細資訊」（對齊題庫頁） */
@@ -3755,24 +3750,17 @@ onActivated(() => {
                         <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
                           <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                             <div
-                              class="w-100 min-w-0"
-                              :class="designSidePanelOnLeft ? 'd-flex align-items-center flex-wrap gap-2' : 'd-flex flex-column gap-2'"
+                              class="w-100 min-w-0 d-flex align-items-center flex-wrap gap-2"
                               role="heading"
                               aria-level="3"
                             >
                               <span
-                                class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-2 rounded-2"
-                                :class="designSidePanelOnLeft ? 'flex-grow-1 min-w-0' : 'w-100'"
+                                class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-2 rounded-2 min-w-0"
                               >{{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}</span>
-                              <div
+                              <span
                                 v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"
-                                class="d-flex flex-wrap align-items-center gap-2 flex-shrink-0"
-                                :class="designSidePanelOnLeft ? 'ms-auto' : ''"
-                              >
-                                <span
-                                  class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-                                >追問</span>
-                              </div>
+                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                              >追問</span>
                             </div>
                           </div>
                           <!-- 追問歷史輪次（唯讀，舊→新順序） -->
@@ -4015,37 +4003,36 @@ onActivated(() => {
                         class="nav-link w-100 text-start text-break"
                         :class="{ active: item.active }"
                         :aria-current="item.active ? 'page' : undefined"
-                        :aria-label="`${item.label}，${item.breadcrumb}${item.followup ? '，追問' : ''}`"
+                        :aria-label="`${item.label} ${item.breadcrumb}${item.followup ? '，追問' : ''}`"
                         @click="onDesignRightQuizClick(item)"
                       >
-                        <span class="d-flex flex-column align-items-stretch gap-1 min-w-0 w-100">
-                          <span>{{ item.label }}</span>
+                        <span
+                          class="exam-quiz-nav-row my-font-sm-400 d-flex align-items-center gap-2 flex-nowrap min-w-0 w-100 overflow-hidden"
+                        >
                           <span
-                            class="exam-quiz-nav-breadcrumb my-font-sm-400 my-color-gray-1 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
+                            class="badge my-bgcolor-gray-3 my-color-black border-0 user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                          >{{ item.label }}</span>
+                          <span
+                            v-if="item.unitType != null"
+                            class="my-pack-unit-type-icon-slot flex-shrink-0"
                             aria-hidden="true"
                           >
-                            <span
-                              v-if="item.unitType != null"
-                              class="my-pack-unit-type-icon-slot flex-shrink-0"
-                              aria-hidden="true"
-                            >
-                              <PackUnitTypeIcon
-                                :unit-type="item.unitType"
-                                decorative
-                              />
-                            </span>
-                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
-                            <i
-                              class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
-                              aria-hidden="true"
+                            <PackUnitTypeIcon
+                              :unit-type="item.unitType"
+                              decorative
                             />
-                            <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
-                              <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.quizTypeLabel }}</span>
-                              <span
-                                v-if="item.followup"
-                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-                              >追問</span>
-                            </span>
+                          </span>
+                          <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
+                          <i
+                            class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
+                            aria-hidden="true"
+                          />
+                          <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
+                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.quizTypeLabel }}</span>
+                            <span
+                              v-if="item.followup"
+                              class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                            >追問</span>
                           </span>
                         </span>
                       </button>
