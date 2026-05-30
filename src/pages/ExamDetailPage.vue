@@ -6,7 +6,7 @@
  *
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcript、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
- * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>`（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe（不標 YouTube 字樣）；mp3／YouTube 可開「詳細資訊」Modal（僅逐字稿）
+ * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>`（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe（不標 YouTube 字樣）；題目標題列「詳細資訊」Modal 僅 JSON 資料（合併 GET /exam/tabs 與本頁編輯狀態）
  * 出題：Modal「產生題目」→ create-llm-generate／create-llm-generate-followup；槽位內「產生題目」→ llm-generate／llm-generate-followup（提示自 Rag_Quiz 讀勿傳）。追問先前出題 Modal 不含當前題；followup API 之 quiz_history_list 為祖先鏈＋followupRounds（繼續追問含剛批改輪）。評分：POST /exam/tab/quiz/llm-grade；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
@@ -46,6 +46,7 @@ import {
   UNIT_TYPE_MP3,
   UNIT_TYPE_YOUTUBE,
 } from '../utils/rag.js';
+import JsonTreeViewer from '../components/JsonTreeViewer.vue';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 import { youtubeEmbedUrlFromInput } from '../utils/youtubeEmbed.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -840,7 +841,7 @@ function examSlotYoutubeEmbedUrl(slotIndex) {
   return youtubeEmbedUrlFromInput(raw);
 }
 
-/** 詳細資訊 Modal（unit_type=3/4：播放器／YouTube 嵌入 + 逐字稿）：槽位 1-based */
+/** 詳細資訊 Modal（僅 JSON 資料）：槽位 1-based */
 const examUnitDetailModalSlotIndex = ref(null);
 
 function openExamUnitDetailModal(slotIndex) {
@@ -851,28 +852,172 @@ function closeExamUnitDetailModal() {
   examUnitDetailModalSlotIndex.value = null;
 }
 
-const examUnitDetailModalMdHtml = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
-  return examSlotUnitTranscriptMdHtml(Number(idx));
+function buildExamQuizRowFromCardCore(card, slotIndex) {
+  const slotState = getSlotFormState(slotIndex);
+  const followUp =
+    card.quizGenerateMode === 'followup'
+    || card.follow_up === true
+    || examQuizApiRowIsFollowUp(card);
+  const row = {
+    quiz_content: String(card.quiz ?? ''),
+    quiz_hint: String(card.hint ?? ''),
+    quiz_answer_reference: String(card.referenceAnswer ?? ''),
+    unit_name: String(card.ragName ?? '').trim(),
+    rag_id: card.rag_id ?? null,
+    rag_unit_id: card.rag_unit_id ?? null,
+    rag_quiz_id: card.rag_quiz_id ?? null,
+    quiz_rate: card.quiz_rate ?? 0,
+    follow_up: followUp,
+    file_name: card.sourceFilename ?? null,
+  };
+  const eqid = card.exam_quiz_id ?? card.quiz_id;
+  if (eqid != null && Number(eqid) >= 1) row.exam_quiz_id = Number(eqid);
+  const qn = String(card.examQuizDisplayName ?? '').trim();
+  if (qn) row.quiz_name = qn;
+  const qp = String(card.quizUserPromptText ?? card.quiz_user_prompt_text ?? '').trim();
+  if (qp) row.quiz_user_prompt_text = qp;
+  const gp = String(card.gradingPrompt ?? '').trim();
+  if (gp) row.answer_user_prompt_text = gp;
+  const ans = String(card.quiz_answer ?? '').trim();
+  if (ans) row.answer_content = ans;
+  if (card.follow_up_exam_quiz_id != null && card.follow_up_exam_quiz_id !== '') {
+    row.follow_up_exam_quiz_id = Number(card.follow_up_exam_quiz_id);
+  }
+  if (card.gradingResponseJson && typeof card.gradingResponseJson === 'object') {
+    row.answers = [{ ...card.gradingResponseJson }];
+    if (card.answer_id != null) {
+      row.answers[0].exam_answer_id = row.answers[0].exam_answer_id ?? card.answer_id;
+      row.answers[0].answer_id = row.answers[0].answer_id ?? card.answer_id;
+    }
+  } else if (ans || card.answer_id != null) {
+    row.answers = [{
+      exam_answer_id: card.answer_id ?? null,
+      answer_id: card.answer_id ?? null,
+      quiz_answer: ans,
+      answer_content: ans,
+    }];
+  }
+  if (!followUp) {
+    const hist = slotState?.quiz_history_list;
+    if (Array.isArray(hist) && hist.length) row.quiz_history_list = [...hist];
+    const rich = slotState?.quiz_history_rich;
+    if (Array.isArray(rich) && rich.length) row.quiz_history_rich = [...rich];
+  }
+  return row;
+}
+
+/** 題卡 → GET /exam/tabs 之 quizzes[] 列（含 follow_up_quiz 鏈；供 JSON 快照） */
+function buildExamQuizRowFromCard(card, slotIndex) {
+  if (!card || typeof card !== 'object') return null;
+  const slotState = getSlotFormState(slotIndex);
+  const activeRow = buildExamQuizRowFromCardCore(card, slotIndex);
+  const rounds = Array.isArray(slotState?.followupRounds) ? slotState.followupRounds : [];
+  if (!rounds.length) return activeRow;
+  let chain = activeRow;
+  for (let i = rounds.length - 1; i >= 0; i--) {
+    const round = rounds[i];
+    if (!round || typeof round !== 'object') continue;
+    const node = normalizeFollowupQuizAnswers({ ...round });
+    node.follow_up_quiz = chain;
+    chain = node;
+  }
+  return chain;
+}
+
+/** 合併 GET /exam/tabs 列與 tabState，供 JSON 檢視即時反映頁面內容 */
+function buildLiveExamTabsRowSnapshot(state, examBase) {
+  const base = examBase && typeof examBase === 'object'
+    ? JSON.parse(JSON.stringify(examBase))
+    : {};
+
+  const slotCount = Math.max(
+    Number(state?.quizSlotsCount) || 0,
+    state?.cardList?.length ?? 0,
+  );
+  const liveQuizRows = [];
+  for (let i = 0; i < slotCount; i++) {
+    const card = state?.cardList?.[i];
+    if (card && typeof card === 'object') {
+      const built = buildExamQuizRowFromCard(card, i + 1);
+      if (built) liveQuizRows.push(built);
+    }
+  }
+
+  if (liveQuizRows.length === 0) {
+    return Object.keys(base).length > 0 ? base : null;
+  }
+
+  const baseUnits = base.units ?? base.exam_units;
+  if (Array.isArray(baseUnits) && baseUnits.length > 0) {
+    let slotIdx = 0;
+    base.units = baseUnits.map((u) => {
+      const uqs = Array.isArray(u.quizzes)
+        ? u.quizzes
+        : (Array.isArray(u.exam_quizzes) ? u.exam_quizzes : []);
+      const rebuilt = [];
+      for (let j = 0; j < uqs.length; j++) {
+        if (slotIdx < liveQuizRows.length && liveQuizRows[slotIdx]) {
+          rebuilt.push(liveQuizRows[slotIdx]);
+        } else if (uqs[j]) {
+          rebuilt.push(uqs[j]);
+        }
+        slotIdx += 1;
+      }
+      return { ...u, quizzes: rebuilt };
+    });
+    while (slotIdx < liveQuizRows.length) {
+      const lastUnit = base.units[base.units.length - 1];
+      if (lastUnit) {
+        if (!Array.isArray(lastUnit.quizzes)) lastUnit.quizzes = [];
+        lastUnit.quizzes.push(liveQuizRows[slotIdx]);
+      }
+      slotIdx += 1;
+    }
+    delete base.quizzes;
+    delete base.exam_quizzes;
+  } else {
+    base.quizzes = liveQuizRows;
+    if (base.exam_quizzes) base.exam_quizzes = liveQuizRows;
+  }
+
+  return Object.keys(base).length > 0 ? base : null;
+}
+
+const examUnitDetailModalJsonData = computed(() => {
+  const state = currentState.value;
+  void state.cardList;
+  void state.quizSlotsCount;
+  void state.slotFormState;
+  void examList.value;
+  for (const card of state.cardList ?? []) {
+    if (!card || typeof card !== 'object') continue;
+    void card.quiz;
+    void card.hint;
+    void card.referenceAnswer;
+    void card.quiz_answer;
+    void card.examQuizDisplayName;
+    void card.quizUserPromptText;
+    void card.gradingPrompt;
+    void card.quiz_rate;
+    void card.quizGenerateMode;
+    void card.gradingResponseJson;
+  }
+  const n = Number(state.quizSlotsCount) || 0;
+  for (let i = 1; i <= n; i++) {
+    const slot = state.slotFormState?.[i];
+    if (!slot) continue;
+    void slot.followupRounds;
+    void slot.quiz_history_list;
+    void slot.quiz_history_rich;
+  }
+  return buildLiveExamTabsRowSnapshot(state, currentExamItem.value);
 });
 
-const examUnitDetailModalSection = computed(() => {
+const examUnitDetailModalTitle = computed(() => {
   const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return null;
-  return examSlotUnitTranscriptSection(Number(idx));
-});
-
-const examUnitDetailModalMp3Props = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return null;
-  return examSlotMp3PlayerProps(Number(idx));
-});
-
-const examUnitDetailModalYoutubeEmbedUrl = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return '';
-  return examSlotYoutubeEmbedUrl(Number(idx));
+  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return 'JSON資料';
+  const label = examSlotUnitLabelForHistoryModal(Number(idx));
+  return label !== '—' ? label : 'JSON資料';
 });
 
 /**
@@ -1258,11 +1403,10 @@ watch(activeExamSlotGi, () => {
   examUnitContentCollapsed.value = false;
 });
 
-/** mp3／YouTube 單元才顯示「詳細資訊」按鈕 */
+/** 題目區標題列：有槽位時顯示「詳細資訊」（對齊題庫頁） */
 function examSlotDetailModalButtonVisible(slotIndex) {
-  const sec = examSlotUnitTranscriptSection(slotIndex);
-  if (!sec) return false;
-  return sec.unitType === UNIT_TYPE_MP3 || sec.unitType === UNIT_TYPE_YOUTUBE;
+  const n = Number(currentState.value.quizSlotsCount) || 0;
+  return slotIndex >= 1 && slotIndex <= n;
 }
 
 /** 評閱子區塊：已批改（confirmed 或已有批改結果）才顯示 */
@@ -3268,7 +3412,6 @@ onActivated(() => {
       @update:model-value="(v) => { if (!v) closeMessageModal(); else messageModalOpen = v; }"
     />
     <Teleport to="body">
-      <!-- 詳細資訊 Modal（unit_type=3 MP3／unit_type=4 YouTube；播放器／嵌入 + 逐字稿）-->
       <div
         v-if="examUnitDetailModalSlotIndex != null"
         class="modal fade show d-block my-modal-backdrop"
@@ -3286,60 +3429,25 @@ onActivated(() => {
             <div class="modal-header border-bottom-0 p-0">
               <h5
                 id="exam-unit-detail-modal-title"
-                class="modal-title my-color-black text-break"
-              >詳細資訊</h5>
+                class="modal-title my-color-black text-break mb-0"
+              >{{ examUnitDetailModalTitle }}</h5>
               <button
                 type="button"
-                class="btn-close"
+                class="btn-close flex-shrink-0"
                 aria-label="關閉"
                 @click="closeExamUnitDetailModal"
               />
             </div>
-            <div class="modal-body p-0 min-w-0 d-flex flex-column gap-3" style="max-height: 70vh; overflow: auto;">
-              <div
-                v-if="examUnitDetailModalSection?.unitType === UNIT_TYPE_YOUTUBE"
-                class="w-100 min-w-0"
-              >
-                <div
-                  v-if="examUnitDetailModalYoutubeEmbedUrl"
-                  class="ratio ratio-16x9 w-100 rounded-2 overflow-hidden my-border-muted"
-                >
-                  <iframe
-                    class="border-0"
-                    title="YouTube 影片"
-                    :src="examUnitDetailModalYoutubeEmbedUrl"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    referrerpolicy="strict-origin-when-cross-origin"
-                    allowfullscreen
-                  />
-                </div>
-                <span
-                  v-else
-                  class="my-font-md-400 my-color-black text-break"
-                >{{ examUnitDetailModalSection?.sourceDisplay }}</span>
-              </div>
-              <RagTabUnitMp3Player
-                v-else-if="examUnitDetailModalSection?.unitType === UNIT_TYPE_MP3 && examUnitDetailModalMp3Props"
-                :rag-tab-id="examUnitDetailModalMp3Props.ragTabId"
-                :rag-unit-id="examUnitDetailModalMp3Props.ragUnitId"
+            <div
+              class="modal-body p-0 min-w-0"
+              style="max-height: 70vh; overflow: auto;"
+              role="region"
+              aria-label="JSON資料"
+            >
+              <JsonTreeViewer
+                :data="examUnitDetailModalJsonData"
+                :default-expand-depth="1"
               />
-              <div
-                v-if="examUnitDetailModalMdHtml"
-                class="w-100 min-w-0"
-              >
-                <div
-                  v-if="examUnitDetailModalSection?.unitType === UNIT_TYPE_MP3 || examUnitDetailModalSection?.unitType === UNIT_TYPE_YOUTUBE"
-                  class="my-font-sm-400 my-color-gray-1 mb-2"
-                >逐字稿</div>
-                <div
-                  class="my-markdown-rendered my-font-md-400 my-color-black text-break"
-                  v-html="examUnitDetailModalMdHtml"
-                />
-              </div>
-              <span
-                v-else-if="!examUnitDetailModalMp3Props && !examUnitDetailModalYoutubeEmbedUrl"
-                class="my-font-md-400 my-color-black"
-              >—</span>
             </div>
             <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
               <button
@@ -4448,6 +4556,7 @@ onActivated(() => {
   border-color: var(--my-color-gray-3);
   opacity: 1;
 }
+
 .btn.my-design-quiz-action-edit-btn,
 .my-design-quiz-sub-block :deep(.btn.my-design-quiz-action-edit-btn) {
   box-sizing: border-box;
