@@ -592,7 +592,7 @@ const showExamRatingVisible = computed(
 );
 
 const showDesignStemToolbarRow = computed(
-  () => showExamRatingVisible.value || stemToolbarLeftPills.value,
+  () => stemToolbarLeftPills.value,
 );
 
 const designStemToolbarJustifyClass = computed(() => 'justify-content-start');
@@ -1053,6 +1053,49 @@ const quizAnswerFieldDisabled = computed(
                   v-else
                   class="my-font-md-400 my-color-black text-break"
                 >{{ card.quiz }}</span>
+                <div
+                  v-if="showExamRatingVisible"
+                  class="d-inline-flex justify-content-start align-items-center flex-shrink-0 gap-1 pt-2"
+                  role="group"
+                  aria-label="題目評價"
+                >
+                  <button
+                    type="button"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
+                    title="讚"
+                    :aria-pressed="card.quiz_rate === 1"
+                    :disabled="examRatingReadOnly"
+                    @click="!examRatingReadOnly && emit('rate-quiz', 'up')"
+                  >
+                    <i
+                      class="fa-thumbs-up"
+                      :class="card.quiz_rate === 1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
+                      aria-hidden="true"
+                    />
+                    <span class="visually-hidden">讚</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
+                    title="差"
+                    :aria-pressed="card.quiz_rate === -1"
+                    :disabled="examRatingReadOnly"
+                    @click="!examRatingReadOnly && emit('rate-quiz', 'down')"
+                  >
+                    <i
+                      class="fa-thumbs-down"
+                      :class="card.quiz_rate === -1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
+                      aria-hidden="true"
+                    />
+                    <span class="visually-hidden">差</span>
+                  </button>
+                </div>
+                <div
+                  v-if="card.rateError"
+                  class="my-font-sm-400 my-color-red text-start mb-0 w-100 pt-1"
+                >
+                  {{ card.rateError }}
+                </div>
               </template>
               <QuizHistoryPanel
                 v-else-if="showQuestionHistoryBody"
@@ -1126,6 +1169,49 @@ const quizAnswerFieldDisabled = computed(
                 v-else
                 class="my-font-md-400 my-color-black text-break"
               >{{ card.quiz }}</span>
+              <div
+                v-if="showExamRatingVisible"
+                class="d-inline-flex justify-content-start align-items-center flex-shrink-0 gap-1 pt-2"
+                role="group"
+                aria-label="題目評價"
+              >
+                <button
+                  type="button"
+                  class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
+                  title="讚"
+                  :aria-pressed="card.quiz_rate === 1"
+                  :disabled="examRatingReadOnly"
+                  @click="!examRatingReadOnly && emit('rate-quiz', 'up')"
+                >
+                  <i
+                    class="fa-thumbs-up"
+                    :class="card.quiz_rate === 1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
+                    aria-hidden="true"
+                  />
+                  <span class="visually-hidden">讚</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
+                  title="差"
+                  :aria-pressed="card.quiz_rate === -1"
+                  :disabled="examRatingReadOnly"
+                  @click="!examRatingReadOnly && emit('rate-quiz', 'down')"
+                >
+                  <i
+                    class="fa-thumbs-down"
+                    :class="card.quiz_rate === -1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
+                    aria-hidden="true"
+                  />
+                  <span class="visually-hidden">差</span>
+                </button>
+              </div>
+              <div
+                v-if="card.rateError"
+                class="my-font-sm-400 my-color-red text-start mb-0 w-100 pt-1"
+              >
+                {{ card.rateError }}
+              </div>
             </template>
             <QuizHistoryPanel
               v-else-if="showQuestionHistoryBody"
@@ -1143,43 +1229,6 @@ const quizAnswerFieldDisabled = computed(
             class="d-flex flex-row flex-nowrap align-items-center gap-2 w-100 min-w-0"
             :class="designStemToolbarJustifyClass"
           >
-            <div
-              v-if="showExamRatingVisible"
-              class="d-inline-flex justify-content-start align-items-center flex-shrink-0 gap-1"
-              role="group"
-              aria-label="題目評價"
-            >
-              <button
-                type="button"
-                class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
-                title="讚"
-                :aria-pressed="card.quiz_rate === 1"
-                :disabled="examRatingReadOnly"
-                @click="!examRatingReadOnly && emit('rate-quiz', 'up')"
-              >
-                <i
-                  class="fa-thumbs-up"
-                  :class="card.quiz_rate === 1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
-                  aria-hidden="true"
-                />
-                <span class="visually-hidden">讚</span>
-              </button>
-              <button
-                type="button"
-                class="btn rounded-circle d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-btn-circle flex-shrink-0 border-0 shadow-none lh-1"
-                title="差"
-                :aria-pressed="card.quiz_rate === -1"
-                :disabled="examRatingReadOnly"
-                @click="!examRatingReadOnly && emit('rate-quiz', 'down')"
-              >
-                <i
-                  class="fa-thumbs-down"
-                  :class="card.quiz_rate === -1 ? 'fa-solid my-color-black' : 'fa-regular my-color-gray-1'"
-                  aria-hidden="true"
-                />
-                <span class="visually-hidden">差</span>
-              </button>
-            </div>
             <div
               v-if="stemToolbarLeftPills"
               class="d-inline-flex flex-nowrap align-items-center gap-2 min-w-0"
@@ -1209,12 +1258,6 @@ const quizAnswerFieldDisabled = computed(
                 {{ card.referenceAnswerVisible ? '隱藏參考答案' : '顯示參考答案' }}
               </button>
             </div>
-          </div>
-          <div
-            v-if="showExamRatingVisible && card.rateError"
-            class="my-font-sm-400 my-color-red text-start mb-0 w-100"
-          >
-            {{ card.rateError }}
           </div>
           <template v-if="!hintReferenceInModal">
             <div

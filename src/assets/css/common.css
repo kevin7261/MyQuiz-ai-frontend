@@ -1046,6 +1046,10 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
 
 .my-design--side-panel-left .my-design-right-nav {
   background-color: var(--my-color-gray-4) !important;
+  /* 左欄清單 scrollbar：軌道 gray-4、滑塊 gray-3 */
+  --my-scrollbar-track: var(--my-color-gray-4);
+  --my-scrollbar-thumb: var(--my-color-gray-3);
+  --my-scrollbar-thumb-hover: var(--my-color-gray-3);
 }
 
 /* 左欄「單元」列表：無項目時於列表區塊正中央顯示「沒有單元」 */
