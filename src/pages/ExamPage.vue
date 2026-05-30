@@ -602,7 +602,7 @@ watch(
           <div class="bank-table-actions">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-shrink-0"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2 flex-shrink-0"
               :disabled="createExamLoading"
               :aria-busy="createExamLoading"
               @click="addNewExam"
