@@ -124,6 +124,16 @@ const showGridLoadingOverlay = computed(
   () => viewMode.value === 'grid' && ragListLoading.value && gridItems.value.length === 0,
 );
 
+const showDetailLoadingOverlay = computed(
+  () => deleteRagLoading.value || renameTitleSaving.value,
+);
+
+const detailLoadingOverlayText = computed(() => {
+  if (deleteRagLoading.value) return '刪除中...';
+  if (renameTitleSaving.value) return '儲存中...';
+  return '處理中...';
+});
+
 const detailHeaderActionsDisabled = computed(
   () => deleteRagLoading.value || renameTitleSaving.value,
 );
@@ -697,8 +707,8 @@ watch(
     <!-- 題庫內容（隱藏原頁分頁列） -->
     <template v-else>
       <LoadingOverlay
-        :is-visible="deleteRagLoading"
-        loading-text="刪除中..."
+        :is-visible="showDetailLoadingOverlay"
+        :loading-text="detailLoadingOverlayText"
       />
       <CreateExamQuizBankPage2DetailBar
         v-if="!sidePanelOnLeft"
