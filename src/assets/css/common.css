@@ -1070,10 +1070,23 @@ code {
   -webkit-backdrop-filter: blur(10px);
 }
 
-/* 所有 Modal 內容區一律白底 */
+/* 所有 Modal 內容區固定純白底（含 header／body／footer；覆写 Bootstrap 变量与 my-bgcolor-white 之 #fdfdfd） */
+.my-modal-backdrop .modal-content,
+.my-modal-backdrop .modal-header,
+.my-modal-backdrop .modal-body,
+.my-modal-backdrop .modal-footer,
 .modal.show .modal-content,
-.my-modal-backdrop .modal-content {
-  background-color: var(--my-color-white) !important;
+.modal.show .modal-header,
+.modal.show .modal-body,
+.modal.show .modal-footer {
+  background-color: #fff !important;
+}
+
+.my-modal-backdrop .modal-content,
+.modal.show .modal-content {
+  --bs-modal-bg: #fff;
+  --bs-modal-color: var(--my-color-black);
+  color: var(--my-color-black);
 }
 
 /* —— 下拉觸發箭頭：`my-dropdown-caret` 隱藏 Bootstrap ::after；FA `.my-dropdown-toggle-caret`。選單本體用 Bootstrap `.dropdown-menu`／`.dropdown-item` 預設（專案內不覆寫項目色／hover／active）。觸發鈕與 05 中號同 my-font-md-400 px-3 py-2 等 —— */

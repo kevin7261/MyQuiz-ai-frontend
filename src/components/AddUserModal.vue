@@ -132,8 +132,8 @@ async function submit() {
       aria-labelledby="user-single-modal-title"
     >
       <div class="modal-dialog modal-dialog-centered" @click.stop>
-        <div class="modal-content">
-          <div class="modal-header border-bottom-0 pb-0">
+        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+          <div class="modal-header border-bottom-0 p-0">
             <h5 id="user-single-modal-title" class="modal-title">
               新增一筆使用者
             </h5>
@@ -144,7 +144,7 @@ async function submit() {
               @click="close"
             />
           </div>
-          <div class="modal-body pt-2">
+          <div class="modal-body p-0 min-w-0">
             <div class="mb-3">
               <label for="user-single-id" class="form-label my-font-sm-400 my-color-gray-1 mb-0">登入 ID</label>
               <input
@@ -208,7 +208,7 @@ async function submit() {
               {{ submitError }}
             </div>
           </div>
-          <div class="modal-footer border-top-0 pt-0">
+          <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
             <button
               type="button"
               class="btn rounded-pill d-inline-flex justify-content-center align-items-center my-font-md-400 my-color-gray-4 my-button-transparent-borderless px-4 py-2"

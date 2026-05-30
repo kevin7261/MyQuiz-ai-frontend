@@ -131,8 +131,8 @@ async function submit() {
       aria-labelledby="user-batch-modal-title"
     >
       <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable" @click.stop>
-        <div class="modal-content">
-          <div class="modal-header border-bottom-0 pb-0">
+        <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
+          <div class="modal-header border-bottom-0 p-0">
             <h5 id="user-batch-modal-title" class="modal-title">
               批次新增學生
             </h5>
@@ -143,7 +143,7 @@ async function submit() {
               @click="close"
             />
           </div>
-          <div class="modal-body pt-2">
+          <div class="modal-body p-0 min-w-0">
             <input
               ref="excelFileInputRef"
               type="file"
@@ -216,7 +216,7 @@ async function submit() {
               {{ submitError }}
             </div>
           </div>
-          <div class="modal-footer border-top-0 pt-0">
+          <div class="modal-footer border-top-0 p-0 d-flex flex-wrap justify-content-end gap-2">
             <button type="button" class="btn my-btn-outline-gray-3" :disabled="saving" @click="close">
               關閉
             </button>
