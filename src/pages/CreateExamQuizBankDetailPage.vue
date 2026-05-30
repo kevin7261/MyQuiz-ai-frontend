@@ -157,10 +157,8 @@ const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-t
 /** 設定單元「類型」segment（role=group）：選中白底；未選 gray-2 字；hover gray-3 底 */
 const PACK_UNIT_TYPE_SELECTED_BTN = 'my-pack-unit-type-btn--selected';
 const PACK_UNIT_TYPE_UNSELECTED_BTN = 'my-button-transparent-borderless my-color-gray-2';
-/** create-exam-bank_3：一般／追問 segmented 選中態（淺灰底） */
-const d3QuizModeSegmentSelected = computed(() => (
-  props.designSidePanelOnLeft ? 'my-button-gray-4' : 'my-button-white'
-));
+/** create-exam-bank_3：一般／追問 segmented 選中態（gray-3 底） */
+const d3QuizModeSegmentSelected = 'my-button-gray-3';
 const d3CircleIconBtnClass = computed(() => (
   props.designSidePanelOnLeft
     ? 'my-button-transparent-borderless my-btn-circle'
@@ -7163,7 +7161,7 @@ async function confirmAnswer(item) {
                               )
                               : (
                                 !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                  ? 'my-button-white'
+                                  ? 'my-button-gray-3'
                                   : 'my-button-transparent-borderless'
                               )
                           "
@@ -7190,7 +7188,7 @@ async function confirmAnswer(item) {
                               )
                               : (
                                 isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
-                                  ? 'my-button-white'
+                                  ? 'my-button-gray-3'
                                   : 'my-button-transparent-borderless'
                               )
                           "
@@ -7756,16 +7754,16 @@ async function confirmAnswer(item) {
 </template>
 
 <style scoped>
-/* 出題模式：gray-4 軌＋選中白底（與原白軌＋gray-4 選中對調） */
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white) {
-  background-color: var(--my-color-white);
+/* 出題模式（非 outline）：gray-4 軌＋選中 gray-3 底 */
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-3) {
+  background-color: var(--my-color-gray-3);
   color: var(--my-color-black);
   border-color: transparent;
   box-shadow: none;
 }
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white:hover),
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-white:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-3:hover),
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-3:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-gray-3));
   color: var(--my-color-black);
 }
 /* 一般／追問：選中與未選皆維持小 pill px-4（1.5rem）＋ py-1；蓋過本頁 px-2／px-3 覆寫 */
@@ -7955,6 +7953,7 @@ async function confirmAnswer(item) {
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4 {
   background-color: var(--my-color-gray-4) !important;
+  border: none;
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
@@ -8382,7 +8381,7 @@ async function confirmAnswer(item) {
   white-space: nowrap;
   flex-shrink: 0;
 }
-/* 題型區三子區塊：題目＝白底 gray-3 邊框；答案＝gray-4 底；批改子區 inset 灰框 */
+/* 題型區三子區塊：題目＝白底 gray-3 邊框；答案＝gray-4 底無邊框；批改子區 inset 灰框 */
 .my-design-quiz-sub-block-outer {
   box-sizing: border-box;
   width: 100%;

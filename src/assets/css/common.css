@@ -775,13 +775,14 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
 .my-quiz-generate-mode-segment {
   gap: 0;
 }
-/* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-4、未選 transparent-borderless */
+/* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-3、未選 transparent-borderless */
 .my-quiz-generate-mode-segment--outline {
   border: 1px solid var(--my-color-gray-3);
   border-radius: 9999px;
   box-sizing: border-box;
 }
 .my-quiz-generate-mode-segment--outline > .btn.my-button-white,
+.my-quiz-generate-mode-segment--outline > .btn.my-button-gray-3,
 .my-quiz-generate-mode-segment--outline > .btn.my-button-gray-4,
 .my-quiz-generate-mode-segment--outline > .btn.my-button-transparent-borderless {
   border: none !important;
@@ -1113,6 +1114,22 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
   --bs-modal-bg: #fff;
   --bs-modal-color: var(--my-color-black);
   color: var(--my-color-black);
+}
+
+/* Modal 內 EasyMDE 編輯區：toolbar／CodeMirror 白底（勿沿用 easymde 預設灰） */
+.my-modal-backdrop .english-exam-md-editor-wrap :deep(.EasyMDEContainer),
+.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-toolbar),
+.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-toolbar li button),
+.my-modal-backdrop .english-exam-md-editor-wrap :deep(.CodeMirror),
+.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-preview),
+.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-preview-side),
+.modal.show .english-exam-md-editor-wrap :deep(.EasyMDEContainer),
+.modal.show .english-exam-md-editor-wrap :deep(.editor-toolbar),
+.modal.show .english-exam-md-editor-wrap :deep(.editor-toolbar li button),
+.modal.show .english-exam-md-editor-wrap :deep(.CodeMirror),
+.modal.show .english-exam-md-editor-wrap :deep(.editor-preview),
+.modal.show .english-exam-md-editor-wrap :deep(.editor-preview-side) {
+  background-color: #fff !important;
 }
 
 /* —— 下拉觸發箭頭：`my-dropdown-caret` 隱藏 Bootstrap ::after；FA `.my-dropdown-toggle-caret`。選單本體用 Bootstrap `.dropdown-menu`／`.dropdown-item` 預設（專案內不覆寫項目色／hover／active）。觸發鈕與 05 中號同 my-font-md-400 px-3 py-2 等 —— */
