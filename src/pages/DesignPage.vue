@@ -309,7 +309,7 @@ const DESIGN3_TYPE_GROUPS = [
       },
       {
         name: 'type-sm-gray-4',
-        usage: 'ZIP drop zone 提示、說明 ul、placeholder「尚未選擇資料夾」',
+        usage: 'ZIP drop zone 提示、說明 ul',
         colorClass: 'my-color-gray-4',
         previewText: 'drop zone 提示文字、說明 ul',
       },
@@ -492,7 +492,7 @@ function designPackUnitTypeIconCss(unitType) {
                         class="mb-0"
                       >
                         <span :class="[designItemFontClass(group, item), item.colorClass]">範例課程</span>
-                        <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
+                        <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-3" aria-hidden="true">|</span>
                         <span :class="[group.fontClass, item.colorClass]">測驗</span>
                       </p>
                       <div
@@ -648,7 +648,7 @@ function designPackUnitTypeIconCss(unitType) {
                       <div class="my-course-header-inner__center min-w-0">
                         <p class="my-course-header-course-title my-color-black text-truncate text-start w-100 mb-0">
                           <span class="my-font-lg-600">範例課程</span>
-                          <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
+                          <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-3" aria-hidden="true">|</span>
                           <span class="my-font-lg-400">測驗</span>
                         </p>
                       </div>

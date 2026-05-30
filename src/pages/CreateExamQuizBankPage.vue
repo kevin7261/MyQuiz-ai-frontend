@@ -926,7 +926,7 @@ watch(
   color: inherit !important;
 }
 
-/* 嵌入頁「+ 加入資料夾」：gray-4 底、gray-2 字（蓋過 .form-control.my-input-md 黑字；不限 side-panel-left） */
+/* 嵌入頁「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（蓋過 .form-control.my-input-md 黑字；不限 side-panel-left） */
 .create-exam-bank-2-embedded :deep(.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn),
 .create-exam-bank-2-embedded :deep(.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn),
 .create-exam-bank-2-embedded :deep(.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn) {
@@ -934,24 +934,24 @@ watch(
   --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   --bs-btn-disabled-bg: var(--my-color-gray-4);
-  --bs-btn-color: var(--my-color-gray-2);
-  --bs-btn-hover-color: var(--my-color-gray-2);
-  --bs-btn-active-color: var(--my-color-gray-2);
-  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-active-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
   --bs-btn-disabled-opacity: 1;
   --bs-btn-border-color: transparent;
   --bs-btn-border-width: 0;
   background-color: var(--my-color-gray-4) !important;
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
   border: 0 !important;
   box-shadow: none !important;
 }
 .create-exam-bank-2-embedded :deep(.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled),
 .create-exam-bank-2-embedded :deep(.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled),
 .create-exam-bank-2-embedded :deep(.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled) {
-  --bs-btn-disabled-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
 }
 </style>

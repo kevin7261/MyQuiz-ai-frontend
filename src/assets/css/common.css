@@ -1996,28 +1996,28 @@ div.form-control {
   color: inherit !important;
 }
 
-/* 設定單元「+ 加入資料夾」：gray-4 底、gray-2 字（蓋過 .form-control.my-input-md 黑字繼承與 Bootstrap .btn） */
+/* 設定單元「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（同 gray-1；蓋過 .form-control.my-input-md 黑字繼承與 Bootstrap .btn） */
 .form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn,
 .form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn,
 .my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn,
 button.btn.my-pack-unit-add-folder-btn,
-button.btn.my-pack-unit-add-folder-btn.my-color-gray-2 {
+button.btn.my-pack-unit-add-folder-btn.my-color-gray-4 {
   --bs-btn-bg: var(--my-color-gray-4);
   --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   --bs-btn-disabled-bg: var(--my-color-gray-4);
-  --bs-btn-color: var(--my-color-gray-2);
-  --bs-btn-hover-color: var(--my-color-gray-2);
-  --bs-btn-active-color: var(--my-color-gray-2);
-  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-active-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
   --bs-btn-disabled-opacity: 1;
   --bs-btn-border-color: transparent;
   --bs-btn-hover-border-color: transparent;
   --bs-btn-active-border-color: transparent;
   --bs-btn-border-width: 0;
   background-color: var(--my-color-gray-4) !important;
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
   border: 0 !important;
   box-shadow: none !important;
 }
@@ -2031,22 +2031,22 @@ button.btn.my-pack-unit-add-folder-btn.rounded-pill {
 button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled),
 button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled) {
   background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
-  color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
 }
 .form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:active:not(:disabled),
 button.btn.my-pack-unit-add-folder-btn:active:not(:disabled) {
   background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
-  color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
 }
 .form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled,
 .form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled,
 button.btn.my-pack-unit-add-folder-btn:disabled {
-  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
   --bs-btn-disabled-bg: var(--my-color-gray-4);
   --bs-btn-disabled-opacity: 1;
   background-color: var(--my-color-gray-4) !important;
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
   opacity: 0.55;
 }
 .form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn .fa-solid,
@@ -2056,11 +2056,25 @@ button.btn.my-pack-unit-add-folder-btn .fa-solid {
   -webkit-text-fill-color: currentColor;
 }
 
-/* 選擇資料夾 Modal（Teleport to body）：chip 選中態＝上傳區拖曳中 .my-zip-drop-zone-over；字重不變（蓋過 .badge） */
+/* 設定單元組合：「沒有資料夾」placeholder（蓋 .form-control.my-input-md 黑字） */
+.form-control.my-input-md.my-pack-folder-combo-field .my-pack-folder-combo-empty-hint,
+.form-control.my-pack-folder-combo-field .my-pack-folder-combo-empty-hint {
+  color: var(--my-color-gray-2) !important;
+  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+}
+
+/* 資料夾名稱 badge（設定單元組合、詳細資訊、ZIP 列表等）：預設白底 */
+.badge.my-pack-folder-badge {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black);
+  border: 1px solid var(--my-color-gray-3);
+}
+
+/* 選擇資料夾 Modal（Teleport to body）：chip 預設白底；選中態＝上傳區拖曳中 .my-zip-drop-zone-over；字重不變（蓋過 .badge） */
 button.my-pack-folder-pick-chip {
   font-weight: var(--my-font-weight-regular);
   border: 1px solid var(--my-color-gray-3);
-  background-color: var(--my-color-gray-4);
+  background-color: var(--my-color-white);
   color: var(--my-color-gray-1);
 }
 button.my-pack-folder-pick-chip:hover:not(:disabled) {

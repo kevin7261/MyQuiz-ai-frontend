@@ -115,7 +115,7 @@
             @keydown.enter.prevent="onHeaderTitleClick"
           >{{ currentCourseName }}</span>
           <template v-if="pageTitle">
-            <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-2" aria-hidden="true">|</span>
+            <span class="my-course-header-course-title__sep my-color-gray-1 my-font-lg-400 mx-3" aria-hidden="true">|</span>
             <span
               class="my-font-lg-400"
               :class="{ 'my-course-header-page-name': pageTitleClickable }"

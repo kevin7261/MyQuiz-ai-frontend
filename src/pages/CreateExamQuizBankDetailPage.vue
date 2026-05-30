@@ -5819,7 +5819,7 @@ async function confirmAnswer(item) {
                     v-for="(name, i) in secondFoldersFull"
                     :key="'pack-folder-pick-' + i"
                     type="button"
-                    class="badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1 my-pack-folder-pick-chip"
+                    class="badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1 my-pack-folder-badge my-pack-folder-pick-chip"
                     :class="{ 'my-pack-folder-pick-chip--selected': isPackFolderPickDraftSelected(name) }"
                     :aria-pressed="isPackFolderPickDraftSelected(name)"
                     :disabled="packGroupsEditBlocked"
@@ -6026,7 +6026,7 @@ async function confirmAnswer(item) {
                           <span
                             v-for="(tag, ti) in activeReadonlyPackUnitRow.folderComboTags"
                             :key="`${activeReadonlyPackUnitRow.key}-fc-${ti}`"
-                            class="badge my-bgcolor-white my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
+                            class="badge my-pack-folder-badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
                           >
                             <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
                             {{ tag }}
@@ -6698,7 +6698,7 @@ async function confirmAnswer(item) {
                           <div
                             v-for="(tag, ti) in activePackUnitGroup"
                             :key="'t-' + activePackUnitGi + '-' + ti"
-                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
+                            class="badge my-pack-folder-badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
                           >
                             <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
                             {{ tag }}
@@ -6708,11 +6708,11 @@ async function confirmAnswer(item) {
                               @click.stop="removeFromRagList(activePackUnitGi, ti)"
                             >×</span>
                           </div>
-                          <span v-if="!activePackUnitGroup.length" class="my-color-gray-4 my-font-sm-400">尚未選擇資料夾</span>
+                          <span v-if="!activePackUnitGroup.length" class="my-pack-folder-combo-empty-hint my-font-sm-400">沒有資料夾</span>
                         </div>
                         <button
                           type="button"
-                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-color-gray-2 my-pack-unit-add-folder-btn px-3 py-1"
+                          class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-sm-400 my-color-gray-4 my-pack-unit-add-folder-btn px-3 py-1"
                           title="加入資料夾"
                           aria-label="加入資料夾"
                           :disabled="packGroupsEditBlocked || !secondFoldersFull.length"
@@ -6911,7 +6911,7 @@ async function confirmAnswer(item) {
                 <span
                   v-for="(name, i) in secondFoldersFull"
                   :key="'pack-empty-folder-' + i"
-                  class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
+                  class="badge my-pack-folder-badge user-select-none my-font-sm-400 d-inline-flex align-items-center gap-2 rounded px-2 py-1"
                   role="listitem"
                 >
                   <i class="fa-solid fa-folder flex-shrink-0" aria-hidden="true" />
@@ -7793,7 +7793,7 @@ async function confirmAnswer(item) {
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
-/* 「+ 加入資料夾」：gray-4 底、gray-2 字（蓋過 .form-control.my-input-md 黑字） */
+/* 「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（蓋過 .form-control.my-input-md 黑字） */
 .my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
 .form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
 .form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
@@ -7804,25 +7804,25 @@ async function confirmAnswer(item) {
   --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
   --bs-btn-disabled-bg: var(--my-color-gray-4);
-  --bs-btn-color: var(--my-color-gray-2);
-  --bs-btn-hover-color: var(--my-color-gray-2);
-  --bs-btn-active-color: var(--my-color-gray-2);
-  --bs-btn-disabled-color: var(--my-color-gray-2);
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-active-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
   --bs-btn-disabled-opacity: 1;
   --bs-btn-border-color: transparent;
   --bs-btn-border-width: 0;
   background-color: var(--my-color-gray-4) !important;
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
   border: 0 !important;
   box-shadow: none !important;
 }
 .form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
 .form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
 .my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled) {
-  --bs-btn-disabled-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
 }
 /* 類型 segment：選中白底、未選 hover（蓋過 work3 小 pill 灰字規則） */
 .my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected) {
@@ -7874,8 +7874,8 @@ async function confirmAnswer(item) {
 .my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
 .my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
   background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
 }
 .my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
 .my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
@@ -8754,11 +8754,11 @@ async function confirmAnswer(item) {
 .form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
 .form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
 .form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
-  --bs-btn-color: var(--my-color-gray-2);
-  --bs-btn-hover-color: var(--my-color-gray-2);
-  --bs-btn-disabled-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2) !important;
-  -webkit-text-fill-color: var(--my-color-gray-2) !important;
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
 }
 
 /* 詳細資訊 Modal：題目／先前出題同款 tab */
