@@ -4013,20 +4013,25 @@ onActivated(() => {
                             class="badge my-bgcolor-gray-3 my-color-black border-0 user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
                           >{{ item.label }}</span>
                           <span
-                            v-if="item.unitType != null"
                             class="my-pack-unit-type-icon-slot flex-shrink-0"
                             aria-hidden="true"
                           >
                             <PackUnitTypeIcon
+                              v-if="item.unitType != null"
                               :unit-type="item.unitType"
                               decorative
                             />
                           </span>
                           <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
-                          <i
-                            class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
+                          <span
+                            class="my-inline-icon-slot flex-shrink-0"
                             aria-hidden="true"
-                          />
+                          >
+                            <i
+                              class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron"
+                              aria-hidden="true"
+                            />
+                          </span>
                           <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
                             <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.quizTypeLabel }}</span>
                             <span
@@ -4086,8 +4091,11 @@ onActivated(() => {
 
 <style scoped>
 .exam-slot-heading-breadcrumb__chevron {
+  display: block;
+  width: 0.625rem;
   font-size: 0.625rem;
   line-height: 1;
+  text-align: center;
   color: inherit;
 }
 

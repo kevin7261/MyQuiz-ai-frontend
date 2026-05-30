@@ -7804,7 +7804,7 @@ async function confirmAnswer(item) {
                       <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-2 my-color-black">
                         <span
                           v-if="hasBuiltRagSummary && hasUnitSubTabs"
-                          class="my-design-right-unit-expand-icon flex-shrink-0 my-color-gray-1"
+                          class="my-inline-icon-slot my-design-right-unit-expand-icon flex-shrink-0 my-color-gray-1"
                           aria-hidden="true"
                         >
                           <i
@@ -8404,15 +8404,7 @@ async function confirmAnswer(item) {
   color: var(--my-color-black);
 }
 .my-design-right-unit-expand-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 1.25rem;
-  min-width: 1.25rem;
-  height: 1.25rem;
   font-size: var(--my-font-size-sm);
-  line-height: 1;
   pointer-events: none;
 }
 .my-design-right-unit-expand-chevron {
