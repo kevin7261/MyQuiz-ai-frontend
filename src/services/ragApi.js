@@ -35,10 +35,8 @@ import {
 import { getActivePinia } from 'pinia';
 import { formatBuildRagZipErrorDetail, parseBuildRagZipError, parseFetchError } from '../utils/apiError.js';
 import { formatGradingResult } from '../utils/grading.js';
-import { loggedFetch, mergeApiQuery } from '../utils/loggedFetch.js';
+import { fetchWithRetry, loggedFetch, mergeApiQuery } from '../utils/loggedFetch.js';
 import { useAuthStore } from '../stores/authStore.js';
-
-const RETRY_500_DELAY_MS = 2000;
 
 // ─── 工具函式（內部用） ────────────────────────────────────────────────────────
 
@@ -564,23 +562,7 @@ export async function apiBuildRagZip(body, onStreamEvent, streamOptions = {}) {
     body: JSON.stringify(requestBody),
   };
 
-  let res;
-  try {
-    res = await fetch(u.toString(), init);
-  } catch (e) {
-    const msg = e?.message ?? String(e);
-    if (e?.name === 'TypeError' && msg.includes('Failed to fetch')) {
-      throw new Error(
-        '無法連線至後端。開發預設直連本機 8000；請確認後端已啟動，且 CORS 允許目前頁面 origin。若要改經 dev 代理，請在 .env 設 VUE_APP_API_BASE 與目前頁面 origin 相同（如 http://localhost:8081）並參考 vue.config.js。'
-      );
-    }
-    throw e;
-  }
-
-  while (res.status === 500) {
-    await new Promise((r) => setTimeout(r, RETRY_500_DELAY_MS));
-    res = await fetch(u.toString(), init);
-  }
+  const res = await fetchWithRetry(u.toString(), init);
 
   if (!res.ok) {
     const text = await res.text();

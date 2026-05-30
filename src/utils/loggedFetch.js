@@ -5,7 +5,8 @@
  * - person_id：優先 authStore.user.person_id，缺則 fallback user_id／id；登入前可傳 `{ personId }` 覆寫
  * - course_id：來自 authStore 目前路由 scope 的課程（coursesByScope）；登入／選課前可傳 `{ omitCourseQuery: true }` 略過
  *
- * 若回應為 HTTP 500，會間隔延遲後重試同一請求（含 POST body），直到 status 不再是 500（通常為 200）。
+ * 若回應為 HTTP 500，或 fetch 拋出 Failed to fetch（後端未啟動／網路中斷），
+ * 會間隔延遲後重試同一請求（含 POST body），直到成功取得非 500 回應。
  * 注意：開發者工具 Network／Console 仍可能對每次失敗的請求顯示紅字，此為瀏覽器行為，無法由前端關閉。
  */
 /* eslint-disable no-console */
@@ -14,7 +15,38 @@ import { getActivePinia } from 'pinia';
 import { API_BASE } from '../constants/api.js';
 import { useAuthStore } from '../stores/authStore.js';
 
-const RETRY_500_DELAY_MS = 2000;
+const RETRY_DELAY_MS = 2000;
+
+/**
+ * @param {unknown} e
+ * @returns {boolean}
+ */
+function isFailedToFetchError(e) {
+  const msg = e?.message ?? String(e);
+  return e?.name === 'TypeError' && msg.includes('Failed to fetch');
+}
+
+/**
+ * 對 500 與 Failed to fetch 無限重試，直到取得非 500 回應。
+ * @param {RequestInfo | URL} input
+ * @param {RequestInit} [init]
+ * @returns {Promise<Response>}
+ */
+export async function fetchWithRetry(input, init) {
+  let res;
+  try {
+    res = await fetch(input, init);
+  } catch (e) {
+    if (isFailedToFetchError(e)) {
+      await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      return fetchWithRetry(input, init);
+    }
+    throw e;
+  }
+  if (res.status !== 500) return res;
+  await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+  return fetchWithRetry(input, init);
+}
 
 /**
  * @returns {string | null}
@@ -160,22 +192,7 @@ export async function loggedFetch(input, init, fetchOptions) {
   const method = (init && init.method) || 'GET';
   const url = typeof mergedInput === 'string' ? mergedInput : String(mergedInput.url);
 
-  let res;
-  try {
-    res = await fetch(mergedInput, init);
-  } catch (e) {
-    const msg = e?.message ?? String(e);
-    if (e?.name === 'TypeError' && msg.includes('Failed to fetch')) {
-      throw new Error(
-        '無法連線至後端。開發預設直連本機 8000；請確認後端已啟動，且 CORS 允許目前頁面 origin。若要改經 dev 代理，請在 .env 設 VUE_APP_API_BASE 與目前頁面 origin 相同（如 http://localhost:8081）並參考 vue.config.js。'
-      );
-    }
-    throw e;
-  }
-  while (res.status === 500) {
-    await new Promise((r) => setTimeout(r, RETRY_500_DELAY_MS));
-    res = await fetch(mergedInput, init);
-  }
+  const res = await fetchWithRetry(mergedInput, init);
 
   let bodyLog;
   try {

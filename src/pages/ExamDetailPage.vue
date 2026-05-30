@@ -1394,6 +1394,12 @@ function toggleExamUnitContentCollapsed() {
   examUnitContentCollapsed.value = !examUnitContentCollapsed.value;
 }
 
+/** MP3（聽力測驗）僅播放器，不套用文本折疊／固定高度 */
+function examSlotUnitContentCollapseEnabled(slotIndex) {
+  const sec = examSlotUnitTranscriptSection(slotIndex);
+  return sec?.unitType !== UNIT_TYPE_MP3;
+}
+
 watch(activeExamSlotGi, () => {
   examUnitContentCollapsed.value = true;
 });
@@ -3659,7 +3665,7 @@ onActivated(() => {
                       >
                                 <div
                                   class="min-w-0 pb-2 position-relative"
-                                  :style="examUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
+                                  :style="examSlotUnitContentCollapseEnabled(activeExamSlotIndex1) && examUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
                                 >
                                   <div
                                     v-if="examSlotUnitTranscriptSection(activeExamSlotIndex1).unitType === UNIT_TYPE_TEXT"
@@ -3710,7 +3716,7 @@ onActivated(() => {
                                     />
                                   </template>
                                   <div
-                                    v-if="examUnitContentCollapsed"
+                                    v-if="examSlotUnitContentCollapseEnabled(activeExamSlotIndex1) && examUnitContentCollapsed"
                                     :style="{
                                       position: 'absolute',
                                       bottom: 0,

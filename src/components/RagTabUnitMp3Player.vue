@@ -12,7 +12,6 @@ const props = defineProps({
 });
 
 const objectUrl = ref('');
-const loadError = ref('');
 const isLoading = ref(false);
 
 let loadSeq = 0;
@@ -27,7 +26,6 @@ function revokeObjectUrl() {
 async function loadAudio() {
   loadSeq += 1;
   const seq = loadSeq;
-  loadError.value = '';
   revokeObjectUrl();
 
   const rid = String(props.ragTabId ?? '').trim();
@@ -44,14 +42,10 @@ async function loadAudio() {
       rag_unit_id: ru,
     });
     if (seq !== loadSeq) return;
-    if (!(blob instanceof Blob) || blob.size <= 0) {
-      loadError.value = '音訊檔為空';
-      return;
-    }
+    if (!(blob instanceof Blob) || blob.size <= 0) return;
     objectUrl.value = URL.createObjectURL(blob);
-  } catch (e) {
+  } catch {
     if (seq !== loadSeq) return;
-    loadError.value = e?.message ? String(e.message) : '無法載入音訊';
   } finally {
     if (seq === loadSeq) isLoading.value = false;
   }
@@ -78,22 +72,6 @@ onBeforeUnmount(() => {
       class="my-font-sm-400 my-color-gray-4 py-2"
     >
       音訊載入中…
-    </div>
-    <div
-      v-else-if="loadError"
-      class="d-flex flex-column align-items-start gap-2"
-    >
-      <p class="my-font-sm-400 my-color-red mb-0">
-        {{ loadError }}
-      </p>
-      <button
-        type="button"
-        class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-sm-400 my-button-white px-3 py-1"
-        :disabled="isLoading"
-        @click="loadAudio"
-      >
-        重抓
-      </button>
     </div>
     <audio
       v-if="objectUrl"

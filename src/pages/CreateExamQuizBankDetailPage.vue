@@ -1542,6 +1542,11 @@ function toggleBankUnitContentCollapsed() {
   bankUnitContentCollapsed.value = !bankUnitContentCollapsed.value;
 }
 
+/** MP3（聽力測驗）僅播放器，不套用文本折疊／固定高度 */
+const bankUnitContentCollapseEnabled = computed(
+  () => bankUnitTranscriptSection.value?.unitType !== UNIT_TYPE_MP3,
+);
+
 watch(activeTabId, () => {
   activePackUnitIndex.value = 0;
 });
@@ -7234,7 +7239,7 @@ async function confirmAnswer(item) {
             >
               <div
                 class="min-w-0 pb-2 position-relative"
-                :style="bankUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
+                :style="bankUnitContentCollapseEnabled && bankUnitContentCollapsed ? 'height: 96px; overflow: hidden' : ''"
               >
                 <div
                   v-if="bankUnitTranscriptSection?.unitType === UNIT_TYPE_TEXT"
@@ -7280,7 +7285,7 @@ async function confirmAnswer(item) {
                   :rag-unit-id="bankUnitMp3PlayerProps.ragUnitId"
                 />
                 <div
-                  v-if="bankUnitContentCollapsed"
+                  v-if="bankUnitContentCollapseEnabled && bankUnitContentCollapsed"
                   :style="{
                     position: 'absolute',
                     bottom: 0,
