@@ -385,9 +385,11 @@
   background-color: var(--my-color-white);
   color: var(--my-color-black);
 }
-.my-design-right-unit-expand-icon {
+.my-design-right-unit-expand-icon.my-inline-icon-slot {
   font-size: var(--my-font-size-sm);
   pointer-events: none;
+  width: 0.625rem;
+  min-width: 0.625rem;
 }
 .my-design-right-unit-expand-chevron {
   display: block;

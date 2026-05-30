@@ -3463,7 +3463,7 @@ onActivated(() => {
                         @click="onDesignRightQuizClick(item)"
                       >
                         <span
-                          class="exam-quiz-nav-row my-font-sm-400 d-flex align-items-center gap-2 flex-nowrap min-w-0 w-100 overflow-hidden"
+                          class="exam-quiz-nav-row my-font-sm-400 d-flex align-items-center gap-1 flex-nowrap min-w-0 w-100 overflow-hidden"
                         >
                           <span
                             class="badge my-design-quiz-slot-num-badge user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"

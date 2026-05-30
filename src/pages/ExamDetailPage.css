@@ -7,6 +7,11 @@
   color: inherit;
 }
 
+.exam-quiz-nav-row .my-inline-icon-slot {
+  width: 0.625rem;
+  min-width: 0.625rem;
+}
+
 .exam-slot-heading-breadcrumb__segment {
   min-width: 0;
 }

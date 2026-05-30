@@ -6929,7 +6929,7 @@ async function confirmAnswer(item) {
                       @keydown.enter.prevent="onDesignRightSubTabClick(item)"
                       @keydown.space.prevent="onDesignRightSubTabClick(item)"
                     >
-                      <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-2 my-color-black">
+                      <div class="d-flex align-items-center min-w-0 flex-grow-1 gap-1 my-color-black">
                         <span
                           v-if="hasBuiltRagSummary && hasUnitSubTabs"
                           class="my-inline-icon-slot my-design-right-unit-expand-icon flex-shrink-0 my-color-gray-1"
