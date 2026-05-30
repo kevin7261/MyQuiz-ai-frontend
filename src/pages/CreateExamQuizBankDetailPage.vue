@@ -2924,6 +2924,12 @@ function syncDetailRouteExamQuizId(card) {
   }
 }
 
+function syncDetailRouteFromCurrentSelection() {
+  if (isRestoringBankTabUi()) return;
+  if (!String(props.routeDetailBase ?? '').trim()) return;
+  syncDetailRouteExamQuizId(activeUnitQuizCard.value);
+}
+
 function applyRouteExamQuizIdSelection() {
   const tabId = String(activeTabId.value ?? '').trim();
   const rqid = Number(String(props.routeExamQuizId ?? '').trim());
@@ -2962,7 +2968,7 @@ function selectUnitQuizTypeForUnit(unitIndex, quizIndex) {
   ensureDesignRightUnitExpanded(ui);
   scrollActivePackUnitTabIntoView();
   if (!isRestoringBankTabUi()) {
-    syncDetailRouteExamQuizId(cards[qi]);
+    syncDetailRouteFromCurrentSelection();
   }
 }
 
@@ -3012,6 +3018,20 @@ const activeUnitQuizCard = computed(() => {
   if (!Array.isArray(cards) || cards.length === 0) return null;
   return cards[i] ?? null;
 });
+
+/** 切換題庫分頁／單元／題型時同步 /create-exam-bank/:exam_id/:exam_quiz_id */
+watch(
+  () => [
+    activeTabId.value,
+    activePackUnitGi.value,
+    activeUnitQuizTypeIdxResolved.value,
+    positiveRagQuizIdFromQuizRow(activeUnitQuizCard.value),
+  ],
+  () => {
+    nextTick(() => syncDetailRouteFromCurrentSelection());
+  },
+  { flush: 'post' },
+);
 
 /** 出題後強制 QuizCard 重掛（同 id 合併列時答案 textarea 才不殘留舊值） */
 const activeUnitQuizCardRemountKey = computed(() => {
@@ -7538,21 +7558,22 @@ async function confirmAnswer(item) {
                         @keydown.enter.prevent="onDesignRightSubTabClick(qItem)"
                         @keydown.space.prevent="onDesignRightSubTabClick(qItem)"
                       >
-                        <div class="my-design-right-unit-quiz-link w-100 text-start text-break d-flex align-items-center flex-wrap gap-2">
+                        <div class="my-design-right-unit-quiz-link w-100 text-start d-flex align-items-center min-w-0 gap-2">
+                          <div class="d-flex align-items-center flex-wrap gap-2 min-w-0 flex-grow-1">
+                            <span class="min-w-0 text-break">{{ qItem.label }}</span>
+                            <span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0">追問</span>
+                          </div>
                           <span
+                            v-if="qItem.forExam"
                             class="my-design-right-unit-quiz-for-exam-slot flex-shrink-0 d-inline-flex align-items-center justify-content-center"
-                            :title="qItem.forExam ? '測驗用題型' : undefined"
+                            title="測驗用題型"
                           >
                             <span
-                              v-if="qItem.forExam"
-                              class="rounded-circle d-inline-block my-bgcolor-green"
-                              style="width: 0.5rem; height: 0.5rem"
+                              class="my-design-right-unit-quiz-for-exam-dot rounded-circle d-inline-block my-bgcolor-green"
                               role="img"
                               aria-label="測驗用題型"
                             />
                           </span>
-                          <span class="min-w-0 text-break">{{ qItem.label }}</span>
-                          <span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0">追問</span>
                         </div>
                       </div>
                     </div>
@@ -8174,8 +8195,12 @@ async function confirmAnswer(item) {
   border-color: color-mix(in srgb, var(--my-color-gray-2) 55%, transparent);
 }
 .my-design-right-unit-quiz-for-exam-slot {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+}
+.my-design-right-unit-quiz-for-exam-dot {
   width: 0.5rem;
-  min-width: 0.5rem;
   height: 0.5rem;
 }
 .my-design-right-unit-quiz-link {
