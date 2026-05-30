@@ -636,7 +636,7 @@ watch(
         >
           <button
             type="button"
-            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3"
+            class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-bank-list-add px-5 py-3"
             :disabled="createRagLoading"
             :aria-busy="createRagLoading"
             @click="openNewBankUploadModal"
@@ -652,7 +652,7 @@ watch(
           <div class="bank-table-actions">
             <button
               type="button"
-              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2 flex-shrink-0"
+              class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-bank-list-add px-4 py-2 flex-shrink-0"
               :disabled="createRagLoading"
               :aria-busy="createRagLoading"
               @click="openNewBankUploadModal"

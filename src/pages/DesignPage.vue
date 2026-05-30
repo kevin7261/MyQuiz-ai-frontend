@@ -710,7 +710,7 @@ function designPackUnitTypeIconCss(unitType) {
                 <div class="rounded-4 my-design-page-section p-4">
                   <div role="heading" aria-level="2" class="my-font-lg-400 my-color-black text-break mb-2">Logo 漸層色（20 組）</div>
                   <p class="my-font-sm-400 my-color-gray-1 text-break mb-4">
-                    登入頁、系統 header、LogoGradientPillButton 等隨機漸層僅能從以下 20 組雙色色盤取得；每組為對比色且色調偏亮（約 300–400 色階）；出題偏冷色對暖色、批改偏暖色對冷色（work3 另有專用子集）。
+                    登入頁、系統 header、LogoGradientPillButton 等隨機漸層僅能從以下 20 組雙色色盤取得；每組為對比色且色調偏亮（約 200–300 色階）；出題偏冷色對暖色、批改偏暖色對冷色（work3 另有專用子集）。
                   </p>
                   <div class="row g-3">
                     <div
@@ -854,7 +854,7 @@ function designPackUnitTypeIconCss(unitType) {
                   <div class="design-page__list-preview design-page__list-preview--work3 mb-4">
                     <div class="bank-list-wrap bank-list-wrap--no-lead-gap mx-auto">
                       <div class="bank-table-actions">
-                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2">
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-bank-list-add px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
                           新增試卷
                         </button>
@@ -885,7 +885,7 @@ function designPackUnitTypeIconCss(unitType) {
                   <div class="design-page__list-preview design-page__list-preview--work3 mb-3">
                     <div class="bank-list-wrap bank-list-wrap--no-lead-gap mx-auto">
                       <div class="bank-table-actions">
-                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2">
+                        <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-bank-list-add px-4 py-2">
                           <i class="fa-solid fa-plus" aria-hidden="true" />
                           新增測驗題庫
                         </button>
@@ -987,10 +987,10 @@ function designPackUnitTypeIconCss(unitType) {
                     <div class="my-color-gray-4 my-font-sm-400 pt-2">中（my-font-md-400）</div>
                     <DesignPageSpecItem
                       name="btn-add-list"
-                      usage="grid 列表右上方新增試卷／題庫（同登入 my-btn-login-submit：白底 gray-3 框、hover 陰影）"
-                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2"
+                      usage="grid 列表右上方新增試卷／題庫（my-btn-bank-list-add：黑底無框、hover 陰影）"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-bank-list-add px-4 py-2"
                     >
-                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2">
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-md-400 my-btn-bank-list-add px-4 py-2">
                         <i class="fa-solid fa-plus" aria-hidden="true" />
                         新增試卷
                       </button>
@@ -1116,10 +1116,10 @@ function designPackUnitTypeIconCss(unitType) {
                     <div class="my-color-gray-4 my-font-sm-400 pt-2">大（my-font-lg-400）</div>
                     <DesignPageSpecItem
                       name="btn-add-empty-list"
-                      usage="空清單居中新增試卷"
-                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3"
+                      usage="空清單居中新增試卷／題庫（my-btn-bank-list-add：黑底無框、hover 陰影）"
+                      css="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-bank-list-add px-5 py-3"
                     >
-                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-lg px-5 py-3">
+                      <button type="button" class="btn rounded-pill d-inline-flex align-items-center gap-2 my-font-lg-400 my-btn-bank-list-add px-5 py-3">
                         <i class="fa-solid fa-plus" aria-hidden="true" />
                         新增試卷
                       </button>

@@ -315,6 +315,49 @@ code {
   opacity: 1;
 }
 
+/* 黑底無框膠囊；列表「+ 新增試卷／題庫」；hover 陰影（同 my-btn-login-submit） */
+.btn.my-btn-bank-list-add {
+  --bs-btn-bg: var(--my-color-black);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-black));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-black));
+  --bs-btn-disabled-bg: var(--my-color-black);
+  --bs-btn-color: var(--my-color-white);
+  --bs-btn-hover-color: var(--my-color-white);
+  --bs-btn-active-color: var(--my-color-white);
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-border-color: transparent;
+  background-color: var(--my-color-black) !important;
+  color: var(--my-color-white) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.btn.my-btn-bank-list-add:hover:not(:disabled),
+.btn.my-btn-bank-list-add:focus-visible:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-black)) !important;
+  color: var(--my-color-white) !important;
+  border: none !important;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
+}
+.btn.my-btn-bank-list-add:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-black)) !important;
+  color: var(--my-color-white) !important;
+  border: none !important;
+}
+.btn.my-btn-bank-list-add .fa-solid {
+  color: inherit;
+}
+.btn.my-btn-bank-list-add:disabled {
+  --bs-btn-disabled-bg: var(--my-color-black);
+  --bs-btn-disabled-border-color: transparent;
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  background-color: var(--my-color-black) !important;
+  color: var(--my-color-gray-3) !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 1;
+}
+
 /* 線框綠字（透明底）；建立測驗題庫「取消設為測驗用」等 */
 .btn.my-btn-outline-green-hollow {
   color: var(--my-color-green);

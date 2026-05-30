@@ -30,7 +30,7 @@ export function buildLoginCornerGradientsCss(excludeIds = []) {
     excludeIds,
   });
   return LOGIN_CORNER_GRADIENT_POSITIONS.map((at, index) => {
-    const color = palettes[index]?.stops?.[0]?.color ?? '#60a5fa';
+    const color = palettes[index]?.stops?.[0]?.color ?? '#93c5fd';
     const cornerColor = hexToRgba(color, 0.2);
     return `radial-gradient(ellipse 85% 85% at ${at}, ${cornerColor} 0%, transparent 70%)`;
   }).join(', ');
