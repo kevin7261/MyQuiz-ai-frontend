@@ -33,7 +33,7 @@ const props = defineProps({
   /** 唯讀預覽用：Design 頁同款黑底白字（須併 previewOnly） */
   previewDesignDark: { type: Boolean, default: false },
   /**
-   * 併 previewDesignDark：預覽內文 p-3、「查看更多」px-3 pt-2 pb-3（稿頁出題／批改規則黑底區）。
+   * 併 previewDesignDark：預覽內文 px-3 pt-2 pb-2、「查看更多」px-3 pt-2 pb-2（稿頁出題／批改規則黑底區）。
    */
   previewDesignDarkEmbedded: { type: Boolean, default: false },
   /** 對應外層 <label for="…">，維持無障礙關聯 */
@@ -321,7 +321,7 @@ onBeforeUnmount(() => {
               class="english-exam-md-preview-body text-break"
               :class="[
                 previewDesignDark ? 'my-color-white my-font-md-400' : '',
-                previewDesignDarkEmbedded ? 'p-3' : 'px-3 py-2',
+                previewDesignDarkEmbedded ? 'px-3 pt-2 pb-2' : 'px-3 py-2',
               ]"
               v-html="previewHtml"
             />
@@ -330,7 +330,7 @@ onBeforeUnmount(() => {
               class="english-exam-md-preview-empty min-w-0 my-font-md-400"
               :class="[
                 previewDesignDark ? 'my-color-gray-2' : 'my-color-gray-4',
-                previewDesignDarkEmbedded ? 'p-3' : 'px-3 py-2',
+                previewDesignDarkEmbedded ? 'px-3 pt-2 pb-2' : 'px-3 py-2',
               ]"
               role="status"
             >
@@ -341,7 +341,7 @@ onBeforeUnmount(() => {
         <div
           v-if="previewDesignDark && previewHadOverflow && !previewExpanded"
           class="english-exam-md-preview-more-row"
-          :class="{ 'px-3 pt-2 pb-3': previewDesignDarkEmbedded }"
+          :class="{ 'px-3 pt-2 pb-2': previewDesignDarkEmbedded }"
           >
           <button
             type="button"
@@ -357,7 +357,7 @@ onBeforeUnmount(() => {
         <div
           v-if="previewDesignDark && previewHadOverflow && previewExpanded"
           class="english-exam-md-preview-more-row"
-          :class="{ 'px-3 pt-2 pb-3': previewDesignDarkEmbedded }"
+          :class="{ 'px-3 pt-2 pb-2': previewDesignDarkEmbedded }"
           >
           <button
             type="button"
@@ -467,7 +467,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: 0.15rem 1rem 0;
 }
-/* 稿頁出題／批改規則黑底區「查看更多」：併 HTML px-3 pt-2 pb-3 */
+/* 稿頁出題／批改規則黑底區「查看更多」：併 HTML px-3 pt-2 pb-2 */
 .english-exam-md-preview-more-btn {
   margin: 0;
   padding: 0;

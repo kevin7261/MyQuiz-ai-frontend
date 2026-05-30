@@ -1,15 +1,18 @@
 <script setup>
-import { computed, ref, watch, inject } from 'vue';
+import { computed, ref, watch, inject, shallowRef } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
+import LogoCenterMark from './LogoCenterMark.vue';
 import LogoGradientPillButton from './LogoGradientPillButton.vue';
 import QuizHistoryModal from './QuizHistoryModal.vue';
 import QuizHistoryPanel from './QuizHistoryPanel.vue';
+import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
+import { createRandomLogoDiamondGradient } from '../utils/logoDiamondGradient.js';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 /**
  * QuizCard - 單一題目卡片
  *
- * 顯示：題號（可隱藏）、題目內容（Markdown，marked + DOMPurify）、提示／參考答案（有內容時透過「顯示提示」「顯示參考答案」切換顯示）、答案區（作答輸入預設空白）、批改結果；hideGradingPrompt 時批改結果區塊最底部設「批改規則」pill（開 Modal；無快照時顯示「—」）。
+ * 顯示：題號（可隱藏）、題目內容（Markdown，marked + DOMPurify）、提示／參考答案（有內容時透過「顯示提示」「顯示參考答案」切換顯示）、答案區（作答輸入預設空白）、批改結果；hideGradingPrompt 且非 exam_design 時批改結果區塊最底部設「批改規則」pill（開 Modal；無快照時顯示「—」）。**測驗頁 exam_design**：出題規則／批改規則改為題目區（題目｜先前出題｜出題規則）與批改結果區（批改結果｜批改規則）tab 內嵌，黑底 Google Sans Code 預覽。
  * 可輸入答案並按「開始批改」送出評分；**測驗頁**（hideGradingPrompt）在已批改（card.confirmed）後不顯示此鈕；建立題庫等未帶 hideGradingPrompt 時仍顯示按鈕群。
  * 單元題區塊內「開始批改」（llm-grade／llm-grade-db，由父層依規則是否改動路由）：啟停用對齊「產生題目」；gradingPromptInModal 時僅顯示單一「開始批改」鈕。
  * 「答案」不因 rag_id 與題庫不一致而停用（仍可鍵入；並顯示警示）；**測驗頁（hideGradingPrompt）在有批改結果文字後答案改為停用**（再次送出批改時會先清空結果）；**測驗稿頁三子區塊（hideExamRulePills）在有批改結果後答案改為與題目相同之純顯示**；其餘情境已批改後 textarea 仍可編輯（僅 readOnlyAnswer／分析頁為靜態）。
@@ -112,7 +115,58 @@ const props = defineProps({
   },
 });
 
+const { loginLogoColors } = useSystemHeaderLogoGradients();
+
+/** 出題規則 tab 前 logo 菱形漸層（對齊開始出題鈕） */
+const ruleTabGenerateDiamondGradient = shallowRef(
+  createRandomLogoDiamondGradient({
+    tone: 'generate',
+    bias: props.logoGradientBias,
+    linearOnly: true,
+  }),
+);
+
+/** 批改規則 tab 前 logo 菱形漸層（對齊開始批改鈕） */
+const ruleTabGradeDiamondGradient = shallowRef(
+  createRandomLogoDiamondGradient({
+    tone: 'grade',
+    bias: props.logoGradientBias,
+    linearOnly: true,
+  }),
+);
+
+watch(
+  () => [props.logoGradientBias, loginLogoColors.value],
+  () => {
+    if (props.logoGradientBias === 'work3') {
+      const colors = loginLogoColors.value;
+      if (colors?.secondaryGradient) {
+        ruleTabGenerateDiamondGradient.value = colors.secondaryGradient;
+      }
+      if (colors?.primaryGradient) {
+        ruleTabGradeDiamondGradient.value = colors.primaryGradient;
+      }
+      return;
+    }
+    ruleTabGenerateDiamondGradient.value = createRandomLogoDiamondGradient({
+      tone: 'generate',
+      bias: props.logoGradientBias,
+      linearOnly: true,
+    });
+    ruleTabGradeDiamondGradient.value = createRandomLogoDiamondGradient({
+      tone: 'grade',
+      bias: props.logoGradientBias,
+      linearOnly: true,
+    });
+  },
+  { immediate: true },
+);
+
+/** 規則 tab 前 logo 尺寸（對齊 LogoGradientPillButton 內 LogoCenterMark） */
+const ruleTabLogoSizePt = 16;
+
 const showMessageModal = inject('showMessageModal', null);
+
 watch(
   () => String(props.card?.ragQuizForExamError ?? '').trim(),
   (msg) => {
@@ -260,9 +314,22 @@ const quizUserPromptSnapshotTrimmed = computed(() => {
   return String(raw ?? '').trim();
 });
 
+/** 出題規則完整字串（tab 黑底預覽用，勿 trim 以免破壞 Markdown） */
+const quizUserPromptSnapshotRaw = computed(() => {
+  const c = props.card;
+  if (!c || typeof c !== 'object') return '';
+  const raw = c.quiz_user_prompt_text ?? c.quizUserPromptText;
+  return raw != null ? String(raw) : '';
+});
+
 /** 測驗頁 hideGradingPrompt：批改模板對應 gradingPrompt（answer_user_prompt_text） */
 const answerUserPromptSnapshotTrimmed = computed(() =>
   String(props.card?.gradingPrompt ?? '').trim(),
+);
+
+/** 批改規則完整字串（tab 黑底預覽用） */
+const answerUserPromptSnapshotRaw = computed(() =>
+  String(props.card?.gradingPrompt ?? ''),
 );
 
 const promptModalKind = ref('');
@@ -454,23 +521,6 @@ const showDesignGradingStartRow = computed(() => {
   return showDesignGradingStartButton.value;
 });
 
-/** exam_design：題目標題列右側「出題規則」pill */
-const showExamDesignQuizRulePill = computed(
-  () =>
-    isExamDesignGradingLayout.value
-    && props.designSubBlock === 'question'
-    && useDesignFieldLabelInset.value,
-);
-
-/** exam_design：批改結果標題列右側「批改規則」pill */
-const showExamDesignGradingRulePill = computed(
-  () =>
-    isExamDesignGradingLayout.value
-    && props.designSubBlock === 'grading'
-    && useDesignFieldLabelInset.value
-    && props.gradingPromptInModal,
-);
-
 /** 稿頁批改子區：「批改結果」plain 區（對應「題目」；含稿頁示範 sample） */
 const showDesignGradingResultBlock = computed(
   () => showDesignLayoutGradingToolbar.value && showGradingResultSection.value,
@@ -495,6 +545,23 @@ const useDesignFieldLabelInset = computed(
   () => props.createExamBankDesignLayout && isDesignSubBlockFragment.value,
 );
 
+/** exam_design（測驗頁）：題目區 tab「出題規則」（取代 pill／Modal） */
+const showExamDesignQuestionRuleTab = computed(
+  () =>
+    isExamDesignGradingLayout.value
+    && props.designSubBlock === 'question'
+    && useDesignFieldLabelInset.value,
+);
+
+/** exam_design（測驗頁）：批改結果區 tab「批改規則」（取代 pill／Modal） */
+const showExamDesignGradingRuleTab = computed(
+  () =>
+    isExamDesignGradingLayout.value
+    && props.designSubBlock === 'grading'
+    && useDesignFieldLabelInset.value
+    && props.gradingPromptInModal,
+);
+
 const showDesignSubBlockQuestion = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'question',
 );
@@ -507,11 +574,11 @@ const showDesignSubBlockGrading = computed(
   () => !isDesignSubBlockFragment.value || props.designSubBlock === 'grading',
 );
 
-/** 子區塊模式：出題／批改規則唯讀 Modal（question；exam_design 批改規則掛 grading 實例） */
+/** 子區塊模式：出題／批改規則唯讀 Modal（exam_design 測驗頁改 tab 內嵌，不掛 Modal） */
 const showDesignSubBlockPromptModals = computed(() => {
   if (!isDesignSubBlockFragment.value) return true;
+  if (isExamDesignGradingLayout.value) return false;
   if (props.designSubBlock === 'question') return true;
-  if (isExamDesignGradingLayout.value && props.designSubBlock === 'grading') return true;
   return false;
 });
 
@@ -532,7 +599,12 @@ const showBankQuizHistoryTabs = computed(
   () => showBankQuizHistoryInStemHeader.value && props.quizHistoryInline,
 );
 
-const questionStemTab = ref('current');
+/** 題目區 tab 列（題庫：題目／先前出題；測驗頁再加出題規則） */
+const showQuestionStemTabs = computed(
+  () => showBankQuizHistoryTabs.value || showExamDesignQuestionRuleTab.value,
+);
+
+const questionStemTab = ref(/** @type {'current'|'history'|'rule'} */ ('current'));
 
 watch(
   () => props.card?.id,
@@ -542,11 +614,15 @@ watch(
 );
 
 const showQuestionStemBody = computed(
-  () => !showBankQuizHistoryTabs.value || questionStemTab.value === 'current',
+  () => !showQuestionStemTabs.value || questionStemTab.value === 'current',
 );
 
 const showQuestionHistoryBody = computed(
   () => showBankQuizHistoryTabs.value && questionStemTab.value === 'history',
+);
+
+const showQuestionRuleBody = computed(
+  () => showExamDesignQuestionRuleTab.value && questionStemTab.value === 'rule',
 );
 
 /** 測驗頁讚／差：僅「題目」tab 顯示（「先前出題」tab 不顯示） */
@@ -611,12 +687,25 @@ const showAnswerReferenceBody = computed(
   () => showAnswerHintRefTabs.value && answerSectionTab.value === 'reference',
 );
 
-/** 批改結果區：單一 tab「批改結果」（與題目／答案 tab 版式一致） */
+/** 批改結果區：tab 版式（建立題庫單一 tab；測驗頁含批改規則 tab） */
 const showGradingResultInsetTabs = computed(
   () =>
     props.gradingPromptInModal
     && useDesignFieldLabelInset.value
     && showDesignSubBlockGrading.value,
+);
+
+const gradingSectionTab = ref(/** @type {'result'|'rule'} */ ('result'));
+
+watch(
+  () => props.card?.id,
+  () => {
+    gradingSectionTab.value = 'result';
+  },
+);
+
+const showGradingRuleBody = computed(
+  () => showExamDesignGradingRuleTab.value && gradingSectionTab.value === 'rule',
 );
 
 /** 建立測驗題庫頁在 card 上帶入 baseline；未帶入時維持原僅檢查非空即可送出 */
@@ -901,13 +990,13 @@ const quizAnswerFieldDisabled = computed(
             <header class="my-design-quiz-field-inset__head">
               <div
                 class="d-flex justify-content-between gap-2 px-3"
-                :class="designStemTabsRowHeadClass(showBankQuizHistoryTabs)"
+                :class="designStemTabsRowHeadClass(showQuestionStemTabs)"
               >
                 <div
-                  v-if="showBankQuizHistoryTabs"
+                  v-if="showQuestionStemTabs"
                   :class="designStemTabsClass"
                   role="tablist"
-                  aria-label="題目與先前出題"
+                  aria-label="題目、先前出題與出題規則"
                 >
                   <button
                     type="button"
@@ -920,6 +1009,7 @@ const quizAnswerFieldDisabled = computed(
                     題目
                   </button>
                   <button
+                    v-if="showBankQuizHistoryTabs"
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
@@ -929,6 +1019,23 @@ const quizAnswerFieldDisabled = computed(
                   >
                     先前出題
                   </button>
+                  <button
+                    v-if="showExamDesignQuestionRuleTab"
+                    type="button"
+                    role="tab"
+                    class="btn d-inline-flex align-items-center gap-1 px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--with-logo my-font-sm-400"
+                    :class="designStemTabBtnClass(questionStemTab === 'rule')"
+                    :aria-selected="questionStemTab === 'rule'"
+                    @click="questionStemTab = 'rule'"
+                  >
+                    <LogoCenterMark
+                      :id-prefix="`quiz-rule-tab-gen-${card.id}`"
+                      variant="gradient-diamond-only"
+                      :diamond-gradient="ruleTabGenerateDiamondGradient"
+                      :size-pt="ruleTabLogoSizePt"
+                    />
+                    <span class="my-design-quiz-stem-tab__label">出題規則</span>
+                  </button>
                 </div>
                 <h3
                   v-else
@@ -937,21 +1044,11 @@ const quizAnswerFieldDisabled = computed(
                   題目
                 </h3>
                 <div
+                  v-if="showBankQuizHistoryInStemHeader && !showBankQuizHistoryTabs"
                   class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
-                  :class="{ 'pb-1': showBankQuizHistoryTabs }"
+                  :class="{ 'pb-1': showQuestionStemTabs }"
                 >
                   <button
-                    v-if="showExamDesignQuizRulePill"
-                    type="button"
-                    :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1', designHistorySmallPillClass]"
-                    title="出題規則"
-                    aria-label="出題規則"
-                    @click="openPromptModal('question')"
-                  >
-                    出題規則
-                  </button>
-                  <button
-                    v-if="showBankQuizHistoryInStemHeader && !showBankQuizHistoryTabs"
                     type="button"
                     :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-history-btn px-3 py-1', designHistorySmallPillClass]"
                     aria-label="查看先前出題"
@@ -967,6 +1064,23 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
+              v-if="showQuestionRuleBody"
+              class="my-design-quiz-field-inset-body min-w-0 w-100 px-3 pt-2 pb-2"
+            >
+              <div class="my-design-quiz-question-prompt-block w-100 min-w-0">
+                <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                  <EnglishExamMarkdownEditor
+                    :model-value="quizUserPromptSnapshotRaw"
+                    :textarea-id="`quiz-user-prompt-ro-tab-${card.id}`"
+                    preview-only
+                    preview-design-dark
+                    preview-design-dark-embedded
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              v-else
               class="my-design-quiz-field-inset-body quiz-card-quiz-stem"
               :class="designFieldInsetBodyClass"
             >
@@ -1621,15 +1735,34 @@ const quizAnswerFieldDisabled = computed(
                       v-if="showGradingResultInsetTabs"
                       :class="designStemTabsClass"
                       role="tablist"
-                      aria-label="批改結果"
+                      aria-label="批改結果與批改規則"
                     >
                       <button
                         type="button"
                         role="tab"
-                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-black my-design-quiz-stem-tab--active"
-                        aria-selected="true"
+                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                        :class="designStemTabBtnClass(gradingSectionTab === 'result')"
+                        :aria-selected="gradingSectionTab === 'result'"
+                        @click="gradingSectionTab = 'result'"
                       >
                         批改結果
+                      </button>
+                      <button
+                        v-if="showExamDesignGradingRuleTab"
+                        type="button"
+                        role="tab"
+                        class="btn d-inline-flex align-items-center gap-1 px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--with-logo my-font-sm-400"
+                        :class="designStemTabBtnClass(gradingSectionTab === 'rule')"
+                        :aria-selected="gradingSectionTab === 'rule'"
+                        @click="gradingSectionTab = 'rule'"
+                      >
+                        <LogoCenterMark
+                          :id-prefix="`quiz-rule-tab-grade-${card.id}`"
+                          variant="gradient-diamond-only"
+                          :diamond-gradient="ruleTabGradeDiamondGradient"
+                          :size-pt="ruleTabLogoSizePt"
+                        />
+                        <span class="my-design-quiz-stem-tab__label">批改規則</span>
                       </button>
                     </div>
                     <h3
@@ -1638,27 +1771,29 @@ const quizAnswerFieldDisabled = computed(
                     >
                       批改結果
                     </h3>
-                    <div
-                      v-if="showExamDesignGradingRulePill"
-                      class="d-inline-flex flex-nowrap align-items-center gap-2 flex-shrink-0 ms-auto"
-                      :class="{ 'pb-1': showGradingResultInsetTabs }"
-                    >
-                      <button
-                        type="button"
-                        :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', designHistorySmallPillClass]"
-                        title="批改規則"
-                        aria-label="批改規則"
-                        @click="openPromptModal('grading')"
-                      >
-                        批改規則
-                      </button>
-                    </div>
                   </div>
                   <div class="px-3 py-0">
                     <hr class="my-design-quiz-field-inset__rule m-0">
                   </div>
                 </header>
                 <div
+                  v-if="showGradingRuleBody"
+                  class="my-design-quiz-field-inset-body min-w-0 w-100 px-3 pt-2 pb-2"
+                >
+                  <div class="my-design-quiz-question-prompt-block w-100 min-w-0">
+                    <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                      <EnglishExamMarkdownEditor
+                        :model-value="answerUserPromptSnapshotRaw"
+                        :textarea-id="`quiz-grading-prompt-ro-tab-${card.id}`"
+                        preview-only
+                        preview-design-dark
+                        preview-design-dark-embedded
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div
+                  v-else
                   class="my-design-quiz-field-inset-body"
                   :class="designFieldInsetBodyClass"
                   style="white-space: pre-wrap;"
@@ -1809,15 +1944,34 @@ const quizAnswerFieldDisabled = computed(
                   v-if="showGradingResultInsetTabs"
                   :class="designStemTabsClass"
                   role="tablist"
-                  aria-label="批改結果"
+                  aria-label="批改結果與批改規則"
                 >
                   <button
                     type="button"
                     role="tab"
-                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400 my-color-black my-design-quiz-stem-tab--active"
-                    aria-selected="true"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
+                    :class="designStemTabBtnClass(gradingSectionTab === 'result')"
+                    :aria-selected="gradingSectionTab === 'result'"
+                    @click="gradingSectionTab = 'result'"
                   >
                     批改結果
+                  </button>
+                  <button
+                    v-if="showExamDesignGradingRuleTab"
+                    type="button"
+                    role="tab"
+                    class="btn d-inline-flex align-items-center gap-1 px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--with-logo my-font-sm-400"
+                    :class="designStemTabBtnClass(gradingSectionTab === 'rule')"
+                    :aria-selected="gradingSectionTab === 'rule'"
+                    @click="gradingSectionTab = 'rule'"
+                  >
+                    <LogoCenterMark
+                      :id-prefix="`quiz-rule-tab-grade2-${card.id}`"
+                      variant="gradient-diamond-only"
+                      :diamond-gradient="ruleTabGradeDiamondGradient"
+                      :size-pt="ruleTabLogoSizePt"
+                    />
+                    <span class="my-design-quiz-stem-tab__label">批改規則</span>
                   </button>
                 </div>
                 <h3
@@ -1832,6 +1986,23 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
+              v-if="showGradingRuleBody"
+              class="my-design-quiz-field-inset-body min-w-0 w-100 px-3 pt-2 pb-2"
+            >
+              <div class="my-design-quiz-question-prompt-block w-100 min-w-0">
+                <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
+                  <EnglishExamMarkdownEditor
+                    :model-value="answerUserPromptSnapshotRaw"
+                    :textarea-id="`quiz-grading-prompt-ro-tab2-${card.id}`"
+                    preview-only
+                    preview-design-dark
+                    preview-design-dark-embedded
+                  />
+                </div>
+              </div>
+            </div>
+            <div
+              v-else
               class="my-design-quiz-field-inset-body"
               :class="designFieldInsetBodyClass"
               style="white-space: pre-wrap;"
@@ -1900,6 +2071,22 @@ const quizAnswerFieldDisabled = computed(
   background: transparent;
   line-height: 1.25;
   box-shadow: none;
+}
+.my-design-quiz-stem-tab--with-logo {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  direction: ltr;
+  align-items: center;
+  gap: 0.25rem;
+}
+.my-design-quiz-stem-tab--with-logo .logo-center-mark {
+  order: 0;
+  flex: 0 0 auto;
+  margin-top: 0;
+}
+.my-design-quiz-stem-tab--with-logo .my-design-quiz-stem-tab__label {
+  order: 1;
+  flex: 0 1 auto;
 }
 .my-design-quiz-stem-tab--active,
 .my-design-quiz-stem-tab--active:hover,

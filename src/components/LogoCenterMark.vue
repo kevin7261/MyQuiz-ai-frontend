@@ -11,11 +11,11 @@ const props = defineProps({
   includeExtensionRow: { type: Boolean, default: false },
   /** true：寬高 100% 撐滿外層容器 */
   sizeToContainer: { type: Boolean, default: false },
-  /** 黑底按鈕：灰／白透明、菱形白；white-diamond-only：僅白菱形；default 為淺底黑灰 logo */
+  /** 黑底按鈕：灰／白透明、菱形白；white-diamond-only：僅白菱形；gradient-diamond-only：僅漸層菱形（對齊 pill 鈕）；default 為淺底黑灰 logo；match-text：整體 currentColor */
   variant: {
     type: String,
     default: 'on-dark-button',
-    validator: (v) => ['on-dark-button', 'white-diamond-only', 'default', 'match-text'].includes(v),
+    validator: (v) => ['on-dark-button', 'white-diamond-only', 'gradient-diamond-only', 'default', 'match-text', 'match-text-gradient-diamond'].includes(v),
   },
   idPrefix: { type: String, default: '' },
   /** 白菱形漸層（黑／灰區透明）；與按鈕描邊同色盤時傳入 */
@@ -30,16 +30,36 @@ const resolvedIdPrefix = computed(() => {
   return autoIdPrefix;
 });
 
-const diamondOnly = computed(() => props.variant === 'white-diamond-only');
+const diamondOnly = computed(
+  () => props.variant === 'white-diamond-only' || props.variant === 'gradient-diamond-only',
+);
 
 const markColors = computed(() => {
+  if (props.variant === 'gradient-diamond-only') {
+    const gradient = props.diamondGradient;
+    return {
+      primary: 'transparent',
+      secondary: 'transparent',
+      background: gradient ? 'var(--my-color-white)' : 'transparent',
+      ...(gradient ? { backgroundGradient: gradient } : {}),
+    };
+  }
+  if (props.variant === 'match-text-gradient-diamond') {
+    const gradient = props.diamondGradient;
+    return {
+      primary: 'transparent',
+      secondary: 'transparent',
+      background: 'var(--my-color-white)',
+      ...(gradient ? { backgroundGradient: gradient } : { diamondFill: 'currentColor' }),
+    };
+  }
   if (props.variant === 'match-text') {
     return {
-      primary: 'var(--my-color-black)',
-      secondary: 'var(--my-color-black)',
+      primary: 'currentColor',
+      secondary: 'currentColor',
       /** 避免透明底走 cutout 分支（菱形會誤用 primary 填色） */
       background: 'var(--my-color-white)',
-      diamondFill: 'var(--my-color-black)',
+      diamondFill: 'currentColor',
     };
   }
   if (props.diamondGradient) {

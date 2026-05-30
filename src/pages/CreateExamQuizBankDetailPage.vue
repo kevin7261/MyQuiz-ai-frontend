@@ -7978,7 +7978,7 @@ async function confirmAnswer(item) {
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
   padding-top: 0.5rem !important;
-  padding-bottom: 0.75rem !important;
+  padding-bottom: 0.5rem !important;
   padding-left: 1rem !important;
   padding-right: 1rem !important;
 }
