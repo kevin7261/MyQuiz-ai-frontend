@@ -12,7 +12,6 @@
  */
 import {
   API_BASE,
-  API_EXAM_CREATE_QUIZ,
   API_EXAM_QUIZ_GRADE,
   API_EXAM_TAB_QUIZ_LLM_GENERATE,
   API_EXAM_TAB_QUIZ_CREATE_LLM_GENERATE,
@@ -91,39 +90,6 @@ export async function apiUpdateExamTabName(examId, tabName) {
       tab_name: String(tabName).trim(),
     }),
   });
-  const text = await res.text();
-  if (!res.ok) throw new Error(parseFetchError(res, text));
-  return parseJson(text);
-}
-
-/**
- * 空白 Exam_Quiz（不呼叫 LLM）：{@link API_EXAM_CREATE_QUIZ}（OpenAPI: Exam Create Quiz）。
- * - Query（必填）：`person_id`（由 {@link loggedFetch} 第三參數 `personId` 附加於 URL）
- * - Body：`exam_tab_id`。
- * LLM 出題請改用 {@link apiExamTabQuizLlmGenerate}
- *
- * @param {{ exam_tab_id: string | number }} body
- * @param {string | number} personId - 同 query person_id（呼叫者）
- * @param {{ signal?: AbortSignal }} [fetchExtra] - `signal`：中止未完成之草稿請求
- */
-export async function apiExamTabQuizCreate(body, personId, fetchExtra = undefined) {
-  const pid = String(personId ?? '').trim();
-  if (!pid) throw new Error('person_id 為必填');
-  const examTabId = body?.exam_tab_id != null ? String(body.exam_tab_id).trim() : '';
-  if (!examTabId) throw new Error('缺少 exam_tab_id');
-  const payload = {
-    exam_tab_id: examTabId,
-  };
-  /** @type {RequestInit} */
-  const init = {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  };
-  if (fetchExtra?.signal != null) {
-    init.signal = fetchExtra.signal;
-  }
-  const res = await loggedFetch(`${API_BASE}${API_EXAM_CREATE_QUIZ}`, init, { personId: pid });
   const text = await res.text();
   if (!res.ok) throw new Error(parseFetchError(res, text));
   return parseJson(text);

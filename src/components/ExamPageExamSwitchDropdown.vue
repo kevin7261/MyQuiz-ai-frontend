@@ -41,25 +41,4 @@ const emit = defineEmits(['switch-exam']);
   </div>
 </template>
 
-<style scoped>
-.exam-page-exam-switch-menu {
-  z-index: 1100;
-}
-
-.exam-page-exam-switch .btn.dropdown-toggle.my-course-header-nav-btn {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-  box-shadow: none;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-
-.exam-page-exam-switch .btn.dropdown-toggle:hover:not(:disabled),
-.exam-page-exam-switch .btn.dropdown-toggle:focus-visible:not(:disabled),
-.exam-page-exam-switch .btn.dropdown-toggle:active:not(:disabled),
-.exam-page-exam-switch .btn.dropdown-toggle.show {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
-  outline: none;
-}
-</style>
+<style scoped src="./ExamPageExamSwitchDropdown.css"></style>

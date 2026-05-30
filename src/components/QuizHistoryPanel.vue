@@ -164,20 +164,4 @@ const historyEntriesDisplay = computed(() => historyEntries.value.map((entry) =>
   </div>
 </template>
 
-<style scoped>
-.quiz-history-panel__scroll--filled {
-  max-height: 320pt;
-  overflow-y: auto;
-  padding-inline-end: 0.25rem;
-}
-
-.quiz-history-panel__list {
-  padding-left: 1.25rem;
-  margin-left: 0;
-  list-style-position: outside;
-}
-
-.quiz-history-panel__list > li + li {
-  margin-top: 1.5rem;
-}
-</style>
+<style scoped src="./QuizHistoryPanel.css"></style>

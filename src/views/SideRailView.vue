@@ -14,7 +14,10 @@ import { canSeeNavLink } from '../router/permissions.js';
 import { useAppStore } from '../stores/appStore.js';
 import { useAuthStore } from '../stores/authStore.js';
 import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
-import { buildCoursesPageLocation } from '../utils/courseScope.js';
+import {
+  buildCoursesPageLocation,
+  scopedRouteForViewFromRoute,
+} from '../utils/courseScope.js';
 
 /** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
 const SIDE_RAIL_MENU_ITEMS = [
@@ -43,10 +46,12 @@ const {
 const visibleMenuItems = computed(() =>
   SIDE_RAIL_MENU_ITEMS
     .filter((item) => item.perm == null || canSeeNavLink(props.userType, item.perm))
-    // 系統紀錄為課程範圍頁，需帶目前 log scope 的 course_id 前綴
+    // 系統紀錄為課程範圍頁；優先沿用目前 URL 的 course_id
     .map((item) => ({
       ...item,
-      to: item.perm === 'log' ? authStore.scopedRouteFor('log') : item.to,
+      to: item.perm === 'log'
+        ? (scopedRouteForViewFromRoute('log', route) ?? authStore.scopedRouteFor('log'))
+        : item.to,
     })),
 );
 
@@ -159,89 +164,4 @@ const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
   </aside>
 </template>
 
-<style scoped>
-.my-system-header {
-  /* 高於 TopView（50），右側直線分隔線 ::after 需蓋過欄內漸層與按鈕 */
-  z-index: 51;
-  width: 64px;
-  min-width: 64px;
-  max-width: 64px;
-  min-height: 0;
-}
-
-.my-system-header::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  border-right: 1px solid var(--bs-border-color);
-  z-index: 10;
-  pointer-events: none;
-}
-
-.my-system-header__gradient {
-  /* 51–54（64）+ 71–72（16）= 80，與 80×100 格網同比例 */
-  height: calc(64px + 16px);
-  /* 底部 32pt：上緣 0% 透明（實心）→ 底緣 100% 透明 */
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0,
-    #000 calc(100% - 32pt),
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0,
-    #000 calc(100% - 32pt),
-    transparent 100%
-  );
-}
-
-.my-system-header__gradient-half {
-  flex: 1 1 50%;
-}
-
-.my-system-header__logo {
-  width: 64px;
-  height: calc(64px + 16px);
-  min-width: 64px;
-  min-height: calc(64px + 16px);
-  line-height: 0;
-  cursor: pointer;
-  outline: none;
-}
-
-.my-system-header__action-btn {
-  width: 64px;
-  height: 64px;
-  min-width: 64px;
-  min-height: 64px;
-  background: transparent;
-  cursor: pointer;
-}
-
-.my-system-header__action-btn:hover,
-.my-system-header__action-btn:focus-visible {
-  color: var(--my-color-black);
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  outline: none;
-}
-
-.my-system-header__action-btn--active,
-.my-system-header__action-btn--active:hover,
-.my-system-header__action-btn--active:focus-visible {
-  color: var(--my-color-black);
-  background-color: var(--my-color-gray-4);
-}
-
-.my-system-header__user-menu {
-  z-index: 1100;
-  min-width: 12rem;
-}
-
-.my-system-header__version {
-  line-height: 1.2;
-  word-break: break-all;
-}
-</style>
+<style scoped src="./SideRailView.css"></style>

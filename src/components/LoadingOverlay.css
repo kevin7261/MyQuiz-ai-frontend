@@ -1,0 +1,23 @@
+.my-loading-overlay {
+  background-color: color-mix(in srgb, var(--my-color-black) 70%, transparent);
+  z-index: 9999;
+}
+
+.my-loading-overlay-panel {
+  min-width: 300px;
+  max-width: min(90vw, 480px);
+}
+
+.my-loading-overlay-subtext {
+  white-space: pre-line;
+}
+
+.my-loading-overlay-progress {
+  height: 8px;
+}
+
+.my-loading-overlay-progress-bar {
+  width: var(--my-loading-overlay-progress-pct, 0);
+  color: var(--my-color-white);
+  background-color: var(--my-color-blue);
+}

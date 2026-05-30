@@ -1,7 +1,6 @@
 <script setup>
 import { computed, ref, watch, inject } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
-import LogoCenterMark from './LogoCenterMark.vue';
 import LogoGradientPillButton from './LogoGradientPillButton.vue';
 import QuizHistoryModal from './QuizHistoryModal.vue';
 import QuizHistoryPanel from './QuizHistoryPanel.vue';
@@ -115,18 +114,11 @@ const props = defineProps({
 });
 
 const {
-  generateButtonGradientCss,
   gradeButtonGradientCss,
 } = useSystemHeaderLogoGradients();
 
-/** 出題規則 tab icon：與全站「開始出題」pill 同一組 CSS 漸層 */
-const ruleTabGenerateGradientCss = computed(() => generateButtonGradientCss.value);
-
-/** 批改規則 tab icon：與全站「開始批改」pill 同一組 CSS 漸層 */
+/** 批改規則相關 pill：與全站「開始批改」同一組 CSS 漸層 */
 const ruleTabGradeGradientCss = computed(() => gradeButtonGradientCss.value);
-
-/** 規則 tab 前 logo 尺寸 16×16 px */
-const ruleTabLogoSizePx = 16;
 
 const showMessageModal = inject('showMessageModal', null);
 
@@ -1000,18 +992,12 @@ const quizAnswerFieldDisabled = computed(
                     v-if="showExamDesignQuestionRuleTab"
                     type="button"
                     role="tab"
-                    class="btn d-inline-flex align-items-center gap-1 px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--with-logo my-font-sm-400"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(questionStemTab === 'rule')"
                     :aria-selected="questionStemTab === 'rule'"
                     @click="questionStemTab = 'rule'"
                   >
-                    <LogoCenterMark
-                      :id-prefix="`quiz-rule-tab-gen-${card.id}`"
-                      variant="gradient-diamond-only"
-                      :diamond-gradient-css="ruleTabGenerateGradientCss"
-                      :size-px="ruleTabLogoSizePx"
-                    />
-                    <span class="my-design-quiz-stem-tab__label">出題規則</span>
+                    出題規則
                   </button>
                 </div>
                 <h3
@@ -1729,18 +1715,12 @@ const quizAnswerFieldDisabled = computed(
                         v-if="showExamDesignGradingRuleTab"
                         type="button"
                         role="tab"
-                        class="btn d-inline-flex align-items-center gap-1 px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--with-logo my-font-sm-400"
+                        class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
                         :class="designStemTabBtnClass(gradingSectionTab === 'rule')"
                         :aria-selected="gradingSectionTab === 'rule'"
                         @click="gradingSectionTab = 'rule'"
                       >
-                        <LogoCenterMark
-                          :id-prefix="`quiz-rule-tab-grade-${card.id}`"
-                          variant="gradient-diamond-only"
-                          :diamond-gradient-css="ruleTabGradeGradientCss"
-                          :size-px="ruleTabLogoSizePx"
-                        />
-                        <span class="my-design-quiz-stem-tab__label">批改規則</span>
+                        批改規則
                       </button>
                     </div>
                     <h3
@@ -1941,18 +1921,12 @@ const quizAnswerFieldDisabled = computed(
                     v-if="showExamDesignGradingRuleTab"
                     type="button"
                     role="tab"
-                    class="btn d-inline-flex align-items-center gap-1 px-0 py-2 my-design-quiz-stem-tab my-design-quiz-stem-tab--with-logo my-font-sm-400"
+                    class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
                     :class="designStemTabBtnClass(gradingSectionTab === 'rule')"
                     :aria-selected="gradingSectionTab === 'rule'"
                     @click="gradingSectionTab = 'rule'"
                   >
-                    <LogoCenterMark
-                      :id-prefix="`quiz-rule-tab-grade2-${card.id}`"
-                      variant="gradient-diamond-only"
-                      :diamond-gradient-css="ruleTabGradeGradientCss"
-                      :size-px="ruleTabLogoSizePx"
-                    />
-                    <span class="my-design-quiz-stem-tab__label">批改規則</span>
+                    批改規則
                   </button>
                 </div>
                 <h3
@@ -2037,162 +2011,5 @@ const quizAnswerFieldDisabled = computed(
   </div>
 </template>
 
-<style scoped>
-/* 題幹 Markdown：末段底距與答案靜態框一致（避免 .my-markdown-rendered p 等同 mb-2 的留白） */
-/* 題目／先前出題 tab：選中 2pt 黑底線疊蓋下方 hr 灰線；border-bottom 改由 hr 統一處理避免全寬雙線 */
-.my-design-quiz-stem-tabs-row .my-design-quiz-stem-tab {
-  position: relative;
-  z-index: 0;
-  margin-bottom: -1px;
-}
-.my-design-quiz-stem-tab {
-  border: none;
-  border-bottom: 2pt solid transparent;
-  border-radius: 0;
-  background: transparent;
-  line-height: 1.25;
-  box-shadow: none;
-}
-.my-design-quiz-stem-tab--with-logo {
-  display: inline-flex !important;
-  flex-direction: row !important;
-  direction: ltr;
-  align-items: center;
-  gap: 0.25rem;
-}
-.my-design-quiz-stem-tab--with-logo .logo-center-mark {
-  order: 0;
-  flex: 0 0 16px;
-  width: 16px;
-  height: 16px;
-  margin-top: 0;
-}
-.my-design-quiz-stem-tab--with-logo .my-design-quiz-stem-tab__label {
-  order: 1;
-  flex: 0 1 auto;
-}
-.btn.my-design-quiz-stem-tab--active,
-.btn.my-design-quiz-stem-tab--active:hover,
-.btn.my-design-quiz-stem-tab--active:focus,
-.btn.my-design-quiz-stem-tab--active:focus-visible {
-  z-index: 1;
-  padding-bottom: calc(0.5rem + 1px);
-  border-bottom: 2pt solid var(--my-color-black);
-  background-color: transparent;
-  box-shadow: none;
-}
-.my-design-quiz-question-prompt-block__title {
-  line-height: 1.35;
-  white-space: nowrap;
-}
-.quiz-card-quiz-stem :deep(.my-markdown-rendered > :last-child) {
-  margin-bottom: 0;
-}
-.quiz-card-reference-answer :deep(.my-markdown-rendered > :last-child) {
-  margin-bottom: 0;
-}
-/*
- * EasyMDE 編輯區選擇器與 CreateExamQuizBankPage「出題規則」(.my-rag-unit-quiz-prompt-editor) 對齊，
- * 批改規則編輯區固定 96pt。
- */
-.quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: 96pt;
-}
-.quiz-card-grading-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 96pt;
-}
-/* 稿頁答案子區塊：白底、淡灰框（與 create-exam-bank_design 頁內 :deep 規則一致） */
-:deep(.form-control.my-design-quiz-answer-input) {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-  color: var(--my-color-black);
-}
-:deep(.form-control.my-design-quiz-answer-input:focus) {
-  background-color: var(--my-color-white);
-  border-color: var(--my-color-gray-3);
-  box-shadow: none;
-}
-:deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-4);
-  border-color: var(--my-color-gray-3);
-  opacity: 1;
-}
-/* 稿頁「開始批改」pill（批改子區左下） */
-:deep(.my-design-quiz-grading-start-row .btn.my-button-white),
-:deep(.my-design-quiz-grading-start-row .btn.my-button-logo-gradient) {
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-/* 出題／批改規則黑底預覽區（gradingPromptInModal） */
-.my-design-quiz-question-prompt-block {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: var(--my-color-black);
-  overflow: hidden;
-}
-.my-design-quiz-question-prompt-block__edit-btn {
-  box-sizing: border-box;
-  width: 1.75rem;
-  height: 1.75rem;
-  min-width: 1.75rem;
-  min-height: 1.75rem;
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
-.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled) {
-  color: var(--my-color-white);
-  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
-}
-.my-design-quiz-question-prompt-block__edit-btn .fa-solid {
-  font-size: var(--my-font-size-sm);
-  line-height: 1;
-}
-.my-design-quiz-question-prompt-block__rule {
-  border: 0;
-  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
-  opacity: 1;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark) {
-  margin-bottom: 0;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel) {
-  margin-bottom: 0;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty) {
-  color: var(--my-color-gray-2);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th) {
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a) {
-  color: var(--my-color-blue-hover);
-  word-break: break-word;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre) {
-  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
-  color: var(--my-color-white);
-}
-</style>
+<style scoped src="./QuizCard.css"></style>
 

@@ -65,22 +65,4 @@ const emit = defineEmits(['switch-bank']);
   </div>
 </template>
 
-<style scoped>
-
-.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle.my-course-header-nav-btn {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-  box-shadow: none;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-
-.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle:hover:not(:disabled),
-.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle:focus-visible:not(:disabled),
-.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle:active:not(:disabled),
-.create-exam-bank-bank-switch:not(.create-exam-bank-bank-switch--detail-bar) .btn.dropdown-toggle.show {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  border-color: color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3));
-  outline: none;
-}
-</style>
+<style scoped src="./CreateExamQuizBankBankSwitchDropdown.css"></style>

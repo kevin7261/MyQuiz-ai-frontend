@@ -217,8 +217,6 @@ export const LOGO_GRADIENT_PALETTES = [
   }),
 ];
 
-const PALETTE_BY_ID = Object.fromEntries(LOGO_GRADIENT_PALETTES.map((p) => [p.id, p]));
-
 /**
  * @param {{ tone?: string, bias?: string }} [options]
  * @returns {LogoGradientPalette[]}
@@ -272,9 +270,4 @@ export function pickDistinctRandomLogoGradientPalettes(count, options = {}) {
   }
 
   return picked;
-}
-
-/** @param {string} id @returns {LogoGradientPalette | undefined} */
-export function getLogoGradientPaletteById(id) {
-  return PALETTE_BY_ID[id];
 }

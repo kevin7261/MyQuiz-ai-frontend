@@ -3,6 +3,7 @@
  * ExamPage - 測驗（/exam，TopView 全寬版）
  *
  * 首屏以九宮格顯示各測驗；點方塊進入測驗內容（嵌入 ExamDetailPage）。
+ * 每次進入測驗主頁（無 exam_id）皆重新 GET /exam/tabs。
  */
 import { ref, computed, watch, onActivated, onDeactivated, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -510,8 +511,8 @@ async function bootstrapExamRoute() {
     applyRouteExamId();
     return;
   }
-  if (examList.value.length === 0 && !examListLoading.value) {
-    fetchExamList();
+  if (!examListLoading.value) {
+    await fetchExamList();
   }
   applyRouteExamId();
 }
@@ -531,6 +532,9 @@ watch(
       }
       applyRouteExamId();
       return;
+    }
+    if (!examListLoading.value) {
+      await fetchExamList();
     }
     applyRouteExamId();
   },
@@ -711,68 +715,4 @@ watch(
   />
 </template>
 
-<style scoped>
-/* exam_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-3） */
-.exam-2--side-panel-left .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-4);
-}
-
-
-.exam-2.exam-2--detail {
-  overflow: visible;
-}
-
-.exam-2-embedded {
-  overflow: hidden;
-}
-
-.exam-2-embedded :deep(> header) {
-  display: none;
-}
-
-.exam-2-embedded :deep(.my-rag-tabs-bar) {
-  display: none !important;
-}
-
-.exam-2-embedded :deep(button.btn.rounded-pill.px-3:not(.my-unit-content-toggle-btn)),
-.exam-2-embedded :deep(button.btn.rounded-2.px-3:not(.my-unit-content-toggle-btn)) {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-
-/* 出題規則（my-design-quiz-history-btn）和顯示／隱藏文本（my-unit-content-toggle-btn）維持 px-3 */
-.exam-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-unit-content-toggle-btn)),
-.exam-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-unit-content-toggle-btn)) {
-  padding-left: 0.5rem !important;
-  padding-right: 0.5rem !important;
-}
-
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-unit-content-toggle-btn)),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-unit-content-toggle-btn)) {
-  padding-left: 0.5rem !important;
-  padding-right: 0.5rem !important;
-}
-
-.exam-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
-.exam-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
-.exam-2--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-pill.my-font-sm-400),
-.exam-2--side-panel-left :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400),
-.exam-2--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-history-btn.rounded-pill.my-font-sm-400),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-design-quiz-history-btn.rounded-2.my-font-sm-400),
-.exam-2--side-panel-left .exam-2-embedded :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-}
-
-.exam-2--side-panel-left.exam-2--detail,
-.exam-2--side-panel-left.exam-2--detail .exam-2-embedded {
-  background-color: var(--my-color-white) !important;
-}
-
-.exam-2--side-panel-left.exam-2--detail .exam-2-embedded :deep(.my-design--side-panel-left) {
-  background-color: var(--my-color-white) !important;
-}
-</style>
+<style scoped src="./ExamPage.css"></style>

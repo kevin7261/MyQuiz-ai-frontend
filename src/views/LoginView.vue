@@ -180,57 +180,7 @@ const onLogin = async () => {
   </div>
 </template>
 
-<style scoped>
-.my-login-view-shell {
-  background-color: var(--my-color-white);
-}
-
-.my-login-view-page-gradient {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.my-login-view-content {
-  position: relative;
-  z-index: 1;
-}
-
-.my-login-view-version {
-  position: relative;
-  z-index: 1;
-}
-
-.my-login-view-card {
-  width: 100%;
-  max-width: 360px;
-}
-
-.my-login-view-logo {
-  width: calc(80pt * 4 / 3);
-  height: 80pt;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  background: transparent;
-  line-height: 0;
-  cursor: pointer;
-}
-
-.my-login-view-brand {
-  line-height: 1.35;
-}
-
-.my-login-view-brand-part {
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-}
-</style>
+<style scoped src="./LoginView.css"></style>
 
 <style>
 /* 漸層底上：輸入／登入鈕須實心白底（Bootstrap --bs-* 與透明 .btn 預設會透出背景） */

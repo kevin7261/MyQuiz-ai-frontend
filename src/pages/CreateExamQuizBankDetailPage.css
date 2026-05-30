@@ -1,0 +1,829 @@
+/* 出題模式（非 outline）：gray-4 軌＋選中 gray-4 底 */
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4) {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+  border-color: transparent;
+  box-shadow: none;
+}
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4:hover),
+.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-gray-4));
+  color: var(--my-color-black);
+}
+/* 一般／追問：選中與未選皆維持小 pill px-4（1.5rem）＋ py-1；蓋過本頁 px-2／px-3 覆寫 */
+.my-quiz-generate-mode-segment :deep(> .btn.my-quiz-generate-mode-segment-btn) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距（類型 picker、出題模式 segment 除外） */
+:deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
+:deep(button.btn.rounded-2.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker、出題模式 segment、顯示／隱藏文本（my-unit-content-toggle-btn）除外 */
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+/* create-exam-bank_3：詳細資訊 stem history、類型 segment 維持 px-3；出題模式 segment px-4；顯示／隱藏文本 pill 維持 px-3 */
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
+.my-design--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.my-design--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+/* 「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（蓋過 .form-control.my-input-md 黑字） */
+.my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+  --bs-btn-bg: var(--my-color-gray-4);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-disabled-bg: var(--my-color-gray-4);
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-active-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-border-color: transparent;
+  --bs-btn-border-width: 0;
+  background-color: var(--my-color-gray-4) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled) {
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
+}
+/* 類型 segment：選中白底、未選 hover（蓋過 work3 小 pill 灰字規則） */
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected) {
+  --bs-btn-bg: var(--my-color-white);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
+  --bs-btn-color: var(--my-color-black);
+  --bs-btn-hover-color: var(--my-color-black);
+  --bs-btn-active-color: var(--my-color-black);
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:disabled) {
+  --bs-btn-disabled-bg: var(--my-color-white);
+  --bs-btn-disabled-color: var(--my-color-gray-3);
+  --bs-btn-disabled-opacity: 1;
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-3) !important;
+  border: none !important;
+  box-shadow: none !important;
+  opacity: 1;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:hover:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:focus-visible:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
+  color: var(--my-color-black) !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:disabled) {
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+}
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled)),
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled)) {
+  --bs-btn-hover-bg: var(--my-color-gray-3);
+  --bs-btn-active-bg: var(--my-color-gray-3);
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-gray-3) !important;
+}
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
+}
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
+  color: var(--my-color-gray-1);
+}
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
+.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)) {
+  color: var(--my-color-gray-1);
+  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
+}
+.my-design-quiz-sub-block :deep(.my-design-quiz-generate-action-row .btn.my-design-quiz-generate-btn) {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}
+.my-pack-drop-target.my-pack-drop-active {
+  background-color: var(--my-drop-pack-active-bg) !important;
+  border-color: var(--my-color-blue) !important;
+}
+/* 以下樣式僅供 create-exam-bank_design，勿移至 common.css（避免影響 /create-exam-bank） */
+.my-design-tab-split-layout {
+  min-height: 0;
+  flex: 1 1 0;
+}
+.my-design-tab-split-layout--side-left {
+  flex-wrap: nowrap;
+}
+.my-design-tab-side-panel {
+  border-color: var(--my-color-gray-3) !important;
+}
+.my-design-tab-side-panel-header {
+  flex-shrink: 0;
+  z-index: 31;
+  border-bottom: 1px solid var(--my-color-gray-3);
+}
+.my-design-tab-left-view,
+.my-design-tab-right-view {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.my-design--side-panel-left {
+  background-color: var(--my-color-white) !important;
+}
+.my-design--side-panel-left .my-design-tab-left-view,
+.my-design--side-panel-left .my-design-tab-left-view-scroll,
+.my-design-tab-left-view--white-canvas {
+  background-color: var(--my-color-white) !important;
+}
+
+.my-design-main-step-block--section-divide {
+  border-top: 1px solid var(--my-color-gray-3);
+}
+
+.my-design--side-panel-left .my-pack-unit-attrs-panel {
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-3);
+}
+.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4 {
+  background-color: var(--my-color-gray-4) !important;
+  border: none;
+}
+.my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-3);
+}
+/* create-exam-bank_3：題目／答案 tab 列不加 pt-2（區塊頂 pt-2 在父層 wrap） */
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-tabs-row) {
+  padding-top: 0 !important;
+}
+/* create-exam-bank_3：題目／答案內文 pt-2 pb-2 */
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
+  padding-top: 0.5rem !important;
+}
+/* create-exam-bank_3：出題／批改規則黑底區內文 pt-2（黑底區標題列下方無橫線；題目／答案／批改 tab 區仍保留橫線） */
+.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.my-design-right-nav {
+  flex-wrap: nowrap;
+  width: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar) {
+  scrollbar-width: none;
+}
+.my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar)::-webkit-scrollbar {
+  display: none;
+}
+.my-design-right-step-block {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  gap: 0;
+  background-color: var(--my-color-gray-4);
+  border-radius: 0.75rem;
+}
+.my-design-right-nav--flat {
+  gap: 0;
+}
+.my-design-right-nav--flat .my-design-right-step-block {
+  background-color: transparent;
+  border-radius: 0;
+}
+.my-design-right-nav--flat .my-design-right-step-block--section-divide {
+  border-bottom: 1px solid var(--my-color-gray-3);
+}
+
+.my-design-right-nav--flat .my-design-right-step-block .nav-link:not(.my-design-right-unit-quiz-link) {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* 題型列：全寬 hover + 文字內縮 */
+.my-design-right-nav--flat .my-design-right-unit-quiz-link {
+  padding-left: 1.75rem;
+  padding-right: 1rem;
+}
+.my-design-right-nav--flat .my-design-right-unit-row {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+.my-design-right-nav--flat .my-design-right-unit-quiz-item {
+  width: 100%;
+}
+.my-design-right-nav--flat .my-design-right-unit-row-label {
+  padding-left: 0;
+  padding-right: 0;
+}
+.my-design-right-pack-build-action {
+  box-sizing: border-box;
+}
+.my-design-right-step-heading {
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.my-design-right-step-block-head {
+  min-width: 0;
+}
+.my-design-right-step-block-head .my-design-right-step-heading {
+  min-width: 0;
+}
+/* 稿頁設定單元屬性：row/col 排版，欄位間距由 .row.g-3 負責 */
+.my-design-pack-unit-blocks {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+.my-design-pack-unit-blocks > .row {
+  --bs-gutter-x: 1rem;
+  --bs-gutter-y: 1rem;
+}
+/* 建置後單元主標題：大於全站 xl（1.125rem） */
+.my-design-pack-unit-main-title {
+  line-height: 1.35;
+  white-space: nowrap;
+}
+/* 設定單元名稱：inline 編輯（對齊 create-exam-bank-2-detail-bar__title） */
+.my-design-pack-unit-name-title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+.my-design-pack-unit-name-title:hover:not(:disabled),
+.my-design-pack-unit-name-title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-pack-unit-name-title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+.my-design-pack-unit-name-title:disabled {
+  opacity: 1;
+  color: var(--my-color-black);
+  background: transparent;
+}
+/* 區段主標題：title → 橫線 → 內容（my-font-xl-400 + my-design-pack-unit-main-title） */
+.my-design-page-section-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+.my-design-page-section-heading__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+}
+/* 欄位區：標題 → 內容（標題字階同「設定單元題型」小標 sm-400 gray-1） */
+.my-design-pack-unit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+/* 欄位區：標題字階同「設定單元題型」小標（my-font-sm-400 my-color-gray-1） */
+.my-design-pack-unit-section__title {
+  margin-bottom: 0;
+  line-height: 1.35;
+  white-space: nowrap;
+}
+/* 標題與內容間距：等同 Bootstrap mt-1 */
+.my-design-pack-unit-section__title + * {
+  margin-top: 0.25rem !important;
+  padding-top: 0;
+}
+.my-design-page-section-heading > .my-test-section-heading-title + .my-design-page-section-heading__body {
+  margin-top: 0.5rem !important;
+}
+/* 對齊 LeftView 側欄 nav-pills */
+.my-design-right-nav .nav-link {
+  color: var(--my-color-black);
+  border: none;
+  border-radius: 0;
+  background: transparent;
+}
+.my-design-right-nav button.nav-link {
+  cursor: pointer;
+}
+.my-design-right-nav button.nav-link:not(.active):hover,
+.my-design-right-nav button.nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+}
+/* 左欄（gray-4 底）：hover 須用 gray-4 才看得見 */
+.my-design-right-nav--flat button.nav-link:not(.active):hover,
+.my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-nav .nav-link.active,
+.my-design-right-nav .nav-link.active:hover,
+.my-design-right-nav .nav-link.active:focus,
+.my-design-right-nav .nav-link.active:focus-visible {
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
+.my-design-right-unit-expand-icon {
+  font-size: var(--my-font-size-sm);
+  pointer-events: none;
+}
+.my-design-right-unit-expand-chevron {
+  display: block;
+  width: 0.625rem;
+  text-align: center;
+  transform-origin: 50% 50%;
+  transition: transform 0.15s ease;
+}
+.my-design-right-unit-expand-chevron--open {
+  transform: rotate(90deg);
+}
+.my-design-right-unit-count-badge {
+  align-self: center;
+  margin-right: 0.25rem;
+  padding: 0.125rem 0.375rem;
+  font-size: 0.625rem;
+  font-weight: var(--my-font-weight-regular);
+  line-height: 1.25;
+  color: var(--my-color-gray-1);
+  background-color: var(--my-color-white);
+  border: none;
+  border-radius: 0.25rem;
+}
+.my-design-right-unit-row {
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.my-design-right-unit-row-label {
+  display: block;
+  min-width: 0;
+  padding: var(--bs-nav-link-padding-y, 0.5rem) 0;
+  color: var(--my-color-black);
+}
+.my-design-right-unit-row--active {
+  background-color: var(--my-color-white);
+}
+.my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
+.my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
+.my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-unit-quiz-list {
+  width: 100%;
+}
+.my-design-right-unit-quiz-item {
+  width: 100%;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.my-design-right-unit-quiz-item--active {
+  background-color: var(--my-color-white);
+}
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
+.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
+  align-self: center;
+  margin-right: 0;
+  background-color: transparent !important;
+}
+/* 單元／題型區圓形 +：預設 gray-2；hover 改 black */
+.my-design-right-nav .my-design-right-unit-add-quiz-btn,
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle,
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1,
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless {
+  color: var(--my-color-gray-2) !important;
+}
+.my-design-right-nav .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
+.my-design-right-nav .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled),
+.my-design-right-nav .my-design-right-unit-add-quiz-btn:active:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:active:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
+.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled),
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:hover:not(:disabled),
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:focus-visible:not(:disabled),
+.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:active:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:hover:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
+.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:active:not(:disabled) {
+  color: var(--my-color-black) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent) !important;
+  border-color: color-mix(in srgb, var(--my-color-gray-2) 55%, transparent);
+}
+.my-design-right-unit-quiz-for-exam-slot {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+}
+.my-design-right-unit-quiz-for-exam-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+}
+.my-design-right-unit-quiz-link {
+  width: 100%;
+  font-size: var(--my-font-size-sm);
+  color: var(--my-color-gray-1);
+  padding: var(--bs-nav-link-padding-y, 0.5rem) var(--bs-nav-link-padding-x, 1rem);
+  padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 1.75rem);
+  box-sizing: border-box;
+}
+.my-design-right-unit-quiz-item--active .my-design-right-unit-quiz-link {
+  color: var(--my-color-black);
+}
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover .my-design-right-unit-quiz-link,
+.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible .my-design-right-unit-quiz-link {
+  color: var(--my-color-gray-1);
+}
+.my-pack-empty-start-layout {
+  justify-content: center;
+  min-height: 100%;
+}
+.my-pack-empty-start-layout .my-page-block-spacing {
+  margin-bottom: 0;
+}
+.my-pack-empty-start-layout > .row {
+  width: 100%;
+}
+.my-pack-empty-start-panel {
+  width: 100%;
+}
+.my-pack-folder-combo-field {
+  cursor: default;
+}
+.my-pack-folder-field-input {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  font-family: inherit;
+  font-size: var(--my-font-size-md);
+  font-weight: var(--my-font-weight-regular);
+  line-height: 1.5;
+  color: var(--my-color-black);
+  background-color: var(--my-pack-folder-field-bg) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
+  border-radius: 0.375rem;
+}
+.my-pack-folder-field-input:focus {
+  outline: 0;
+  box-shadow: none;
+  background-color: var(--my-pack-folder-field-bg) !important;
+  border-color: var(--my-color-gray-3) !important;
+}
+.my-pack-drop-target.my-pack-drop-active {
+  background-color: var(--my-drop-pack-active-bg) !important;
+  border-color: var(--my-color-blue) !important;
+}
+/* 設定單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
+/* 出題規則 EasyMDE 編輯區：固定 96pt（與稿頁黑底預覽一致） */
+.my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-root) {
+  --english-md-preview-max-h: 96pt;
+}
+.my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
+  min-height: 96pt;
+}
+/* 設定單元：區塊內欄位／工具列統一縱向間距 */
+.my-pack-unit-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-field--tabs {
+  align-items: center;
+}
+/* 設定單元屬性灰底面板：單層 padding，欄位間距由 .row.gy-4 與面板 gap-4 負責 */
+.my-pack-unit-attrs-panel > .row {
+  --bs-gutter-x: 0.5rem;
+  --bs-gutter-y: 1.5rem;
+}
+.my-pack-unit-settings-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+.my-pack-unit-toolbar-row {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  min-width: 0;
+}
+/* 稿頁 pill 按鈕文字不換行（先前出題、詳細資訊、產生題目等） */
+.my-design-pack-unit-blocks :deep(.btn.rounded-pill),
+.my-pack-unit-settings-body :deep(.btn.rounded-pill) {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* 連接線／箭頭顏色（create-exam-bank_3 gray-2）；版面其餘規則見 design-quiz-shared.css */
+.my-design-quiz-sub-block-outer__logo-stem {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 1px;
+  background-color: var(--my-color-gray-2);
+  margin-inline: auto;
+}
+.my-design-quiz-sub-block-outer__logo-arrowhead {
+  flex-shrink: 0;
+  display: block;
+  width: 100%;
+  height: 12pt;
+  margin-top: -1px;
+  color: var(--my-color-gray-2);
+  overflow: visible;
+}
+/* 題目／先前出題 tab：底線貼齊下方 hr，標題列不留 pt／pb */
+.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
+.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+/* 題型名稱：inline 編輯（對齊 create-exam-bank-2-detail-bar__title） */
+.my-design-unit-quiz-type-title {
+  display: block;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  background: transparent;
+  margin: 0;
+  font-family: inherit;
+  line-height: inherit;
+  appearance: none;
+  -webkit-appearance: none;
+  transition: background-color 0.15s ease;
+}
+.my-design-unit-quiz-type-title:hover:not(:disabled),
+.my-design-unit-quiz-type-title:focus:not(:disabled) {
+  background-color: var(--my-color-gray-4);
+}
+.my-design-unit-quiz-type-title:focus {
+  outline: none;
+  box-shadow: none;
+  border: none;
+}
+.my-design-unit-quiz-type-title:disabled {
+  opacity: 1;
+  color: var(--my-color-black);
+  background: transparent;
+}
+/* 黑底區右上編輯 icon／hover 共用見 design-quiz-shared.css；以下為稿頁特有 .fa-solid 與 --on-light 變體 */
+.my-design-quiz-question-prompt-block__edit-btn .fa-solid,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn .fa-solid) {
+  font-size: var(--my-font-size-sm);
+  line-height: 1;
+}
+/* 設定單元「內容」：筆 icon 圓鈕（尺寸同出題規則；淺色區白底） */
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light,
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-1) !important;
+}
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:focus-visible:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:active:not(:disabled),
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:hover:not(:disabled),
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:focus-visible:not(:disabled),
+.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:active:not(:disabled) {
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
+  color: var(--my-color-black) !important;
+}
+/* 黑底區橫線／預覽內層無白框見 design-quiz-shared.css；以下為稿頁特有（code font 等） */
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  color: var(--my-color-white);
+  font-family: var(--my-font-family-code);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-more-btn),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-more-btn) {
+  font-family: var(--my-font-family-code);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  color: var(--my-color-gray-2);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h1),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h2),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h3),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th) {
+  color: var(--my-color-white);
+  font-family: inherit;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body code) {
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p code),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p code),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li code) {
+  background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
+  border-left-color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3);
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td) {
+  border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
+}
+
+.my-pack-unit-md-editor :deep(.english-exam-md-editor-root) {
+  --english-md-preview-max-h: min(50vh, 22rem);
+}
+.my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
+  min-height: 200px;
+}
+
+/* 設定單元「類型」picker：px-3、icon 同色（蓋過 work3 小 pill px-2 覆寫） */
+.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.rounded-pill) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
+  color: inherit !important;
+}
+/* 類型 segment：未選 gray-2 字、hover gray-3 底（蓋過 Bootstrap .btn） */
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:disabled) {
+  --bs-btn-color: var(--my-color-gray-2);
+  --bs-btn-disabled-color: var(--my-color-gray-2);
+  color: var(--my-color-gray-2) !important;
+  background-color: transparent !important;
+}
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled)),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled)),
+.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled)) {
+  --bs-btn-hover-bg: var(--my-color-gray-3) !important;
+  --bs-btn-active-bg: var(--my-color-gray-3) !important;
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-gray-3) !important;
+}
+
+/* 「+ 加入資料夾」字色：置末覆寫（蓋過 .form-control.my-input-md 與 Bootstrap .btn:disabled） */
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
+.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
+}
+
+/* 詳細資訊 Modal：題目／先前出題同款 tab */
+.my-pack-unit-detail-modal .my-design-quiz-stem-tabs-row .my-design-quiz-stem-tab {
+  position: relative;
+  z-index: 0;
+  margin-bottom: -1px;
+}
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab {
+  border: none;
+  border-bottom: 2pt solid transparent;
+  border-radius: 0;
+  background: transparent;
+  line-height: 1.25;
+  box-shadow: none;
+}
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active,
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:hover,
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:focus,
+.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:focus-visible {
+  z-index: 1;
+  padding-bottom: calc(0.5rem + 1px);
+  border-bottom-color: var(--my-color-black);
+  background-color: transparent;
+  box-shadow: none;
+}
+.my-pack-unit-detail-modal .my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2,
+.my-pack-unit-detail-modal .my-design-quiz-field-inset__head > .d-flex.my-design-quiz-stem-tabs-row {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+.my-pack-unit-detail-modal .my-design-quiz-field-inset-body {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}

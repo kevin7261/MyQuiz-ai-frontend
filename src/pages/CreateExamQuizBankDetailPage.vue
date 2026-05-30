@@ -61,7 +61,6 @@ import {
   parsePackTasksList,
   parsePackUnitTypesFromRag,
   parseRagMetadataObject,
-  unitSelectValue,
   reconcileQuizUnitSelectSlot,
   findQuizUnitBySlotSelection,
   examOrRagQuizRowKey,
@@ -88,6 +87,9 @@ import { useRagList } from '../composables/useRagList.js';
 import { useMessageModal } from '../composables/useMessageModal.js';
 import { useRagTabState } from '../composables/useRagTabState.js';
 import { usePackTasks } from '../composables/usePackTasks.js';
+import { usePackFolderPickModal } from '../composables/usePackFolderPickModal.js';
+import { useBankPromptEditModal } from '../composables/useBankPromptEditModal.js';
+import { useTranscriptEditModal } from '../composables/useTranscriptEditModal.js';
 import QuizCard from '../components/QuizCard.vue';
 import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import LogoLayerMark from '../components/LogoLayerMark.vue';
@@ -109,6 +111,57 @@ import {
   writeCreateBankQuizDraftAnswer,
   writeCreateBankQuizDraftCritique,
 } from '../utils/createBankQuizDraftCookie.js';
+import {
+  parseRichQuizHistoryListFromSource,
+  quizHistoryListFieldForMode,
+  quizHistoryAnchorKey,
+  quizHistoryAnchorsEqual,
+  storedQuizHistoryForAnchor,
+  resolveRichQuizHistoryForAnchor,
+  persistQuizHistoryForAnchor,
+  appendRichQuizHistory,
+} from '../utils/createBankQuizHistory.js';
+import {
+  ensureNumber,
+  checkRagHasMetadata,
+  extractUnitsFromRag,
+  checkRagHasList,
+  isPackTasksListReady,
+  ragIsForExamFromListRow,
+  ragQuizApiRowIsFollowUp,
+  ragListRowHasNestedForExamQuiz,
+  tabStateHasAnyRagQuizForExam,
+} from '../utils/ragExamRows.js';
+import {
+  UPLOAD_ACCEPT_ATTR,
+  uploadFileExceedsMaxSize,
+  fileHasAllowedUploadExtension,
+} from '../utils/uploadFileRules.js';
+import {
+  folderCombinationFromUnitRaw,
+  parseFolderCombinationTags,
+  rawUnitTranscriptString,
+  unitsFromRagTabsRow,
+  buildUnitTabItem,
+} from '../utils/ragUnitTabItems.js';
+import {
+  DEFAULT_UNIT_QUIZ_DISPLAY_NAME,
+  youtubeUrlFromUnitUrlResponse,
+  quizTypeTabLabel,
+  isRagQuizRowDeleted,
+  unitStackRowMatchesRagUnitId,
+  quizRowQuizEmpty,
+  isRagQuizMarkedForExam,
+  hasRagQuizPromptRulesForExam,
+  extractQuizUserPromptText,
+  sortUnitQuizCardsByRagQuizId,
+  quizBankReadonlyOutlineChunkFields,
+  quizBankReadonlySourceDisplay,
+  parsePositiveQuizId,
+  isQuizCardFollowupModeForCount,
+  positiveRagQuizIdFromQuizRow,
+  positiveRagQuizIdFromCard,
+} from '../utils/ragQuizCardHelpers.js';
 
 const props = defineProps({
   tabId: { type: String, required: true },
@@ -172,21 +225,6 @@ const d3CircleIconBtnClass = computed(() => (
 let cardIdSeq = 0;
 function nextCardId() {
   return `card-${++cardIdSeq}`;
-}
-
-/** POST /rag/tab/upload-zip：此頁僅接受 .zip */
-const UPLOAD_ALLOWED_EXTENSIONS = ['.zip'];
-const UPLOAD_ACCEPT_ATTR = UPLOAD_ALLOWED_EXTENSIONS.join(',');
-/** 教材上傳單檔大小上限（位元組）：與檔案總管／Finder 顯示的「MB」一致（50×10⁶），非 50×1024² */
-const UPLOAD_MAX_FILE_BYTES = 50 * 1000 * 1000;
-function uploadFileExceedsMaxSize(file) {
-  if (!file || typeof file.size !== 'number' || !Number.isFinite(file.size)) return false;
-  return file.size > UPLOAD_MAX_FILE_BYTES;
-}
-function fileHasAllowedUploadExtension(file) {
-  if (!file?.name) return false;
-  const lower = file.name.toLowerCase();
-  return UPLOAD_ALLOWED_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
 const authStore = useAuthStore();
@@ -263,138 +301,6 @@ function willRestoreBankTabUiForTab(tabId) {
   );
 }
 
-/** 題型「先前出題」：localStorage 備援（鍵 rag_tab_id|rag_unit_id|rag_quiz_id|出題模式；每筆含題目／答案／參考答案／批改結果） */
-const CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX = 'myquiz:createBankQuizHistory:v1:';
-
-function createBankQuizHistoryStorageKey(personId) {
-  const p = String(personId ?? '').trim();
-  return `${CREATE_BANK_QUIZ_HISTORY_STORAGE_PREFIX}${p || 'anon'}`;
-}
-
-function readRagQuizHistoryMap(personId) {
-  try {
-    const raw = localStorage.getItem(createBankQuizHistoryStorageKey(personId));
-    if (!raw) return {};
-    const o = JSON.parse(raw);
-    const map = o?.byKey ?? o?.byRagQuizId ?? o?.by_rag_quiz_id;
-    if (map && typeof map === 'object' && !Array.isArray(map)) return map;
-    return {};
-  } catch {
-    return {};
-  }
-}
-
-function writeRagQuizHistoryMap(personId, byKey) {
-  try {
-    localStorage.setItem(
-      createBankQuizHistoryStorageKey(personId),
-      JSON.stringify({ v: 3, byKey })
-    );
-  } catch {
-    /* private mode / quota */
-  }
-}
-
-function richQuizHistoryDedupKey(item) {
-  return [
-    item.quiz_content,
-    item.answer_content,
-    item.quiz_answer_reference,
-    item.answer_critique,
-  ].join('\0');
-}
-
-/** 先前出題單筆：題目／答案／參考答案／批改結果（相容舊版僅題幹字串） */
-function parseRichQuizHistoryListFromSource(source) {
-  let list = source;
-  if (source && typeof source === 'object' && !Array.isArray(source)) {
-    list =
-      source.quiz_followup_history_list
-      ?? source.quizFollowupHistoryList
-      ?? source.quiz_history_list
-      ?? source.quizHistoryList;
-  }
-  if (typeof list === 'string') {
-    const trimmed = list.trim();
-    if (!trimmed) return [];
-    if (trimmed.startsWith('[')) {
-      try {
-        const parsed = JSON.parse(trimmed);
-        list = Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    } else {
-      return [];
-    }
-  }
-  if (!Array.isArray(list)) return [];
-  const seen = new Set();
-  const out = [];
-  for (const item of list) {
-    if (typeof item === 'string') {
-      const s = item.trim();
-      if (!s || seen.has(s)) continue;
-      seen.add(s);
-      out.push({
-        quiz_content: s,
-        answer_content: '',
-        quiz_answer_reference: '',
-        answer_critique: '',
-      });
-      continue;
-    }
-    const normalized = normalizeFollowupHistoryItem(item);
-    if (!normalized) continue;
-    const key = richQuizHistoryDedupKey(normalized);
-    if (seen.has(key)) continue;
-    seen.add(key);
-    out.push(normalized);
-  }
-  return out;
-}
-
-function richQuizHistoryRichnessScore(entry) {
-  if (!entry || typeof entry !== 'object') return 0;
-  return (
-    (String(entry.answer_content ?? '').trim() ? 4 : 0)
-    + (String(entry.quiz_answer_reference ?? '').trim() ? 2 : 0)
-    + (String(entry.answer_critique ?? '').trim() ? 1 : 0)
-  );
-}
-
-function mergeRichQuizHistoryLists(...sources) {
-  const stemOrder = [];
-  const bestByStem = new Map();
-  for (const src of sources) {
-    for (const entry of parseRichQuizHistoryListFromSource(src)) {
-      const stem = String(entry?.quiz_content ?? '').trim();
-      if (!stem) continue;
-      if (!bestByStem.has(stem)) stemOrder.push(stem);
-      const prev = bestByStem.get(stem);
-      if (
-        !prev
-        || richQuizHistoryRichnessScore(entry) > richQuizHistoryRichnessScore(prev)
-      ) {
-        bestByStem.set(stem, entry);
-      }
-    }
-  }
-  return stemOrder.map((stem) => bestByStem.get(stem));
-}
-
-function quizHistoryListFieldForMode(generateMode) {
-  return generateMode === 'followup' ? 'quiz_followup_history_list' : 'quiz_history_list';
-}
-
-function richHistoryFromSourceForAnchor(source, anchor) {
-  if (!source) return [];
-  if (Array.isArray(source)) return parseRichQuizHistoryListFromSource(source);
-  if (typeof source !== 'object') return [];
-  const field = quizHistoryListFieldForMode(anchor?.generate_mode ?? 'normal');
-  return parseRichQuizHistoryListFromSource(source[field] ?? source);
-}
-
 /** 先前出題錨點：rag_tab_id + rag_unit_id + rag_quiz_id + 出題模式（一般／追問）四者須齊全 */
 function quizHistoryAnchorFromRow(row, slotIndex = null) {
   if (!row || typeof row !== 'object') return null;
@@ -417,21 +323,6 @@ function quizHistoryAnchorFromRow(row, slotIndex = null) {
   return { rag_tab_id, rag_unit_id, rag_quiz_id, generate_mode };
 }
 
-function quizHistoryAnchorKey(anchor) {
-  if (!anchor) return '';
-  return `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}|${anchor.generate_mode}`;
-}
-
-function quizHistoryAnchorsEqual(a, b) {
-  if (!a || !b) return false;
-  return (
-    a.rag_tab_id === b.rag_tab_id
-    && a.rag_unit_id === b.rag_unit_id
-    && a.rag_quiz_id === b.rag_quiz_id
-    && a.generate_mode === b.generate_mode
-  );
-}
-
 /** 同分頁內共用同一組 rag_tab_id／rag_unit_id／rag_quiz_id／出題模式 的題卡 */
 function cardsSharingQuizHistoryAnchor(anchor, slotIndex = null) {
   if (!anchor) return [];
@@ -446,50 +337,6 @@ function cardsSharingQuizHistoryAnchor(anchor, slotIndex = null) {
     }
   }
   return out;
-}
-
-function storedQuizHistoryForAnchor(personId, anchor) {
-  const pid = String(personId ?? '').trim();
-  const key = quizHistoryAnchorKey(anchor);
-  if (!pid || !key) return [];
-  const map = readRagQuizHistoryMap(pid);
-  if (map[key] != null) return parseRichQuizHistoryListFromSource(map[key]);
-  /** 舊版三 id 鍵（無出題模式）：僅一般模式沿用 */
-  if (anchor.generate_mode === 'normal') {
-    const legacyTriple = `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}`;
-    if (legacyTriple !== key && map[legacyTriple] != null) {
-      return parseRichQuizHistoryListFromSource(map[legacyTriple]);
-    }
-    const legacyQuizId = String(anchor.rag_quiz_id);
-    if (legacyQuizId !== key && map[legacyQuizId] != null) {
-      return parseRichQuizHistoryListFromSource(map[legacyQuizId]);
-    }
-  }
-  return [];
-}
-
-function resolveRichQuizHistoryForAnchor(personId, anchor, ...sources) {
-  const parts = sources.map((src) => richHistoryFromSourceForAnchor(src, anchor));
-  if (anchor) parts.push(storedQuizHistoryForAnchor(personId, anchor));
-  return mergeRichQuizHistoryLists(...parts);
-}
-
-function persistQuizHistoryForAnchor(personId, anchor, list) {
-  const pid = String(personId ?? '').trim();
-  const key = quizHistoryAnchorKey(anchor);
-  if (!pid || !key) return;
-  const normalized = parseRichQuizHistoryListFromSource(list);
-  const map = readRagQuizHistoryMap(pid);
-  map[key] = normalized;
-  const legacyTriple = `${anchor.rag_tab_id}|${anchor.rag_unit_id}|${anchor.rag_quiz_id}`;
-  if (legacyTriple !== key && map[legacyTriple] != null) {
-    delete map[legacyTriple];
-  }
-  const legacyQuizId = String(anchor.rag_quiz_id);
-  if (legacyQuizId !== key && map[legacyQuizId] != null) {
-    delete map[legacyQuizId];
-  }
-  writeRagQuizHistoryMap(pid, map);
 }
 
 /** 題卡「您的答案／評閱」cookie 錨點鍵（rag_tab_id|rag_unit_id|rag_quiz_id|出題模式） */
@@ -709,43 +556,6 @@ const zipFileInputAccept = UPLOAD_ACCEPT_ATTR;
 const showCreateBankMainForm = computed(() => ragList.value.length > 0);
 const showDesignRightNav = computed(() => !!activeTabId.value);
 
-function checkRagHasMetadata(rag) {
-  if (!rag || typeof rag !== 'object') return false;
-  return rag.rag_metadata != null && (typeof rag.rag_metadata === 'string' ? String(rag.rag_metadata).trim() !== '' : true);
-}
-
-function extractUnitsFromRag(rag) {
-  if (!rag || typeof rag !== 'object') return [];
-  const raw =
-    rag.units ??
-    rag.rag_units ??
-    rag.ragUnits ??
-    rag.unit_rows ??
-    rag.unitRows;
-  if (Array.isArray(raw)) return raw;
-  if (typeof raw === 'string' && raw.trim() !== '') {
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-  return [];
-}
-
-function checkRagHasList(rag) {
-  if (!rag || typeof rag !== 'object') return false;
-  if (extractUnitsFromRag(rag).length > 0) return true;
-  return getRagUnitListString(rag) !== '';
-}
-
-/** 至少一列出題單元，且每列至少一個課程標籤（與「建立單元」按鈕啟用條件一致） */
-function isPackTasksListReady(list) {
-  if (!Array.isArray(list) || list.length < 1) return false;
-  return list.every((g) => Array.isArray(g) && g.length >= 1);
-}
-
 const hasRagMetadata = computed(() => checkRagHasMetadata(currentRagItem.value));
 const hasRagListOrMetadata = computed(() => checkRagHasMetadata(currentRagItem.value) || checkRagHasList(currentRagItem.value));
 /** 建置完成判斷：後端已有 rag_metadata/unit_list，或前端本輪 build 已拿到回傳 */
@@ -844,12 +654,6 @@ const generateQuizUnits = computed(() => {
 
 // ─── 當前 tab / RAG 資料存取 ──────────────────────────────────────────────────
 
-/** 確保為數字，空字串/null/undefined/NaN 時回傳預設值 */
-function ensureNumber(val, defaultVal) {
-  const n = Number(val);
-  return (n === n && isFinite(n)) ? n : defaultVal;
-}
-
 /** 當前 tab 對應的 RAG 項目（來自 GET /rag/tabs），僅在非「新增」tab 時有值 */
 const currentRagItem = computed(() => {
   const id = activeTabId.value;
@@ -866,105 +670,6 @@ const currentRagIdForQuizCards = computed(() => {
   const v = rag?.rag_id ?? rag?.id ?? state?.zipResponseJson?.rag_id ?? state?.zipResponseJson?.id;
   return v != null && String(v).trim() !== '' ? v : null;
 });
-
-/** GET /rag/tabs 列之 Rag.for_exam===true 時為試卷用（不做 system-settings 對照） */
-function ragIsForExamFromListRow(rag) {
-  return !!rag?.for_exam;
-}
-
-/** GET /rag/tabs 之 quiz 列是否標為測驗用（與 buildCardFromRagQuiz 一致） */
-function ragQuizApiRowIsForExam(quiz) {
-  if (!quiz || typeof quiz !== 'object') return false;
-  return (
-    quiz.for_exam === true
-    || quiz.for_exam === 1
-    || quiz.rag_quiz_for_exam === true
-    || quiz.rag_quiz_for_exam === 1
-  );
-}
-
-/** GET /rag/tabs、GET /rag/tab/units 之 Rag_Quiz.follow_up===true 時為追問出題 */
-function ragQuizApiRowIsFollowUp(quiz) {
-  if (!quiz || typeof quiz !== 'object') return false;
-  return (
-    quiz.follow_up === true
-    || quiz.follow_up === 1
-    || quiz.followUp === true
-    || quiz.followUp === 1
-  );
-}
-
-/** 單元列：quizzes／quiz_list／Quizzes */
-function quizRowsFromUnitApiRow(u) {
-  if (!u || typeof u !== 'object') return [];
-  if (Array.isArray(u.quizzes)) return u.quizzes;
-  if (Array.isArray(u.quiz_list)) return u.quiz_list;
-  if (Array.isArray(u.Quizzes)) return u.Quizzes;
-  return [];
-}
-
-/** GET /rag/tabs 單筆：units[] 或頂層 quizzes[] 是否含任一測驗用題型 */
-function ragListRowHasNestedForExamQuiz(rag) {
-  if (!rag || typeof rag !== 'object') return false;
-  const rawUnits = extractUnitsFromRag(rag);
-  if (rawUnits.length > 0) {
-    for (const u of rawUnits) {
-      for (const q of quizRowsFromUnitApiRow(u)) {
-        if (ragQuizApiRowIsForExam(q)) return true;
-      }
-    }
-    return false;
-  }
-  const top = rag.quizzes;
-  return Array.isArray(top) && top.some((q) => ragQuizApiRowIsForExam(q));
-}
-
-/** 本機 tabState：掃描 stacks／cardList 是否有 Rag_Quiz.for_exam */
-function stateHasExamQuizCardsInTabState(st) {
-  if (!st || typeof st !== 'object') return false;
-  const stacks = st.unitSlotQuizCards;
-  if (Array.isArray(stacks)) {
-    for (const stack of stacks) {
-      if (!Array.isArray(stack)) continue;
-      for (const c of stack) {
-        if (c?.rag_quiz_for_exam === true || c?.rag_quiz_for_exam === 1) return true;
-      }
-    }
-  }
-  const flat = st.cardList;
-  if (Array.isArray(flat)) {
-    for (const c of flat) {
-      if (c?.rag_quiz_for_exam === true || c?.rag_quiz_for_exam === 1) return true;
-    }
-  }
-  return false;
-}
-
-/**
- * 本機該分頁：任一題卡為測驗用。
- * 除 tabStateMap[rag_tab_id] 外，亦比對 zipTabId／tabId／map key（避免鍵不一致時換分頁後綠點消失）。
- */
-function tabStateHasAnyRagQuizForExam(tabStateMapRef, tabId) {
-  const tid = tabId != null ? String(tabId).trim() : '';
-  if (!tid || !tabStateMapRef || typeof tabStateMapRef !== 'object') return false;
-  const seen = new Set();
-  function trySt(st) {
-    if (!st || typeof st !== 'object' || seen.has(st)) return false;
-    seen.add(st);
-    return stateHasExamQuizCardsInTabState(st);
-  }
-  if (trySt(tabStateMapRef[tid])) return true;
-  for (const k of Object.keys(tabStateMapRef)) {
-    const st = tabStateMapRef[k];
-    const z = String(st?.zipTabId ?? '').trim();
-    const td = String(st?.tabId ?? '').trim();
-    const ks = String(k).trim();
-    if (z === tid || td === tid || ks === tid) {
-      if (trySt(st)) return true;
-    }
-  }
-  return false;
-}
 
 /** 分頁列綠點與禁止刪除：整庫 for_exam、列表嵌套題型、本機 tabState、for-exam 成功提示 */
 function ragTabIsExamProtected(rag, tabStateMapRef) {
@@ -1291,47 +996,18 @@ const {
   setAllSecondFoldersAsSingleGroup,
 } = usePackTasks(currentState, fileMetadataToShow, packGroupsEditBlocked);
 
-const packFolderPickModalOpen = ref(false);
-const packFolderPickGroupIdx = ref(null);
-const packFolderPickDraft = ref([]);
-
-function openPackFolderPickModal(gi) {
-  if (packGroupsEditBlocked.value) return;
-  const i = Number(gi);
-  if (!Number.isFinite(i) || i < 0) return;
-  packFolderPickGroupIdx.value = i;
-  packFolderPickDraft.value = [...(ragListDisplayGroups.value[i] ?? [])];
-  packFolderPickModalOpen.value = true;
-}
-
-function closePackFolderPickModal() {
-  packFolderPickModalOpen.value = false;
-  packFolderPickGroupIdx.value = null;
-  packFolderPickDraft.value = [];
-}
-
-function isPackFolderPickDraftSelected(folderName) {
-  return packFolderPickDraft.value.includes(folderName);
-}
-
-function togglePackFolderPickDraft(folderName) {
-  if (packGroupsEditBlocked.value) return;
-  const name = String(folderName ?? '').trim();
-  if (!name) return;
-  const draft = [...packFolderPickDraft.value];
-  const idx = draft.indexOf(name);
-  if (idx >= 0) draft.splice(idx, 1);
-  else draft.push(name);
-  packFolderPickDraft.value = draft;
-}
-
-function confirmPackFolderPick() {
-  if (packGroupsEditBlocked.value) return;
-  const gi = packFolderPickGroupIdx.value;
-  if (gi == null || !Number.isFinite(gi) || gi < 0) return;
-  setPackUnitFolderGroup(gi, packFolderPickDraft.value);
-  closePackFolderPickModal();
-}
+const {
+  packFolderPickModalOpen,
+  openPackFolderPickModal,
+  closePackFolderPickModal,
+  isPackFolderPickDraftSelected,
+  togglePackFolderPickDraft,
+  confirmPackFolderPick,
+} = usePackFolderPickModal({
+  packGroupsEditBlocked,
+  displayGroups: ragListDisplayGroups,
+  setFolderGroup: setPackUnitFolderGroup,
+});
 
 function firstFolderNameInGroup(group) {
   if (!Array.isArray(group) || group.length === 0) return '';
@@ -2103,23 +1779,6 @@ function packUnitPreviewTranscriptError(gi, caught) {
   );
 }
 
-function youtubeUrlFromUnitUrlResponse(data) {
-  if (!data || typeof data !== 'object') return '';
-  const candidates = [
-    data.youtube_url,
-    data.youtubeUrl,
-    data.url,
-    data.watch_url,
-    data.watchUrl,
-    data.video_url,
-    data.videoUrl,
-  ];
-  for (const c of candidates) {
-    if (c != null && String(c).trim() !== '') return String(c).trim();
-  }
-  return '';
-}
-
 function packUnitYoutubeEmbedUrl(gi) {
   const raw = currentState.value.packUnitYoutubeUrls?.[gi];
   return youtubeEmbedUrlFromInput(raw != null ? String(raw) : '');
@@ -2213,350 +1872,12 @@ const newTabItems = computed(() =>
   }))
 );
 
-function firstRagQuizAnchorIdFromUnit(unit) {
-  if (!unit || typeof unit !== 'object') return null;
-  const directCandidates = [
-    unit.rag_quiz_id,
-    unit.template_rag_quiz_id,
-    unit.anchor_rag_quiz_id,
-    unit.anchorRagQuizId,
-  ];
-  for (const c of directCandidates) {
-    const n = Number(c);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  let list = [];
-  if (Array.isArray(unit.quizzes)) list = unit.quizzes;
-  else if (Array.isArray(unit.quiz_list)) list = unit.quiz_list;
-  else if (Array.isArray(unit.Quizzes)) list = unit.Quizzes;
-
-  for (const q of list) {
-    const id =
-      q?.rag_quiz_id ?? q?.RagQuizId ?? q?.quiz_id ?? q?.exam_quiz_id ?? q?.id;
-    const n = Number(id);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  return null;
-}
-
-function ragUnitIdFromRawUnit(unit) {
-  if (!unit || typeof unit !== 'object') return null;
-  const raw = unit.rag_unit_id ?? unit.unit_id ?? unit.id;
-  if (raw == null || raw === '') return null;
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-/** 來源／RAG ZIP 檔名：後端可能回 rag_file_name（Rag_Unit）；題目產生 fallback 仍會使用 */
-function unitSourceFilename(unit) {
-  if (!unit || typeof unit !== 'object') return '';
-  const raw =
-    unit.rag_file_name
-    ?? unit.ragFileName
-    ?? unit.filename
-    ?? unit.rag_filename
-    ?? unit.zip_filename;
-  if (raw == null || String(raw).trim() === '') return '';
-  return String(raw).trim();
-}
-
-/**
- * 文字單元來源檔名（unit_type=2／POST build-rag-zip output 之 transcript_md）。
- * 優先後端 `text_file_name`；若缺漏且為文字單元，後端可能將 .md 來源放在 `filename`（非 *_rag.zip）。
- */
-function unitTextFileName(unit) {
-  if (!unit || typeof unit !== 'object') return '';
-  const raw = unit.text_file_name ?? unit.textFileName;
-  if (raw != null && String(raw).trim() !== '') return String(raw).trim();
-  const ut = Number(unit.unit_type ?? unit.unitType);
-  const mode = String(unit.rag_mode ?? unit.ragMode ?? '').toLowerCase();
-  const isTextUnit = ut === UNIT_TYPE_TEXT || mode === 'transcript_md';
-  if (!isTextUnit) return '';
-  const fn =
-    unit.filename
-    ?? unit.rag_filename
-    ?? unit.rag_file_name
-    ?? unit.ragFileName;
-  if (fn == null || String(fn).trim() === '') return '';
-  const s = String(fn).trim();
-  if (/_rag\.zip$/i.test(s)) return '';
-  return s;
-}
-
-function unitMp3FileName(unit) {
-  if (!unit || typeof unit !== 'object') return '';
-  const raw = unit.mp3_file_name ?? unit.mp3FileName;
-  return raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
-}
-
-function unitYoutubeUrl(unit) {
-  if (!unit || typeof unit !== 'object') return '';
-  const raw = unit.youtube_url ?? unit.youtubeUrl;
-  return raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
-}
-
-/** 後端資料夾組合字串（GET units／rag 內嵌 units 等；與 unit_list 之 + 連接語意一致） */
-function folderCombinationFromUnitRaw(unit) {
-  if (!unit || typeof unit !== 'object') return '';
-  const raw = unit.folder_combination ?? unit.folderCombination;
-  return raw != null && String(raw).trim() !== '' ? String(raw).trim() : '';
-}
-
-/**
- * 後端 folder_combination：`資料夾A/t資料夾B/t資料夾C`（以 `/t` 串多個資料夾名）；
- * 若無則將 fallback（unit_list 群組之「a + b」）拆成與拖曳 tag 相同的一列名稱。
- * @param {string} folderCombinationStr
- * @param {string} [fallbackFolderLine]
- * @returns {string[]}
- */
-function parseFolderCombinationTags(folderCombinationStr, fallbackFolderLine) {
-  const fc = String(folderCombinationStr ?? '').trim();
-  if (fc) {
-    if (fc.includes('/t')) {
-      return fc.split('/t').map((s) => s.trim()).filter(Boolean);
-    }
-    if (/\t/.test(fc)) {
-      return fc.split(/\t+/).map((s) => s.trim()).filter(Boolean);
-    }
-    if (fc.includes(' + ')) {
-      return fc.split(/\s*\+\s*/).map((s) => s.trim()).filter(Boolean);
-    }
-    return [fc];
-  }
-  const line = String(fallbackFolderLine ?? '').trim();
-  if (!line) return [];
-  if (line.includes(' + ')) {
-    return line.split(/\s*\+\s*/).map((s) => s.trim()).filter(Boolean);
-  }
-  return [line];
-}
-
-/** Rag_Unit／GET /rag/tab/units／build-rag-zip output：逐字稿欄位（含 NDJSON output.transcript_plain） */
-function rawUnitTranscriptString(unit) {
-  if (!unit || typeof unit !== 'object') return '';
-  const out = unit.output && typeof unit.output === 'object' ? unit.output : null;
-  const candidates = [
-    unit.transcript,
-    unit.transcription,
-    unit.transcript_plain,
-    unit.transcriptPlain,
-    unit.transcript_text,
-    unit.transcriptText,
-    out?.transcript,
-    out?.transcription,
-    out?.transcript_plain,
-    out?.transcriptPlain,
-  ];
-  for (const c of candidates) {
-    if (c != null && String(c).trim() !== '') return String(c).trim();
-  }
-  return '';
-}
-
-function normalizeUnitFromRagTabsRow(unit, fallbackTabId) {
-  if (!unit || typeof unit !== 'object') return null;
-  const rawName =
-    unit.unit_name ??
-    unit.rag_name ??
-    unit.name ??
-    unit.rag_unit_name;
-  const name = String(rawName ?? '').trim();
-  if (!name) return null;
-  const tabId = String(unit.rag_tab_id ?? fallbackTabId ?? '').trim();
-  const safeName = name.replace(/\+/g, '_');
-  const anchorRagQuizId = firstRagQuizAnchorIdFromUnit(unit);
-  const ragUnitId = ragUnitIdFromRawUnit(unit);
-  const src = unitSourceFilename(unit);
-  const transcript = rawUnitTranscriptString(unit);
-  const ut = Number(unit.unit_type ?? unit.unitType);
-  const rag_mode = unit.rag_mode ?? unit.ragMode;
-  const csRaw =
-    unit.rag_chunk_size ?? unit.ragChunkSize ?? unit.chunk_size ?? unit.chunkSize;
-  const coRaw =
-    unit.rag_chunk_overlap ?? unit.ragChunkOverlap ?? unit.chunk_overlap ?? unit.chunkOverlap;
-  return {
-    rag_tab_id: tabId || safeName,
-    filename: src || `${safeName}_rag.zip`,
-    rag_name: String(unit.rag_name ?? name).trim() || safeName,
-    unit_name: safeName,
-    anchor_rag_quiz_id: anchorRagQuizId,
-    rag_unit_id: ragUnitId,
-    transcript,
-    ...(Number.isFinite(ut) && ut > 0 ? { unit_type: ut } : {}),
-    ...(rag_mode != null && String(rag_mode).trim() !== '' ? { rag_mode } : {}),
-    text_file_name: unitTextFileName(unit),
-    mp3_file_name: unitMp3FileName(unit),
-    youtube_url: unitYoutubeUrl(unit),
-    ...(csRaw != null && String(csRaw).trim() !== '' && !Number.isNaN(Number(csRaw))
-      ? { rag_chunk_size: ensureNumber(csRaw, DEFAULT_PACK_CHUNK_SIZE) }
-      : {}),
-    ...(coRaw != null && String(coRaw).trim() !== '' && !Number.isNaN(Number(coRaw))
-      ? { rag_chunk_overlap: ensureNumber(coRaw, DEFAULT_PACK_CHUNK_OVERLAP) }
-      : {}),
-    folder_combination: folderCombinationFromUnitRaw(unit),
-  };
-}
-
-/** 當 rag 未內嵌 units[] 時，由 outputs／rag_metadata.outputs／unit_list 推導單元列（與出題下拉、build-rag-zip 一致；供單元 sub-tab） */
-function fallbackUnitsRawFromRag(rag) {
-  if (!rag || typeof rag !== 'object') return [];
-  const sourceTabId = String(rag.rag_tab_id ?? '');
-  const metaObj = parseRagMetadataObject(rag);
-  const topOutputs = rag.outputs;
-  const nestedOutputs = metaObj?.outputs;
-  const outputs =
-    Array.isArray(topOutputs) && topOutputs.length > 0
-      ? topOutputs
-      : Array.isArray(nestedOutputs) && nestedOutputs.length > 0
-        ? nestedOutputs
-        : null;
-  if (outputs) {
-    const rawUt = rag.unit_types ?? rag.unit_type_list;
-    const typesArr = parsePackUnitTypesFromRag(rawUt, outputs.length);
-    return outputs.map((o, idx) => {
-      const derivedName = `${(o.rag_name ?? '').replace(/\+/g, '_')}`;
-      const tabId =
-        o.rag_tab_id != null && String(o.rag_tab_id).trim() !== ''
-          ? String(o.rag_tab_id)
-          : derivedName
-            ? `${derivedName}_rag`
-            : sourceTabId;
-      const label = deriveRagName(o);
-      const rawUnit =
-        (o.unit_name != null && String(o.unit_name).trim() !== '')
-          ? String(o.unit_name).trim()
-          : (o.rag_name != null && String(o.rag_name).trim() !== '')
-            ? String(o.rag_name).trim()
-            : label;
-      const unit_name = String(rawUnit || '').replace(/\+/g, '_') || label || sourceTabId;
-      const transcript = rawUnitTranscriptString(o);
-      const utMerged = Number(o.unit_type ?? o.unitType ?? typesArr[idx]);
-      const merged = {
-        ...o,
-        rag_tab_id: tabId,
-        filename: o.filename ?? o.rag_filename ?? `${derivedName || label || 'RAG'}.zip`,
-        rag_name: label,
-        unit_name,
-        transcript,
-      };
-      if (Number.isFinite(utMerged) && utMerged > 0) merged.unit_type = utMerged;
-      const ragModeOut = merged.rag_mode ?? merged.ragMode;
-      const folderCombo = folderCombinationFromUnitRaw(o);
-      return {
-        rag_tab_id: tabId,
-        filename: merged.filename,
-        rag_name: label,
-        unit_name,
-        transcript,
-        ...(Number.isFinite(utMerged) && utMerged > 0 ? { unit_type: utMerged } : {}),
-        ...(ragModeOut != null && String(ragModeOut).trim() !== '' ? { rag_mode: ragModeOut } : {}),
-        text_file_name: unitTextFileName(merged),
-        mp3_file_name: unitMp3FileName(merged),
-        youtube_url: unitYoutubeUrl(merged),
-        ...(folderCombo !== '' ? { folder_combination: folderCombo } : {}),
-      };
-    });
-  }
-  const ragListStr = getRagUnitListString(rag);
-  if (!ragListStr) return [];
-  return String(ragListStr)
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((group) => {
-      const ragName = group.replace(/\+/g, '_');
-      return {
-        rag_tab_id: sourceTabId || `${ragName}_rag`,
-        filename: `${ragName}_rag.zip`,
-        rag_name: ragName,
-        unit_name: ragName,
-      };
-    });
-}
-
-function unitsFromRagTabsRow(rag) {
-  if (!rag || typeof rag !== 'object') return [];
-  const fallbackTabId = String(rag.rag_tab_id ?? rag.id ?? '').trim();
-  let rows = extractUnitsFromRag(rag);
-  if (!rows.length) {
-    rows = fallbackUnitsRawFromRag(rag);
-  } else {
-    const rawUt = rag.unit_types ?? rag.unit_type_list;
-    const typesArr = parsePackUnitTypesFromRag(rawUt, rows.length);
-    rows = rows.map((u, i) => {
-      const utMerged = Number(u.unit_type ?? u.unitType ?? typesArr[i]);
-      if (!Number.isFinite(utMerged) || utMerged <= 0) return u;
-      return { ...u, unit_type: utMerged };
-    });
-  }
-  return rows
-    .map((u) => normalizeUnitFromRagTabsRow(u, fallbackTabId))
-    .filter(Boolean);
-}
-
 /** 從 /rag/tabs 的 outputs（頂層或 rag_metadata 內）或 unit_list 推導 generateQuizUnits（與 ExamPage／tab/build-rag-zip 一致） */
 const generateQuizUnitsFromRag = computed(() => {
   const rag = currentRagItem.value;
   if (!rag || typeof rag !== 'object') return [];
   return unitsFromRagTabsRow(rag);
 });
-
-function unitTabLabelFromUnit(unit, index = 0) {
-  const raw = String(unit?.unit_name ?? unit?.rag_name ?? '').trim();
-  return raw || `單元 ${index + 1}`;
-}
-
-/** 單元「來源」列類型（與 POST build-rag-zip unit_types 對齊；未知或非 2／3／4 視為 RAG／PDF Office） */
-function tabUnitTypeFromUnit(unit) {
-  const utRaw = Number(unit?.unit_type ?? unit?.unitType);
-  if (utRaw === UNIT_TYPE_TEXT || utRaw === UNIT_TYPE_MP3 || utRaw === UNIT_TYPE_YOUTUBE) return utRaw;
-  return UNIT_TYPE_RAG;
-}
-
-function buildUnitTabItem(unit, index = 0) {
-  const ragTabId = String(unit?.rag_tab_id ?? '').trim();
-  const unitName = String(unit?.unit_name ?? unit?.rag_name ?? '').trim();
-  const keyBase = unitName || unit?.rag_name || `idx-${index + 1}`;
-  const anchorRagQuizId =
-    unit?.anchor_rag_quiz_id != null
-      ? Number(unit.anchor_rag_quiz_id)
-      : firstRagQuizAnchorIdFromUnit(unit);
-  const ragUnitId =
-    unit?.rag_unit_id != null ? Number(unit.rag_unit_id) : ragUnitIdFromRawUnit(unit);
-  const ruStable = Number.isFinite(ragUnitId) && ragUnitId > 0;
-  const unitType = tabUnitTypeFromUnit(unit);
-  const rs =
-    unit.rag_chunk_size ?? unit.ragChunkSize ?? unit.chunk_size ?? unit.chunkSize;
-  const ro =
-    unit.rag_chunk_overlap ?? unit.ragChunkOverlap ?? unit.chunk_overlap ?? unit.chunkOverlap;
-  const ragChunkSize =
-    rs != null && !Number.isNaN(Number(rs)) ? ensureNumber(rs, DEFAULT_PACK_CHUNK_SIZE) : null;
-  const ragChunkOverlap =
-    ro != null && !Number.isNaN(Number(ro))
-      ? ensureNumber(ro, DEFAULT_PACK_CHUNK_OVERLAP)
-      : null;
-  return {
-    id: ruStable
-      ? `${ragTabId || 'tab'}::ru-${ragUnitId}`
-      : `${ragTabId || 'tab'}::${keyBase}::${index}`,
-    label: unitTabLabelFromUnit(unit, index),
-    generateQuizTabId: unitSelectValue(unit),
-    unitName: unitName || unitTabLabelFromUnit(unit, index),
-    ragName: String(unit?.rag_name ?? '').trim(),
-    filename: unitSourceFilename(unit),
-    unitType,
-    ragTabId,
-    anchorRagQuizId: Number.isFinite(anchorRagQuizId) && anchorRagQuizId > 0 ? anchorRagQuizId : null,
-    ragUnitDbId: Number.isFinite(ragUnitId) && ragUnitId > 0 ? ragUnitId : null,
-    transcript: rawUnitTranscriptString(unit),
-    textFileName: unitTextFileName(unit),
-    mp3FileName: unitMp3FileName(unit),
-    youtubeUrl: unitYoutubeUrl(unit),
-    ragChunkSize,
-    ragChunkOverlap,
-    folderCombination: folderCombinationFromUnitRaw(unit),
-  };
-}
 
 /** 設定單元子分頁：滿版下拉 value／label（UnitSelectDropdown）— 保留供 generateQuiz 等子流程使用 */
 
@@ -2609,122 +1930,41 @@ const activeUnitQuizHistoryQuizTypeLabel = computed(() => {
 });
 
 /** 內容：純預覽 + 編輯 Modal */
-const transcriptEditModalOpen = ref(false);
-const transcriptEditModalGi = ref(0);
-const transcriptEditModalDraft = ref('');
-
-const transcriptEditModalDisabled = computed(
-  () =>
-    packGroupsEditBlocked.value
-    || !packUnitTranscriptLoadedAt(transcriptEditModalGi.value)
-    || packUnitTranscriptBusy(transcriptEditModalGi.value),
-);
-
-function openTranscriptEditModal(gi) {
-  if (
-    packGroupsEditBlocked.value
-    || !packUnitTranscriptLoadedAt(gi)
-    || packUnitTranscriptBusy(gi)
-  ) return;
-  transcriptEditModalGi.value = gi;
-  transcriptEditModalDraft.value = packUnitTranscriptTextAt(gi);
-  transcriptEditModalOpen.value = true;
-}
-
-function closeTranscriptEditModal() {
-  transcriptEditModalOpen.value = false;
-  transcriptEditModalDraft.value = '';
-}
-
-function applyTranscriptEditModal() {
-  setPackUnitMarkdownAt(transcriptEditModalGi.value, transcriptEditModalDraft.value);
-  closeTranscriptEditModal();
-}
+const {
+  transcriptEditModalOpen,
+  transcriptEditModalGi,
+  transcriptEditModalDraft,
+  transcriptEditModalDisabled,
+  openTranscriptEditModal,
+  closeTranscriptEditModal,
+  applyTranscriptEditModal,
+} = useTranscriptEditModal({
+  packGroupsEditBlocked,
+  transcriptLoadedAt: packUnitTranscriptLoadedAt,
+  transcriptBusy: packUnitTranscriptBusy,
+  transcriptTextAt: packUnitTranscriptTextAt,
+  setMarkdownAt: setPackUnitMarkdownAt,
+});
 
 /** 出題／批改規則：列表區黑底白字預覽，按鈕開 Modal 編輯 */
-const bankPromptEditModalOpen = ref(false);
-const bankPromptEditModalKind = ref(/** @type {'quiz'|'grading'|''} */ (''));
-const bankPromptEditModalDraft = ref('');
-
-const bankPromptEditModalTitle = computed(() =>
-  bankPromptEditModalKind.value === 'grading' ? '批改規則' : '出題規則',
-);
-
-const bankPromptEditModalSavingDisabled = computed(() => {
-  if (bankPromptEditModalKind.value === 'quiz') {
-    return !!getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading;
-  }
-  const card = activeUnitQuizCard.value;
-  return (
-    gradingSubmittingCardId.value != null
-    && card
-    && String(gradingSubmittingCardId.value) === String(card.id)
-  );
+const {
+  bankPromptEditModalOpen,
+  bankPromptEditModalKind,
+  bankPromptEditModalDraft,
+  bankPromptEditModalTitle,
+  bankPromptEditModalSavingDisabled,
+  bankPromptEditModalResetDisabled,
+  resetBankPromptEditModalDraft,
+  openBankQuizUserPromptEditModal,
+  openBankGradingPromptEditModal,
+  closeBankPromptEditModal,
+  applyBankPromptEditModal,
+} = useBankPromptEditModal({
+  getActiveCard: () => activeUnitQuizCard.value,
+  getSlotFormState,
+  getActiveSlotIndex: () => activeUnitSlotIndex.value,
+  gradingSubmittingCardId,
 });
-
-const bankPromptEditModalResetDisabled = computed(() => {
-  if (bankPromptEditModalSavingDisabled.value) return true;
-  const card = activeUnitQuizCard.value;
-  if (!card) return true;
-  if (bankPromptEditModalKind.value === 'quiz') {
-    return (
-      String(bankPromptEditModalDraft.value ?? '')
-      === String(card.quizUserPromptBaseline ?? '')
-    );
-  }
-  if (bankPromptEditModalKind.value === 'grading') {
-    return (
-      String(bankPromptEditModalDraft.value ?? '')
-      === String(card.gradingPromptBaseline ?? '')
-    );
-  }
-  return true;
-});
-
-function resetBankPromptEditModalDraft() {
-  const card = activeUnitQuizCard.value;
-  if (!card) return;
-  if (bankPromptEditModalKind.value === 'quiz') {
-    bankPromptEditModalDraft.value = String(card.quizUserPromptBaseline ?? '');
-  } else if (bankPromptEditModalKind.value === 'grading') {
-    bankPromptEditModalDraft.value = String(card.gradingPromptBaseline ?? '');
-  }
-}
-
-function openBankQuizUserPromptEditModal() {
-  const card = activeUnitQuizCard.value;
-  if (!card) return;
-  if (getSlotFormState(activeUnitSlotIndex.value).unitQuizCreateLoading) return;
-  bankPromptEditModalKind.value = 'quiz';
-  bankPromptEditModalDraft.value = String(card.quizUserPromptText ?? '');
-  bankPromptEditModalOpen.value = true;
-}
-
-function openBankGradingPromptEditModal() {
-  const card = activeUnitQuizCard.value;
-  if (!card) return;
-  bankPromptEditModalKind.value = 'grading';
-  bankPromptEditModalDraft.value = String(card.gradingPrompt ?? '');
-  bankPromptEditModalOpen.value = true;
-}
-
-function closeBankPromptEditModal() {
-  bankPromptEditModalOpen.value = false;
-  bankPromptEditModalKind.value = '';
-  bankPromptEditModalDraft.value = '';
-}
-
-function applyBankPromptEditModal() {
-  const card = activeUnitQuizCard.value;
-  if (card) {
-    if (bankPromptEditModalKind.value === 'quiz') {
-      card.quizUserPromptText = bankPromptEditModalDraft.value;
-    } else if (bankPromptEditModalKind.value === 'grading') {
-      card.gradingPrompt = bankPromptEditModalDraft.value;
-    }
-  }
-  closeBankPromptEditModal();
-}
 
 function closePackBuildSuccessModal() {
   packBuildSuccessModalOpen.value = false;
@@ -2815,7 +2055,6 @@ async function onMarkRagQuizForExam(card) {
 }
 
 /** 單元題型列／草稿預設名稱（無後端 quiz_name、使用者未填時） */
-const DEFAULT_UNIT_QUIZ_DISPLAY_NAME = '未命名題型';
 
 /**
  * POST /rag/tab/unit/quiz/create 未附 quiz_name 時，後端常將 quiz_name 設為 unit_name；
@@ -2837,34 +2076,6 @@ async function persistDefaultUnitQuizNameAfterCreate(ragQuizId, personId) {
 }
 
 const hasUnitSubTabs = computed(() => (currentState.value.unitTabOrder ?? []).length > 0);
-
-/** 題型 sub-tab 顯示文字：有題名用題名，否則預設「未命名題型」（不顯示題型編號） */
-function quizTypeTabLabel(row) {
-  const n = String(row?.quizName ?? '').trim();
-  if (n) return n;
-  return DEFAULT_UNIT_QUIZ_DISPLAY_NAME;
-}
-
-/** 後端軟刪或未同步清單時，題型列可能仍帶 deleted／deleted_at */
-function isRagQuizRowDeleted(row) {
-  if (!row || typeof row !== 'object') return false;
-  if (row.deleted === true || row.deleted === 1 || String(row.deleted).toLowerCase() === 'true') {
-    return true;
-  }
-  if (row.is_deleted === true || row.is_deleted === 1) return true;
-  const at = row.deleted_at ?? row.deletedAt;
-  return at != null && String(at).trim() !== '';
-}
-
-function unitStackRowMatchesRagUnitId(row, ragUnitId) {
-  if (!Number.isFinite(ragUnitId) || ragUnitId <= 0 || !Array.isArray(row)) return false;
-  for (const c of row) {
-    if (isRagQuizRowDeleted(c)) continue;
-    const ru = Number(c?.rag_unit_id);
-    if (Number.isFinite(ru) && ru === ragUnitId) return true;
-  }
-  return false;
-}
 
 /** unitTabOrder 與 unitSlotQuizCards 索引不一致時，以 rag_unit_id 對齊題型堆疊 */
 function unitStackIndexForPackUnitIndex(unitIndex) {
@@ -3164,26 +2375,6 @@ watch(
   }
 );
 
-/** quiz_content（card.quiz）為空與否：出題規則欄皆為編輯器；空白列顯示「產生題目」等仍用此判斷（不依賴 showGenerateForm／草稿對齊；多筆各自綁 quizUserPromptText） */
-function quizRowQuizEmpty(card) {
-  return !String(card?.quiz ?? '').trim();
-}
-
-/** 題卡已標為試卷／測驗用 Rag_Quiz.for_exam */
-function isRagQuizMarkedForExam(card) {
-  if (!card || typeof card !== 'object') return false;
-  return card.rag_quiz_for_exam === true || card.rag_quiz_for_exam === 1;
-}
-
-/** 出題規則與批改規則皆已有內容（trim 後非空） */
-function hasRagQuizPromptRulesForExam(card) {
-  if (!card || typeof card !== 'object') return false;
-  return (
-    String(card.quizUserPromptText ?? '').trim() !== ''
-    && String(card.gradingPrompt ?? '').trim() !== ''
-  );
-}
-
 /**
  * 「設為測驗用」常駐顯示；不可操作時為 true。
  * — 標為測驗用後「取消設為測驗用」仍應可操作。
@@ -3422,25 +2613,6 @@ function promptTextForQuizRow(card, slotIndex) {
   return String(getSlotFormState(slotIndex).quizUserPromptText ?? '').trim();
 }
 
-function extractQuizUserPromptText(raw) {
-  if (!raw || typeof raw !== 'object') return '';
-  const keys = [
-    'quiz_user_prompt_text',
-    'quizUserPromptText',
-    'user_prompt_text',
-    'userPromptText',
-    'prompt_text',
-    'promptText',
-  ];
-  for (const key of keys) {
-    const val = raw[key];
-    if (val == null) continue;
-    const text = String(val);
-    if (text.trim()) return text;
-  }
-  return '';
-}
-
 function syncSlotPromptFromCard(slotIndex) {
   const state = currentState.value;
   const slot = getSlotFormState(slotIndex);
@@ -3464,15 +2636,6 @@ function syncSlotPromptFromCard(slotIndex) {
     extractQuizUserPromptText(card)
     || extractQuizUserPromptText(card.generateQuizResponseJson);
   if (fromCard) slot.quizUserPromptText = fromCard;
-}
-
-function sortUnitQuizCardsByRagQuizId(list) {
-  const arr = Array.isArray(list) ? [...list] : [];
-  return arr.sort((a, b) => {
-    const ia = positiveRagQuizIdFromQuizRow(a);
-    const ib = positiveRagQuizIdFromQuizRow(b);
-    return (Number.isFinite(ia) ? ia : 0) - (Number.isFinite(ib) ? ib : 0);
-  });
 }
 
 /** 與兼容用 cardList[slot] 對齊：草稿 id 優先，否則最後一張有題幹者 */
@@ -3598,25 +2761,6 @@ function hydratePackChunkArraysFromRag(rag, groupCount) {
     sizes: sizes.slice(0, count),
     overs: overs.slice(0, count),
   };
-}
-
-/** 唯讀「設定單元」：RAG 分段參數顯示在與類型／來源檔同列（不外層縮排） */
-function quizBankReadonlyOutlineChunkFields(ragChunkSize, ragChunkOverlap) {
-  return [
-    { label: '分段長度（字元）', value: String(ensureNumber(ragChunkSize, DEFAULT_PACK_CHUNK_SIZE)) },
-    { label: '分段重疊（字元）', value: String(ensureNumber(ragChunkOverlap, DEFAULT_PACK_CHUNK_OVERLAP)) },
-  ];
-}
-
-/** 唯讀「設定單元」：來源檔一行（與單元 tab 欄位對齊） */
-function quizBankReadonlySourceDisplay(tab) {
-  if (!tab || typeof tab !== 'object') return '';
-  const ut = Number(tab.unitType ?? UNIT_TYPE_RAG);
-  if (ut === UNIT_TYPE_TEXT) return String(tab.textFileName ?? '').trim();
-  if (ut === UNIT_TYPE_MP3) return String(tab.mp3FileName ?? '').trim();
-  if (ut === UNIT_TYPE_YOUTUBE) return String(tab.youtubeUrl ?? '').trim();
-  if (ut === UNIT_TYPE_RAG) return String(tab.filename ?? '').trim();
-  return '';
 }
 
 /**
@@ -4050,19 +3194,6 @@ watch(
   { immediate: true }
 );
 
-/** 正整數 rag_quiz_id（字串數字相容） */
-function parsePositiveQuizId(raw) {
-  if (raw == null || raw === '') return null;
-  if (typeof raw === 'boolean') return null;
-  const n =
-    typeof raw === 'number'
-      ? raw
-      : Number(typeof raw === 'string' ? raw.trim() : raw);
-  if (!Number.isFinite(n) || n < 1) return null;
-  return Math.floor(n);
-}
-
-
 /** 供追問 llm-generate-followup：含儲存歷史與當前問答（重新產生／繼續追問時接續） */
 function unitQuizFollowupHistoryListForLlm(quizCardRow) {
   const seen = new Set();
@@ -4169,14 +3300,6 @@ function unitQuizHistoryListForLlm(quizCardRow, slotIndex = activeUnitSlotIndex.
   return out;
 }
 
-/** 側欄題目數：僅依題卡 follow_up／quizGenerateMode，不沿用單元 slot 出題模式（避免同單元多題型誤判） */
-function isQuizCardFollowupModeForCount(quizCardRow) {
-  if (!quizCardRow || typeof quizCardRow !== 'object') return false;
-  if (quizCardRow.quizGenerateMode === 'followup') return true;
-  if (quizCardRow.quizGenerateMode === 'normal') return false;
-  return ragQuizApiRowIsFollowUp(quizCardRow);
-}
-
 /** 右側欄：單一題型已產出之題目筆數（不含 deleted；追問整串只計 1 題） */
 function unitQuizGeneratedQuestionCount(quizCardRow) {
   if (!quizCardRow || typeof quizCardRow !== 'object' || isRagQuizRowDeleted(quizCardRow)) {
@@ -4196,44 +3319,6 @@ function unitQuizStackQuestionCount(stack) {
   return stack
     .filter((row) => !isRagQuizRowDeleted(row))
     .reduce((sum, row) => sum + unitQuizGeneratedQuestionCount(row), 0);
-}
-
-/** 將舊題問答併入歷史（重新產生前；含題目／答案／參考答案／批改結果） */
-function appendRichQuizHistory(existingHistory, entrySource) {
-  const entry =
-    normalizeFollowupHistoryItem(entrySource) ?? followupHistoryEntryFromQuizCard(entrySource);
-  const base = parseRichQuizHistoryListFromSource(existingHistory);
-  if (!entry?.quiz_content) return base;
-  const key = richQuizHistoryDedupKey(entry);
-  if (base.some((item) => richQuizHistoryDedupKey(item) === key)) return base;
-  return [...base, entry];
-}
-
-/** 自題目列／題卡取下正整數 rag_quiz_id（llm-generate 錨點；相容後端別名） */
-function positiveRagQuizIdFromQuizRow(quizOrCard) {
-  if (!quizOrCard || typeof quizOrCard !== 'object') return null;
-  const keys = ['rag_quiz_id', 'quiz_id', 'ragQuizId', 'quizId'];
-  for (const k of keys) {
-    const v = quizOrCard[k];
-    if (v == null || v === '') continue;
-    const n = Number(v);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  const idFallback = quizOrCard.id;
-  if (idFallback != null && idFallback !== '') {
-    const n = Number(idFallback);
-    if (Number.isFinite(n) && n > 0) return n;
-  }
-  return null;
-}
-
-/** 題卡本體優先，其次產題 API 回覆（generateQuizResponseJson） */
-function positiveRagQuizIdFromCard(card) {
-  const direct = positiveRagQuizIdFromQuizRow(card);
-  if (direct != null) return direct;
-  const gj = card?.generateQuizResponseJson;
-  if (gj != null && typeof gj === 'object') return positiveRagQuizIdFromQuizRow(gj);
-  return null;
 }
 
 /** 由 /rag/tabs 的 quiz 組題卡：批改優先 quiz.answers 末筆；若無則讀列上 answer_content／quiz_score／answer_critique（Rag_Quiz 內嵌欄位） */
@@ -6337,6 +5422,7 @@ async function confirmAnswer(item) {
                 :textarea-id="`bank-prompt-edit-${bankPromptEditModalKind}-${activeUnitSlotIndex}`"
                 :disabled="bankPromptEditModalSavingDisabled"
                 prompt-code-font
+                edit-design-dark
               />
             </div>
             <div
@@ -6406,6 +5492,7 @@ async function confirmAnswer(item) {
                 v-model="transcriptEditModalDraft"
                 :textarea-id="`transcript-edit-md-${transcriptEditModalGi}`"
                 :disabled="transcriptEditModalDisabled"
+                edit-design-dark
               />
             </div>
             <div
@@ -7483,7 +6570,7 @@ async function confirmAnswer(item) {
                   class="my-design-quiz-sub-block-outer"
                   :class="{
                     'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft,
-                    'my-design-quiz-sub-block-outer--with-logo-q': designSidePanelOnLeft,
+                    'my-design-quiz-sub-block-outer--with-logo-q': designSidePanelOnLeft && activeUnitQuizHasGeneratedBody,
                   }"
                 >
                   <div
@@ -7496,24 +6583,26 @@ async function confirmAnswer(item) {
                       :id-prefix="`bank-quiz-q-${activeUnitSlotIndex}-${activeUnitQuizTypeIdxResolved}`"
                       class="my-design-quiz-sub-block-outer__logo"
                     />
-                    <div
-                      class="my-design-quiz-sub-block-outer__logo-spacer pb-3"
-                      aria-hidden="true"
-                    />
-                    <div class="my-design-quiz-sub-block-outer__logo-stem" aria-hidden="true" />
-                    <svg
-                      class="my-design-quiz-sub-block-outer__logo-arrowhead"
-                      viewBox="0 0 24 12"
-                      aria-hidden="true"
-                    >
-                      <path
-                        d="M12 0 L12 12 M6 6 L12 12 M18 6 L12 12"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="1"
-                        vector-effect="non-scaling-stroke"
+                    <template v-if="activeUnitQuizHasGeneratedBody">
+                      <div
+                        class="my-design-quiz-sub-block-outer__logo-spacer pb-3"
+                        aria-hidden="true"
                       />
-                    </svg>
+                      <div class="my-design-quiz-sub-block-outer__logo-stem" aria-hidden="true" />
+                      <svg
+                        class="my-design-quiz-sub-block-outer__logo-arrowhead"
+                        viewBox="0 0 24 12"
+                        aria-hidden="true"
+                      >
+                        <path
+                          d="M12 0 L12 12 M6 6 L12 12 M18 6 L12 12"
+                          fill="none"
+                          stroke="currentColor"
+                          stroke-width="1"
+                          vector-effect="non-scaling-stroke"
+                        />
+                      </svg>
+                    </template>
                   </div>
                   <div
                     class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
@@ -8029,1079 +7118,5 @@ async function confirmAnswer(item) {
   </div>
 </template>
 
-<style scoped>
-/* 出題模式（非 outline）：gray-4 軌＋選中 gray-4 底 */
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4) {
-  background-color: var(--my-color-gray-4);
-  color: var(--my-color-black);
-  border-color: transparent;
-  box-shadow: none;
-}
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4:hover),
-.my-quiz-generate-mode-segment:not(.my-quiz-generate-mode-segment--outline) :deep(> .btn.my-button-gray-4:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-gray-4));
-  color: var(--my-color-black);
-}
-/* 一般／追問：選中與未選皆維持小 pill px-4（1.5rem）＋ py-1；蓋過本頁 px-2／px-3 覆寫 */
-.my-quiz-generate-mode-segment :deep(> .btn.my-quiz-generate-mode-segment-btn) {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-/* 子元件若仍帶 px-3 utility，與本頁按鈕一致改為 px-4 水平內距（類型 picker、出題模式 segment 除外） */
-:deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
-:deep(button.btn.rounded-2.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)) {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-
-/* create-exam-bank_3：小 pill 按鈕 px-2、灰字；類型／加入資料夾 picker、出題模式 segment、顯示／隱藏文本（my-unit-content-toggle-btn）除外 */
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-quiz-generate-mode-segment-btn):not(.my-unit-content-toggle-btn)) {
-  padding-left: 0.5rem !important;
-  padding-right: 0.5rem !important;
-}
-/* create-exam-bank_3：詳細資訊 stem history、類型 segment 維持 px-3；出題模式 segment px-4；顯示／隱藏文本 pill 維持 px-3 */
-.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
-.my-design--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-}
-.my-design--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400) {
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-/* 「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（蓋過 .form-control.my-input-md 黑字） */
-.my-design--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
-.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
-.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn) {
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-  --bs-btn-bg: var(--my-color-gray-4);
-  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
-  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
-  --bs-btn-disabled-bg: var(--my-color-gray-4);
-  --bs-btn-color: var(--my-color-gray-1);
-  --bs-btn-hover-color: var(--my-color-gray-1);
-  --bs-btn-active-color: var(--my-color-gray-1);
-  --bs-btn-disabled-color: var(--my-color-gray-1);
-  --bs-btn-disabled-opacity: 1;
-  --bs-btn-border-color: transparent;
-  --bs-btn-border-width: 0;
-  background-color: var(--my-color-gray-4) !important;
-  color: var(--my-color-gray-1) !important;
-  -webkit-text-fill-color: var(--my-color-gray-1) !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
-.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
-.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled) {
-  --bs-btn-disabled-color: var(--my-color-gray-1);
-  color: var(--my-color-gray-1) !important;
-  -webkit-text-fill-color: var(--my-color-gray-1) !important;
-}
-/* 類型 segment：選中白底、未選 hover（蓋過 work3 小 pill 灰字規則） */
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected) {
-  --bs-btn-bg: var(--my-color-white);
-  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
-  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white));
-  --bs-btn-color: var(--my-color-black);
-  --bs-btn-hover-color: var(--my-color-black);
-  --bs-btn-active-color: var(--my-color-black);
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
-  border: none !important;
-  box-shadow: none !important;
-}
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:disabled) {
-  --bs-btn-disabled-bg: var(--my-color-white);
-  --bs-btn-disabled-color: var(--my-color-gray-3);
-  --bs-btn-disabled-opacity: 1;
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-3) !important;
-  border: none !important;
-  box-shadow: none !important;
-  opacity: 1;
-}
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:hover:not(:disabled)),
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:focus-visible:not(:disabled)),
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn--selected:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-white)) !important;
-  color: var(--my-color-black) !important;
-}
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2),
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:disabled) {
-  --bs-btn-color: var(--my-color-gray-2);
-  --bs-btn-disabled-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2) !important;
-}
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled)),
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled)),
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled)) {
-  --bs-btn-hover-bg: var(--my-color-gray-3);
-  --bs-btn-active-bg: var(--my-color-gray-3);
-  color: var(--my-color-black) !important;
-  background-color: var(--my-color-gray-3) !important;
-}
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)),
-.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
-.form-control.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)),
-.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
-.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
-  color: var(--my-color-gray-1) !important;
-  -webkit-text-fill-color: var(--my-color-gray-1) !important;
-}
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-button-white):not(.my-button-black):not(.my-button-red):not(.my-btn-outline-red-hollow):not(.my-button-green):not(.my-button-blue):not(.my-button-logo-gradient):not(.my-button-gray-3):not(.my-button-gray-4):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn)) {
-  color: var(--my-color-gray-1);
-}
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:hover:not(:disabled):not(.my-pack-unit-type-btn)),
-.my-design--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400.my-button-transparent-borderless:focus-visible:not(:disabled):not(.my-pack-unit-type-btn)) {
-  color: var(--my-color-gray-1);
-  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
-}
-/* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
-.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
-.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-logo-gradient),
-.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white),
-.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-logo-gradient) {
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-  padding-left: 1.5rem !important;
-  padding-right: 1.5rem !important;
-}
-.my-design-quiz-sub-block :deep(.my-design-quiz-generate-action-row .btn.my-design-quiz-generate-btn) {
-  display: inline-flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 0.5rem !important;
-}
-.my-pack-drop-target.my-pack-drop-active {
-  background-color: var(--my-drop-pack-active-bg) !important;
-  border-color: var(--my-color-blue) !important;
-}
-/* 以下樣式僅供 create-exam-bank_design，勿移至 common.css（避免影響 /create-exam-bank） */
-.my-design-tab-split-layout {
-  min-height: 0;
-  flex: 1 1 0;
-}
-.my-design-tab-split-layout--side-left {
-  flex-wrap: nowrap;
-}
-.my-design-tab-side-panel {
-  border-color: var(--my-color-gray-3) !important;
-}
-.my-design-tab-side-panel-header {
-  flex-shrink: 0;
-  z-index: 31;
-  border-bottom: 1px solid var(--my-color-gray-3);
-}
-.my-design-tab-left-view,
-.my-design-tab-right-view {
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-}
-.my-design--side-panel-left {
-  background-color: var(--my-color-white) !important;
-}
-.my-design--side-panel-left .my-design-tab-left-view,
-.my-design--side-panel-left .my-design-tab-left-view-scroll,
-.my-design-tab-left-view--white-canvas {
-  background-color: var(--my-color-white) !important;
-}
-
-.my-design-main-step-block--section-divide {
-  border-top: 1px solid var(--my-color-gray-3);
-}
-
-.my-design--side-panel-left .my-pack-unit-attrs-panel {
-  background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-3);
-}
-.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4 {
-  background-color: var(--my-color-gray-4) !important;
-  border: none;
-}
-.my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
-  background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-3);
-}
-/* create-exam-bank_3：題目／答案 tab 列不加 pt-2（區塊頂 pt-2 在父層 wrap） */
-.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-stem-tabs-row) {
-  padding-top: 0 !important;
-}
-/* create-exam-bank_3：題目／答案內文 pt-2 pb-2 */
-.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
-.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2),
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pb-2),
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body.px-3.pt-2.pb-2) {
-  padding-top: 0.5rem !important;
-}
-/* create-exam-bank_3：出題／批改規則黑底區內文 pt-2（黑底區標題列下方無橫線；題目／答案／批改 tab 區仍保留橫線） */
-.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
-.my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
-.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
-.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-}
-.my-design-right-nav {
-  flex-wrap: nowrap;
-  width: 100%;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-}
-.my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar) {
-  scrollbar-width: none;
-}
-.my-design-tab-left-view-scroll:not(.my-design-tab-left-view-scroll--show-scrollbar)::-webkit-scrollbar {
-  display: none;
-}
-.my-design-right-step-block {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  width: 100%;
-  min-width: 0;
-  gap: 0;
-  background-color: var(--my-color-gray-4);
-  border-radius: 0.75rem;
-}
-.my-design-right-nav--flat {
-  gap: 0;
-}
-.my-design-right-nav--flat .my-design-right-step-block {
-  background-color: transparent;
-  border-radius: 0;
-}
-.my-design-right-nav--flat .my-design-right-step-block--section-divide {
-  border-bottom: 1px solid var(--my-color-gray-3);
-}
-
-.my-design-right-nav--flat .my-design-right-step-block .nav-link:not(.my-design-right-unit-quiz-link) {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-
-/* 題型列：全寬 hover + 文字內縮 */
-.my-design-right-nav--flat .my-design-right-unit-quiz-link {
-  padding-left: 1.75rem;
-  padding-right: 1rem;
-}
-.my-design-right-nav--flat .my-design-right-unit-row {
-  padding-left: 1rem;
-  padding-right: 1rem;
-}
-.my-design-right-nav--flat .my-design-right-unit-quiz-item {
-  width: 100%;
-}
-.my-design-right-nav--flat .my-design-right-unit-row-label {
-  padding-left: 0;
-  padding-right: 0;
-}
-.my-design-right-pack-build-action {
-  box-sizing: border-box;
-}
-.my-design-right-step-heading {
-  line-height: 1.35;
-  white-space: nowrap;
-}
-.my-design-right-step-block-head {
-  min-width: 0;
-}
-.my-design-right-step-block-head .my-design-right-step-heading {
-  min-width: 0;
-}
-/* 稿頁設定單元屬性：row/col 排版，欄位間距由 .row.g-3 負責 */
-.my-design-pack-unit-blocks {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  min-width: 0;
-}
-.my-design-pack-unit-blocks > .row {
-  --bs-gutter-x: 1rem;
-  --bs-gutter-y: 1rem;
-}
-/* 建置後單元主標題：大於全站 xl（1.125rem） */
-.my-design-pack-unit-main-title {
-  line-height: 1.35;
-  white-space: nowrap;
-}
-/* 設定單元名稱：inline 編輯（對齊 create-exam-bank-2-detail-bar__title） */
-.my-design-pack-unit-name-title {
-  display: block;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
-  margin: 0;
-  font-family: inherit;
-  line-height: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color 0.15s ease;
-}
-.my-design-pack-unit-name-title:hover:not(:disabled),
-.my-design-pack-unit-name-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-pack-unit-name-title:focus {
-  outline: none;
-  box-shadow: none;
-  border: none;
-}
-.my-design-pack-unit-name-title:disabled {
-  opacity: 1;
-  color: var(--my-color-black);
-  background: transparent;
-}
-/* 區段主標題：title → 橫線 → 內容（my-font-xl-400 + my-design-pack-unit-main-title） */
-.my-design-page-section-heading {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  min-width: 0;
-}
-.my-design-page-section-heading__body {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  width: 100%;
-  min-width: 0;
-}
-/* 欄位區：標題 → 內容（標題字階同「設定單元題型」小標 sm-400 gray-1） */
-.my-design-pack-unit-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  min-width: 0;
-}
-/* 欄位區：標題字階同「設定單元題型」小標（my-font-sm-400 my-color-gray-1） */
-.my-design-pack-unit-section__title {
-  margin-bottom: 0;
-  line-height: 1.35;
-  white-space: nowrap;
-}
-/* 標題與內容間距：等同 Bootstrap mt-1 */
-.my-design-pack-unit-section__title + * {
-  margin-top: 0.25rem !important;
-  padding-top: 0;
-}
-.my-design-page-section-heading > .my-test-section-heading-title + .my-design-page-section-heading__body {
-  margin-top: 0.5rem !important;
-}
-/* 對齊 LeftView 側欄 nav-pills */
-.my-design-right-nav .nav-link {
-  color: var(--my-color-black);
-  border: none;
-  border-radius: 0;
-  background: transparent;
-}
-.my-design-right-nav button.nav-link {
-  cursor: pointer;
-}
-.my-design-right-nav button.nav-link:not(.active):hover,
-.my-design-right-nav button.nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-4);
-  color: var(--my-color-black);
-}
-/* 左欄（gray-4 底）：hover 須用 gray-4 才看得見 */
-.my-design-right-nav--flat button.nav-link:not(.active):hover,
-.my-design-right-nav--flat button.nav-link:not(.active):focus-visible {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-right-nav .nav-link.active,
-.my-design-right-nav .nav-link.active:hover,
-.my-design-right-nav .nav-link.active:focus,
-.my-design-right-nav .nav-link.active:focus-visible {
-  background-color: var(--my-color-white);
-  color: var(--my-color-black);
-}
-.my-design-right-unit-expand-icon {
-  font-size: var(--my-font-size-sm);
-  pointer-events: none;
-}
-.my-design-right-unit-expand-chevron {
-  display: block;
-  width: 0.625rem;
-  text-align: center;
-  transform-origin: 50% 50%;
-  transition: transform 0.15s ease;
-}
-.my-design-right-unit-expand-chevron--open {
-  transform: rotate(90deg);
-}
-.my-design-right-unit-count-badge {
-  align-self: center;
-  margin-right: 0.25rem;
-  padding: 0.125rem 0.375rem;
-  font-size: 0.625rem;
-  font-weight: var(--my-font-weight-regular);
-  line-height: 1.25;
-  color: var(--my-color-gray-1);
-  background-color: var(--my-color-white);
-  border: none;
-  border-radius: 0.25rem;
-}
-.my-design-right-unit-row {
-  width: 100%;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.my-design-right-unit-row-label {
-  display: block;
-  min-width: 0;
-  padding: var(--bs-nav-link-padding-y, 0.5rem) 0;
-  color: var(--my-color-black);
-}
-.my-design-right-unit-row--active {
-  background-color: var(--my-color-white);
-}
-.my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
-.my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):hover,
-.my-design-right-nav--flat .my-design-right-unit-row:not(.my-design-right-unit-row--active):not(:has(.my-design-right-unit-add-quiz-btn:hover)):focus-visible {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-right-unit-quiz-list {
-  width: 100%;
-}
-.my-design-right-unit-quiz-item {
-  width: 100%;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-.my-design-right-unit-quiz-item--active {
-  background-color: var(--my-color-white);
-}
-.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
-.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover,
-.my-design-right-nav--flat .my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-right-unit-row .my-design-right-unit-add-quiz-btn {
-  align-self: center;
-  margin-right: 0;
-  background-color: transparent !important;
-}
-/* 單元／題型區圓形 +：預設 gray-2；hover 改 black */
-.my-design-right-nav .my-design-right-unit-add-quiz-btn,
-.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle,
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle,
-.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1,
-.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless {
-  color: var(--my-color-gray-2) !important;
-}
-.my-design-right-nav .my-design-right-unit-add-quiz-btn:hover:not(:disabled),
-.my-design-right-nav .my-design-right-unit-add-quiz-btn:focus-visible:not(:disabled),
-.my-design-right-nav .my-design-right-unit-add-quiz-btn:active:not(:disabled),
-.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:hover:not(:disabled),
-.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:focus-visible:not(:disabled),
-.my-design--side-panel-left .my-design-right-nav .my-button-transparent-borderless.my-btn-circle:active:not(:disabled),
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:hover:not(:disabled),
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:focus-visible:not(:disabled),
-.my-design-right-nav .my-btn-outline-gray-1.my-btn-circle:active:not(:disabled),
-.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:hover:not(:disabled),
-.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:focus-visible:not(:disabled),
-.my-design-right-nav .my-design-side-nav-unit-menu-btn.my-btn-outline-gray-1:active:not(:disabled),
-.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:hover:not(:disabled),
-.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:focus-visible:not(:disabled),
-.my-design--side-panel-left .my-design-right-nav .my-design-side-nav-unit-menu-btn.my-button-transparent-borderless:active:not(:disabled) {
-  color: var(--my-color-black) !important;
-  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent) !important;
-  border-color: color-mix(in srgb, var(--my-color-gray-2) 55%, transparent);
-}
-.my-design-right-unit-quiz-for-exam-slot {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-}
-.my-design-right-unit-quiz-for-exam-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-}
-.my-design-right-unit-quiz-link {
-  width: 100%;
-  font-size: var(--my-font-size-sm);
-  color: var(--my-color-gray-1);
-  padding: var(--bs-nav-link-padding-y, 0.5rem) var(--bs-nav-link-padding-x, 1rem);
-  padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 1.75rem);
-  box-sizing: border-box;
-}
-.my-design-right-unit-quiz-item--active .my-design-right-unit-quiz-link {
-  color: var(--my-color-black);
-}
-.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):hover .my-design-right-unit-quiz-link,
-.my-design-right-unit-quiz-item:not(.my-design-right-unit-quiz-item--active):focus-visible .my-design-right-unit-quiz-link {
-  color: var(--my-color-gray-1);
-}
-.my-pack-empty-start-layout {
-  justify-content: center;
-  min-height: 100%;
-}
-.my-pack-empty-start-layout .my-page-block-spacing {
-  margin-bottom: 0;
-}
-.my-pack-empty-start-layout > .row {
-  width: 100%;
-}
-.my-pack-empty-start-panel {
-  width: 100%;
-}
-.my-pack-folder-combo-field {
-  cursor: default;
-}
-.my-pack-folder-field-input {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  font-family: inherit;
-  font-size: var(--my-font-size-md);
-  font-weight: var(--my-font-weight-regular);
-  line-height: 1.5;
-  color: var(--my-color-black);
-  background-color: var(--my-pack-folder-field-bg) !important;
-  border: 1px solid var(--my-color-gray-3) !important;
-  border-radius: 0.375rem;
-}
-.my-pack-folder-field-input:focus {
-  outline: 0;
-  box-shadow: none;
-  background-color: var(--my-pack-folder-field-bg) !important;
-  border-color: var(--my-color-gray-3) !important;
-}
-.my-pack-drop-target.my-pack-drop-active {
-  background-color: var(--my-drop-pack-active-bg) !important;
-  border-color: var(--my-color-blue) !important;
-}
-/* 設定單元「拖入此處」等：沿用上一則淺藍反白，勿另用藍+黑混色（會整塊過深） */
-/* 出題規則 EasyMDE 編輯區：固定 96pt（與稿頁黑底預覽一致） */
-.my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: 96pt;
-}
-.my-rag-unit-quiz-prompt-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 96pt;
-}
-/* 設定單元：區塊內欄位／工具列統一縱向間距 */
-.my-pack-unit-settings-body {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  min-width: 0;
-}
-.my-pack-unit-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  width: 100%;
-  min-width: 0;
-}
-.my-pack-unit-field--tabs {
-  align-items: center;
-}
-/* 設定單元屬性灰底面板：單層 padding，欄位間距由 .row.gy-4 與面板 gap-4 負責 */
-.my-pack-unit-attrs-panel > .row {
-  --bs-gutter-x: 0.5rem;
-  --bs-gutter-y: 1.5rem;
-}
-.my-pack-unit-settings-carousel {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  width: 100%;
-  min-width: 0;
-}
-.my-pack-unit-toolbar-row {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-  min-width: 0;
-}
-/* 稿頁 pill 按鈕文字不換行（先前出題、詳細資訊、產生題目等） */
-.my-design-pack-unit-blocks :deep(.btn.rounded-pill),
-.my-pack-unit-settings-body :deep(.btn.rounded-pill) {
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-/* 題型區三子區塊：題目＝白底 gray-3 邊框；答案＝gray-4 底無邊框；批改子區 inset 灰框 */
-.my-design-quiz-sub-block-outer {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-/* create-exam-bank_3：Q／A 標誌在區塊外左側，靠上對齊 */
-.my-design-quiz-sub-block-outer--with-logo {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-  gap: 1rem;
-  box-sizing: border-box;
-}
-.my-design-quiz-sub-block-outer--with-logo-q {
-  align-items: stretch;
-}
-.my-design-quiz-sub-block-outer__logo-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  flex: 0 0 24pt;
-  width: 24pt;
-  min-width: 24pt;
-  max-width: 24pt;
-  align-self: stretch;
-  box-sizing: border-box;
-}
-.my-design-quiz-sub-block-outer__logo-spacer {
-  flex-shrink: 0;
-  width: 100%;
-}
-.my-design-quiz-sub-block-outer__logo-stem {
-  flex: 1 1 auto;
-  min-height: 0;
-  width: 1px;
-  background-color: var(--my-color-gray-3);
-  margin-inline: auto;
-}
-.my-design-quiz-sub-block-outer__logo-arrowhead {
-  flex-shrink: 0;
-  display: block;
-  width: 100%;
-  height: 12pt;
-  margin-top: -1px;
-  color: var(--my-color-gray-3);
-  overflow: visible;
-}
-.my-design-quiz-sub-block-outer__logo {
-  flex: 0 0 24pt;
-  width: 24pt;
-  min-width: 24pt;
-  max-width: 24pt;
-  align-self: flex-start;
-  box-sizing: content-box;
-}
-.my-design-quiz-sub-block-outer--with-logo .my-design-quiz-sub-block {
-  flex: 1 1 0;
-  min-width: 0;
-}
-.my-design-quiz-sub-block__body {
-  box-sizing: border-box;
-  min-width: 0;
-  flex: 1 1 0;
-}
-.my-design-quiz-sub-block {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-/* 題目子區塊：白底 + gray-3 邊框（同 tab 下方 hr） */
-.my-design-quiz-sub-block--stem {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-}
-/* 稿頁三子區塊：題目／答案無框；批改規則／批改結果為灰框白底；出題規則為黑底區 */
-/* 灰框欄位：圓角灰邊白底（批改子區） */
-.my-design-quiz-field-inset,
-.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  border: 1px solid var(--my-color-gray-3);
-  border-radius: 0.5rem;
-  background-color: var(--my-color-white);
-}
-/* 題目／答案：無灰框，沿用子區白底 */
-.my-design-quiz-field-inset--plain,
-.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset--plain) {
-  border: none;
-  border-radius: 0;
-  background-color: transparent;
-}
-.my-design-quiz-field-inset-label,
-.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
-  line-height: 1.35;
-  white-space: nowrap;
-}
-/* 出題／答案／批改規則：標題列統一 px-3 py-2（頁內 + QuizCard 子區塊） */
-.my-design-quiz-question-prompt-block__title-row,
-.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row),
-.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3:not(.my-design-quiz-stem-tabs-row)) {
-  padding-top: 0.5rem !important;
-  padding-bottom: 0.5rem !important;
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-}
-/* 題目／先前出題 tab：底線貼齊下方 hr，標題列不留 pt／pb */
-.my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
-.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
-.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3),
-.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-/* 題目等灰框白底：標題列 px-3 py-2 → 橫線 → 內文 px-3 pt-2 pb-2 */
-.my-design-quiz-field-inset__rule,
-.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
-  border: 0;
-  border-top: 1px solid var(--my-color-gray-3);
-  opacity: 1;
-}
-/*
- * 出題／批改規則黑底區外層 wrap：px-3 py-2；標題列 px-3 py-2 → 橫線 → 內文
- * 題目／批改子區塊頂部：.my-design-quiz-stem-sub-block-top（灰底區最上方、非題目 title 列）
- */
-.my-design-quiz-stem-sub-block-top,
-.my-design-pack-unit-blocks :deep(.my-design-quiz-stem-sub-block-top) {
-  padding-top: 0 !important;
-}
-.my-design-quiz-question-prompt-block,
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-  border: none;
-  border-radius: 0.5rem;
-  background-color: var(--my-color-black);
-  overflow: hidden;
-}
-.my-design-quiz-question-prompt-block__title,
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {
-  line-height: 1.35;
-  white-space: nowrap;
-}
-/* 稿頁區塊小標（設定單元題型、來源檔等）不換行 */
-.my-design-pack-unit-blocks .my-font-sm-400.my-color-gray-1.mb-2,
-.my-design-pack-unit-section > .my-font-sm-400.my-color-gray-1.mb-2 {
-  white-space: nowrap;
-}
-/* 題型名稱：inline 編輯（對齊 create-exam-bank-2-detail-bar__title） */
-.my-design-unit-quiz-type-title {
-  display: block;
-  border: none;
-  outline: none;
-  box-shadow: none;
-  background: transparent;
-  margin: 0;
-  font-family: inherit;
-  line-height: inherit;
-  appearance: none;
-  -webkit-appearance: none;
-  transition: background-color 0.15s ease;
-}
-.my-design-unit-quiz-type-title:hover:not(:disabled),
-.my-design-unit-quiz-type-title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-4);
-}
-.my-design-unit-quiz-type-title:focus {
-  outline: none;
-  box-shadow: none;
-  border: none;
-}
-.my-design-unit-quiz-type-title:disabled {
-  opacity: 1;
-  color: var(--my-color-black);
-  background: transparent;
-}
-/* 黑底區右上編輯：白 icon、小圓鈕（對齊 sm 標題列） */
-.my-design-quiz-question-prompt-block__edit-btn,
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn) {
-  box-sizing: border-box;
-  width: 1.75rem;
-  height: 1.75rem;
-  min-width: 1.75rem;
-  min-height: 1.75rem;
-  padding: 0;
-  border: none;
-  background-color: transparent;
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
-.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled)),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled)) {
-  color: var(--my-color-white);
-  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
-}
-.my-design-quiz-question-prompt-block__edit-btn .fa-solid,
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn .fa-solid) {
-  font-size: var(--my-font-size-sm);
-  line-height: 1;
-}
-/* 設定單元「內容」：筆 icon 圓鈕（尺寸同出題規則；淺色區白底） */
-.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light,
-.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-1) !important;
-}
-.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:hover:not(:disabled),
-.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:focus-visible:not(:disabled),
-.my-design-quiz-question-prompt-block__edit-btn.my-design-quiz-question-prompt-block__edit-btn--on-light:active:not(:disabled),
-.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:hover:not(:disabled),
-.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:focus-visible:not(:disabled),
-.my-design-pack-unit-section .my-design-quiz-question-prompt-block__edit-btn--on-light:active:not(:disabled) {
-  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
-  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4)) !important;
-  color: var(--my-color-black) !important;
-}
-.my-design-quiz-question-prompt-block__rule,
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__rule) {
-  border: 0;
-  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
-  opacity: 1;
-}
-/* 黑底預覽內層：無白框（頁內出題規則 + QuizCard 內批改規則） */
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel--design-dark) {
-  margin-bottom: 0;
-  background: transparent !important;
-  border: none !important;
-  border-radius: 0;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel) {
-  margin-bottom: 0;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  color: var(--my-color-white);
-  font-family: var(--my-font-family-code);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-more-btn),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-more-btn) {
-  font-family: var(--my-font-family-code);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
-  color: var(--my-color-gray-2);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h1),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h2),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body h3),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h1),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h2),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h3),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th) {
-  color: var(--my-color-white);
-  font-family: inherit;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body a),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body a) {
-  color: var(--my-color-blue-hover);
-  word-break: break-word;
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body pre),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body pre) {
-  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body code),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body code) {
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body p code),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body li code),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p code),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li code) {
-  background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
-  color: var(--my-color-white);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body blockquote),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
-  border-left-color: var(--my-color-gray-3);
-  color: var(--my-color-gray-3);
-}
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body th),
-.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body td),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th),
-.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td) {
-  border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
-}
-.my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
-  margin-bottom: 0;
-}
-/* 題目標題列「先前出題」pill：白底、無描邊 */
-.btn.my-design-quiz-history-btn,
-:deep(.btn.my-design-quiz-history-btn) {
-  border: none;
-  white-space: nowrap;
-  background-color: var(--my-color-white);
-  color: var(--my-color-black);
-}
-.btn.my-design-quiz-history-btn:hover:not(:disabled),
-.btn.my-design-quiz-history-btn:focus-visible:not(:disabled),
-.btn.my-design-quiz-history-btn:active:not(:disabled),
-:deep(.btn.my-design-quiz-history-btn:hover:not(:disabled)),
-:deep(.btn.my-design-quiz-history-btn:focus-visible:not(:disabled)),
-:deep(.btn.my-design-quiz-history-btn:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
-  color: var(--my-color-black);
-}
-/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-4、無描邊 */
-.btn.my-design-quiz-stem-history-btn,
-:deep(.btn.my-design-quiz-stem-history-btn) {
-  border: none;
-  white-space: nowrap;
-  background-color: var(--my-color-gray-4);
-  color: var(--my-color-black);
-}
-.btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
-.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled),
-.btn.my-design-quiz-stem-history-btn:active:not(:disabled),
-:deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
-:deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
-:deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
-  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
-  color: var(--my-color-black);
-}
-/* 答案子區塊：作答欄白底、淡灰框（--my-color-gray-3） */
-.form-control.my-design-quiz-answer-input,
-.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-}
-.form-control.my-design-quiz-answer-input:focus,
-.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
-  background-color: var(--my-color-white);
-  border-color: var(--my-color-gray-3);
-  box-shadow: none;
-}
-.form-control.my-design-quiz-answer-input:disabled,
-.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
-  background-color: var(--my-color-gray-4);
-  border-color: var(--my-color-gray-3);
-  opacity: 1;
-}
-/* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕（僅稿頁；含 QuizCard 批改子區塊內按鈕） */
-.btn.my-design-quiz-action-edit-btn,
-.my-design-quiz-sub-block :deep(.btn.my-design-quiz-action-edit-btn) {
-  box-sizing: border-box;
-  width: 2.5rem;
-  height: 2.5rem;
-  min-width: 2.5rem;
-  min-height: 2.5rem;
-  padding: 0;
-  border: none;
-}
-
-
-.my-pack-unit-md-editor :deep(.english-exam-md-editor-root) {
-  --english-md-preview-max-h: min(50vh, 22rem);
-}
-.my-pack-unit-md-editor :deep(.english-exam-md-editor-wrap .CodeMirror-scroll) {
-  min-height: 200px;
-}
-
-/* 設定單元「類型」picker：px-3、icon 同色（蓋過 work3 小 pill px-2 覆寫） */
-.my-design--side-panel-left .my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.rounded-pill) {
-  padding-left: 1rem !important;
-  padding-right: 1rem !important;
-}
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
-  color: inherit !important;
-}
-/* 類型 segment：未選 gray-2 字、hover gray-3 底（蓋過 Bootstrap .btn） */
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2),
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:disabled) {
-  --bs-btn-color: var(--my-color-gray-2);
-  --bs-btn-disabled-color: var(--my-color-gray-2);
-  color: var(--my-color-gray-2) !important;
-  background-color: transparent !important;
-}
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:hover:not(:disabled)),
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:focus-visible:not(:disabled)),
-.my-pack-unit-type-segment :deep(.btn.my-pack-unit-type-btn.my-button-transparent-borderless.my-color-gray-2:active:not(:disabled)) {
-  --bs-btn-hover-bg: var(--my-color-gray-3) !important;
-  --bs-btn-active-bg: var(--my-color-gray-3) !important;
-  color: var(--my-color-black) !important;
-  background-color: var(--my-color-gray-3) !important;
-}
-
-/* 「+ 加入資料夾」字色：置末覆寫（蓋過 .form-control.my-input-md 與 Bootstrap .btn:disabled） */
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn),
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:disabled),
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:hover:not(:disabled)),
-.form-control.my-input-md.my-pack-folder-combo-field :deep(> button.btn.my-pack-unit-add-folder-btn:focus-visible:not(:disabled)) {
-  --bs-btn-color: var(--my-color-gray-1);
-  --bs-btn-hover-color: var(--my-color-gray-1);
-  --bs-btn-disabled-color: var(--my-color-gray-1);
-  color: var(--my-color-gray-1) !important;
-  -webkit-text-fill-color: var(--my-color-gray-1) !important;
-}
-
-/* 詳細資訊 Modal：題目／先前出題同款 tab */
-.my-pack-unit-detail-modal .my-design-quiz-stem-tabs-row .my-design-quiz-stem-tab {
-  position: relative;
-  z-index: 0;
-  margin-bottom: -1px;
-}
-.my-pack-unit-detail-modal .my-design-quiz-stem-tab {
-  border: none;
-  border-bottom: 2pt solid transparent;
-  border-radius: 0;
-  background: transparent;
-  line-height: 1.25;
-  box-shadow: none;
-}
-.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active,
-.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:hover,
-.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:focus,
-.my-pack-unit-detail-modal .my-design-quiz-stem-tab--active:focus-visible {
-  z-index: 1;
-  padding-bottom: calc(0.5rem + 1px);
-  border-bottom-color: var(--my-color-black);
-  background-color: transparent;
-  box-shadow: none;
-}
-.my-pack-unit-detail-modal .my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2,
-.my-pack-unit-detail-modal .my-design-quiz-field-inset__head > .d-flex.my-design-quiz-stem-tabs-row {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-.my-pack-unit-detail-modal .my-design-quiz-field-inset-body {
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-</style>
+<style scoped src="../assets/css/design-quiz-shared.css"></style>
+<style scoped src="./CreateExamQuizBankDetailPage.css"></style>

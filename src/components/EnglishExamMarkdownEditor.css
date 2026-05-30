@@ -1,0 +1,255 @@
+.english-exam-md-editor-root {
+  --english-md-preview-max-h: min(55vh, 28rem);
+}
+
+/* 與表單 rounded-2、灰底區塊視覺對齊；勿對整個 Container overflow:hidden，否則 CodeMirror 內部捲動條不會出現 */
+.english-exam-md-editor-wrap :deep(.EasyMDEContainer) {
+  border-radius: 0.25rem;
+  overflow: visible;
+  border: 1px solid var(--my-color-gray-3);
+}
+.english-exam-md-editor-wrap :deep(.editor-toolbar) {
+  border-radius: 0.25rem 0.25rem 0 0;
+}
+/* CodeMirror 5：由 .CodeMirror-scroll 負責 max-height + 捲動（與官方建議一致） */
+.english-exam-md-editor-wrap :deep(.CodeMirror) {
+  border-radius: 0 0 0.25rem 0.25rem;
+  height: auto;
+}
+.english-exam-md-editor-wrap :deep(.CodeMirror-scroll) {
+  min-height: 280px;
+  max-height: var(--english-md-preview-max-h);
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+.english-exam-md-editor-root--prompt-code-font :deep(.CodeMirror),
+.english-exam-md-editor-root--prompt-code-font :deep(.CodeMirror pre),
+.english-exam-md-editor-root--prompt-code-font :deep(.CodeMirror-line) {
+  font-family: var(--my-font-family-code);
+}
+
+/* Modal 編輯區：CodeMirror 黑底白字（工具列維持 EasyMDE 預設；對齊 previewDesignDark 預覽） */
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.editor-preview),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.editor-preview-side) {
+  background-color: var(--my-color-black) !important;
+  color: var(--my-color-white);
+}
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror pre),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror-line),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror-line-like) {
+  color: var(--my-color-white);
+}
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror-cursor) {
+  border-left-color: var(--my-color-white);
+}
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror-selected),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.CodeMirror-focused .CodeMirror-selected) {
+  background: color-mix(in srgb, var(--my-color-white) 22%, transparent);
+}
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.editor-preview),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.editor-preview-side) {
+  color: var(--my-color-white);
+}
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.editor-preview pre),
+.english-exam-md-editor-root--edit-design-dark .english-exam-md-editor-wrap :deep(.editor-preview-side pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
+}
+
+/* 唯讀預覽：高度隨內容伸縮，不設 max-height（出題／批改規則等長文一次看完） */
+.english-exam-md-preview-panel--surface {
+  border-color: var(--my-color-gray-3) !important;
+  overflow-x: auto;
+  overflow-y: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 稿頁出題／批改規則黑底預覽：未展開最高 96pt（不足隨內容）；展開後高度隨內容 */
+.english-exam-md-preview-panel--design-dark {
+  border-color: var(--my-color-white) !important;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.english-exam-md-preview-panel--design-dark-fixed {
+  max-height: 96pt;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+.english-exam-md-preview-panel--design-dark-expanded {
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  overflow-y: visible;
+}
+/* 出題／批改／分析規則黑底區：未設定規則內容置中、gray-2、高度隨內容 */
+.english-exam-md-preview-panel--design-dark-empty {
+  display: block;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+.english-exam-md-preview-panel--design-dark-empty .english-exam-md-preview-empty {
+  width: 100%;
+  text-align: center;
+  color: var(--my-color-gray-2) !important;
+}
+/* 黑底預覽：內容區下方另起一排「…… 查看更多」／「收起」（不疊在內容上） */
+.english-exam-md-preview-more-row {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.15rem 1rem 0;
+}
+/* 稿頁出題／批改規則黑底區「查看更多」：併 HTML px-3 pt-2 pb-2 */
+.english-exam-md-preview-more-btn {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--my-color-white);
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  text-align: start;
+}
+.english-exam-md-preview-more-btn:hover,
+.english-exam-md-preview-more-btn:focus-visible {
+  color: var(--my-color-white);
+  text-decoration: none;
+  outline: none;
+}
+
+/* 出題／批改規則黑底預覽：Google Sans Code（與 Design 稿頁 prompt 區一致） */
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body,
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-empty,
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-more-btn {
+  font-family: var(--my-font-family-code);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h1),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h2),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h3),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(p),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(li),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(td),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(th),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(pre),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(code),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(blockquote) {
+  font-family: inherit;
+}
+
+/* Design 頁黑底示範列：唯讀 Markdown 內嵌元素字色／區塊對比 */
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h1),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h2),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(h3) {
+  color: var(--my-color-white);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(p),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(li),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(td),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(th) {
+  color: var(--my-color-white);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(code) {
+  color: var(--my-color-white);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(p code),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(li code) {
+  background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+  color: var(--my-color-white);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(blockquote) {
+  border-left-color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3);
+}
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(th),
+.english-exam-md-preview-panel--design-dark .english-exam-md-preview-body :deep(td) {
+  border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
+}
+
+.english-exam-md-preview-body :deep(h1),
+.english-exam-md-preview-body :deep(h2),
+.english-exam-md-preview-body :deep(h3) {
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.english-exam-md-preview-body :deep(h1:first-child),
+.english-exam-md-preview-body :deep(h2:first-child),
+.english-exam-md-preview-body :deep(h3:first-child) {
+  margin-top: 0;
+}
+.english-exam-md-preview-body :deep(h1) {
+  font-size: 1.35rem;
+}
+.english-exam-md-preview-body :deep(h2) {
+  font-size: 1.2rem;
+}
+.english-exam-md-preview-body :deep(h3) {
+  font-size: 1.05rem;
+}
+.english-exam-md-preview-body :deep(p) {
+  margin-bottom: 0.5rem;
+}
+.english-exam-md-preview-body :deep(ul),
+.english-exam-md-preview-body :deep(ol) {
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+}
+.english-exam-md-preview-body :deep(pre) {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.25rem;
+  overflow-x: auto;
+  font-size: 0.875rem;
+  background: var(--my-color-gray-4);
+}
+.english-exam-md-preview-body :deep(code) {
+  font-size: 0.9em;
+}
+.english-exam-md-preview-body :deep(p code),
+.english-exam-md-preview-body :deep(li code) {
+  padding: 0.1em 0.35em;
+  border-radius: 0.2rem;
+  background: var(--my-color-gray-4);
+}
+.english-exam-md-preview-body :deep(blockquote) {
+  margin: 0.5rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--my-color-gray-3);
+  color: var(--my-color-gray-1);
+}
+.english-exam-md-preview-body :deep(table) {
+  width: 100%;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  border-collapse: collapse;
+}
+.english-exam-md-preview-body :deep(th),
+.english-exam-md-preview-body :deep(td) {
+  border: 1px solid var(--my-color-gray-3);
+  padding: 0.25rem 0.5rem;
+}
+.english-exam-md-preview-body :deep(a) {
+  word-break: break-word;
+}
+/* 置於各區塊 margin 規則之後：最後一個子元素不再留底緣（單一 <p> 不會像多一層 pb-2） */
+.english-exam-md-preview-body :deep(> *:last-child) {
+  margin-bottom: 0;
+}

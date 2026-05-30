@@ -1,0 +1,114 @@
+/* create-exam-bank_3 白底主頁清單：hover 淺灰（覆寫 common.css gray-3） */
+.create-exam-bank-2--side-panel-left .bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-4);
+}
+
+
+.create-exam-bank-2.create-exam-bank-2--detail {
+  overflow: visible;
+}
+
+.create-exam-bank-2-embedded {
+  overflow: hidden;
+}
+
+/* 嵌入原頁：隱藏「建立測驗題庫」標題列與分頁列 */
+.create-exam-bank-2-embedded :deep(> header) {
+  display: none;
+}
+
+.create-exam-bank-2-embedded :deep(.my-rag-tabs-bar) {
+  display: none !important;
+}
+
+/* 嵌入原頁：子元件 pill 若仍為 px-3，與九宮格版一致改為 px-4（類型／加入資料夾 picker、出題模式 segment 除外） */
+.create-exam-bank-2-embedded :deep(button.btn.rounded-pill.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-unit-content-toggle-btn):not(.my-quiz-generate-mode-segment-btn)),
+.create-exam-bank-2-embedded :deep(button.btn.rounded-2.px-3:not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-unit-content-toggle-btn):not(.my-quiz-generate-mode-segment-btn)) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+/* create-exam-bank_3：小 pill 按鈕 px-2（覆寫上方 px-4）；類型／加入資料夾 picker、出題模式 segment、顯示／隱藏文本（my-unit-content-toggle-btn）除外 */
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-unit-content-toggle-btn):not(.my-quiz-generate-mode-segment-btn)),
+.create-exam-bank-2--side-panel-left :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-unit-content-toggle-btn):not(.my-quiz-generate-mode-segment-btn)) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-pill.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-unit-content-toggle-btn):not(.my-quiz-generate-mode-segment-btn)),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.rounded-2.my-font-sm-400:not(.my-design-quiz-stem-history-btn):not(.my-design-quiz-history-btn):not(.my-button-transparent-borderless):not(.my-pack-unit-type-btn):not(.my-pack-unit-add-folder-btn):not(.my-unit-content-toggle-btn):not(.my-quiz-generate-mode-segment-btn)) {
+  padding-left: 0.5rem !important;
+  padding-right: 0.5rem !important;
+}
+
+/* create-exam-bank_3：詳細資訊等 stem history、設定單元類型／加入資料夾、顯示／隱藏文本 pill 維持 px-3；出題模式 segment px-4 */
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-design-quiz-stem-history-btn.rounded-2.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-pack-unit-type-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-pack-unit-add-folder-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-unit-content-toggle-btn.rounded-pill.my-font-sm-400) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.create-exam-bank-2--side-panel-left :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400),
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(button.btn.my-quiz-generate-mode-segment-btn.rounded-pill.my-font-sm-400) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+
+.create-exam-bank-2--side-panel-left.create-exam-bank-2--detail,
+.create-exam-bank-2--side-panel-left.create-exam-bank-2--detail .create-exam-bank-2-embedded {
+  background-color: var(--my-color-white) !important;
+}
+
+.create-exam-bank-2--side-panel-left.create-exam-bank-2--detail .create-exam-bank-2-embedded :deep(.my-design--side-panel-left) {
+  background-color: var(--my-color-white) !important;
+}
+
+/* 嵌入頁「類型」picker：強制 px-3；「一般／追問」segment：px-4（蓋過上方小 pill px-2 覆寫） */
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn.rounded-pill) {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+.create-exam-bank-2--side-panel-left .create-exam-bank-2-embedded :deep(.my-quiz-generate-mode-segment > .btn.my-quiz-generate-mode-segment-btn) {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}
+.create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon),
+.create-exam-bank-2-embedded :deep(.my-pack-unit-type-segment .btn.my-pack-unit-type-btn .my-pack-unit-type-icon::before) {
+  color: inherit !important;
+}
+
+/* 嵌入頁「+ 加入資料夾」：gray-4 底、.my-color-gray-4 字（蓋過 .form-control.my-input-md 黑字；不限 side-panel-left） */
+.create-exam-bank-2-embedded :deep(.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn),
+.create-exam-bank-2-embedded :deep(.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn),
+.create-exam-bank-2-embedded :deep(.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn) {
+  --bs-btn-bg: var(--my-color-gray-4);
+  --bs-btn-hover-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-active-bg: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  --bs-btn-disabled-bg: var(--my-color-gray-4);
+  --bs-btn-color: var(--my-color-gray-1);
+  --bs-btn-hover-color: var(--my-color-gray-1);
+  --bs-btn-active-color: var(--my-color-gray-1);
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  --bs-btn-disabled-opacity: 1;
+  --bs-btn-border-color: transparent;
+  --bs-btn-border-width: 0;
+  background-color: var(--my-color-gray-4) !important;
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.create-exam-bank-2-embedded :deep(.form-control.my-input-md.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled),
+.create-exam-bank-2-embedded :deep(.form-control.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled),
+.create-exam-bank-2-embedded :deep(.my-pack-folder-combo-field > button.btn.my-pack-unit-add-folder-btn:disabled) {
+  --bs-btn-disabled-color: var(--my-color-gray-1);
+  color: var(--my-color-gray-1) !important;
+  -webkit-text-fill-color: var(--my-color-gray-1) !important;
+}

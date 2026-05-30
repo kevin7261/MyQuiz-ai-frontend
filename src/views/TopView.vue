@@ -11,7 +11,11 @@
   import { useCourseHeaderStore } from '../stores/courseHeaderStore.js';
   import { canSeeNavLink } from '../router/permissions.js';
   import { resolveBrandName, resolvePageName, isCourseScopedHeaderRoute } from '../utils/pageHeaderTitle.js';
-  import { buildCoursesPageLocation, resolveCourseScopeKey } from '../utils/courseScope.js';
+  import {
+    buildCoursesPageLocation,
+    resolveCourseScopeKey,
+    scopedRouteForViewFromRoute,
+  } from '../utils/courseScope.js';
 
   /** 右上角姓名下拉（測驗等四頁）僅在已選課程且為課程範圍頁面時顯示 */
   function shouldShowCourseUserNavDropdown(route, course) {
@@ -82,9 +86,14 @@
         }
       }
 
+      /** 姓名下拉：優先沿用目前 URL 的 course_id，避免各 scope 記憶課程不一致 */
+      function scopedNavRouteFor(viewSegment) {
+        return scopedRouteForViewFromRoute(viewSegment, route) ?? authStore.scopedRouteFor(viewSegment);
+      }
+
       return {
         canSeeNavLink,
-        scopedRouteFor: authStore.scopedRouteFor,
+        scopedNavRouteFor,
         currentCourseName,
         useBrandCodeFont,
         pageTitle,
@@ -171,17 +180,17 @@
           </button>
           <ul class="dropdown-menu dropdown-menu-end my-course-header__user-menu">
             <li v-if="canSeeNavLink(userType, 'work')">
-              <router-link class="dropdown-item" :to="scopedRouteFor('exam')" active-class="active">測驗</router-link>
+              <router-link class="dropdown-item" :to="scopedNavRouteFor('exam')" active-class="active">測驗</router-link>
             </li>
             <li>
-              <router-link class="dropdown-item" :to="scopedRouteFor('create-exam-bank')" active-class="active">
+              <router-link class="dropdown-item" :to="scopedNavRouteFor('create-exam-bank')" active-class="active">
                 建立測驗題庫
               </router-link>
             </li>
             <li v-if="canSeeNavLink(userType, 'person-analysis')">
               <router-link
                 class="dropdown-item"
-                :to="scopedRouteFor('person-analysis')"
+                :to="scopedNavRouteFor('person-analysis')"
                 active-class="active"
               >
                 作答弱點分析
@@ -190,7 +199,7 @@
             <li v-if="canSeeNavLink(userType, 'course-analysis')">
               <router-link
                 class="dropdown-item"
-                :to="scopedRouteFor('course-analysis')"
+                :to="scopedNavRouteFor('course-analysis')"
                 active-class="active"
               >
                 學生作答分析
@@ -207,59 +216,4 @@
   </header>
 </template>
 
-<style scoped>
-.my-course-header {
-  z-index: 50;
-  height: 64px;
-  min-height: 64px;
-  max-height: 64px;
-}
-
-.my-course-header-inner {
-  grid-template-columns: minmax(0, 1fr) auto;
-  min-height: 0;
-}
-
-.my-course-header-inner__center {
-  justify-self: stretch;
-}
-
-.my-course-header-inner__end {
-  justify-self: end;
-}
-
-.my-course-header__user-menu {
-  z-index: 1100;
-}
-
-.my-course-header-course-title {
-  line-height: 1.35;
-}
-
-.my-course-header-course-name,
-.my-course-header-page-name {
-  cursor: pointer;
-}
-
-.my-course-header__user-name {
-  max-width: 10rem;
-  line-height: 1.35;
-}
-
-.my-course-header .my-design-08-dropdown .btn.my-button-white {
-  max-width: 10rem;
-  color: var(--my-color-black) !important;
-  background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-3) !important;
-  box-shadow: none;
-}
-
-.my-course-header .my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
-.my-course-header .my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
-.my-course-header .my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
-.my-course-header .my-design-08-dropdown .btn.my-button-white.show {
-  color: var(--my-color-black) !important;
-  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white)) !important;
-  border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3)) !important;
-}
-</style>
+<style scoped src="./TopView.css"></style>

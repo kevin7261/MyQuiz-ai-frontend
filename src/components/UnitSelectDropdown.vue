@@ -197,12 +197,7 @@ function select(val) {
   </div>
 </template>
 
-<style scoped>
-.my-unit-select-dd-menu {
-  min-width: 100%;
-  max-height: 280px;
-}
-</style>
+<style scoped src="./UnitSelectDropdown.css"></style>
 
 <!-- Modal 內 static 下拉：提高 z-index，避免被其他層遮住 -->
 <style>

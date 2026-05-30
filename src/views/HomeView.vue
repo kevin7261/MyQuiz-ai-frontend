@@ -124,10 +124,4 @@ export default {
   </div>
 </template>
 
-<style scoped>
-.my-home-layout {
-  min-height: 0;
-  flex: 1 1 0;
-  align-items: stretch;
-}
-</style>
+<style scoped src="./HomeView.css"></style>

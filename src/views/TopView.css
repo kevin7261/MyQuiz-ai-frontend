@@ -1,0 +1,54 @@
+.my-course-header {
+  z-index: 50;
+  height: 64px;
+  min-height: 64px;
+  max-height: 64px;
+}
+
+.my-course-header-inner {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.my-course-header-inner__center {
+  justify-self: stretch;
+}
+
+.my-course-header-inner__end {
+  justify-self: end;
+}
+
+.my-course-header__user-menu {
+  z-index: 1100;
+}
+
+.my-course-header-course-title {
+  line-height: 1.35;
+}
+
+.my-course-header-course-name,
+.my-course-header-page-name {
+  cursor: pointer;
+}
+
+.my-course-header__user-name {
+  max-width: 10rem;
+  line-height: 1.35;
+}
+
+.my-course-header .my-design-08-dropdown .btn.my-button-white {
+  max-width: 10rem;
+  color: var(--my-color-black) !important;
+  background-color: var(--my-color-white) !important;
+  border: 1px solid var(--my-color-gray-3) !important;
+  box-shadow: none;
+}
+
+.my-course-header .my-design-08-dropdown .btn.my-button-white:hover:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white:focus-visible:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white:active:not(:disabled),
+.my-course-header .my-design-08-dropdown .btn.my-button-white.show {
+  color: var(--my-color-black) !important;
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white)) !important;
+  border: 1px solid color-mix(in srgb, var(--my-color-black) 18%, var(--my-color-gray-3)) !important;
+}

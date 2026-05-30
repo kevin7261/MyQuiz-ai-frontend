@@ -207,12 +207,4 @@ function onConfirm() {
   </Teleport>
 </template>
 
-<style scoped>
-/* Modal 內 Bootstrap 下拉：避免選單被裁切，樣式仍用 UnitSelectDropdown */
-:deep(.my-design-08-dropdown) {
-  position: relative;
-}
-:deep(.my-unit-select-dd-menu) {
-  z-index: 2000;
-}
-</style>
+<style scoped src="./ExamAddQuestionModal.css"></style>

@@ -1,0 +1,256 @@
+/*
+ * design-quiz-shared.css — 出題版面共用樣式（ExamDetailPage 與 CreateExamQuizBankDetailPage 共用）
+ *
+ * 透過 <style scoped src="..."> 在兩頁各自引入：每頁編譯各自 data-v hash，scoped 隔離與 :deep() 皆保留。
+ * 只收錄兩頁「逐字相同」之結構/版面規則；規則內文字色/字體、stem-tabs padding 等兩頁有差異者仍留各頁。
+ */
+
+/* 題型區子區塊外層／Q．A 標誌欄與連接線 */
+.my-design-quiz-sub-block-outer {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.my-design-quiz-sub-block-outer--with-logo {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 1rem;
+  box-sizing: border-box;
+}
+.my-design-quiz-sub-block-outer--with-logo-q {
+  align-items: stretch;
+}
+.my-design-quiz-sub-block-outer__logo-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 24pt;
+  width: 24pt;
+  min-width: 24pt;
+  max-width: 24pt;
+  align-self: stretch;
+  box-sizing: border-box;
+}
+.my-design-quiz-sub-block-outer__logo-spacer {
+  flex-shrink: 0;
+  width: 100%;
+}
+/* 連接線／箭頭顏色兩頁不同（exam gray-3、create-exam-bank gray-2），故 stem／arrowhead 留各頁 */
+.my-design-quiz-sub-block-outer__logo {
+  flex: 0 0 24pt;
+  width: 24pt;
+  min-width: 24pt;
+  max-width: 24pt;
+  align-self: flex-start;
+  box-sizing: content-box;
+}
+.my-design-quiz-sub-block-outer--with-logo .my-design-quiz-sub-block {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.my-design-quiz-sub-block__body {
+  box-sizing: border-box;
+  min-width: 0;
+  flex: 1 1 0;
+}
+.my-design-quiz-sub-block {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+.my-design-quiz-sub-block--stem {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-3);
+}
+
+/* 灰框白底欄位（批改子區）；題目／答案無框；標籤不換行 */
+.my-design-quiz-field-inset,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset) {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: 1px solid var(--my-color-gray-3);
+  border-radius: 0.5rem;
+  background-color: var(--my-color-white);
+}
+.my-design-quiz-field-inset--plain,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset--plain) {
+  border: none;
+  border-radius: 0;
+  background-color: transparent;
+}
+.my-design-quiz-field-inset-label,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-label) {
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+/* 稿頁區塊小標（設定單元題型、來源檔等）不換行 */
+.my-design-pack-unit-blocks .my-font-sm-400.my-color-gray-1.mb-2,
+.my-design-pack-unit-section > .my-font-sm-400.my-color-gray-1.mb-2 {
+  white-space: nowrap;
+}
+
+/* 出題／答案／批改規則：標題列統一 px-3 py-2 */
+.my-design-quiz-question-prompt-block__title-row,
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block__title-row),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset__head > .d-flex.gap-2.px-3:not(.my-design-quiz-stem-tabs-row)) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* 灰框白底：標題列下方橫線 */
+.my-design-quiz-field-inset__rule,
+.my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
+  border: 0;
+  border-top: 1px solid var(--my-color-gray-3);
+  opacity: 1;
+}
+
+/* 題目／批改子區塊頂部容器不留 pt */
+.my-design-quiz-stem-sub-block-top,
+.my-design-pack-unit-blocks :deep(.my-design-quiz-stem-sub-block-top) {
+  padding-top: 0 !important;
+}
+
+/* 出題／批改規則黑底區 */
+.my-design-quiz-question-prompt-block,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: var(--my-color-black);
+  overflow: hidden;
+}
+.my-design-quiz-question-prompt-block__title,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__title) {
+  line-height: 1.35;
+  white-space: nowrap;
+}
+.my-design-quiz-question-prompt-block__edit-btn,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn) {
+  box-sizing: border-box;
+  width: 1.75rem;
+  height: 1.75rem;
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border: none;
+  background-color: transparent;
+  color: var(--my-color-white);
+}
+.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled),
+.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:hover:not(:disabled)),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__edit-btn:focus-visible:not(:disabled)) {
+  color: var(--my-color-white);
+  background-color: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+}
+.my-design-quiz-question-prompt-block__rule,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__rule) {
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--my-color-white) 35%, transparent);
+  opacity: 1;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel--design-dark),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel--design-dark) {
+  margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+}
+.my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-panel),
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+.my-design-quiz-field-inset-body :deep(.english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+
+/* 題目標題列「先前出題」pill：白底、無描邊 */
+.btn.my-design-quiz-history-btn,
+:deep(.btn.my-design-quiz-history-btn) {
+  border: none;
+  white-space: nowrap;
+  background-color: var(--my-color-white);
+  color: var(--my-color-black);
+}
+.btn.my-design-quiz-history-btn:hover:not(:disabled),
+.btn.my-design-quiz-history-btn:focus-visible:not(:disabled),
+.btn.my-design-quiz-history-btn:active:not(:disabled),
+:deep(.btn.my-design-quiz-history-btn:hover:not(:disabled)),
+:deep(.btn.my-design-quiz-history-btn:focus-visible:not(:disabled)),
+:deep(.btn.my-design-quiz-history-btn:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 7%, var(--my-color-white));
+  color: var(--my-color-black);
+}
+/* 答案標題列 pill（提示、參考答案、詳細資訊等）：淺灰底 gray-4、無描邊 */
+.btn.my-design-quiz-stem-history-btn,
+:deep(.btn.my-design-quiz-stem-history-btn) {
+  border: none;
+  white-space: nowrap;
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-black);
+}
+.btn.my-design-quiz-stem-history-btn:hover:not(:disabled),
+.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled),
+.btn.my-design-quiz-stem-history-btn:active:not(:disabled),
+:deep(.btn.my-design-quiz-stem-history-btn:hover:not(:disabled)),
+:deep(.btn.my-design-quiz-stem-history-btn:focus-visible:not(:disabled)),
+:deep(.btn.my-design-quiz-stem-history-btn:active:not(:disabled)) {
+  background-color: color-mix(in srgb, var(--my-color-black) 5%, var(--my-color-gray-4));
+  color: var(--my-color-black);
+}
+
+/* 答案子區塊：作答欄白底、淡灰框 */
+.form-control.my-design-quiz-answer-input,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input) {
+  background-color: var(--my-color-white);
+  border: 1px solid var(--my-color-gray-3);
+}
+.form-control.my-design-quiz-answer-input:focus,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:focus) {
+  background-color: var(--my-color-white);
+  border-color: var(--my-color-gray-3);
+  box-shadow: none;
+}
+.form-control.my-design-quiz-answer-input:disabled,
+.my-design-quiz-sub-block :deep(.form-control.my-design-quiz-answer-input:disabled) {
+  background-color: var(--my-color-gray-4);
+  border-color: var(--my-color-gray-3);
+  opacity: 1;
+}
+
+/* 與產生題目／開始批改 pill 同高之灰底圓形編輯鈕 */
+.btn.my-design-quiz-action-edit-btn,
+.my-design-quiz-sub-block :deep(.btn.my-design-quiz-action-edit-btn) {
+  box-sizing: border-box;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+  border: none;
+}
+
+/* 產生題目／開始批改 pill：px-4 py-2（my-font-md-400 中號） */
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-white),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row .btn.my-button-logo-gradient),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-white),
+.my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row .btn.my-button-logo-gradient) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0.5rem !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+}

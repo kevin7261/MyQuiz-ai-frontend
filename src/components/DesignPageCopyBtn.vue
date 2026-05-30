@@ -36,21 +36,4 @@ async function onCopy() {
 }
 </script>
 
-<style scoped>
-/* 淺底色票格：蓋過 .btn.my-button-transparent-borderless 預設淺字 */
-.btn.my-button-transparent-borderless.my-design-page-copy-btn--light {
-  color: var(--my-color-black);
-}
-
-.btn.my-button-transparent-borderless.my-design-page-copy-btn--light:hover,
-.btn.my-button-transparent-borderless.my-design-page-copy-btn--light:focus-visible,
-.btn.my-button-transparent-borderless.my-design-page-copy-btn--light:active {
-  color: var(--my-color-black);
-  background-color: color-mix(in srgb, var(--my-color-black) 8%, transparent);
-}
-
-.my-design-page-copy-btn:focus-visible {
-  outline: 2px solid var(--my-color-gray-3);
-  outline-offset: 2px;
-}
-</style>
+<style scoped src="./DesignPageCopyBtn.css"></style>

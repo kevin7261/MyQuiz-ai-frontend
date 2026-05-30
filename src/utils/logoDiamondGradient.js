@@ -32,11 +32,6 @@ export function createRandomLogoGradientCss(options = {}) {
   return palette.css;
 }
 
-/** 中央菱形：隨機漸層（含 css；系統 header、按鈕共用） */
-export function createRandomLogoDiamondGradient(options = {}) {
-  return paletteToDiamondGradient(pickRandomLogoGradientPalette(options));
-}
-
 /**
  * Logo 雙層（primary／secondary）各選一組，保證 paletteId 不重複
  * @param {{ tone?: string, bias?: string, excludeIds?: string[] }} [options]
@@ -47,31 +42,6 @@ export function createRandomLogoDiamondGradientPair(options = {}) {
   return {
     primary: paletteToDiamondGradient(primaryPalette),
     secondary: paletteToDiamondGradient(secondaryPalette),
-  };
-}
-
-/**
- * LogoGridSvg colors：primary／secondary 各一組漸層（Q／A 分層標誌等）
- * @param {{ tone?: string, bias?: string, excludeIds?: string[] }} [options]
- */
-export function createLogoGridGradientColors(options = {}) {
-  const { primary, secondary } = createRandomLogoDiamondGradientPair(options);
-  return {
-    background: 'transparent',
-    primaryGradient: {
-      x1: primary.x1,
-      y1: primary.y1,
-      x2: primary.x2,
-      y2: primary.y2,
-      stops: primary.stops,
-    },
-    secondaryGradient: {
-      x1: secondary.x1,
-      y1: secondary.y1,
-      x2: secondary.x2,
-      y2: secondary.y2,
-      stops: secondary.stops,
-    },
   };
 }
 
@@ -139,10 +109,6 @@ function gradientToHeaderHalfStyle(gradient) {
   };
 }
 
-function paletteToHeaderHalfStyle(palette) {
-  return gradientToHeaderHalfStyle(palette);
-}
-
 /**
  * 登入頁 Logo 雙漸層 → 系統 header 左上左右半（secondary 左、primary 右）
  * @param {{ primaryGradient?: object, secondaryGradient?: object }} logoColors
@@ -155,18 +121,4 @@ export function logoColorsToSplitHeaderStyles(logoColors) {
     left: gradientToHeaderHalfStyle(secondary),
     right: gradientToHeaderHalfStyle(primary),
   };
-}
-
-/** 系統 header 左上角：左右各 50%，互不重複的兩組色盤 */
-export function createRandomLogoDiamondSplitHorizontalGradients() {
-  const [leftPalette, rightPalette] = pickDistinctRandomLogoGradientPalettes(2);
-  return {
-    left: paletteToHeaderHalfStyle(leftPalette),
-    right: paletteToHeaderHalfStyle(rightPalette),
-  };
-}
-
-/** @deprecated 請改用 createRandomLogoDiamondSplitHorizontalGradients */
-export function createRandomSystemHeaderGradientCss() {
-  return createRandomLogoGradientCss();
 }

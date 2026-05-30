@@ -1,0 +1,11 @@
+.logo-layer-mark {
+  line-height: 0;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.logo-layer-mark :deep(svg) {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}

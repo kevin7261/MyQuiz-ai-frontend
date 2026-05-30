@@ -520,16 +520,6 @@ export function serializePackUnitTypesForApi(types) {
 }
 
 /**
- * 同上群組序，整數陣列（與 GET /rag/tabs 之 unit_type_list 對齊，供後端依類型掃描檔案）
- * @param {number[]} types
- * @returns {number[]}
- */
-export function packUnitTypesIntArrayForApi(types) {
-  if (!Array.isArray(types) || types.length === 0) return [];
-  return types.map((t) => normalizePackUnitType(t));
-}
-
-/**
  * POST /rag/tab/build-rag-zip 的 rag_chunk_sizes／rag_chunk_overlaps：後端請求體為與 unit_list 群組序對齊的逗號分隔字串（非 JSON 陣列）。
  * unit_type≠1（非 RAG）時為 0，與後端僅對 type 1 做分段／FAISS 一致。
  *
@@ -817,16 +807,6 @@ export function findExamQuizRootInList(quizzes, targetExamQuizId) {
 export function isExamListWrapperResponse(data) {
   if (data == null || typeof data !== 'object' || Array.isArray(data)) return false;
   return normalizeExamListResponse(data).length > 0;
-}
-
-/**
- * 尚無已存作答時，舊版曾以參考答案預填「答案」欄；目前題卡改為獨立「參考答案」區與空白作答欄，此函式多數路徑已不再使用。
- * @param {unknown} referenceAnswer
- * @returns {string}
- */
-export function quizAnswerPresetFromReference(referenceAnswer) {
-  const r = referenceAnswer != null ? String(referenceAnswer) : '';
-  return r.trim() !== '' ? r : '';
 }
 
 /**

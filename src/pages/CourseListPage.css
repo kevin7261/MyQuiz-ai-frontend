@@ -1,0 +1,6 @@
+.course-list .bank-list-row:hover:not(:disabled) {
+  background-color: var(--my-color-gray-4);
+}
+.course-list .bank-list-row--selected {
+  background-color: var(--my-color-gray-4);
+}

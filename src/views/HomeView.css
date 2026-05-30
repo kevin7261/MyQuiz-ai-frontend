@@ -1,0 +1,5 @@
+.my-home-layout {
+  min-height: 0;
+  flex: 1 1 0;
+  align-items: stretch;
+}

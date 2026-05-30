@@ -36,28 +36,6 @@ function unwrapMetadata(meta) {
 }
 
 /**
- * 作答列分數原始值（API：quiz_score）
- * @param {Record<string, unknown> | null | undefined} answer
- * @returns {unknown}
- */
-export function getAnswerScoreValue(answer) {
-  if (answer == null || typeof answer !== 'object') return undefined;
-  return answer.quiz_score;
-}
-
-/**
- * 分析表／摘要「分數」欄：純數字時顯示為「n / 5」；其餘原樣。
- * @param {unknown} value
- * @returns {string}
- */
-export function formatQuizGradeDisplay(value) {
-  if (value == null || String(value).trim() === '') return '—';
-  const s = String(value).trim();
-  if (/^\d+(\.\d+)?$/.test(s)) return `${s} / 5`;
-  return s;
-}
-
-/**
  * 將評分 API 回傳的 JSON 字串转为顯示用文字（無外加【評語】等標籤）。
  *
  * 新制 RAG／測驗批改：總分 quiz_score（0–5 滿分）、quiz_comments（字串陣列）；可將兩者放在 quiz_score_metadata。RAG 輪詢 result 另含 rag_answer_id（不列入純文字批改區塊）。

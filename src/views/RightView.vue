@@ -95,21 +95,4 @@
   </main>
 </template>
 
-<style scoped>
-.my-right-view {
-  min-height: 0;
-  min-width: 0;
-  background-color: var(--my-color-white);
-}
-
-.my-right-view-scroll {
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-  background-color: var(--my-color-white);
-}
-
-.my-right-view-scroll--visible {
-  overflow: auto;
-}
-</style>
+<style scoped src="./RightView.css"></style>

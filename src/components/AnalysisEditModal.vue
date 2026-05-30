@@ -45,6 +45,7 @@ defineEmits(['update:modelValue', 'reset', 'apply', 'close']);
               :textarea-id="textareaId"
               :disabled="savingDisabled"
               prompt-code-font
+              edit-design-dark
               @update:model-value="$emit('update:modelValue', $event)"
             />
           </div>

@@ -22,11 +22,6 @@ function setCookie(name, value, maxAgeSec) {
   document.cookie = `${encodeURIComponent(name)}=${encoded}; path=/; max-age=${maxAgeSec}; SameSite=Lax`;
 }
 
-function deleteCookie(name) {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${encodeURIComponent(name)}=; path=/; max-age=0; SameSite=Lax`;
-}
-
 function isValidHeaderSplit(headerSplit) {
   return Boolean(
     headerSplit?.left?.backgroundImage && headerSplit?.right?.backgroundImage,
@@ -105,8 +100,4 @@ export function writeLogoGradientCookie(payload) {
   } catch {
     /* ignore */
   }
-}
-
-export function clearLogoGradientCookie() {
-  deleteCookie(COOKIE_NAME);
 }

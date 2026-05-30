@@ -3,16 +3,15 @@
  * CourseListPage — 選擇課程頁
  *
  * 左側系統 header 的課程 icon 可導向此頁，供切換課程。
- * 以 query `scope` 指定要設定哪個功能頁的課程（各頁可不同）。
+ * 選課後一律進入測驗頁（/{course_id}/exam）。
  */
 import { computed, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/authStore.js';
 import { userTypeLabel } from '../router/permissions.js';
 import {
   COURSE_SCOPE_KEYS,
   courseScopedPath,
-  normalizeCourseScopeKey,
 } from '../utils/courseScope.js';
 
 defineProps({
@@ -20,18 +19,13 @@ defineProps({
 });
 
 const authStore = useAuthStore();
-const route = useRoute();
 const router = useRouter();
 
 const sortOrder = ref('asc');
 
 const courses = computed(() => authStore.courses);
 
-const scopeKey = computed(
-  () => normalizeCourseScopeKey(route.query.scope) ?? COURSE_SCOPE_KEYS.EXAM,
-);
-
-const selectedCourse = computed(() => authStore.getCourseForScope(scopeKey.value));
+const selectedCourse = computed(() => authStore.getCourseForScope(COURSE_SCOPE_KEYS.EXAM));
 
 const sortedCourses = computed(() => {
   const items = courses.value.map((course) => ({
@@ -54,8 +48,8 @@ function toggleSort() {
 }
 
 function onCourseSelect(course) {
-  authStore.setCourseForScope(scopeKey.value, course);
-  router.push(courseScopedPath(scopeKey.value, course.course_id));
+  authStore.setCourseForScope(COURSE_SCOPE_KEYS.EXAM, course);
+  router.push(courseScopedPath(COURSE_SCOPE_KEYS.EXAM, course.course_id));
 }
 </script>
 
@@ -111,11 +105,4 @@ function onCourseSelect(course) {
   </div>
 </template>
 
-<style scoped>
-.course-list .bank-list-row:hover:not(:disabled) {
-  background-color: var(--my-color-gray-4);
-}
-.course-list .bank-list-row--selected {
-  background-color: var(--my-color-gray-4);
-}
-</style>
+<style scoped src="./CourseListPage.css"></style>

@@ -1130,21 +1130,7 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
   color: var(--my-color-black);
 }
 
-/* Modal 內 EasyMDE 編輯區：toolbar／CodeMirror 白底（勿沿用 easymde 預設灰） */
-.my-modal-backdrop .english-exam-md-editor-wrap :deep(.EasyMDEContainer),
-.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-toolbar),
-.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-toolbar li button),
-.my-modal-backdrop .english-exam-md-editor-wrap :deep(.CodeMirror),
-.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-preview),
-.my-modal-backdrop .english-exam-md-editor-wrap :deep(.editor-preview-side),
-.modal.show .english-exam-md-editor-wrap :deep(.EasyMDEContainer),
-.modal.show .english-exam-md-editor-wrap :deep(.editor-toolbar),
-.modal.show .english-exam-md-editor-wrap :deep(.editor-toolbar li button),
-.modal.show .english-exam-md-editor-wrap :deep(.CodeMirror),
-.modal.show .english-exam-md-editor-wrap :deep(.editor-preview),
-.modal.show .english-exam-md-editor-wrap :deep(.editor-preview-side) {
-  background-color: #fff !important;
-}
+/* Modal 內 EasyMDE 編輯區黑底：見 EnglishExamMarkdownEditor `edit-design-dark` */
 
 /* —— 下拉觸發箭頭：`my-dropdown-caret` 隱藏 Bootstrap ::after；FA `.my-dropdown-toggle-caret`。選單本體用 Bootstrap `.dropdown-menu`／`.dropdown-item` 預設（專案內不覆寫項目色／hover／active）。觸發鈕與 05 中號同 my-font-md-400 px-3 py-2 等 —— */
 .my-dropdown-caret.dropdown-toggle::after {

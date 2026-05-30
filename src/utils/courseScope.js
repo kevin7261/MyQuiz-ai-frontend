@@ -88,11 +88,35 @@ export function courseScopedPath(scopeKey, courseId) {
 }
 
 /**
- * 左側／頂部課程名稱點擊：前往選課頁，query.scope 對應目前功能頁。
- * @param {import('vue-router').RouteLocationNormalizedLoaded | import('vue-router').RouteLocationNormalized} route
- * @returns {{ path: string, query: { scope: CourseScopeKey } }}
+ * 左側／頂部課程名稱點擊：前往選課頁（選課後一律進測驗頁）。
+ * @returns {{ path: '/courses' }}
  */
-export function buildCoursesPageLocation(route) {
-  const scope = resolveCourseScopeKey(route) ?? COURSE_SCOPE_KEYS.EXAM;
-  return { path: '/courses', query: { scope } };
+export function buildCoursesPageLocation() {
+  return { path: '/courses' };
+}
+
+/**
+ * 由路由取得 URL 前綴 course_id；非課程範圍頁回傳 null。
+ * @param {import('vue-router').RouteLocationNormalizedLoaded | import('vue-router').RouteLocationNormalized} route
+ * @returns {string | null}
+ */
+export function resolveRouteCourseId(route) {
+  if (!route) return null;
+  const cid = String(route.params?.course_id ?? '').trim();
+  return cid || null;
+}
+
+/**
+ * 依目前路由 URL 的 course_id 產生課程範圍導航；無 course_id 時回傳 null（caller 可改用 scopedRouteFor）。
+ * @param {string} viewSegment
+ * @param {import('vue-router').RouteLocationNormalizedLoaded | import('vue-router').RouteLocationNormalized} route
+ * @returns {string | { path: string, query: { scope: CourseScopeKey } } | null}
+ */
+export function scopedRouteForViewFromRoute(viewSegment, route) {
+  const seg = String(viewSegment ?? '').trim();
+  const scopeKey = VIEW_SEGMENT_TO_SCOPE[seg];
+  if (!scopeKey) return `/${seg}`;
+  const routeCid = resolveRouteCourseId(route);
+  if (!routeCid) return null;
+  return courseScopedPath(scopeKey, routeCid);
 }

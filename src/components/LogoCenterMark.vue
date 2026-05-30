@@ -178,18 +178,4 @@ const wrapStyle = computed(() => {
   </span>
 </template>
 
-<style scoped>
-.logo-center-mark {
-  line-height: 0;
-}
-
-.logo-center-mark--match-text {
-  color: inherit;
-}
-
-.logo-center-mark__css-diamond-fill {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-</style>
+<style scoped src="./LogoCenterMark.css"></style>
