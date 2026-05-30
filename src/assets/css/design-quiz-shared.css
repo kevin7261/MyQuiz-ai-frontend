@@ -172,6 +172,10 @@
 .my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body) {
   background-color: transparent !important;
 }
+/* 答案 textarea：wrapper 不加 pb-4；純文字顯示維持 field-inset-body 預設 */
+.my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body:has(.my-design-quiz-answer-input)) {
+  padding-bottom: 0 !important;
+}
 .my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input),
 .my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input:focus),
 .my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input:disabled) {
