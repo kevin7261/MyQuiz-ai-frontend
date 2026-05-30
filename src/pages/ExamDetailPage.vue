@@ -2205,9 +2205,7 @@ async function openExamAddQuestionModal() {
   examAddQuestionModalError.value = '';
   examAddQuestionModalLoading.value = true;
   try {
-    if (!forExamRag.value) {
-      await fetchExamRagSource();
-    }
+    await fetchExamRagSource();
     if (!forExamRag.value) {
       examAddQuestionModalError.value = forExamError.value || '無法載入試卷題庫';
     } else if (examUnitSelectDropdownOptions.value.length === 0) {

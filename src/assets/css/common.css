@@ -771,9 +771,9 @@ button.btn.my-unit-content-toggle-btn.rounded-2 {
   color: var(--my-color-yellow);
 }
 
-/* 一般／追問 segmented pill：按鈕之間不留 gap */
+/* 一般／追問 segmented pill：按鈕之間留小間距 */
 .my-quiz-generate-mode-segment {
-  gap: 0;
+  gap: 0.25rem;
 }
 /* create-exam-bank_3：一般／追問 segmented pill；外框在群組，選中 gray-4、未選 transparent-borderless gray-2 字 */
 .my-quiz-generate-mode-segment--outline {
