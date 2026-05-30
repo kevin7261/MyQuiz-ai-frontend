@@ -158,8 +158,9 @@ const d3HistoryPill = computed(() => (props.designSidePanelOnLeft ? 'my-button-t
 /** 設定單元「類型」segment（role=group）：選中白底；未選 gray-2 字；hover gray-3 底 */
 const PACK_UNIT_TYPE_SELECTED_BTN = 'my-pack-unit-type-btn--selected';
 const PACK_UNIT_TYPE_UNSELECTED_BTN = 'my-button-transparent-borderless my-color-gray-2';
-/** create-exam-bank_3：一般／追問 segmented 選中態（gray-4 底） */
+/** create-exam-bank_3：一般／追問 segmented 選中態（gray-4 底）／未選 gray-2 字 */
 const d3QuizModeSegmentSelected = 'my-button-gray-4';
+const d3QuizModeSegmentUnselected = 'my-button-transparent-borderless my-color-gray-2';
 const d3CircleIconBtnClass = computed(() => (
   props.designSidePanelOnLeft
     ? 'my-button-transparent-borderless my-btn-circle'
@@ -7402,12 +7403,12 @@ async function confirmAnswer(item) {
                               ? (
                                 !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                                   ? d3QuizModeSegmentSelected
-                                  : 'my-button-transparent-borderless my-color-black'
+                                  : d3QuizModeSegmentUnselected
                               )
                               : (
                                 !isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                                   ? 'my-button-gray-4'
-                                  : 'my-button-transparent-borderless'
+                                  : d3QuizModeSegmentUnselected
                               )
                           "
                           :disabled="
@@ -7429,12 +7430,12 @@ async function confirmAnswer(item) {
                               ? (
                                 isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                                   ? d3QuizModeSegmentSelected
-                                  : 'my-button-transparent-borderless my-color-black'
+                                  : d3QuizModeSegmentUnselected
                               )
                               : (
                                 isUnitQuizFollowupMode(activeUnitSlotIndex, activeUnitQuizCard)
                                   ? 'my-button-gray-4'
-                                  : 'my-button-transparent-borderless'
+                                  : d3QuizModeSegmentUnselected
                               )
                           "
                           :disabled="

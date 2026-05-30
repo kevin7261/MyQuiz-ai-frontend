@@ -899,8 +899,8 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-quiz-mode-segment"
-                      usage="create-exam-bank_3 出題模式：一般／追問（my-quiz-generate-mode-segment--outline；選中 my-button-gray-4、未選 my-button-transparent-borderless my-color-black）"
-                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-4（選中）· my-button-transparent-borderless my-color-black（未選）"
+                      usage="create-exam-bank_3 出題模式：一般／追問（my-quiz-generate-mode-segment--outline；選中 my-button-gray-4、未選 my-button-transparent-borderless my-color-gray-2）"
+                      css="my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline p-1 · btn rounded-pill my-font-md-400 px-4 py-2 · my-button-gray-4（選中）· my-button-transparent-borderless my-color-gray-2（未選）"
                     >
                       <div
                         class="d-inline-flex flex-wrap p-1 my-quiz-generate-mode-segment my-quiz-generate-mode-segment--outline"
@@ -916,7 +916,7 @@ function designPackUnitTypeIconCss(unitType) {
                         </button>
                         <button
                           type="button"
-                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-color-black px-4 py-2"
+                          class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 my-button-transparent-borderless my-color-gray-2 px-4 py-2"
                           aria-pressed="false"
                         >
                           追問
