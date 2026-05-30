@@ -1058,7 +1058,7 @@ function designPackUnitTypeIconCss(unitType) {
                       css="my-design-side-nav-add-unit-group d-flex · dropdown dropup · my-design-side-nav-add-unit-main my-btn-login-submit · my-design-side-nav-add-unit-menu my-btn-login-submit my-dropdown-caret"
                       copy-text="my-design-side-nav-add-unit-group"
                     >
-                      <div class="my-design-side-nav-delete my-bgcolor-gray-4 rounded-3 p-3" style="max-width: 20rem;">
+                      <div class="my-design-side-nav-delete rounded-3 p-3" style="max-width: 20rem;">
                         <div class="my-design-side-nav-add-unit-row w-100 min-w-0">
                           <div class="my-design-side-nav-add-unit-group d-flex align-items-stretch w-100 min-w-0" role="group">
                             <button

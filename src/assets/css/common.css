@@ -2180,7 +2180,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   color: inherit !important;
 }
 
-/* 左欄清單底部刪除（exam_3／create-exam-bank_3）：固定於 list 下方；併 my-btn-outline-red-hollow，灰底上透明＋hover 淡紅 */
+/* 左欄清單底部（exam_3／create-exam-bank_3）：固定於 list 下方；區塊 gray-4；刪除鈕併 my-btn-outline-red-hollow；+ 新增題目／+ 新增單元鈕黑底見下 */
 .my-design-side-nav-delete {
   flex-shrink: 0;
   border-top: 1px solid var(--my-color-gray-3);
@@ -2209,7 +2209,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   opacity: 0.45;
 }
 
-/* 底欄「+ 新增單元」：白底 gray-3 框膠囊分段（同 my-btn-login-submit；左 +／文字、右 chevron 選單；兩段各自 hover 陰影） */
+/* 底欄「+ 新增單元」：黑底無框膠囊分段（左 +／文字、右 chevron 選單；hover 陰影同 my-btn-login-submit） */
 .my-design-side-nav-delete .my-design-side-nav-add-unit-row {
   width: 100%;
 }
@@ -2224,24 +2224,45 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
 .my-design-side-nav-delete .dropdown.dropup .dropdown-menu.my-design-side-nav-add-unit-dropdown-menu {
   z-index: 1080;
 }
+.my-design-side-nav-delete .btn.my-btn-login-submit.rounded-pill,
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit {
+  background-color: var(--my-color-black) !important;
+  color: var(--my-color-white) !important;
+  border: none !important;
+  box-shadow: none !important;
+}
 .my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit {
   flex: 1 1 auto;
   min-width: 0;
   border-radius: 50rem 0 0 50rem;
-  border: none !important;
-  box-shadow: none !important;
 }
+.my-design-side-nav-delete .btn.my-btn-login-submit.rounded-pill:hover:not(:disabled),
+.my-design-side-nav-delete .btn.my-btn-login-submit.rounded-pill:focus-visible:not(:disabled),
+.my-design-side-nav-delete .btn.my-btn-login-submit.rounded-pill:active:not(:disabled),
 .my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:hover:not(:disabled),
 .my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:focus-visible:not(:disabled),
 .my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:active:not(:disabled) {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
+  background-color: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-black)) !important;
+  color: var(--my-color-white) !important;
+  border: none !important;
   box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
   z-index: 1;
   position: relative;
 }
 .my-design-side-nav-add-unit-group > .dropdown {
   align-items: stretch;
+  position: relative;
+}
+.my-design-side-nav-add-unit-group > .dropdown::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.375rem;
+  bottom: 0.375rem;
+  width: 1px;
+  background-color: var(--my-color-gray-3);
+  pointer-events: none;
+  z-index: 2;
 }
 .my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit {
   flex: 0 0 auto;
@@ -2250,26 +2271,28 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   padding-inline: 0.875rem;
   border-radius: 0 50rem 50rem 0;
   border: none !important;
-  border-inline-start: 1px solid var(--my-color-gray-3) !important;
   box-shadow: none !important;
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-gray-1) !important;
+  background-color: var(--my-color-black) !important;
+  color: var(--my-color-white) !important;
 }
 .my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:hover:not(:disabled),
 .my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:focus-visible:not(:disabled),
 .my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit.show:not(:disabled),
 .my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:active:not(:disabled) {
-  background-color: var(--my-color-white) !important;
-  color: var(--my-color-black) !important;
-  border-inline-start-color: var(--my-color-gray-3) !important;
+  background-color: color-mix(in srgb, var(--my-color-white) 12%, var(--my-color-black)) !important;
+  color: var(--my-color-white) !important;
+  border: none !important;
   box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
   z-index: 1;
   position: relative;
 }
+.my-design-side-nav-delete .btn.my-btn-login-submit.rounded-pill:disabled,
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:disabled,
 .my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:disabled {
-  background-color: var(--my-color-white) !important;
+  background-color: var(--my-color-black) !important;
   color: var(--my-color-gray-3) !important;
-  border-inline-start-color: var(--my-color-gray-3) !important;
+  border: none !important;
+  box-shadow: none !important;
   opacity: 1;
 }
 .my-design-side-nav-add-unit-group:has(> .btn.my-btn-login-submit:disabled),
