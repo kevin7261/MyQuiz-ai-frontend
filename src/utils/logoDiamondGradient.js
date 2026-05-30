@@ -92,6 +92,41 @@ export function logoDiamondGradientToCssLinear(gradient, options = {}) {
   return `linear-gradient(${angle}deg, ${stops})`;
 }
 
+/**
+ * 由 pill 鈕 background CSS 反推 SVG linearGradient（色票與角度與按鈕一致）
+ * @param {string} css
+ * @returns {object | null}
+ */
+export function diamondGradientFromCssLinear(css) {
+  const trimmed = String(css ?? '').trim();
+  if (!trimmed || trimmed === 'transparent') return null;
+  const match = trimmed.match(/^linear-gradient\(\s*([-\d.]+)deg\s*,\s*(.+)\)$/i);
+  if (!match) return null;
+  const angleDeg = Number.parseFloat(match[1]);
+  if (!Number.isFinite(angleDeg)) return null;
+  const stops = [];
+  const stopPartRe = /(#[0-9a-fA-F]{3,8}|rgba?\([^)]+\))\s+(\d+(?:\.\d+)?%)/gi;
+  let sm;
+  while ((sm = stopPartRe.exec(match[2])) !== null) {
+    stops.push({ color: sm[1], offset: sm[2] });
+  }
+  if (stops.length < 2) return null;
+  const rad = (angleDeg * Math.PI) / 180;
+  const halfLen = 70;
+  const cx = 50;
+  const cy = 50;
+  const dx = Math.sin(rad) * halfLen;
+  const dy = -Math.cos(rad) * halfLen;
+  return {
+    x1: `${cx - dx}%`,
+    y1: `${cy - dy}%`,
+    x2: `${cx + dx}%`,
+    y2: `${cy + dy}%`,
+    stops,
+    css: trimmed,
+  };
+}
+
 function gradientToHeaderHalfStyle(gradient) {
   const color1 = gradient?.stops?.[0]?.color ?? '#000000';
   const backgroundImage = logoDiamondGradientToCssLinear(gradient, { useStopsOnly: true });

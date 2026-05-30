@@ -1,5 +1,10 @@
 import { shallowRef } from 'vue';
-import { buildRandomLogoGradientPayload } from '../utils/loginPageGradients.js';
+import {
+  buildRandomLogoGradientPayload,
+} from '../utils/loginPageGradients.js';
+import {
+  diamondGradientFromCssLinear,
+} from '../utils/logoDiamondGradient.js';
 import {
   readLogoGradientCookie,
   writeLogoGradientCookie,
@@ -14,6 +19,10 @@ const systemHeaderGradientRightStyle = shallowRef({});
 const generateButtonGradientCss = shallowRef('');
 /** 與 header 右半漸層同色盤（開始批改） */
 const gradeButtonGradientCss = shallowRef('');
+/** 開始出題 pill 漸層 → 規則 tab icon 菱形 SVG 用 */
+const generateButtonDiamondGradient = shallowRef(null);
+/** 開始批改 pill 漸層 → 規則 tab icon 菱形 SVG 用 */
+const gradeButtonDiamondGradient = shallowRef(null);
 
 function applyHeaderSplit(headerSplit) {
   if (!headerSplit?.left || !headerSplit?.right) return;
@@ -21,6 +30,10 @@ function applyHeaderSplit(headerSplit) {
   systemHeaderGradientRightStyle.value = headerSplit.right;
   generateButtonGradientCss.value = headerSplit.left.backgroundImage ?? '';
   gradeButtonGradientCss.value = headerSplit.right.backgroundImage ?? '';
+  generateButtonDiamondGradient.value =
+    diamondGradientFromCssLinear(generateButtonGradientCss.value);
+  gradeButtonDiamondGradient.value =
+    diamondGradientFromCssLinear(gradeButtonGradientCss.value);
 }
 
 /**
@@ -72,6 +85,8 @@ export function useSystemHeaderLogoGradients() {
     systemHeaderGradientRightStyle,
     generateButtonGradientCss,
     gradeButtonGradientCss,
+    generateButtonDiamondGradient,
+    gradeButtonDiamondGradient,
     regenerateSystemHeaderLogoGradients: regenerateAndPersistLogoGradients,
   };
 }

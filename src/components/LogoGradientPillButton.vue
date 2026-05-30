@@ -18,6 +18,8 @@ const props = defineProps({
     default: 'default',
     validator: (v) => ['default', 'work3'].includes(v),
   },
+  /** 指定漸層 CSS（與同列規則 tab icon 共用時由父層傳入） */
+  gradientCss: { type: String, default: '' },
   disabled: { type: Boolean, default: false },
   ariaBusy: { type: Boolean, default: false },
   ariaLabel: { type: String, default: '' },
@@ -29,31 +31,54 @@ defineEmits(['click']);
 
 const { generateButtonGradientCss, gradeButtonGradientCss } = useSystemHeaderLogoGradients();
 
+/** default 時各按鈕實例固定一組漸層（watch 不重抽） */
+const stableLocalGradientCss = shallowRef('');
+
 function resolveButtonGradientCss() {
+  const preset = String(props.gradientCss ?? '').trim();
+  if (preset) return preset;
   if (props.gradientBias === 'work3') {
     return props.tone === 'generate'
       ? generateButtonGradientCss.value
       : gradeButtonGradientCss.value;
   }
-  return createRandomLogoGradientCss({
-    tone: props.tone,
-    bias: props.gradientBias,
-    linearOnly: true,
-  });
+  if (!stableLocalGradientCss.value) {
+    stableLocalGradientCss.value = createRandomLogoGradientCss({
+      tone: props.tone,
+      bias: props.gradientBias,
+      linearOnly: true,
+    });
+  }
+  return stableLocalGradientCss.value;
 }
 
-/** work3：與系統 header 左上左右半漸層同色盤；其餘為各按鈕獨立隨機漸層 */
+/** work3／gradientCss：與全站 header 同色盤；default：各實例固定一組 */
 const buttonGradientCss = shallowRef(resolveButtonGradientCss());
 
 watch(
   () => [
     props.tone,
     props.gradientBias,
+    props.gradientCss,
     generateButtonGradientCss.value,
     gradeButtonGradientCss.value,
   ],
-  () => {
-    buttonGradientCss.value = resolveButtonGradientCss();
+  (_next, prev) => {
+    if (prev && (prev[0] !== props.tone || prev[1] !== props.gradientBias)) {
+      stableLocalGradientCss.value = '';
+    }
+    if (props.gradientBias === 'work3' || String(props.gradientCss ?? '').trim()) {
+      buttonGradientCss.value = resolveButtonGradientCss();
+      return;
+    }
+    if (!stableLocalGradientCss.value) {
+      stableLocalGradientCss.value = createRandomLogoGradientCss({
+        tone: props.tone,
+        bias: props.gradientBias,
+        linearOnly: true,
+      });
+    }
+    buttonGradientCss.value = stableLocalGradientCss.value;
   },
 );
 

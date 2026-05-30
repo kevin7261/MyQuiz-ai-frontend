@@ -51,6 +51,7 @@ import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 import { youtubeEmbedUrlFromInput } from '../utils/youtubeEmbed.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import LogoLayerMark from '../components/LogoLayerMark.vue';
+import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import MessageModal from '../components/MessageModal.vue';
 import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
 import QuizCard from '../components/QuizCard.vue';
@@ -1561,6 +1562,7 @@ function answerHasGradingEvidence(ans) {
   if (score != null && String(score).trim() !== '') return true;
   const comments = ans.quiz_comments;
   if (Array.isArray(comments) && comments.some((c) => c != null && String(c).trim() !== '')) return true;
+  if (ans.answer_critique != null && String(ans.answer_critique).trim() !== '') return true;
   if (ans.answer_metadata != null && String(ans.answer_metadata).trim() !== '') return true;
   if (ans.answer_feedback_metadata != null && String(ans.answer_feedback_metadata).trim() !== '') return true;
   return false;
@@ -1568,51 +1570,65 @@ function answerHasGradingEvidence(ans) {
 
 /** 由 GET /exam/tabs 回傳的 quiz（Exam_Quiz 列 + answers）組成一張題目卡片（欄位後備與 CreateExamQuizBankPage buildCardFromRagQuiz 對齊） */
 function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
-  const answers = Array.isArray(quiz.answers) ? quiz.answers : [];
+  const q = normalizeFollowupQuizAnswers(quiz);
+  const answers = Array.isArray(q.answers) ? q.answers : [];
   const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
   const latestSubmitted =
     latestAnswer?.quiz_answer ??
     latestAnswer?.student_answer ??
     latestAnswer?.answer_text ??
     latestAnswer?.content ??
-    (quiz.answer_content != null && String(quiz.answer_content).trim() !== ''
-      ? String(quiz.answer_content)
+    (q.answer_content != null && String(q.answer_content).trim() !== ''
+      ? String(q.answer_content)
       : null);
   const quiz_answer =
     latestSubmitted != null && String(latestSubmitted).trim() !== ''
       ? String(latestSubmitted)
       : '';
   // 僅在有真實批改資料時設 gradingResult／confirmed；純作答紀錄不算批改
-  const hasGrading = answerHasGradingEvidence(latestAnswer);
-  const gradingResult = hasGrading
+  let hasGrading = answerHasGradingEvidence(latestAnswer);
+  let gradingResult = hasGrading
     ? (formatGradingResult(JSON.stringify(latestAnswer)) || '已批改')
     : '';
-  const quizId = quiz.exam_quiz_id ?? quiz.quiz_id ?? null;
+  if (!hasGrading) {
+    const critStr = q.answer_critique != null ? String(q.answer_critique).trim() : '';
+    const embeddedScore = q.quiz_score;
+    const hasEmbeddedScore = embeddedScore != null && String(embeddedScore).trim() !== '';
+    if (critStr !== '' || hasEmbeddedScore) {
+      if (critStr !== '') {
+        gradingResult = formatGradingResult(critStr) || critStr;
+      } else {
+        gradingResult = `總分：${embeddedScore} / 5`;
+      }
+      hasGrading = true;
+    }
+  }
+  const quizId = q.exam_quiz_id ?? q.quiz_id ?? null;
   const answerId = latestAnswer?.exam_answer_id ?? latestAnswer?.answer_id ?? null;
-  const rid = quiz.rag_id ?? quiz.ragId ?? fallbackRagId;
+  const rid = q.rag_id ?? q.ragId ?? fallbackRagId;
   const ragIdStr = rid != null && String(rid).trim() !== '' ? String(rid) : null;
-  const gp = extractAnswerUserPromptFromExamRagRow(quiz).trim();
-  const qp = extractQuizUserPromptFromExamRagRow(quiz).trim();
+  const gp = extractAnswerUserPromptFromExamRagRow(q).trim();
+  const qp = extractQuizUserPromptFromExamRagRow(q).trim();
   return {
     id: nextCardId(),
-    quiz: quiz.quiz_content ?? quiz.quiz ?? quiz.question ?? '',
-    hint: quiz.quiz_hint ?? quiz.hint ?? '',
-    referenceAnswer: quiz.quiz_answer_reference ?? quiz.quiz_reference_answer ?? quiz.reference_answer ?? '',
-    sourceFilename: quiz.file_name ?? null,
-    ragName: (ragName || quiz.unit_name || quiz.rag_name || '').trim() || null,
+    quiz: q.quiz_content ?? q.quiz ?? q.question ?? '',
+    hint: q.quiz_hint ?? q.hint ?? '',
+    referenceAnswer: q.quiz_answer_reference ?? q.quiz_reference_answer ?? q.reference_answer ?? '',
+    sourceFilename: q.file_name ?? null,
+    ragName: (ragName || q.unit_name || q.rag_name || '').trim() || null,
     rag_id: ragIdStr,
     rag_unit_id:
-      quiz.rag_unit_id != null && quiz.rag_unit_id !== ''
-        ? Number(quiz.rag_unit_id)
+      q.rag_unit_id != null && q.rag_unit_id !== ''
+        ? Number(q.rag_unit_id)
         : null,
     rag_quiz_id:
-      quiz.rag_quiz_id != null && quiz.rag_quiz_id !== ''
-        ? Number(quiz.rag_quiz_id)
+      q.rag_quiz_id != null && q.rag_quiz_id !== ''
+        ? Number(q.rag_quiz_id)
         : null,
     quiz_answer,
     hintVisible: false,
     referenceAnswerVisible: false,
-    quiz_rate: normalizeExamQuizRate(quiz.quiz_rate),
+    quiz_rate: normalizeExamQuizRate(q.quiz_rate),
     rateError: '',
     confirmed: hasGrading,
     gradingResult,
@@ -1626,12 +1642,12 @@ function buildCardFromExamQuiz(quiz, ragName, fallbackRagId) {
     hasUsedSaveAndGradeOnce: hasGrading,
     gradingPromptBaseline: gp,
     quizAnswerBaseline: hasGrading ? quiz_answer : '',
-    examQuizDisplayName: examQuizDisplayNameFromRow(quiz),
-    follow_up: examQuizApiRowIsFollowUp(quiz),
-    quizGenerateMode: examQuizApiRowIsFollowUp(quiz) ? 'followup' : 'normal',
+    examQuizDisplayName: examQuizDisplayNameFromRow(q),
+    follow_up: examQuizApiRowIsFollowUp(q),
+    quizGenerateMode: examQuizApiRowIsFollowUp(q) ? 'followup' : 'normal',
     follow_up_exam_quiz_id:
-      quiz.follow_up_exam_quiz_id != null && quiz.follow_up_exam_quiz_id !== ''
-        ? Number(quiz.follow_up_exam_quiz_id)
+      q.follow_up_exam_quiz_id != null && q.follow_up_exam_quiz_id !== ''
+        ? Number(q.follow_up_exam_quiz_id)
         : null,
   };
 }
@@ -1778,7 +1794,7 @@ function buildFollowupChain(quiz) {
   if (chain.length <= 1) {
     return { rounds: [], activeQuiz: quiz };
   }
-  const activeQuiz = chain[chain.length - 1];
+  const activeQuiz = normalizeFollowupQuizAnswers(chain[chain.length - 1]);
   const rounds = chain.slice(0, -1).map((q) => normalizeFollowupQuizAnswers(q));
   return { rounds, activeQuiz };
 }
@@ -3943,20 +3959,22 @@ onActivated(() => {
                               </div>
                             </div>
                           </div>
-                          <!-- 繼續追問：追問出題模式且已有批改結果 -->
+                          <!-- 繼續出題：追問出題模式且已有批改結果 -->
                           <div
                             v-if="examSlotIsFollowupMode(activeExamSlotIndex1) && activeExamSlotShowGradingSubBlock"
-                            class="d-flex justify-content-center w-100"
+                            class="d-flex justify-content-start align-items-center flex-wrap gap-2 w-100"
                           >
-                            <button
-                              type="button"
-                              class="btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 my-font-md-400 my-button-white px-4 py-2"
+                            <LogoGradientPillButton
+                              tone="generate"
+                              :gradient-bias="work3LogoGradientBias"
+                              :id-prefix="`exam-followup-continue-${activeExamSlotIndex1}`"
+                              :disabled="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
                               :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
-                              aria-label="繼續追問"
+                              aria-label="繼續出題"
                               @click="generateQuiz(activeExamSlotIndex1)"
                             >
-                              繼續追問
-                            </button>
+                              繼續出題
+                            </LogoGradientPillButton>
                           </div>
                         </div>
                       </div>

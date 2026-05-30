@@ -35,10 +35,10 @@
 
   /* 中性灰階：black 主字色；gray-1 次深字色；gray-2 中灰；gray-3 輕邊線；gray-4 淺底 #f2f2f2（canvas／區塊）；.my-color-gray-4 淺底輔助字 class 同 gray-1 */
   --my-color-black: #333333;
-  --my-color-gray-1: #666666;
-  --my-color-gray-2: #999999;
-  --my-color-gray-3: #e3e3e3;
-  --my-color-gray-4: #f3f3f3;
+  --my-color-gray-1: #888888;
+  --my-color-gray-2: #c4c4c4;
+  --my-color-gray-3: #e4e4e4;
+  --my-color-gray-4: #f4f4f4;
   --my-color-white: #fdfdfd;
   /* 設定單元：資料夾／資料夾組合拖放區（深於白底 tag、淺於 gray-1 字色） */
   --my-pack-folder-field-bg: color-mix(in srgb, var(--my-color-gray-1) 22%, var(--my-color-gray-3));

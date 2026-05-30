@@ -22,7 +22,16 @@ const props = defineProps({
   idPrefix: { type: String, default: '' },
   /** 白菱形漸層（黑／灰區透明）；與按鈕描邊同色盤時傳入 */
   diamondGradient: { type: Object, default: null },
+  /** pill 鈕 background CSS；gradient-diamond-only 時優先於 diamondGradient，色票與按鈕完全一致 */
+  diamondGradientCss: { type: String, default: '' },
 });
+
+/** 中央菱形 mask（viewBox 0 0 80 80，對齊 LogoGridSvg centerQuadOnly） */
+const CENTER_DIAMOND_MASK_URL = `url("data:image/svg+xml,${encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">'
+  + '<path fill="white" d="M 40 0 A 40 40 0 0 0 80 40 A 40 40 0 0 0 40 80 A 40 40 0 0 0 0 40 A 40 40 0 0 0 40 0 Z"/>'
+  + '</svg>',
+)}")`;
 
 logoCenterMarkSeq += 1;
 const autoIdPrefix = `logo-center-mark-${logoCenterMarkSeq}`;
@@ -35,6 +44,28 @@ const resolvedIdPrefix = computed(() => {
 const diamondOnly = computed(
   () => props.variant === 'white-diamond-only' || props.variant === 'gradient-diamond-only',
 );
+
+const useCssDiamondGradient = computed(
+  () =>
+    props.variant === 'gradient-diamond-only'
+    && String(props.diamondGradientCss ?? '').trim() !== '',
+);
+
+const cssDiamondFillStyle = computed(() => {
+  const background = String(props.diamondGradientCss ?? '').trim();
+  if (!background) return null;
+  return {
+    background,
+    WebkitMaskImage: CENTER_DIAMOND_MASK_URL,
+    maskImage: CENTER_DIAMOND_MASK_URL,
+    WebkitMaskSize: 'contain',
+    maskSize: 'contain',
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+    WebkitMaskPosition: 'center',
+    maskPosition: 'center',
+  };
+});
 
 const markColors = computed(() => {
   if (props.variant === 'gradient-diamond-only') {
@@ -128,7 +159,13 @@ const wrapStyle = computed(() => {
     :style="wrapStyle"
     aria-hidden="true"
   >
+    <span
+      v-if="useCssDiamondGradient"
+      class="logo-center-mark__css-diamond-fill"
+      :style="cssDiamondFillStyle"
+    />
     <LogoGridSvg
+      v-else
       :center-cells-only="includeExtensionRow"
       :center-quad-only="!includeExtensionRow"
       :diamond-only="diamondOnly"
@@ -148,5 +185,11 @@ const wrapStyle = computed(() => {
 
 .logo-center-mark--match-text {
   color: inherit;
+}
+
+.logo-center-mark__css-diamond-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 </style>

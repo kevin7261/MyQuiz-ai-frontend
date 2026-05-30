@@ -1,12 +1,11 @@
 <script setup>
-import { computed, ref, watch, inject, shallowRef } from 'vue';
+import { computed, ref, watch, inject } from 'vue';
 import EnglishExamMarkdownEditor from './EnglishExamMarkdownEditor.vue';
 import LogoCenterMark from './LogoCenterMark.vue';
 import LogoGradientPillButton from './LogoGradientPillButton.vue';
 import QuizHistoryModal from './QuizHistoryModal.vue';
 import QuizHistoryPanel from './QuizHistoryPanel.vue';
 import { useSystemHeaderLogoGradients } from '../composables/useSystemHeaderLogoGradients.js';
-import { createRandomLogoDiamondGradient } from '../utils/logoDiamondGradient.js';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
 /**
@@ -115,52 +114,16 @@ const props = defineProps({
   },
 });
 
-const { loginLogoColors } = useSystemHeaderLogoGradients();
+const {
+  generateButtonGradientCss,
+  gradeButtonGradientCss,
+} = useSystemHeaderLogoGradients();
 
-/** 出題規則 tab 前 logo 菱形漸層（對齊開始出題鈕） */
-const ruleTabGenerateDiamondGradient = shallowRef(
-  createRandomLogoDiamondGradient({
-    tone: 'generate',
-    bias: props.logoGradientBias,
-    linearOnly: true,
-  }),
-);
+/** 出題規則 tab icon：與全站「開始出題」pill 同一組 CSS 漸層 */
+const ruleTabGenerateGradientCss = computed(() => generateButtonGradientCss.value);
 
-/** 批改規則 tab 前 logo 菱形漸層（對齊開始批改鈕） */
-const ruleTabGradeDiamondGradient = shallowRef(
-  createRandomLogoDiamondGradient({
-    tone: 'grade',
-    bias: props.logoGradientBias,
-    linearOnly: true,
-  }),
-);
-
-watch(
-  () => [props.logoGradientBias, loginLogoColors.value],
-  () => {
-    if (props.logoGradientBias === 'work3') {
-      const colors = loginLogoColors.value;
-      if (colors?.secondaryGradient) {
-        ruleTabGenerateDiamondGradient.value = colors.secondaryGradient;
-      }
-      if (colors?.primaryGradient) {
-        ruleTabGradeDiamondGradient.value = colors.primaryGradient;
-      }
-      return;
-    }
-    ruleTabGenerateDiamondGradient.value = createRandomLogoDiamondGradient({
-      tone: 'generate',
-      bias: props.logoGradientBias,
-      linearOnly: true,
-    });
-    ruleTabGradeDiamondGradient.value = createRandomLogoDiamondGradient({
-      tone: 'grade',
-      bias: props.logoGradientBias,
-      linearOnly: true,
-    });
-  },
-  { immediate: true },
-);
+/** 批改規則 tab icon：與全站「開始批改」pill 同一組 CSS 漸層 */
+const ruleTabGradeGradientCss = computed(() => gradeButtonGradientCss.value);
 
 /** 規則 tab 前 logo 尺寸 16×16 px */
 const ruleTabLogoSizePx = 16;
@@ -651,14 +614,27 @@ const bankQuizHistoryListResolved = computed(() => {
   return props.bankQuizHistoryList;
 });
 
-/** 答案區 tab：答案／提示／參考答案（內嵌，取代 Modal pill） */
-const showAnswerHintRefTabs = computed(
+/** 答案區 inset 標題列：tab 版式（即使僅「您的答案」亦顯示 active 底線） */
+const showAnswerSectionInsetTabs = computed(
   () =>
     props.hintReferenceInModal
     && useDesignFieldLabelInset.value
-    && showDesignSubBlockAnswer.value
-    && (hasHintText.value || hasReferenceAnswerText.value),
+    && showDesignSubBlockAnswer.value,
 );
+
+/** 答案區是否另含提示／參考答案 tab */
+const showAnswerHintRefExtraTabs = computed(
+  () => hasHintText.value || hasReferenceAnswerText.value,
+);
+
+/** 答案區 tab：答案／提示／參考答案（內嵌，取代 Modal pill） */
+const showAnswerHintRefTabs = computed(
+  () => showAnswerSectionInsetTabs.value && showAnswerHintRefExtraTabs.value,
+);
+
+function answerSectionAnswerTabActive() {
+  return !showAnswerHintRefExtraTabs.value || answerSectionTab.value === 'answer';
+}
 
 const answerSectionTab = ref(/** @type {'answer'|'hint'|'reference'} */ ('answer'));
 
@@ -1032,7 +1008,7 @@ const quizAnswerFieldDisabled = computed(
                     <LogoCenterMark
                       :id-prefix="`quiz-rule-tab-gen-${card.id}`"
                       variant="gradient-diamond-only"
-                      :diamond-gradient="ruleTabGenerateDiamondGradient"
+                      :diamond-gradient-css="ruleTabGenerateGradientCss"
                       :size-px="ruleTabLogoSizePx"
                     />
                     <span class="my-design-quiz-stem-tab__label">出題規則</span>
@@ -1394,10 +1370,10 @@ const quizAnswerFieldDisabled = computed(
             <header class="my-design-quiz-field-inset__head">
               <div
                 class="d-flex justify-content-between gap-2 px-3"
-                :class="designStemTabsRowHeadClass(showAnswerHintRefTabs)"
+                :class="designStemTabsRowHeadClass(showAnswerSectionInsetTabs)"
               >
                 <div
-                  v-if="showAnswerHintRefTabs"
+                  v-if="showAnswerSectionInsetTabs"
                   :class="designStemTabsClass"
                   role="tablist"
                   aria-label="您的答案、提示與參考答案"
@@ -1406,8 +1382,8 @@ const quizAnswerFieldDisabled = computed(
                     type="button"
                     role="tab"
                     class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                    :class="designStemTabBtnClass(answerSectionTab === 'answer')"
-                    :aria-selected="answerSectionTab === 'answer'"
+                    :class="designStemTabBtnClass(answerSectionAnswerTabActive())"
+                    :aria-selected="answerSectionAnswerTabActive()"
                     @click="answerSectionTab = 'answer'"
                   >
                     您的答案
@@ -1505,7 +1481,7 @@ const quizAnswerFieldDisabled = computed(
           <div
             class="d-flex justify-content-between gap-2 flex-wrap w-100 min-w-0 mb-1"
             :class="
-              showAnswerHintRefTabs && designUi
+              showAnswerSectionInsetTabs && designUi
                 ? 'my-design-quiz-stem-tabs-row align-items-end'
                 : hintReferenceInModal
                   ? 'align-items-end'
@@ -1513,7 +1489,7 @@ const quizAnswerFieldDisabled = computed(
             "
           >
             <div
-              v-if="showAnswerHintRefTabs && designUi"
+              v-if="showAnswerSectionInsetTabs && designUi"
               :class="designStemTabsClass"
               role="tablist"
               aria-label="您的答案、提示與參考答案"
@@ -1522,8 +1498,8 @@ const quizAnswerFieldDisabled = computed(
                 type="button"
                 role="tab"
                 class="btn px-0 py-2 my-design-quiz-stem-tab my-font-sm-400"
-                :class="designStemTabBtnClass(answerSectionTab === 'answer')"
-                :aria-selected="answerSectionTab === 'answer'"
+                :class="designStemTabBtnClass(answerSectionAnswerTabActive())"
+                :aria-selected="answerSectionAnswerTabActive()"
                 @click="answerSectionTab = 'answer'"
               >
                 您的答案
@@ -1709,6 +1685,7 @@ const quizAnswerFieldDisabled = computed(
               <LogoGradientPillButton
                 tone="grade"
                 :gradient-bias="logoGradientBias"
+                :gradient-css="ruleTabGradeGradientCss"
                 :id-prefix="`quiz-grade-mark-${card.id}-grading-row`"
                 title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
                 :disabled="designGradingStartButtonDisabled"
@@ -1760,7 +1737,7 @@ const quizAnswerFieldDisabled = computed(
                         <LogoCenterMark
                           :id-prefix="`quiz-rule-tab-grade-${card.id}`"
                           variant="gradient-diamond-only"
-                          :diamond-gradient="ruleTabGradeDiamondGradient"
+                          :diamond-gradient-css="ruleTabGradeGradientCss"
                           :size-px="ruleTabLogoSizePx"
                         />
                         <span class="my-design-quiz-stem-tab__label">批改規則</span>
@@ -1818,6 +1795,7 @@ const quizAnswerFieldDisabled = computed(
               v-if="showStartGradeButton"
               tone="grade"
               :gradient-bias="logoGradientBias"
+              :gradient-css="ruleTabGradeGradientCss"
               :id-prefix="`quiz-grade-mark-${card.id}-toolbar-fallback`"
               title="依批改規則批改；規則已改動時會先儲存再批改，否則使用後端已儲存規則"
               :disabled="mergedGradeButtonDisabled"
@@ -1871,6 +1849,7 @@ const quizAnswerFieldDisabled = computed(
               v-if="showRagGradeDbButton && showStartGradeButton"
               tone="grade"
               :gradient-bias="logoGradientBias"
+              :gradient-css="ruleTabGradeGradientCss"
               :id-prefix="`quiz-grade-mark-${card.id}-grade-db`"
               title="使用後端已儲存之批改規則；須曾成功「儲存規則並開始批改」且未在編輯器中改動批改規則"
               :disabled="ragGradeDbButtonDisabled"
@@ -1916,6 +1895,7 @@ const quizAnswerFieldDisabled = computed(
             v-if="showStartGradeButton"
             tone="grade"
             :gradient-bias="logoGradientBias"
+            :gradient-css="ruleTabGradeGradientCss"
             :id-prefix="`quiz-grade-mark-${card.id}-standalone`"
             :disabled="standaloneStartGradeButtonDisabled"
             :aria-busy="gradeSubmitting"
@@ -1969,7 +1949,7 @@ const quizAnswerFieldDisabled = computed(
                     <LogoCenterMark
                       :id-prefix="`quiz-rule-tab-grade2-${card.id}`"
                       variant="gradient-diamond-only"
-                      :diamond-gradient="ruleTabGradeDiamondGradient"
+                      :diamond-gradient-css="ruleTabGradeGradientCss"
                       :size-px="ruleTabLogoSizePx"
                     />
                     <span class="my-design-quiz-stem-tab__label">批改規則</span>
