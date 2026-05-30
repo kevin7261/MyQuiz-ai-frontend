@@ -7661,8 +7661,7 @@ async function confirmAnswer(item) {
                     >
                       <button
                         type="button"
-                        class="btn my-design-side-nav-add-unit-main d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 flex-grow-1 min-w-0"
-                        :class="d3ConfirmPillMd"
+                        class="btn my-design-side-nav-add-unit-main d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2 flex-grow-1 min-w-0"
                         title="新增單元"
                         aria-label="新增單元"
                         :disabled="packGroupsEditBlocked"
@@ -7677,8 +7676,7 @@ async function confirmAnswer(item) {
                       >
                         <button
                           type="button"
-                          class="btn my-design-side-nav-add-unit-menu d-inline-flex justify-content-center align-items-center my-font-md-400 lh-1 dropdown-toggle my-dropdown-caret px-0 py-2"
-                          :class="d3ConfirmPillMd"
+                          class="btn my-design-side-nav-add-unit-menu d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit lh-1 dropdown-toggle my-dropdown-caret px-0 py-2"
                           data-bs-toggle="dropdown"
                           aria-expanded="false"
                           aria-label="單元功能選單"

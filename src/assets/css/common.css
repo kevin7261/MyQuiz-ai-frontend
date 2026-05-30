@@ -2127,40 +2127,82 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
   opacity: 0.45;
 }
 
-/* 底欄「+ 新增單元」：黑底膠囊分段（左 +／文字、右 chevron 選單；my-button-white） */
+/* 底欄「+ 新增單元」：白底 gray-3 框膠囊分段（同 my-btn-login-submit；左 +／文字、右 chevron 選單；兩段各自 hover 陰影） */
 .my-design-side-nav-delete .my-design-side-nav-add-unit-row {
   width: 100%;
 }
 .my-design-side-nav-add-unit-group {
   border-radius: 50rem;
+  border: 1px solid var(--my-color-gray-3);
+  background-color: var(--my-color-white);
+  box-shadow: none;
 }
 
 /* 底欄在側欄最下方：選單向上展開，避免被 overflow 裁切 */
 .my-design-side-nav-delete .dropdown.dropup .dropdown-menu.my-design-side-nav-add-unit-dropdown-menu {
   z-index: 1080;
 }
-.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main {
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit {
   flex: 1 1 auto;
   min-width: 0;
   border-radius: 50rem 0 0 50rem;
-  border: none;
+  border: none !important;
+  box-shadow: none !important;
 }
-.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu {
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:hover:not(:disabled),
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:focus-visible:not(:disabled),
+.my-design-side-nav-add-unit-group > .btn.my-design-side-nav-add-unit-main.my-btn-login-submit:active:not(:disabled) {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
+  z-index: 1;
+  position: relative;
+}
+.my-design-side-nav-add-unit-group > .dropdown {
+  align-items: stretch;
+}
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit {
   flex: 0 0 auto;
   align-self: stretch;
   min-width: 2.75rem;
   padding-inline: 0.875rem;
   border-radius: 0 50rem 50rem 0;
-  border: none;
-  border-inline-start: 1px solid color-mix(in srgb, var(--my-color-white) 32%, transparent);
+  border: none !important;
+  border-inline-start: 1px solid var(--my-color-gray-3) !important;
+  box-shadow: none !important;
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-1) !important;
+}
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:hover:not(:disabled),
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:focus-visible:not(:disabled),
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit.show:not(:disabled),
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:active:not(:disabled) {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-black) !important;
+  border-inline-start-color: var(--my-color-gray-3) !important;
+  box-shadow: 0 0 1rem rgba(0, 0, 0, 0.25) !important;
+  z-index: 1;
+  position: relative;
+}
+.my-design-side-nav-add-unit-group > .dropdown > .btn.my-design-side-nav-add-unit-menu.my-btn-login-submit:disabled {
+  background-color: var(--my-color-white) !important;
+  color: var(--my-color-gray-3) !important;
+  border-inline-start-color: var(--my-color-gray-3) !important;
+  opacity: 1;
+}
+.my-design-side-nav-add-unit-group:has(> .btn.my-btn-login-submit:disabled),
+.my-design-side-nav-add-unit-group:has(> .dropdown > .btn.my-btn-login-submit:disabled) {
+  border-color: var(--my-color-gray-3);
+  box-shadow: none;
 }
 .my-design-side-nav-add-unit-icon {
   font-size: var(--my-font-size-sm);
   line-height: 1;
 }
-.my-design-side-nav-add-unit-menu .my-dropdown-toggle-caret {
+.my-design-side-nav-add-unit-menu.my-btn-login-submit .my-dropdown-toggle-caret {
   font-size: var(--my-font-size-sm);
   line-height: 1;
+  color: inherit;
 }
 
 /* ── 分析報告 Markdown 樣式（AnalysisWeaknessPage / StudentAnswerAnalysisPage 共用） ── */

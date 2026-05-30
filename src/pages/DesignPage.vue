@@ -925,8 +925,8 @@ function designPackUnitTypeIconCss(unitType) {
                     </DesignPageSpecItem>
                     <DesignPageSpecItem
                       name="btn-add-pack-unit-row"
-                      usage="create-exam-bank_3 左側底欄「+ 新增單元」列（my-design-side-nav-add-unit-group；位於「開始建立單元」上方）：黑底膠囊分段 my-button-white，左 fa-plus＋文字、右 dropup fa-chevron-down my-dropdown-toggle-caret"
-                      css="my-design-side-nav-add-unit-group d-flex · dropdown dropup · my-design-side-nav-add-unit-main my-button-white · my-design-side-nav-add-unit-menu my-button-white my-dropdown-caret"
+                      usage="create-exam-bank_3 左側底欄「+ 新增單元」列（my-design-side-nav-add-unit-group；位於「開始建立單元」上方）：同登入 my-btn-login-submit 白底 gray-3 框；左 fa-plus＋文字、右 dropup fa-chevron-down my-dropdown-toggle-caret，兩段各自 hover 陰影＋黑字"
+                      css="my-design-side-nav-add-unit-group d-flex · dropdown dropup · my-design-side-nav-add-unit-main my-btn-login-submit · my-design-side-nav-add-unit-menu my-btn-login-submit my-dropdown-caret"
                       copy-text="my-design-side-nav-add-unit-group"
                     >
                       <div class="my-design-side-nav-delete my-bgcolor-gray-4 rounded-3 p-3" style="max-width: 20rem;">
@@ -934,7 +934,7 @@ function designPackUnitTypeIconCss(unitType) {
                           <div class="my-design-side-nav-add-unit-group d-flex align-items-stretch w-100 min-w-0" role="group">
                             <button
                               type="button"
-                              class="btn my-design-side-nav-add-unit-main d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-button-white px-4 py-2 flex-grow-1 min-w-0"
+                              class="btn my-design-side-nav-add-unit-main d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-login-submit px-4 py-2 flex-grow-1 min-w-0"
                             >
                               <i class="fa-solid fa-plus my-design-side-nav-add-unit-icon flex-shrink-0" aria-hidden="true" />
                               <span>新增單元</span>
@@ -942,7 +942,7 @@ function designPackUnitTypeIconCss(unitType) {
                             <div class="dropdown dropup flex-shrink-0 d-flex">
                               <button
                                 type="button"
-                                class="btn my-design-side-nav-add-unit-menu d-inline-flex justify-content-center align-items-center my-font-md-400 my-button-white lh-1 dropdown-toggle my-dropdown-caret py-2"
+                                class="btn my-design-side-nav-add-unit-menu d-inline-flex justify-content-center align-items-center my-font-md-400 my-btn-login-submit lh-1 dropdown-toggle my-dropdown-caret py-2"
                                 data-bs-toggle="dropdown"
                                 aria-label="單元功能選單（示意）"
                               >
