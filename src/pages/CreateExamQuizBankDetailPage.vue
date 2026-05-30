@@ -6029,7 +6029,7 @@ async function confirmAnswer(item) {
               </div>
             <div
               :key="'rg-' + activePackUnitGi"
-              class="my-pack-unit-attrs-panel rounded-4 p-3 w-100 min-w-0 d-flex flex-column gap-4"
+              class="my-pack-unit-attrs-panel rounded-4 w-100 min-w-0 d-flex flex-column gap-4"
               :class="designSidePanelOnLeft ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
               role="group"
               aria-label="單元設定"

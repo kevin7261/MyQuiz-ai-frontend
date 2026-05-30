@@ -183,7 +183,6 @@
 
 .my-design--side-panel-left .my-pack-unit-attrs-panel {
   background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-3);
 }
 .my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
   background-color: var(--my-color-white) !important;
@@ -578,7 +577,7 @@
 .my-pack-unit-field--tabs {
   align-items: center;
 }
-/* 設定單元屬性灰底面板：單層 padding，欄位間距由 .row.gy-4 與面板 gap-4 負責 */
+/* 設定單元屬性面板：無外框／無 p-3；欄位間距由 .row.gy-4 與面板 gap-4 負責 */
 .my-pack-unit-attrs-panel > .row {
   --bs-gutter-x: 0.5rem;
   --bs-gutter-y: 1.5rem;
