@@ -140,6 +140,9 @@ const detailHeaderActionsDisabled = computed(
   () => deleteRagLoading.value || renameTitleSaving.value,
 );
 
+/** 由 DetailPage 回報：單元／題型清單含測驗用題型時禁止刪除題庫 */
+const detailBankExamProtected = ref(false);
+
 function persistCreateBankTabSelection(ragTabId) {
   const personId = getPersonId(authStore);
   if (!personId || !ragTabId) return;
@@ -709,6 +712,7 @@ watch(
         v-if="!sidePanelOnLeft"
         v-model:selected-bank-label="selectedBankLabel"
         :detail-header-actions-disabled="detailHeaderActionsDisabled"
+        :delete-bank-exam-protected="detailBankExamProtected"
         :grid-items="gridItems"
         :selected-bank-tab-id="selectedBankTabId"
         :delete-rag-loading="deleteRagLoading"
@@ -729,11 +733,13 @@ watch(
         :side-panel-delete-rag-loading="deleteRagLoading"
         class="create-exam-bank-2-embedded flex-grow-1 min-h-0"
         @delete-bank="openDeleteBankModal"
+        @bank-exam-protected-change="detailBankExamProtected = $event"
       >
         <template v-if="sidePanelOnLeft" #side-panel-header>
           <CreateExamQuizBankPage2DetailBar
             v-model:selected-bank-label="selectedBankLabel"
             :detail-header-actions-disabled="detailHeaderActionsDisabled"
+            :delete-bank-exam-protected="detailBankExamProtected"
             :grid-items="gridItems"
             :selected-bank-tab-id="selectedBankTabId"
             :delete-rag-loading="deleteRagLoading"

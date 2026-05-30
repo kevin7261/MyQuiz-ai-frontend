@@ -254,9 +254,8 @@
   padding-right: 1rem;
 }
 
-/* 題型列：全寬 hover + 文字內縮 */
+/* 題型列：全寬 hover + 文字內縮（題型名 ps-5 見 template） */
 .my-design-right-nav--flat .my-design-right-unit-quiz-link {
-  padding-left: 1.75rem;
   padding-right: 1rem;
 }
 .my-design-right-nav--flat .my-design-right-unit-row {
@@ -504,7 +503,6 @@
   font-size: var(--my-font-size-sm);
   color: var(--my-color-gray-1);
   padding: var(--bs-nav-link-padding-y, 0.5rem) var(--bs-nav-link-padding-x, 1rem);
-  padding-left: calc(var(--bs-nav-link-padding-x, 1rem) + 1.75rem);
   box-sizing: border-box;
 }
 .my-design-right-unit-quiz-item--active .my-design-right-unit-quiz-link {

@@ -82,24 +82,44 @@ watch(
   },
 );
 
-const buttonStyle = computed(() => ({
+const wrapStyle = computed(() => ({
   background: buttonGradientCss.value,
 }));
 </script>
 
 <template>
-  <button
-    type="button"
-    class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 px-4 py-2 my-button-logo-gradient"
-    :class="extraClass"
-    :style="buttonStyle"
-    :disabled="disabled"
-    :aria-busy="ariaBusy"
-    :aria-label="ariaLabel"
-    :title="title"
-    @click="$emit('click', $event)"
+  <span
+    class="my-logo-gradient-pill-btn-wrap d-inline-flex flex-shrink-0 rounded-pill"
+    :class="{ 'my-logo-gradient-pill-btn-wrap--disabled': disabled }"
+    :style="wrapStyle"
   >
-    <LogoCenterMark :id-prefix="idPrefix" variant="on-dark-button" />
-    <span><slot /></span>
-  </button>
+    <button
+      type="button"
+      class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 flex-shrink-0 my-font-md-400 px-4 py-2 my-button-logo-gradient"
+      :class="extraClass"
+      :disabled="disabled"
+      :aria-busy="ariaBusy"
+      :aria-label="ariaLabel"
+      :title="title"
+      @click="$emit('click', $event)"
+    >
+      <LogoCenterMark :id-prefix="idPrefix" variant="gradient-diamond-only" :diamond-gradient-css="buttonGradientCss" />
+      <span><slot /></span>
+    </button>
+  </span>
 </template>
+
+<style scoped>
+.my-logo-gradient-pill-btn-wrap {
+  padding: 1pt;
+}
+.my-logo-gradient-pill-btn-wrap--disabled {
+  opacity: 0.55;
+}
+.my-logo-gradient-pill-btn-wrap > :deep(.btn.my-button-logo-gradient:disabled) {
+  opacity: 1;
+}
+.my-logo-gradient-pill-btn-wrap:has(> .btn:active:not(:disabled)) {
+  filter: brightness(0.92);
+}
+</style>

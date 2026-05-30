@@ -2,6 +2,8 @@
 defineProps({
   selectedBankLabel: { type: String, default: '' },
   detailHeaderActionsDisabled: { type: Boolean, default: false },
+  /** 單元／題型清單含測驗用題型時禁止刪除題庫 */
+  deleteBankExamProtected: { type: Boolean, default: false },
   gridItems: { type: Array, default: () => [] },
   selectedBankTabId: { type: String, default: '' },
   deleteRagLoading: { type: Boolean, default: false },
@@ -46,7 +48,7 @@ function onTitleInput(e) {
           <span>{{ backLabel }}</span>
         </button>
       </div>
-      <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0 px-3 pb-2">
+      <div class="create-exam-bank-2-detail-bar__title-row w-100 min-w-0 ps-5 pb-2">
         <input
           :value="selectedBankLabel"
           type="text"
@@ -134,7 +136,8 @@ function onTitleInput(e) {
               <button
                 type="button"
                 class="dropdown-item my-color-red d-flex align-items-center gap-2"
-                :disabled="detailHeaderActionsDisabled"
+                :disabled="detailHeaderActionsDisabled || deleteBankExamProtected"
+                :title="deleteBankExamProtected ? '此題庫含有已設為測驗用之題型，無法刪除' : undefined"
                 :aria-busy="deleteRagLoading"
                 @click="emit('delete-bank')"
               >

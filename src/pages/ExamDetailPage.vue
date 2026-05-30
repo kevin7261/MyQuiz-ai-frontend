@@ -3142,7 +3142,7 @@ onActivated(() => {
                                   </button>
                                 </div>
                       </section>
-                      <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
+                      <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
                       <div class="my-pack-unit-settings-body w-100 min-w-0">
                         <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
                           <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
@@ -3389,19 +3389,32 @@ onActivated(() => {
                           <!-- 繼續出題：追問出題模式且已有批改結果 -->
                           <div
                             v-if="examSlotIsFollowupMode(activeExamSlotIndex1) && activeExamSlotShowGradingSubBlock"
-                            class="d-flex justify-content-start align-items-center flex-wrap gap-2 w-100"
+                            class="my-design-quiz-sub-block-outer"
+                            :class="{ 'my-design-quiz-sub-block-outer--with-logo': designSidePanelOnLeft }"
                           >
-                            <LogoGradientPillButton
-                              tone="generate"
-                              :gradient-bias="work3LogoGradientBias"
-                              :id-prefix="`exam-followup-continue-${activeExamSlotIndex1}`"
-                              :disabled="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
-                              :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
-                              aria-label="繼續出題"
-                              @click="generateQuiz(activeExamSlotIndex1)"
+                            <LogoLayerMark
+                              v-if="designSidePanelOnLeft"
+                              layer="primary"
+                              :size-pt="24"
+                              :id-prefix="`exam-followup-continue-q-${activeExamSlotIndex1}`"
+                              class="my-design-quiz-sub-block-outer__logo"
+                            />
+                            <div
+                              class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 min-w-0 flex-grow-1"
                             >
-                              繼續出題
-                            </LogoGradientPillButton>
+                              <LogoGradientPillButton
+                                tone="generate"
+                                :gradient-bias="work3LogoGradientBias"
+                                :id-prefix="`exam-followup-continue-${activeExamSlotIndex1}`"
+                                extra-class="my-design-quiz-generate-btn"
+                                :disabled="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
+                                :aria-busy="getSlotFormState(activeExamSlotIndex1).loading || getSlotFormState(activeExamSlotIndex1).draftCreating"
+                                aria-label="繼續出題"
+                                @click="generateQuiz(activeExamSlotIndex1)"
+                              >
+                                繼續出題
+                              </LogoGradientPillButton>
+                            </div>
                           </div>
                         </div>
                       </div>

@@ -177,7 +177,7 @@ const props = defineProps({
   sidePanelDeleteRagLoading: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(['delete-bank']);
+const emit = defineEmits(['delete-bank', 'bank-exam-protected-change']);
 
 const router = useRouter();
 const route = useRoute();
@@ -681,6 +681,20 @@ function ragTabIsExamProtected(rag, tabStateMapRef) {
   if (tid && ragTabExamHintByTabId.value[tid]) return true;
   return tabStateHasAnyRagQuizForExam(tabStateMapRef, tabId);
 }
+
+/** 目前題庫含測驗用題型（與單元／題型清單綠點、分頁列鎖刪一致） */
+const currentRagTabIsExamProtected = computed(() => {
+  void ragTabExamHintByTabId.value;
+  return ragTabIsExamProtected(currentRagItem.value, tabStateMap);
+});
+
+watch(
+  currentRagTabIsExamProtected,
+  (v) => {
+    emit('bank-exam-protected-change', v);
+  },
+  { immediate: true },
+);
 
 watch(
   ragList,
@@ -6407,7 +6421,7 @@ async function confirmAnswer(item) {
                 </button>
               </div>
             </section>
-            <hr style="border-top: 1px solid var(--my-color-gray-3); margin: 0 0 1rem; opacity: 1;" />
+            <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
             <div
               class="my-pack-unit-settings-body w-100 min-w-0"
               :class="{ 'my-color-gray-4': ragGenerateDisabled }"
@@ -6980,7 +6994,7 @@ async function confirmAnswer(item) {
                         @keydown.enter.prevent="onDesignRightSubTabClick(qItem)"
                         @keydown.space.prevent="onDesignRightSubTabClick(qItem)"
                       >
-                        <div class="my-design-right-unit-quiz-link w-100 text-start d-flex align-items-center min-w-0 gap-2">
+                        <div class="my-design-right-unit-quiz-link w-100 text-start d-flex align-items-center min-w-0 gap-2 ps-5">
                           <div class="d-flex align-items-center flex-wrap gap-2 min-w-0 flex-grow-1">
                             <span class="min-w-0 text-break">{{ qItem.label }}</span>
                             <span v-if="qItem.followup" class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0">追問</span>
@@ -7087,9 +7101,9 @@ async function confirmAnswer(item) {
                   <button
                     type="button"
                     class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 flex-grow-1 min-w-0"
-                    title="刪除此題庫"
+                    :title="currentRagTabIsExamProtected ? '此題庫含有已設為測驗用之題型，無法刪除' : '刪除此題庫'"
                     aria-label="刪除此題庫"
-                    :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading"
+                    :disabled="sidePanelDeleteBankDisabled || sidePanelDeleteRagLoading || currentRagTabIsExamProtected"
                     :aria-busy="sidePanelDeleteRagLoading"
                     @click="emit('delete-bank')"
                   >
