@@ -3335,7 +3335,7 @@ onActivated(() => {
                 v-if="designSidePanelOnLeft"
                 class="my-main-empty-hint mb-0 text-center text-break"
               >
-                目前沒有題目，請在左側選單新增題目
+                目前沒有題目，請在左側選單下方新增題目
               </p>
               <button
                 v-else
@@ -3689,80 +3689,93 @@ onActivated(() => {
               aria-label="題目清單"
             >
               <div
-                class="my-design-right-step-block my-design-right-step-block--section-divide"
-                :class="designSidePanelOnLeft ? '' : 'py-2'"
+                class="my-design-right-step-block"
+                :class="designSidePanelOnLeft ? 'pb-2 my-design-right-step-block--units' : 'py-2'"
               >
                 <div
                   class="my-design-right-step-heading my-font-sm-400 my-color-gray-1"
                   :class="designSidePanelOnLeft ? 'px-3 pt-3 pb-2' : 'px-3 py-2'"
                 >題目</div>
                 <div
-                  v-for="item in designRightQuizSubTabItems"
-                  :key="item.key"
-                  class="nav-item w-100"
+                  class="my-design-right-unit-list w-100 min-w-0"
+                  :class="{ 'my-design-right-unit-list--empty': !designRightQuizSubTabItems.length }"
                 >
-                  <button
-                    type="button"
-                    class="nav-link w-100 text-start text-break"
-                    :class="{ active: item.active }"
-                    :aria-current="item.active ? 'page' : undefined"
-                    :aria-label="`${item.label}，${item.breadcrumb}${item.followup ? '，追問' : ''}`"
-                    @click="onDesignRightQuizClick(item)"
-                  >
-                    <span class="d-flex flex-column align-items-stretch gap-1 min-w-0 w-100">
-                      <span>{{ item.label }}</span>
-                      <span
-                        class="exam-quiz-nav-breadcrumb my-font-sm-400 my-color-gray-1 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
-                        aria-hidden="true"
+                  <template v-if="designRightQuizSubTabItems.length">
+                    <div
+                      v-for="item in designRightQuizSubTabItems"
+                      :key="item.key"
+                      class="nav-item w-100"
+                    >
+                      <button
+                        type="button"
+                        class="nav-link w-100 text-start text-break"
+                        :class="{ active: item.active }"
+                        :aria-current="item.active ? 'page' : undefined"
+                        :aria-label="`${item.label}，${item.breadcrumb}${item.followup ? '，追問' : ''}`"
+                        @click="onDesignRightQuizClick(item)"
                       >
-                        <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
-                        <i
-                          class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
-                          aria-hidden="true"
-                        />
-                        <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
-                          <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.quizTypeLabel }}</span>
+                        <span class="d-flex flex-column align-items-stretch gap-1 min-w-0 w-100">
+                          <span>{{ item.label }}</span>
                           <span
-                            v-if="item.followup"
-                            class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
-                          >追問</span>
+                            class="exam-quiz-nav-breadcrumb my-font-sm-400 my-color-gray-1 d-flex align-items-center gap-1 flex-nowrap min-w-0 overflow-hidden"
+                            aria-hidden="true"
+                          >
+                            <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.unitLabel }}</span>
+                            <i
+                              class="fa-solid fa-chevron-right exam-slot-heading-breadcrumb__chevron flex-shrink-0"
+                              aria-hidden="true"
+                            />
+                            <span class="d-flex align-items-center gap-1 min-w-0 flex-shrink-1 overflow-hidden">
+                              <span class="exam-slot-heading-breadcrumb__segment text-truncate">{{ item.quizTypeLabel }}</span>
+                              <span
+                                v-if="item.followup"
+                                class="badge my-bgcolor-surface my-color-black border user-select-none my-font-sm-400 rounded px-2 py-1 flex-shrink-0"
+                              >追問</span>
+                            </span>
+                          </span>
                         </span>
-                      </span>
-                    </span>
-                  </button>
-                </div>
-                <div :class="designSidePanelOnLeft ? 'px-3 pb-3 pt-2' : 'px-3 pb-2 pt-2'">
-                  <button
-                    type="button"
-                    class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 w-100"
-                    :class="d3ConfirmPillMd"
-                    title="新增題目"
-                    aria-label="新增題目"
-                    :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
-                    :aria-busy="examAddQuestionSubmitting"
-                    @click="openExamAddQuestionModal"
+                      </button>
+                    </div>
+                  </template>
+                  <p
+                    v-else
+                    class="my-design-right-unit-empty my-font-lg-400 my-color-gray-2 mb-0"
                   >
-                    <i class="fa-solid fa-plus" aria-hidden="true" />
-                    新增題目
-                  </button>
+                    沒有題目
+                  </p>
                 </div>
               </div>
             </nav>
             <div
-              v-if="designSidePanelOnLeft"
+              v-if="designSidePanelOnLeft && activeTabId"
               class="my-design-side-nav-delete"
             >
-              <button
-                type="button"
-                class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2"
-                title="刪除此試卷"
-                aria-label="刪除此試卷"
-                :disabled="sidePanelDeleteExamDisabled || sidePanelDeleteExamLoading"
-                :aria-busy="sidePanelDeleteExamLoading"
-                @click="emit('delete-exam')"
-              >
-                <DeleteButtonLabel label="刪除此試卷" />
-              </button>
+              <div class="d-flex flex-column gap-2 w-100 min-w-0">
+                <button
+                  type="button"
+                  class="btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 px-4 py-2 w-100"
+                  :class="d3ConfirmPillMd"
+                  title="新增題目"
+                  aria-label="新增題目"
+                  :disabled="generateQuizBlocked || examAddQuestionSubmitting || !String(activeTabId ?? '').trim() || !getCurrentPersonId()"
+                  :aria-busy="examAddQuestionSubmitting"
+                  @click="openExamAddQuestionModal"
+                >
+                  <i class="fa-solid fa-plus" aria-hidden="true" />
+                  新增題目
+                </button>
+                <button
+                  type="button"
+                  class="btn rounded-pill d-inline-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-outline-red-hollow my-design-side-nav-delete__btn px-4 py-2 w-100"
+                  title="刪除此試卷"
+                  aria-label="刪除此試卷"
+                  :disabled="sidePanelDeleteExamDisabled || sidePanelDeleteExamLoading"
+                  :aria-busy="sidePanelDeleteExamLoading"
+                  @click="emit('delete-exam')"
+                >
+                  <DeleteButtonLabel label="刪除此試卷" />
+                </button>
+              </div>
             </div>
           </aside>
         </div>

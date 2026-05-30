@@ -2458,7 +2458,7 @@ button.my-pack-folder-pick-chip.my-pack-folder-pick-chip--selected .fa-solid {
 .exam-2-detail-bar__title:hover:not(:disabled),
 .create-exam-bank-2-detail-bar__title:focus:not(:disabled),
 .exam-2-detail-bar__title:focus:not(:disabled) {
-  background-color: var(--my-color-gray-4);
+  background-color: var(--my-color-gray-3);
 }
 
 .create-exam-bank-2-detail-bar__title:focus,
