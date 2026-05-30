@@ -1659,7 +1659,7 @@ const quizAnswerFieldDisabled = computed(
           <div
             v-if="!hideExamRulePills && !hideGradingPrompt"
             class="my-design-quiz-question-prompt-wrap w-100 min-w-0"
-            :class="useDesignFieldLabelInset ? 'px-3 pt-2 pb-0' : ''"
+            :class="useDesignFieldLabelInset ? 'px-3 py-2' : ''"
           >
             <section
               class="my-design-quiz-question-prompt-block w-100 min-w-0"

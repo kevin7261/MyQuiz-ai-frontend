@@ -7229,7 +7229,7 @@ async function confirmAnswer(item) {
                     </div>
                   </div>
                 </div>
-                <!-- 子區塊：題目區（出題規則 wrap pt-2；題目／先前出題內文另見 field-inset-body） -->
+                <!-- 子區塊：題目區（出題規則 wrap py-2；題目／先前出題內文另見 field-inset-body） -->
                 <div class="my-design-quiz-sub-block-outer">
                   <div
                     class="my-design-quiz-sub-block my-design-quiz-sub-block--stem rounded-4"
@@ -7249,7 +7249,7 @@ async function confirmAnswer(item) {
                     <div
                       class="w-100 min-w-0 my-design-quiz-stem-sub-block-top d-flex flex-column"
                     >
-                    <div class="my-design-quiz-question-prompt-wrap px-3 pt-2 pb-0 w-100 min-w-0">
+                    <div class="my-design-quiz-question-prompt-wrap px-3 py-2 w-100 min-w-0">
                       <section
                         class="my-design-quiz-question-prompt-block w-100 min-w-0"
                         aria-label="出題規則"
@@ -8471,7 +8471,7 @@ async function confirmAnswer(item) {
   opacity: 1;
 }
 /*
- * 出題／批改規則黑底區外層 wrap：px-3 pt-2；標題列 px-3 py-2 → 橫線 → 內文
+ * 出題／批改規則黑底區外層 wrap：px-3 py-2；標題列 px-3 py-2 → 橫線 → 內文
  * 題目／批改子區塊頂部：.my-design-quiz-stem-sub-block-top（灰底區最上方、非題目 title 列）
  */
 .my-design-quiz-stem-sub-block-top,
