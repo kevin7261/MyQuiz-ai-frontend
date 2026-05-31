@@ -88,16 +88,16 @@
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
   padding-top: 0 !important;
 }
-/* exam_3：題目／答案 tab 內文 pt-2 pb-4（對齊 create-exam-bank_3）；答案 textarea wrapper 無 pb-4 */
+/* exam_3：題目／答案 tab 內文 pt-2 pb-4（對齊 create-exam-bank_3）；答案 textarea wrapper pb-3 */
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body),
 .my-design--side-panel-left .my-design-pack-unit-blocks :deep(.my-design-quiz-field-inset-body) {
   padding-top: 0.5rem !important;
   padding-bottom: 1.5rem !important;
 }
 .my-design--side-panel-left .my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body:has(.my-design-quiz-answer-input)) {
-  padding-bottom: 0 !important;
+  padding-bottom: 1rem !important;
 }
-/* exam_3：出題／批改規則黑底區 hr 下方文字 pt-2；底緣 pb-3 見 design-quiz-shared（有 more-row 則不加） */
+/* exam_3：出題／批改規則黑底區 hr 下方文字 pt-2；底緣 pb-3 見 design-quiz-shared */
 .my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-body),
 .my-design--side-panel-left .my-design-quiz-question-prompt-block__content :deep(.english-exam-md-preview-empty),
 .my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),

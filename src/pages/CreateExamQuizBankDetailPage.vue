@@ -6671,7 +6671,7 @@ async function confirmAnswer(item) {
                       </section>
                     </div>
                     <div
-                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 py-3"
+                      class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 pb-3"
                     >
                       <LogoGradientPillButton
                         tone="generate"

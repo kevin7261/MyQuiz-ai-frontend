@@ -1447,7 +1447,7 @@ const quizAnswerFieldDisabled = computed(
               </div>
             </header>
             <div
-              class="my-design-quiz-field-inset-body my-design-quiz-answer-inset-body"
+              class="my-design-quiz-field-inset-body my-design-quiz-answer-inset-body pb-3"
               :class="designFieldInsetBodyClass"
             >
               <template v-if="showAnswerSectionBody">
@@ -1703,7 +1703,7 @@ const quizAnswerFieldDisabled = computed(
           <template v-if="useDesignFieldLabelInset">
             <div
               v-if="showDesignGradingStartRow"
-              :class="['d-flex justify-content-start align-items-center flex-nowrap gap-2 py-3 my-design-quiz-grading-start-row', designFieldInsetPxClass]"
+              :class="['d-flex justify-content-start align-items-center flex-nowrap gap-2 pb-3 my-design-quiz-grading-start-row', designFieldInsetPxClass]"
             >
               <LogoGradientPillButton
                 tone="grade"

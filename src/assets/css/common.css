@@ -1666,43 +1666,6 @@ div.form-control {
 }
 
 /**
- * 分析頁 design_3：QuizCard 三子區塊（對齊 exam_3／create-exam-bank_3 題目／答案 tab + gray-3 邊框）
- */
-.analysis-page-3-section {
-  border-bottom: 1px solid var(--my-color-gray-3);
-}
-
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block-outer {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.analysis-page-3-quiz .my-design-quiz-sub-block {
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  min-width: 0;
-}
-
-.analysis-page-3-quiz .my-design-quiz-sub-block--stem {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
-}
-
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-gray-4,
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-bgcolor-white {
-  background-color: var(--my-color-gray-4) !important;
-  border: 1px solid var(--my-color-gray-3);
-}
-
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block.my-design-quiz-sub-block--stem {
-  background-color: var(--my-color-white) !important;
-  border: 1px solid var(--my-color-gray-3);
-}
-
-/**
  * QuizCard 題目／答案／批改 tab（含僅「您的答案」等單 tab）：2pt 黑底線疊在下方 hr 灰線上。
  * 使用 .btn 提高 specificity，避免 Bootstrap .btn 邊框蓋掉 border-bottom。
  */
@@ -1734,33 +1697,8 @@ div.form-control {
   box-shadow: none;
 }
 
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-stem-tabs-row),
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
-  padding-top: 0 !important;
-}
-
-.analysis-page-3-quiz.my-design--side-panel-left .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset-body) {
-  padding-top: 0.5rem !important;
-  padding-bottom: 1.5rem !important;
-}
-
-.analysis-page-3-quiz .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__head > .my-design-quiz-stem-tabs-row.d-flex.gap-2.px-3) {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-.analysis-page-3-quiz .my-design-quiz-sub-block :deep(.my-design-quiz-field-inset__rule) {
-  border: 0;
-  border-top: 1px solid var(--my-color-gray-3);
-  opacity: 1;
-}
-
-.analysis-page-3-quiz .my-design-quiz-stem-sub-block-top {
-  padding-top: 0 !important;
-}
-
 /**
- * 分析頁 design_3：分析規則黑底區（對齊 create-exam-bank_3 出題規則）
+ * 分析頁 design_3：分析規則黑底區（PromptTextPage 等仍使用 analysis-page-3-rules）
  */
 .analysis-page-3-rules.my-design--side-panel-left .my-design-quiz-sub-block-outer {
   box-sizing: border-box;
@@ -1773,10 +1711,6 @@ div.form-control {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-}
-.analysis-page-3-rules.my-design--side-panel-left .my-design-quiz-sub-block--stem {
-  background-color: var(--my-color-white);
-  border: 1px solid var(--my-color-gray-3);
 }
 .analysis-page-3-rules.my-design--side-panel-left .my-design-quiz-stem-sub-block-top {
   padding-top: 0 !important;
@@ -1816,6 +1750,13 @@ div.form-control {
   border-radius: 0.5rem;
   background-color: var(--my-color-black);
   overflow: hidden;
+  padding-bottom: 0;
+}
+.analysis-page-3-rules .my-design-quiz-question-prompt-block:not(:has(.english-exam-md-preview-more-row)) {
+  padding-bottom: 1rem;
+}
+.analysis-page-3-rules .my-design-quiz-question-prompt-wrap {
+  padding-bottom: 1rem;
 }
 .analysis-page-3-rules .my-design-quiz-question-prompt-block__title {
   line-height: 1.35;

@@ -55,6 +55,9 @@
         if (this.currentView === 'createExamQuizBank') {
           return { tabId: this.tabId, routeBase: `${prefix}/create-exam-bank`, sidePanelOnLeft: true, useExamDetailRoute: true, design3: true };
         }
+        if (this.currentView === 'personAnalysis' || this.currentView === 'courseAnalysis') {
+          return { design3: true, sidePanelOnLeft: true };
+        }
         return { design3: true };
       },
       /** 測驗／建立測驗題庫／design / 分析頁：主內容區顯示捲軸（與左側清單一致） */

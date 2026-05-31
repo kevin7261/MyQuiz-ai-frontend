@@ -7,11 +7,14 @@ import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.v
 import AnalysisRulesViewModal from '../components/AnalysisRulesViewModal.vue';
 import AnalysisEditModal from '../components/AnalysisEditModal.vue';
 import AnalysisRulesBlock from '../components/AnalysisRulesBlock.vue';
+import LogoGradientPillButton from '../components/LogoGradientPillButton.vue';
 import { useAnalysisPage } from '../composables/useAnalysisPage.js';
 
 const props = defineProps({
   hidePageHeader: { type: Boolean, default: false },
   design3:        { type: Boolean, default: false },
+  /** true 時對齊 ExamPage2／CreateExamQuizBankPage2 白底主內容（TopView 嵌入） */
+  sidePanelOnLeft: { type: Boolean, default: false },
 });
 
 function parsePromptFromBody(data) {
@@ -83,7 +86,11 @@ const {
 <template>
   <div
     class="d-flex flex-column h-100 overflow-hidden position-relative"
-    :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+    :class="{
+      'analysis-2 analysis-2--side-panel-left my-design--side-panel-left': props.design3 && props.sidePanelOnLeft,
+      'my-bgcolor-white': props.design3,
+      'my-bgcolor-gray-4': !props.design3,
+    }"
   >
     <LoadingOverlay :is-visible="overlayBlocking" :loading-text="overlayLoadingText" />
 
@@ -120,12 +127,18 @@ const {
     </div>
 
     <div
-      class="flex-grow-1 overflow-auto d-flex flex-column min-h-0"
-      :class="props.design3 ? 'my-bgcolor-white' : 'my-bgcolor-gray-4'"
+      class="flex-grow-1 d-flex flex-column min-h-0"
+      :class="[
+        props.design3
+          ? 'analysis-2__scroll overflow-auto position-relative px-3 px-md-4 py-4 my-bgcolor-white'
+          : 'overflow-auto my-bgcolor-gray-4',
+      ]"
     >
-      <div class="container-fluid px-3 px-md-4 py-4">
+      <div
+        :class="props.design3 ? 'w-100 min-w-0' : 'container-fluid px-3 px-md-4 py-4'"
+      >
         <div class="row justify-content-center">
-          <div :class="props.design3 ? 'col-12 col-md-12 col-lg-10 col-xl-8 col-xxl-6' : 'col-12 col-lg-10 col-xl-8 col-xxl-6'">
+          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
 
             <!-- 分析規則區塊（管理員／開發者可見） -->
             <AnalysisRulesBlock
@@ -151,10 +164,25 @@ const {
             <div
               v-if="!canEditRules"
               :class="props.design3
-                ? 'd-flex justify-content-start align-items-center w-100 py-4 analysis-page-3-section'
+                ? 'd-flex justify-content-start align-items-center w-100 pb-3'
                 : 'd-flex justify-content-center align-items-center w-100 py-2 px-2 mb-4'"
             >
+              <LogoGradientPillButton
+                v-if="props.design3"
+                id-prefix="student-analysis-start"
+                tone="generate"
+                gradient-bias="work3"
+                extra-class="my-design-quiz-generate-btn"
+                title="開始作答分析"
+                aria-label="開始作答分析"
+                :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
+                :aria-busy="loading"
+                @click="fetchAnalysisOnly"
+              >
+                開始作答分析
+              </LogoGradientPillButton>
               <button
+                v-else
                 type="button"
                 :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-lg px-5 py-3']"
                 title="開始作答分析"
@@ -185,7 +213,7 @@ const {
                   <div
                     v-if="weaknessReport"
                     :class="props.design3
-                      ? 'w-100 min-w-0 d-flex flex-column gap-4 text-start py-4 analysis-page-3-section'
+                      ? 'w-100 min-w-0 d-flex flex-column gap-4 text-start py-4'
                       : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start'"
                   >
                     <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
@@ -250,7 +278,7 @@ const {
                     <!-- 規則唯讀預覽（design3，一般使用者） -->
                     <div
                       v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditRules"
-                      class="w-100 min-w-0 pt-3 analysis-page-3-rules my-design--side-panel-left"
+                      class="w-100 min-w-0 pt-3"
                     >
                       <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
                         <section class="my-design-quiz-question-prompt-block w-100 min-w-0" aria-label="分析規則">
@@ -280,7 +308,7 @@ const {
                     v-for="(item, idx) in items"
                     :key="`${item.exam_quiz_id ?? item.rag_quiz_id ?? idx}-${item.person_id ?? ''}`"
                     :class="props.design3
-                      ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4 analysis-page-3-section'
+                      ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4'
                       : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
                   >
                     <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
@@ -328,6 +356,7 @@ const {
                       v-if="props.design3 && slotQuizBodyTrim(idx) !== ''"
                       :card="quizCardUi[idx]"
                       :slot-index="idx + 1"
+                      :side-panel-on-left="props.sidePanelOnLeft"
                     />
                     <QuizCard
                       v-else-if="!props.design3 && slotQuizBodyTrim(idx) !== ''"
@@ -356,3 +385,6 @@ const {
     </div>
   </div>
 </template>
+
+<style scoped src="./AnalysisPage.css"></style>
+<style scoped src="../assets/css/design-quiz-shared.css"></style>

@@ -141,11 +141,13 @@
   padding-right: 0 !important;
 }
 
-/* 開始出題／開始批改列：無 px-3、保留 py-3（對齊 Bootstrap py-3） */
+/* 開始出題／開始批改／開始分析列：無 px-3、僅 pb-3（無 pt） */
+.my-design-quiz-grading-start-row,
+.my-design-quiz-generate-action-row:not(.my-design-quiz-generate-action-row--no-pad),
 .my-design-quiz-sub-block :deep(.my-design-quiz-grading-start-row),
 .my-design-quiz-sub-block :deep(.my-design-quiz-generate-action-row:not(.my-design-quiz-generate-action-row--no-pad)),
 .my-design-pack-unit-blocks :deep(.my-design-quiz-generate-action-row:not(.my-design-quiz-generate-action-row--no-pad)) {
-  padding-top: 1rem !important;
+  padding-top: 0 !important;
   padding-bottom: 1rem !important;
   padding-left: 0 !important;
   padding-right: 0 !important;
@@ -172,9 +174,9 @@
 .my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body) {
   background-color: transparent !important;
 }
-/* 答案 textarea：wrapper 不加 pb-4；純文字顯示維持 field-inset-body 預設 */
+/* 答案 textarea：wrapper pb-3；純文字顯示維持 field-inset-body 預設 */
 .my-design-quiz-sub-block--answer :deep(.my-design-quiz-answer-inset-body:has(.my-design-quiz-answer-input)) {
-  padding-bottom: 0 !important;
+  padding-bottom: 1rem !important;
 }
 .my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input),
 .my-design-quiz-sub-block--answer :deep(.form-control.my-design-quiz-answer-input:focus),
@@ -196,7 +198,14 @@
   padding-top: 0 !important;
 }
 
-/* 出題／批改規則黑底區：無「查看更多／收起內容」時底緣 pb-3；有則由 more-row 留白 */
+/* 出題／批改／分析規則黑底區外層：底緣 pb-3 */
+.my-design-quiz-question-prompt-wrap,
+.my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-wrap),
+.my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-wrap) {
+  padding-bottom: 1rem;
+}
+
+/* 出題／批改／分析規則黑底區：無「查看更多／收起內容」時底緣 pb-3；有 more-row 則由 more-row 留白 */
 .my-design-quiz-question-prompt-block,
 .my-design-quiz-sub-block :deep(.my-design-quiz-question-prompt-block),
 .my-design-pack-unit-blocks :deep(.my-design-quiz-question-prompt-block) {
