@@ -32,6 +32,21 @@ export function userTypeLabel(userType) {
   return USER_TYPE_LABELS[n] ?? UNKNOWN_USER_TYPE_LABEL;
 }
 
+/**
+ * 課程 user_type 圖示（Font Awesome class）；1 fa-code、2 fa-pen、3 fa-user
+ * @param {number | string | null | undefined} userType
+ * @returns {string | null}
+ */
+export function userTypeIconClass(userType) {
+  if (userType == null || userType === '') return null;
+  const n = Number(userType);
+  if (Number.isNaN(n)) return null;
+  if (n === DEVELOPER_USER_TYPE) return 'fa-solid fa-code';
+  if (n === MANAGER_USER_TYPE) return 'fa-solid fa-pen';
+  if (n === RESTRICTED_USER_TYPE) return 'fa-solid fa-user';
+  return null;
+}
+
 /** 學生可進入的 view 參數（/:view）以及測驗對應的內部鍵 work */
 export const STUDENT_ALLOWED_VIEWS = new Set([
   'work',

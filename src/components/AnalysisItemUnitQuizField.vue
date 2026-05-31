@@ -23,7 +23,7 @@ const titleFontClass = computed(() =>
 </script>
 
 <template>
-  <div class="d-flex flex-column gap-1 w-100 min-w-0 mb-0">
+  <div class="d-flex flex-column gap-1 w-100 min-w-0 mb-0 pb-3">
     <div
       v-if="personIdTrimmed"
       class="my-font-sm-400 my-color-gray-1 mb-0 text-break"

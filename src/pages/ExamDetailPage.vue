@@ -3010,16 +3010,17 @@ onActivated(() => {
                         role="group"
                         :aria-labelledby="`exam-slot-${activeExamSlotIndex1}-heading-label`"
                       >
+                        <div class="d-flex flex-column gap-2 w-100 min-w-0 pb-3">
                         <div
                           :id="`exam-slot-${activeExamSlotIndex1}-heading-label`"
-                          class="mb-2"
+                          class="mb-0"
                         >
                           <span
                             class="badge my-design-quiz-slot-num-badge user-select-none my-font-sm-400 rounded px-2 py-1"
                           >{{ examQuizNavDisplayLabel(activeExamSlotIndex1) }}</span>
                         </div>
                         <div
-                          class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
+                          class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0"
                           role="heading"
                           aria-level="2"
                         >
@@ -3047,6 +3048,7 @@ onActivated(() => {
                           >
                             詳細資訊
                           </button>
+                        </div>
                         </div>
                       </div>
                       <section
@@ -3143,16 +3145,16 @@ onActivated(() => {
                                 </div>
                       </section>
                       <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
-                      <div class="my-pack-unit-settings-body w-100 min-w-0">
+                      <div class="my-pack-unit-settings-body w-100 min-w-0 py-3">
                         <div class="w-100 min-w-0 text-start d-flex flex-column gap-3">
                           <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                             <div
-                              class="w-100 min-w-0 d-flex align-items-center flex-wrap gap-2"
+                              class="w-100 min-w-0 d-flex align-items-center flex-wrap gap-2 pb-3"
                               role="heading"
                               aria-level="3"
                             >
                               <span
-                                class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-2 rounded-2 min-w-0"
+                                class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-0 rounded-2 min-w-0"
                               >{{ examSlotHeadingBreadcrumbQuizTypeName(activeExamSlotIndex1) }}</span>
                               <span
                                 v-if="examSlotIsFollowupMode(activeExamSlotIndex1)"

@@ -6293,14 +6293,15 @@ async function confirmAnswer(item) {
           role="group"
           aria-labelledby="design-pack-unit-quiz-section-label"
         >
+          <div class="d-flex flex-column gap-2 w-100 min-w-0 pb-3">
           <div
             id="design-pack-unit-quiz-section-label"
-            class="my-font-sm-400 my-color-gray-1 mb-2"
+            class="my-font-sm-400 my-color-gray-1 mb-0"
           >
             設定單元題型
           </div>
           <div
-            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0 mb-4"
+            class="d-flex align-items-center gap-2 flex-nowrap w-100 min-w-0"
             role="heading"
             aria-level="2"
           >
@@ -6326,6 +6327,7 @@ async function confirmAnswer(item) {
             >
               詳細資訊
             </button>
+          </div>
           </div>
           <span
             v-if="!packUnitCarouselCountEffective"
@@ -6423,7 +6425,7 @@ async function confirmAnswer(item) {
             </section>
             <hr style="border-top: 1px solid var(--my-color-gray-2); margin: 0 0 1rem; opacity: 1;" />
             <div
-              class="my-pack-unit-settings-body w-100 min-w-0"
+              class="my-pack-unit-settings-body w-100 min-w-0 py-3"
               :class="{ 'my-color-gray-4': ragGenerateDisabled }"
             >
           <template v-if="hasUnitSubTabs">
@@ -6457,7 +6459,7 @@ async function confirmAnswer(item) {
               >
                 <div class="d-flex flex-column align-items-stretch gap-2 w-100 min-w-0">
                   <div
-                    class="w-100 min-w-0"
+                    class="w-100 min-w-0 pb-3"
                     :class="
                       designSidePanelOnLeft
                         ? 'd-flex align-items-center flex-wrap gap-2'
@@ -6470,7 +6472,7 @@ async function confirmAnswer(item) {
                       v-if="positiveRagQuizIdFromQuizRow(activeUnitQuizCard) != null"
                       :value="String(activeUnitQuizCard.quizName ?? '')"
                       type="text"
-                      class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-2 rounded-2"
+                      class="my-design-unit-quiz-type-title my-font-lg-400 my-color-black text-truncate mb-0 text-start px-0 py-0 rounded-2"
                       :class="designSidePanelOnLeft ? 'flex-grow-1 min-w-0' : 'w-100'"
                       maxlength="200"
                       autocomplete="off"

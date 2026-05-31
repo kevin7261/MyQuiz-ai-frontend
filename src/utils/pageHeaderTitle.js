@@ -1,6 +1,8 @@
 /**
- * TopView 頂部「課程名稱 | 頁面名稱」（課程四頁）或「MyQuiz.ai | 頁面名稱」；document.title 僅頁面名稱。
+ * TopView 頂部「課程名稱 | 頁面名稱」（URL 含 course_id）或「MyQuiz.ai | 頁面名稱」；document.title 僅頁面名稱。
  */
+
+import { resolveRouteCourseId } from './courseScope.js';
 
 /** @param {import('vue-router').RouteLocationNormalizedLoaded} route */
 export function isCourseScopedHeaderRoute(route) {
@@ -48,7 +50,7 @@ export function resolvePageName(route) {
  * @param {{ course_name?: string, course_id?: number } | null | undefined} [course]
  */
 export function resolveBrandName(route, course) {
-  if (isCourseScopedHeaderRoute(route)) {
+  if (isCourseScopedHeaderRoute(route) || resolveRouteCourseId(route)) {
     return resolveCourseDisplayName(course) ?? '選擇課程...';
   }
   return 'MYQUIZ.ai';

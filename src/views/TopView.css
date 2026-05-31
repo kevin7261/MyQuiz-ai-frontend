@@ -16,6 +16,7 @@
 
 .my-course-header-inner__end {
   justify-self: end;
+  min-width: max-content;
 }
 
 .my-course-header__user-menu {
@@ -32,12 +33,38 @@
 }
 
 .my-course-header__user-name {
-  max-width: 10rem;
   line-height: 1.35;
+  white-space: nowrap;
+}
+
+.my-course-header__user-chip {
+  white-space: nowrap;
+}
+
+/* py-1 按鈕內容高 ≈ md 字級 × 1.5 行高 + 上下 padding；圓徑與之相同才能 rounded-circle 成正圓 */
+.my-course-header__user-btn {
+  --my-course-header-user-badge-diameter: calc(var(--my-font-size-md) * 1.5 + 0.5rem);
+}
+
+.my-course-header__user-type-badge.rounded-circle {
+  width: var(--my-course-header-user-badge-diameter);
+  height: var(--my-course-header-user-badge-diameter);
+  min-width: var(--my-course-header-user-badge-diameter);
+  min-height: var(--my-course-header-user-badge-diameter);
+  flex: 0 0 var(--my-course-header-user-badge-diameter);
+  border-radius: 50%;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: var(--my-color-gray-4);
+  color: var(--my-color-gray-1);
+}
+
+.my-course-header__user-type-icon {
+  font-size: var(--my-font-size-md);
+  line-height: 1;
 }
 
 .my-course-header .my-design-08-dropdown .btn.my-button-white {
-  max-width: 10rem;
   color: var(--my-color-black) !important;
   background-color: var(--my-color-white) !important;
   border: 1px solid var(--my-color-gray-3) !important;
