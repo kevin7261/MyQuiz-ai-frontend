@@ -4,12 +4,13 @@
  *
  * 與課程 header（TopView）對稱：固定 64px 寬、高度 100%。
  * 頂部 64×(64+16)pt：51–54、71–72 漸層與白色菱形 logo（點擊重繪隨機漸層）。
- * 中段：開發者功能選單（dropend；測驗等四項僅在 TopView 右上角姓名下拉）。
+ * 中段：開發者功能選單（dropend）、其下「JSON資料」按鈕（主畫面與詳細資訊 Modal 同源快照）；測驗等四項僅在 TopView 右上角姓名下拉。
  * 底部 64×64 icon：課程、系統設定、個人設定（使用者 icon 直連 /profile）；其下顯示目前版本。
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import LogoCenterMark from '../components/LogoCenterMark.vue';
+import MainPageJsonModal from '../components/MainPageJsonModal.vue';
 import { canSeeNavLink } from '../router/permissions.js';
 import { useAppStore } from '../stores/appStore.js';
 import { useAuthStore } from '../stores/authStore.js';
@@ -18,6 +19,7 @@ import {
   buildCoursesPageLocation,
   scopedRouteForViewFromRoute,
 } from '../utils/courseScope.js';
+import { useMainPageJsonSnapshotStore } from '../stores/mainPageJsonSnapshotStore.js';
 
 /** 左欄漢堡選單（不含測驗／題庫／分析四項，該四項在 TopView 姓名下拉） */
 const SIDE_RAIL_MENU_ITEMS = [
@@ -74,6 +76,18 @@ const isMenuActive = computed(() =>
 );
 
 const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
+
+const mainPageJsonSnapshotStore = useMainPageJsonSnapshotStore();
+const mainPageJsonModalOpen = ref(false);
+
+function openMainPageJsonModal() {
+  if (!mainPageJsonSnapshotStore.hasSnapshot) return;
+  mainPageJsonModalOpen.value = true;
+}
+
+function closeMainPageJsonModal() {
+  mainPageJsonModalOpen.value = false;
+}
 </script>
 
 <template>
@@ -134,7 +148,24 @@ const coursesPageLocation = computed(() => buildCoursesPageLocation(route));
           </li>
         </ul>
       </div>
+      <button
+        type="button"
+        class="my-system-header__action-btn d-flex align-items-center justify-content-center m-0 p-0 border-0 my-color-gray-1 fs-5 lh-1 text-decoration-none"
+        :disabled="!mainPageJsonSnapshotStore.hasSnapshot"
+        :title="mainPageJsonSnapshotStore.hasSnapshot ? 'JSON資料' : '此頁面無 JSON 資料'"
+        aria-label="JSON資料"
+        @click="openMainPageJsonModal"
+      >
+        <i class="fa-solid fa-code" aria-hidden="true" />
+      </button>
     </nav>
+
+    <MainPageJsonModal
+      :open="mainPageJsonModalOpen"
+      :title="mainPageJsonSnapshotStore.title"
+      :data="mainPageJsonSnapshotStore.data"
+      @close="closeMainPageJsonModal"
+    />
 
     <nav class="my-system-header__footer position-relative z-2 d-flex flex-column flex-shrink-0 overflow-visible" aria-label="系統功能">
       <router-link

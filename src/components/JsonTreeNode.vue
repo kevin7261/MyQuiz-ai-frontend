@@ -12,15 +12,23 @@ const props = defineProps({
 
 const expandCommand = inject('jsonTreeExpandCommand', null);
 
-const expanded = ref(props.depth < props.defaultExpandDepth);
+/** 掛載時須讀取全域展開指令（子節點在父節點展開後才 mount，否則「全部展開」只影響已存在的節點） */
+function expandedFromCommandOrDefault() {
+  const mode = expandCommand?.value?.mode;
+  if (mode === 'expand') return true;
+  if (mode === 'collapse') return false;
+  return props.depth < props.defaultExpandDepth;
+}
+
+const expanded = ref(expandedFromCommandOrDefault());
 
 watch(
   () => expandCommand?.value,
   (cmd) => {
     if (!cmd) return;
     if (cmd.mode === 'expand') expanded.value = true;
-    if (cmd.mode === 'collapse') expanded.value = false;
-    if (cmd.mode === 'reset') expanded.value = props.depth < props.defaultExpandDepth;
+    else if (cmd.mode === 'collapse') expanded.value = false;
+    else if (cmd.mode === 'reset') expanded.value = props.depth < props.defaultExpandDepth;
   },
 );
 

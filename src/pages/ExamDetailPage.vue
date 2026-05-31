@@ -6,7 +6,7 @@
  *
  * 資料來源：
  * - 試卷題庫／單元選項：GET /exam/rag-for-exams（units[]：unit_type、transcript、text_file_name 等；內嵌 quizzes 時出題／批改規則為預覽）；不呼叫 GET /rag/tab/for-exam
- * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>`（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe（不標 YouTube 字樣）；題目標題列「詳細資訊」Modal 僅 JSON 資料（合併 GET /exam/tabs 與本頁編輯狀態）
+ * - GET /exam/tabs?local=&person_id=&course_id=：person_id、course_id 為必填 query（course_id 由 loggedFetch 自 currentCourse 帶入）；local 與 GET /rag/tabs 相同；每筆 Exam 含 units[]（Exam_Unit），每單元 quizzes[]（Exam_Quiz）；作答可為頂層 answers[] 或題列內嵌 answer_content／quiz_score／answer_critique；mergeQuizzesWithTopLevelAnswers 展平後 syncExamItemToTabState 灌入卡片；題型區塊內 unit_type=2 內嵌 Markdown（不標「逐字稿」，不列文字檔名）；3 僅 `<audio>`（不列 mp3 檔名、不標聽取音訊）；4 內嵌 iframe（不標 YouTube 字樣）；左欄 JSON 按鈕檢視合併 GET /exam/tabs 與本頁編輯狀態
  * 出題：Modal「產生題目」→ create-llm-generate／create-llm-generate-followup；槽位內「產生題目」→ llm-generate／llm-generate-followup（提示自 Rag_Quiz 讀勿傳）。追問先前出題 Modal 不含當前題；followup API 之 quiz_history_list 為祖先鏈＋followupRounds（繼續追問含剛批改輪）。評分：POST /exam/tab/quiz/llm-grade；題目讚／差：POST /exam/tab/quiz/rate；分頁更名：PUT /exam/tab/tab-name；刪除：PUT /exam/tab/delete/{exam_tab_id}
  *
  * 試題資料表 public."Exam_Quiz"（與 GET/POST 題目 payload 對齊）：exam_quiz_id、exam_id、exam_tab_id、person_id、rag_id、unit_name、file_name、quiz_content、quiz_hint、quiz_answer_reference、quiz_rate（-1／0／1）、quiz_metadata、updated_at、created_at。畫面「單元」優先 unit_name。
@@ -43,7 +43,7 @@ import {
   UNIT_TYPE_MP3,
   UNIT_TYPE_YOUTUBE,
 } from '../utils/rag.js';
-import JsonTreeViewer from '../components/JsonTreeViewer.vue';
+import { useRegisterMainPageJsonSnapshot } from '../composables/useRegisterMainPageJsonSnapshot.js';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 import { youtubeEmbedUrlFromInput } from '../utils/youtubeEmbed.js';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
@@ -408,17 +408,6 @@ function examSlotYoutubeEmbedUrl(slotIndex) {
   return youtubeEmbedUrlFromInput(raw);
 }
 
-/** 詳細資訊 Modal（僅 JSON 資料）：槽位 1-based */
-const examUnitDetailModalSlotIndex = ref(null);
-
-function openExamUnitDetailModal(slotIndex) {
-  examUnitDetailModalSlotIndex.value = slotIndex;
-}
-
-function closeExamUnitDetailModal() {
-  examUnitDetailModalSlotIndex.value = null;
-}
-
 function buildExamQuizRowFromCardCore(card, slotIndex) {
   const slotState = getSlotFormState(slotIndex);
   const followUp =
@@ -550,7 +539,7 @@ function buildLiveExamTabsRowSnapshot(state, examBase) {
   return Object.keys(base).length > 0 ? base : null;
 }
 
-const examUnitDetailModalJsonData = computed(() => {
+const mainPageJsonSnapshotData = computed(() => {
   const state = currentState.value;
   void state.cardList;
   void state.quizSlotsCount;
@@ -578,13 +567,6 @@ const examUnitDetailModalJsonData = computed(() => {
     void slot.quiz_history_rich;
   }
   return buildLiveExamTabsRowSnapshot(state, currentExamItem.value);
-});
-
-const examUnitDetailModalTitle = computed(() => {
-  const idx = examUnitDetailModalSlotIndex.value;
-  if (idx == null || !Number.isFinite(Number(idx)) || Number(idx) < 1) return 'JSON資料';
-  const label = examSlotUnitLabelForHistoryModal(Number(idx));
-  return label !== '—' ? label : 'JSON資料';
 });
 
 /**
@@ -657,6 +639,15 @@ const currentExamItem = computed(() => {
   if (!id) return null;
   return examList.value.find((exam) => getExamTabId(exam) === id) ?? null;
 });
+
+useRegisterMainPageJsonSnapshot(
+  () => mainPageJsonSnapshotData.value,
+  () => {
+    const exam = currentExamItem.value;
+    const name = exam?.tab_name ?? exam?.exam_name ?? exam?.name;
+    return name ? String(name) : 'JSON資料';
+  },
+);
 
 /** 從 GET /exam/rag-for-exams 正規化結果推導 generateQuizUnits（格式同 build-rag-zip outputs） */
 const generateQuizUnits = computed(() => {
@@ -970,12 +961,6 @@ function examSlotUnitContentCollapseEnabled(slotIndex) {
 watch(activeExamSlotGi, () => {
   examUnitContentCollapsed.value = true;
 });
-
-/** 題目區標題列：有槽位時顯示「詳細資訊」（對齊題庫頁） */
-function examSlotDetailModalButtonVisible(slotIndex) {
-  const n = Number(currentState.value.quizSlotsCount) || 0;
-  return slotIndex >= 1 && slotIndex <= n;
-}
 
 /** 評閱子區塊：已批改（confirmed 或已有批改結果）才顯示 */
 const activeExamSlotShowGradingSubBlock = computed(() => {
@@ -2799,58 +2784,6 @@ onActivated(() => {
       :confirm-button-class="messageModalConfirmClass"
       @update:model-value="(v) => { if (!v) closeMessageModal(); else messageModalOpen = v; }"
     />
-    <Teleport to="body">
-      <div
-        v-if="examUnitDetailModalSlotIndex != null"
-        class="modal fade show d-block my-modal-backdrop"
-        tabindex="-1"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="exam-unit-detail-modal-title"
-        @click.self="closeExamUnitDetailModal"
-      >
-        <div
-          class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable"
-          @click.stop
-        >
-          <div class="modal-content border-0 my-bgcolor-white p-4 d-flex flex-column gap-3">
-            <div class="modal-header border-bottom-0 p-0">
-              <h5
-                id="exam-unit-detail-modal-title"
-                class="modal-title my-color-black text-break mb-0"
-              >{{ examUnitDetailModalTitle }}</h5>
-              <button
-                type="button"
-                class="btn-close flex-shrink-0"
-                aria-label="關閉"
-                @click="closeExamUnitDetailModal"
-              />
-            </div>
-            <div
-              class="modal-body p-0 min-w-0"
-              style="max-height: 70vh; overflow: auto;"
-              role="region"
-              aria-label="JSON資料"
-            >
-              <JsonTreeViewer
-                :data="examUnitDetailModalJsonData"
-                :default-expand-depth="1"
-              />
-            </div>
-            <div class="modal-footer border-top-0 p-0 d-flex justify-content-end w-100">
-              <button
-                type="button"
-                class="btn rounded-pill d-flex justify-content-center align-items-center my-font-md-400 px-4 py-2"
-                :class="d3ConfirmPillMd"
-                @click="closeExamUnitDetailModal"
-              >
-                關閉
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
     <header v-if="!designSidePanelOnLeft" class="flex-shrink-0 my-bgcolor-gray-4 p-4">
       <div class="container-fluid px-0 text-center">
         <p class="my-font-xl-400 my-color-black text-break mb-0">{{ pageTitle }}</p>
@@ -3039,15 +2972,6 @@ onActivated(() => {
                               class="my-design-pack-unit-main-title my-test-section-heading-title my-font-xl-400 my-color-black text-truncate mb-0"
                             >{{ examSlotUnitLabelForHistoryModal(activeExamSlotIndex1) }}</span>
                           </div>
-                          <button
-                            v-if="examSlotDetailModalButtonVisible(activeExamSlotIndex1)"
-                            type="button"
-                            :class="['btn rounded-pill d-inline-flex justify-content-center align-items-center flex-shrink-0 ms-auto my-font-sm-400 my-design-quiz-stem-history-btn px-3 py-1', d3HistoryPill]"
-                            aria-label="詳細資訊"
-                            @click="openExamUnitDetailModal(activeExamSlotIndex1)"
-                          >
-                            詳細資訊
-                          </button>
                         </div>
                         </div>
                       </div>

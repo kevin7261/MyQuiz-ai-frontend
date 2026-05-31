@@ -100,7 +100,7 @@ import PackUnitTypeIcon from '../components/PackUnitTypeIcon.vue';
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import MessageModal from '../components/MessageModal.vue';
 import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
-import JsonTreeViewer from '../components/JsonTreeViewer.vue';
+import { useRegisterMainPageJsonSnapshot } from '../composables/useRegisterMainPageJsonSnapshot.js';
 import {
   readCreateBankTabUiPersisted,
   writeCreateBankTabUiPersisted,
@@ -254,7 +254,7 @@ const unitQuizTitleBeforeEdit = ref('');
 const packBuildSuccessModalOpen = ref(false);
 /** 建置完成後：唯讀單元屬性 Modal */
 const packUnitDetailModalOpen = ref(false);
-/** 詳細資訊 Modal：文本／資料夾組合／JSON資料（對齊 QuizCard 題目／先前出題 tab） */
+/** 詳細資訊 Modal：文本／資料夾組合（對齊 QuizCard 題目／先前出題 tab） */
 const packUnitDetailModalTab = ref('text');
 /** 設定單元 sub-tab 更名（本機 packUnitNames；inline blur 儲存，對齊題庫名稱） */
 const packUnitTitleBeforeEdit = ref('');
@@ -1263,8 +1263,8 @@ function packUnitDetailModalStemTabClass(isActive) {
   };
 }
 
-/** 詳細資訊 Modal「JSON資料」：合併 GET /rag/tabs 列與本頁編輯狀態（即時反映） */
-const packUnitDetailModalRagTabsData = computed(() => {
+/** 左欄 JSON 按鈕：合併 GET /rag/tabs 列與本頁編輯狀態（即時反映） */
+const mainPageJsonSnapshotData = computed(() => {
   const state = currentState.value;
   void state.packTasks;
   void state.packTasksList;
@@ -1301,11 +1301,9 @@ const packUnitDetailModalRagTabsData = computed(() => {
   return buildLiveRagTabsRowSnapshot(state, currentRagItem.value);
 });
 
-const packUnitDetailModalTabPanelLabel = computed(() => {
-  if (packUnitDetailModalTab.value === 'folders') return '資料夾組合';
-  if (packUnitDetailModalTab.value === 'json') return 'JSON資料';
-  return '文本';
-});
+const packUnitDetailModalTabPanelLabel = computed(() => (
+  packUnitDetailModalTab.value === 'folders' ? '資料夾組合' : '文本'
+));
 
 function openPackUnitDetailModal() {
   if (!activeReadonlyPackUnitRow.value) return;
@@ -1317,6 +1315,15 @@ function closePackUnitDetailModal() {
   packUnitDetailModalOpen.value = false;
   packUnitDetailModalTab.value = 'text';
 }
+
+useRegisterMainPageJsonSnapshot(
+  () => mainPageJsonSnapshotData.value,
+  () => {
+    const rag = currentRagItem.value;
+    const name = rag?.tab_name ?? rag?.rag_name ?? rag?.name;
+    return name ? String(name) : 'JSON資料';
+  },
+);
 
 /** 建置完成後：上方設定單元 tab 驅動「設定單元題型」之 activeUnitTabId */
 function syncActiveUnitTabFromPackUnitCarousel() {
@@ -5263,16 +5270,6 @@ async function confirmAnswer(item) {
                         >
                           資料夾組合
                         </button>
-                        <button
-                          type="button"
-                          role="tab"
-                          class="btn px-0 pb-2 my-design-quiz-stem-tab my-font-sm-400"
-                          :class="packUnitDetailModalStemTabClass(packUnitDetailModalTab === 'json')"
-                          :aria-selected="packUnitDetailModalTab === 'json'"
-                          @click="packUnitDetailModalTab = 'json'"
-                        >
-                          JSON資料
-                        </button>
                       </div>
                     </div>
                     <div class="py-0">
@@ -5358,7 +5355,7 @@ async function confirmAnswer(item) {
                         >—</span>
                       </div>
                     </template>
-                    <template v-else-if="packUnitDetailModalTab === 'folders'">
+                    <template v-else>
                       <div
                         class="d-flex flex-wrap align-items-center justify-content-start gap-2 w-100 min-w-0"
                         role="group"
@@ -5379,12 +5376,6 @@ async function confirmAnswer(item) {
                           class="my-font-md-400 my-color-black lh-base text-break text-start w-100 min-w-0"
                         >{{ activeReadonlyPackUnitRow.title }}</span>
                       </div>
-                    </template>
-                    <template v-else>
-                      <JsonTreeViewer
-                        :data="packUnitDetailModalRagTabsData"
-                        :default-expand-depth="1"
-                      />
                     </template>
                   </div>
                 </section>

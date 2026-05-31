@@ -73,6 +73,17 @@
   background-color: var(--my-color-gray-4);
 }
 
+.my-system-header__action-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.my-system-header__action-btn:disabled:hover,
+.my-system-header__action-btn:disabled:focus-visible {
+  color: var(--my-color-gray-1);
+  background-color: transparent;
+}
+
 .my-system-header__user-menu {
   z-index: 1100;
   min-width: 12rem;
