@@ -1055,7 +1055,7 @@ const quizAnswerFieldDisabled = computed(
                 >{{ card.quiz }}</span>
                 <div
                   v-if="showExamRatingVisible"
-                  class="d-inline-flex justify-content-start align-items-center flex-shrink-0 gap-1 pt-2"
+                  class="d-inline-flex justify-content-start align-items-center flex-shrink-0 pt-2"
                   role="group"
                   aria-label="題目評價"
                 >
@@ -1171,7 +1171,7 @@ const quizAnswerFieldDisabled = computed(
               >{{ card.quiz }}</span>
               <div
                 v-if="showExamRatingVisible"
-                class="d-inline-flex justify-content-start align-items-center flex-shrink-0 gap-1 pt-2"
+                class="d-inline-flex justify-content-start align-items-center flex-shrink-0 pt-2"
                 role="group"
                 aria-label="題目評價"
               >
