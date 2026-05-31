@@ -1,3 +1,8 @@
+/* 題目／答案子區塊參與父層 gap-3 直排（對齊 ExamDetailPage 追問輪次） */
+.analysis-design3-quiz-blocks {
+  display: contents;
+}
+
 /* Q→A 連接線／箭頭（對齊 ExamDetailPage.css） */
 .my-design-quiz-sub-block-outer__logo-stem {
   flex: 1 1 auto;

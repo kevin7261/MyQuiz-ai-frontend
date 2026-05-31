@@ -22,20 +22,23 @@ const props = defineProps({
   promptSectionLoading: { type: Boolean, default: false },
   loading:              { type: Boolean, default: false },
   promptSaving:         { type: Boolean, default: false },
-  promptDirty:          { type: Boolean, default: false },
-  canStartFromSavedRules: { type: Boolean, default: false },
-  canSaveAndStart:      { type: Boolean, default: false },
+  /** 開始分析按鈕 disabled（對齊 create-exam-bank 開始出題） */
+  startButtonDisabled:  { type: Boolean, default: true },
   /** 非 design3 時「儲存規則並開始分析」的額外啟用條件（已登入且已選課） */
   canStart:             { type: Boolean, default: false },
+  /** @deprecated 僅舊版非 design3 重設按鈕用 */
+  promptDirty:          { type: Boolean, default: false },
+  /** 僅顯示規則預覽（無編輯／開始分析按鈕；用於結果區之分析規則區塊） */
+  hideActions:          { type: Boolean, default: false },
 });
 
-defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'start-analysis', 'reset-prompt']);
+defineEmits(['update:modelValue', 'open-edit-modal', 'start-analysis', 'reset-prompt']);
 </script>
 
 <template>
   <div
     :class="props.design3
-      ? 'w-100 min-w-0 text-start mb-0 py-4'
+      ? 'w-100 min-w-0 text-start mb-0 py-3'
       : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 text-start mb-4'"
   >
     <!-- ── design3：規則預覽 + 動作按鈕（對齊 exam／create-exam-bank 出題規則，無 stem 外框） ── -->
@@ -48,6 +51,7 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
                 分析規則
               </h3>
               <button
+                v-if="!props.hideActions"
                 type="button"
                 class="btn rounded-circle d-flex justify-content-center align-items-center flex-shrink-0 my-design-quiz-question-prompt-block__edit-btn lh-1"
                 title="編輯分析規則"
@@ -72,43 +76,22 @@ defineEmits(['update:modelValue', 'open-edit-modal', 'fetch-analysis-only', 'sta
         </section>
       </div>
 
-      <div class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 pb-3">
+      <div
+        v-if="!props.hideActions"
+        class="my-design-quiz-generate-action-row d-flex justify-content-start align-items-center flex-wrap gap-2 pb-3"
+      >
         <LogoGradientPillButton
-          v-if="props.canStartFromSavedRules"
           :id-prefix="`${props.idPrefix}-start`"
           tone="generate"
           gradient-bias="work3"
           extra-class="my-design-quiz-generate-btn"
-          title="使用後端已儲存之分析規則開始分析；若已修改分析規則請先按「儲存規則並開始分析」"
+          title="分析規則已改動時會先儲存規則再開始分析；否則使用後端已儲存之分析規則開始分析"
           aria-label="開始分析"
-          :aria-busy="props.loading || props.promptSaving"
-          @click="$emit('fetch-analysis-only')"
-        >
-          開始分析
-        </LogoGradientPillButton>
-        <LogoGradientPillButton
-          v-if="props.canSaveAndStart"
-          :id-prefix="`${props.idPrefix}-save-start`"
-          tone="generate"
-          gradient-bias="work3"
-          extra-class="my-design-quiz-generate-btn"
-          title="儲存分析規則並開始分析"
-          aria-label="儲存規則並開始分析"
+          :disabled="props.startButtonDisabled"
           :aria-busy="props.loading || props.promptSaving"
           @click="$emit('start-analysis')"
         >
-          儲存規則並開始分析
-        </LogoGradientPillButton>
-        <LogoGradientPillButton
-          v-if="!props.canStartFromSavedRules && !props.canSaveAndStart"
-          :id-prefix="`${props.idPrefix}-save-start-disabled`"
-          tone="generate"
-          gradient-bias="work3"
-          extra-class="my-design-quiz-generate-btn"
-          aria-label="儲存規則並開始分析"
-          disabled
-        >
-          儲存規則並開始分析
+          開始分析
         </LogoGradientPillButton>
       </div>
     </template>

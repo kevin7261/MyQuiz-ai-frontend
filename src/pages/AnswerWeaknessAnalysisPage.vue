@@ -3,7 +3,7 @@ import { API_BASE, API_QUIZZES_BY_PERSON, API_PERSON_ANALYSIS_USER_PROMPT } from
 import LoadingOverlay from '../components/LoadingOverlay.vue';
 import QuizCard from '../components/QuizCard.vue';
 import AnalysisDesign3QuizBlocks from '../components/AnalysisDesign3QuizBlocks.vue';
-import EnglishExamMarkdownEditor from '../components/EnglishExamMarkdownEditor.vue';
+import AnalysisItemUnitQuizField from '../components/AnalysisItemUnitQuizField.vue';
 import AnalysisRulesViewModal from '../components/AnalysisRulesViewModal.vue';
 import AnalysisEditModal from '../components/AnalysisEditModal.vue';
 import AnalysisRulesBlock from '../components/AnalysisRulesBlock.vue';
@@ -47,8 +47,7 @@ const {
   fetchAnalysisOnly,
   startAnalysisFromRulesEditor,
   promptDirty,
-  canStartFromSavedRules,
-  canSaveAndStart,
+  analysisStartButtonDisabled,
   resetPromptToBaseline,
   analysisRulesModalOpen,
   analysisRulesModalLoading,
@@ -67,6 +66,9 @@ const {
   reportParsed,
   reportSections,
   quizTypeLabel,
+  unitLabelForItem,
+  itemUnitType,
+  itemIsFollowUpQuiz,
   toggleHint,
   toggleReferenceAnswer,
   slotQuizBodyTrim,
@@ -87,8 +89,8 @@ const {
   <div
     class="d-flex flex-column h-100 overflow-hidden position-relative"
     :class="{
-      'analysis-2 analysis-2--side-panel-left my-design--side-panel-left': props.design3 && props.sidePanelOnLeft,
-      'my-bgcolor-white': props.design3,
+      'analysis-2 analysis-page-3-rules my-bgcolor-white': props.design3,
+      'analysis-2--side-panel-left my-design--side-panel-left': props.design3 && props.sidePanelOnLeft,
       'my-bgcolor-gray-4': !props.design3,
     }"
   >
@@ -130,15 +132,18 @@ const {
       class="flex-grow-1 d-flex flex-column min-h-0"
       :class="[
         props.design3
-          ? 'analysis-2__scroll overflow-auto position-relative px-3 px-md-4 py-4 my-bgcolor-white'
+          ? 'analysis-2__scroll overflow-auto position-relative my-bgcolor-white'
           : 'overflow-auto my-bgcolor-gray-4',
       ]"
     >
       <div
-        :class="props.design3 ? 'w-100 min-w-0' : 'container-fluid px-3 px-md-4 py-4'"
+        :class="props.design3 ? 'w-100 min-w-0 pt-3' : 'container-fluid px-3 px-md-4 py-4'"
       >
         <div class="row justify-content-center">
-          <div class="col-12 col-lg-10 col-xl-8 col-xxl-6">
+          <div
+            class="col-12 col-lg-10 col-xl-8 col-xxl-6"
+            :class="props.design3 ? 'd-flex flex-column' : ''"
+          >
 
             <!-- 分析規則區塊（管理員／開發者可見） -->
             <AnalysisRulesBlock
@@ -151,13 +156,16 @@ const {
               :loading="loading"
               :prompt-saving="promptSaving"
               :prompt-dirty="promptDirty"
-              :can-start-from-saved-rules="canStartFromSavedRules"
-              :can-save-and-start="canSaveAndStart"
+              :start-button-disabled="analysisStartButtonDisabled"
               :can-start="!!authStore.user?.person_id && hasSelectedCourse()"
               @open-edit-modal="openEditModal"
-              @fetch-analysis-only="fetchAnalysisOnly"
               @start-analysis="startAnalysisFromRulesEditor"
               @reset-prompt="resetPromptToBaseline"
+            />
+
+            <hr
+              v-if="props.design3 && canEditRules && analysisLoadedOnce && !loading && (items.length > 0 || weaknessReport)"
+              class="analysis-2__section-rule w-100"
             />
 
             <!-- 開始分析按鈕（一般使用者，無規則編輯區） -->
@@ -175,7 +183,7 @@ const {
                 extra-class="my-design-quiz-generate-btn"
                 title="開始弱點分析"
                 aria-label="開始弱點分析"
-                :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
+                :disabled="analysisStartButtonDisabled"
                 :aria-busy="loading"
                 @click="fetchAnalysisOnly"
               >
@@ -187,7 +195,7 @@ const {
                 :class="['btn rounded-pill d-flex justify-content-center align-items-center gap-2 my-font-md-400 my-btn-lg px-5 py-3']"
                 title="開始弱點分析"
                 aria-label="開始弱點分析"
-                :disabled="promptSectionLoading || loading || promptSaving || !authStore.user?.person_id || !hasSelectedCourse()"
+                :disabled="analysisStartButtonDisabled"
                 :aria-busy="loading"
                 @click="fetchAnalysisOnly"
               >
@@ -206,19 +214,124 @@ const {
             </div>
 
             <template v-else-if="analysisLoadedOnce && !loading && (items.length > 0 || weaknessReport)">
-              <div class="text-start" :class="{ 'my-page-block-spacing': !props.design3 }">
-                <div :class="props.design3 ? 'd-flex flex-column w-100 min-w-0' : 'd-flex flex-column gap-4 w-100 min-w-0'">
+              <!-- design3：區塊／分隔線直屬 col（對齊分析規則上方 hr） -->
+              <template v-if="props.design3">
+                <AnalysisRulesBlock
+                  v-if="!canEditRules && analysisRulesSnapshotTrimmed"
+                  :design3="true"
+                  hide-actions
+                  id-prefix="weakness-analysis-rules-snapshot"
+                  :model-value="promptText"
+                  :edit-modal-saving-disabled="true"
+                  :prompt-section-loading="promptSectionLoading"
+                  :loading="loading"
+                  :prompt-saving="promptSaving"
+                />
 
-                  <!-- 分析報告 -->
+                <hr
+                  v-if="!canEditRules && analysisRulesSnapshotTrimmed && (weaknessReport || items.length)"
+                  class="analysis-2__section-rule w-100"
+                />
+
+                <div
+                  v-if="weaknessReport"
+                  class="w-100 min-w-0 text-start d-flex flex-column gap-3 py-3"
+                >
                   <div
-                    v-if="weaknessReport"
-                    :class="props.design3
-                      ? 'w-100 min-w-0 d-flex flex-column gap-4 text-start py-4'
-                      : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start'"
+                    role="heading"
+                    aria-level="2"
+                    class="my-font-xl-400 my-color-black mb-0"
                   >
-                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
-                      學習弱點分析報告
-                    </div>
+                    分析報告
+                  </div>
+
+                  <div class="w-100 min-w-0 d-flex flex-column gap-4 text-start pb-3">
+                    <template v-if="reportParsed">
+                      <div
+                        v-for="sectionKey in reportSections"
+                        :key="sectionKey"
+                        class="d-flex flex-column gap-2 mb-0"
+                      >
+                        <div
+                          class="my-weakness-report-md my-weakness-report-md--section-title my-font-md-400 text-break mb-0"
+                          v-html="md(sectionKey)"
+                        />
+                        <ul
+                          v-if="Array.isArray(reportParsed[sectionKey]) && reportParsed[sectionKey].length"
+                          class="my-weakness-report-md-list my-font-md-400 lh-base ps-3 mb-0"
+                        >
+                          <li
+                            v-for="(line, i) in reportParsed[sectionKey]"
+                            :key="i"
+                            class="my-weakness-report-md my-font-md-400 my-color-black text-break"
+                            v-html="md(line)"
+                          />
+                        </ul>
+                        <div
+                          v-else-if="Array.isArray(reportParsed[sectionKey]) && reportParsed[sectionKey].length === 0"
+                          class="my-font-md-400 my-color-gray-4 mb-0"
+                        >
+                          —
+                        </div>
+                        <div
+                          v-else
+                          class="my-weakness-report-md my-font-md-400 lh-base my-color-black text-break mb-0"
+                          v-html="weaknessScalarToMdHtml(reportParsed[sectionKey])"
+                        />
+                      </div>
+                    </template>
+                    <div
+                      v-else
+                      class="my-weakness-report-md my-font-md-400 lh-base my-color-black text-break mb-0"
+                      v-html="md(weaknessReport)"
+                    />
+                  </div>
+                </div>
+
+                <hr
+                  v-if="weaknessReport && items.length"
+                  class="analysis-2__section-rule w-100"
+                />
+
+                <div
+                  v-if="items.length"
+                  class="d-flex flex-column gap-3 w-100 min-w-0 py-3"
+                >
+                  <div
+                    v-for="(item, idx) in items"
+                    :key="item.exam_quiz_id ?? item.rag_quiz_id ?? idx"
+                    class="w-100 min-w-0 text-start d-flex flex-column gap-3"
+                  >
+                    <AnalysisItemUnitQuizField
+                      :design3="true"
+                      :unit-label="unitLabelForItem(item)"
+                      :quiz-type-label="quizTypeLabel(item)"
+                      :unit-type="itemUnitType(item)"
+                      :is-follow-up="itemIsFollowUpQuiz(item)"
+                    />
+                    <AnalysisDesign3QuizBlocks
+                      v-if="slotQuizBodyTrim(idx) !== ''"
+                      :card="quizCardUi[idx]"
+                      :slot-index="idx + 1"
+                      :side-panel-on-left="props.sidePanelOnLeft"
+                    />
+                  </div>
+                </div>
+              </template>
+
+              <div
+                v-else
+                class="text-start w-100 min-w-0 d-flex flex-column gap-4 my-page-block-spacing"
+              >
+                <div
+                  v-if="weaknessReport"
+                  class="rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 d-flex flex-column gap-4 text-start"
+                >
+                  <div class="my-font-lg-600 my-color-black mb-0">
+                    學習弱點分析報告
+                  </div>
+
+                  <div class="w-100 min-w-0 d-flex flex-column gap-4 text-start pb-3">
                     <template v-if="reportParsed">
                       <div
                         v-for="sectionKey in reportSections"
@@ -259,9 +372,8 @@ const {
                       v-html="md(weaknessReport)"
                     />
 
-                    <!-- 查看規則按鈕（舊版） -->
                     <div
-                      v-if="analysisRulesSnapshotTrimmed && !props.design3"
+                      v-if="analysisRulesSnapshotTrimmed"
                       class="d-flex justify-content-start align-items-center w-100 pt-3"
                     >
                       <button
@@ -274,82 +386,27 @@ const {
                         分析規則
                       </button>
                     </div>
-
-                    <!-- 規則唯讀預覽（design3，一般使用者） -->
-                    <div
-                      v-if="analysisRulesSnapshotTrimmed && props.design3 && !canEditRules"
-                      class="w-100 min-w-0 pt-3"
-                    >
-                      <div class="my-design-quiz-question-prompt-wrap w-100 min-w-0">
-                        <section class="my-design-quiz-question-prompt-block w-100 min-w-0" aria-label="分析規則">
-                          <header class="my-design-quiz-question-prompt-block__head">
-                            <div class="my-design-quiz-question-prompt-block__title-row d-flex justify-content-between align-items-center gap-2 px-3 py-2">
-                              <h3 class="my-design-quiz-question-prompt-block__title my-font-sm-400 my-color-gray-3 mb-0">
-                                分析規則
-                              </h3>
-                            </div>
-                          </header>
-                          <div class="my-design-quiz-question-prompt-block__content min-w-0 w-100">
-                            <EnglishExamMarkdownEditor
-                              :model-value="promptText"
-                              textarea-id="weakness-analysis-rules-report-ro"
-                              preview-only
-                              preview-design-dark
-                              preview-design-dark-embedded
-                            />
-                          </div>
-                        </section>
-                      </div>
-                    </div>
                   </div>
+                </div>
 
-                  <!-- 逐題結果 -->
+                <div
+                  v-if="items.length"
+                  class="d-flex flex-column gap-4 w-100 min-w-0"
+                >
                   <div
                     v-for="(item, idx) in items"
                     :key="item.exam_quiz_id ?? item.rag_quiz_id ?? idx"
-                    :class="props.design3
-                      ? 'w-100 min-w-0 text-start d-flex flex-column gap-3 py-4'
-                      : 'rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3'"
+                    class="rounded-4 my-bgcolor-gray-4 p-4 w-100 min-w-0 text-start d-flex flex-column gap-3"
                   >
-                    <div :class="props.design3 ? 'my-font-xl-400 my-color-black mb-0' : 'my-font-lg-600 my-color-black mb-0'">
-                      第 {{ idx + 1 }} 題
-                    </div>
-                    <div class="d-flex flex-column gap-3 w-100 min-w-0">
-                      <div class="d-flex flex-row flex-nowrap w-100 min-w-0 align-items-start gap-3">
-                        <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                          <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                            <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">單元</div>
-                            <div
-                              class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                              role="status"
-                              :aria-label="`單元：${item.rag_name ?? item.unit_name ?? item.exam_name ?? '—'}`"
-                            >
-                              {{ item.rag_name ?? item.unit_name ?? item.exam_name ?? '—' }}
-                            </div>
-                          </div>
-                        </div>
-                        <div class="min-w-0 flex-grow-1" style="flex-basis: 0">
-                          <div class="d-flex flex-column gap-0 w-100 min-w-0">
-                            <div class="my-color-gray-1 my-font-sm-400 mb-0 d-block">題型</div>
-                            <div
-                              class="my-font-md-400 my-color-black text-break lh-base mt-1"
-                              role="status"
-                              :aria-label="`題型：${quizTypeLabel(item)}`"
-                            >
-                              {{ quizTypeLabel(item) }}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <AnalysisDesign3QuizBlocks
-                      v-if="props.design3 && slotQuizBodyTrim(idx) !== ''"
-                      :card="quizCardUi[idx]"
-                      :slot-index="idx + 1"
-                      :side-panel-on-left="props.sidePanelOnLeft"
+                    <AnalysisItemUnitQuizField
+                      :design3="false"
+                      :unit-label="unitLabelForItem(item)"
+                      :quiz-type-label="quizTypeLabel(item)"
+                      :unit-type="itemUnitType(item)"
+                      :is-follow-up="itemIsFollowUpQuiz(item)"
                     />
                     <QuizCard
-                      v-else-if="!props.design3 && slotQuizBodyTrim(idx) !== ''"
+                      v-if="slotQuizBodyTrim(idx) !== ''"
                       :card="quizCardUi[idx]"
                       :slot-index="idx + 1"
                       :current-rag-id="quizCardUi[idx]?.rag_id"
@@ -364,7 +421,6 @@ const {
                       @toggle-reference-answer="toggleReferenceAnswer"
                     />
                   </div>
-
                 </div>
               </div>
             </template>

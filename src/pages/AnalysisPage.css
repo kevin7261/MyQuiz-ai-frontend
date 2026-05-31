@@ -26,3 +26,119 @@
   color: var(--my-color-gray-2);
   overflow: visible;
 }
+
+/* 單元 / 題型 breadcrumb（對齊 ExamDetailPage 左側清單） */
+.analysis-item-unit-quiz-row__chevron {
+  display: block;
+  width: 0.625rem;
+  font-size: 0.625rem;
+  line-height: 1;
+  text-align: center;
+  color: inherit;
+}
+
+.analysis-item-unit-quiz-row .my-inline-icon-slot {
+  width: 0.625rem;
+  min-width: 0.625rem;
+}
+
+.analysis-item-unit-quiz-row__segment {
+  min-width: 0;
+}
+
+/* 題目／答案子區塊參與父層 gap-3 直排（對齊 ExamDetailPage 追問輪次） */
+.analysis-design3-quiz-blocks {
+  display: contents;
+}
+
+/* 區塊分隔線（對齊 ExamDetailPage／CreateExamQuizBankDetailPage 文本下方 hr） */
+.analysis-2__section-rule {
+  border: 0;
+  border-top: 1px solid var(--my-color-gray-2);
+  margin: 0 0 1rem;
+  opacity: 1;
+}
+
+/* 分析規則黑底預覽：對齊 CreateExamQuizBankDetailPage 出題規則（sidePanelOnLeft 內文 padding） */
+.analysis-2.analysis-page-3-rules.my-design--side-panel-left :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.analysis-2.analysis-page-3-rules.my-design--side-panel-left :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  padding-top: 0.5rem !important;
+  padding-bottom: 0 !important;
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* 黑底區預覽 typography（對齊 create-exam-bank_3 出題規則） */
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  color: var(--my-color-white);
+  font-family: var(--my-font-family-code);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-more-btn) {
+  font-family: var(--my-font-family-code);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-empty) {
+  color: var(--my-color-gray-2);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h1),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h2),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body h3),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th) {
+  color: var(--my-color-white);
+  font-family: inherit;
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body a) {
+  color: var(--my-color-blue-hover);
+  word-break: break-word;
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body pre) {
+  background: color-mix(in srgb, var(--my-color-white) 12%, transparent);
+  color: var(--my-color-white);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body code) {
+  color: var(--my-color-white);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body p code),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body li code) {
+  background: color-mix(in srgb, var(--my-color-white) 14%, transparent);
+  color: var(--my-color-white);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body blockquote) {
+  border-left-color: var(--my-color-gray-3);
+  color: var(--my-color-gray-3);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body th),
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-body td) {
+  border-color: color-mix(in srgb, var(--my-color-white) 35%, transparent);
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel--design-dark) {
+  margin-bottom: 0;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0;
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-question-prompt-block__content .english-exam-md-preview-panel) {
+  margin-bottom: 0;
+}
+
+.analysis-2.analysis-page-3-rules :deep(.my-design-quiz-generate-action-row .btn.my-design-quiz-generate-btn) {
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.5rem !important;
+}

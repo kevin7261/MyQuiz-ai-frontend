@@ -6,6 +6,7 @@ import {
   mergeQuizzesWithTopLevelAnswers,
 } from '../utils/rag.js';
 import { formatGradingResult } from '../utils/grading.js';
+import { examQuizApiRowIsFollowUp } from '../utils/examQuizRows.js';
 import { loggedFetch } from '../utils/loggedFetch.js';
 import { renderMarkdownToSafeHtml } from '../utils/renderMarkdown.js';
 
@@ -205,6 +206,16 @@ export function useAnalysisPage({
       && !promptSectionLoading.value
       && !loading.value
       && !promptSaving.value,
+  );
+
+  /** 稿頁「開始分析」：常駐顯示；loading 或不可送出時 disabled（對齊 create-exam-bank 開始出題） */
+  const analysisStartButtonDisabled = computed(
+    () =>
+      !authStore.user?.person_id
+      || !hasSelectedCourse()
+      || promptSectionLoading.value
+      || loading.value
+      || promptSaving.value,
   );
 
   function resetPromptToBaseline() {
@@ -422,6 +433,23 @@ export function useAnalysisPage({
     return examQuizDisplayNameFromRow(quiz) || '—';
   }
 
+  function unitLabelForItem(item) {
+    const v = item?.rag_name ?? item?.unit_name ?? item?.exam_name ?? '';
+    const t = String(v).trim();
+    return t || '—';
+  }
+
+  function itemUnitType(item) {
+    const ut = item?.unit_type ?? item?.unitType;
+    if (ut == null || ut === '') return null;
+    const n = Number(ut);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function itemIsFollowUpQuiz(item) {
+    return examQuizApiRowIsFollowUp(item);
+  }
+
   function itemToQuizCard(item, index) {
     const answers = Array.isArray(item?.answers) ? item.answers : [];
     const latestAnswer = answers.length > 0 ? answers[answers.length - 1] : null;
@@ -520,6 +548,7 @@ export function useAnalysisPage({
     promptDirty,
     canStartFromSavedRules,
     canSaveAndStart,
+    analysisStartButtonDisabled,
     resetPromptToBaseline,
     analysisRulesModalOpen,
     analysisRulesModalLoading,
@@ -538,6 +567,9 @@ export function useAnalysisPage({
     reportParsed,
     reportSections,
     quizTypeLabel,
+    unitLabelForItem,
+    itemUnitType,
+    itemIsFollowUpQuiz,
     toggleHint,
     toggleReferenceAnswer,
     slotQuizBodyTrim,
