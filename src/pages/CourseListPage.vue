@@ -96,7 +96,6 @@ function onCourseSelect(course) {
                 v-if="item.subtitle"
                 class="bank-list-row__subtitle my-font-sm-400 my-color-gray-1"
               >{{ item.subtitle }}</span>
-              <i class="fa-solid fa-chevron-right bank-list-row__chevron" aria-hidden="true" />
             </button>
           </li>
         </ul>

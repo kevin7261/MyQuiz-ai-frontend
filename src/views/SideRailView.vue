@@ -55,11 +55,22 @@ const visibleMenuItems = computed(() =>
     })),
 );
 
+/** 漢堡選單高亮：路徑須相符；帶 query 的項目（如未選課時的系統紀錄 → /courses?scope=log）須一併比對，避免在選課頁誤亮 */
+function isSideRailMenuItemActive(item, currentRoute) {
+  const to = item.to;
+  if (typeof to === 'string') {
+    return currentRoute.path === to || currentRoute.path.startsWith(`${to}/`);
+  }
+  const toPath = to?.path ?? '';
+  const pathMatch = currentRoute.path === toPath || currentRoute.path.startsWith(`${toPath}/`);
+  if (!pathMatch) return false;
+  const query = to?.query;
+  if (!query || typeof query !== 'object') return true;
+  return Object.entries(query).every(([key, value]) => currentRoute.query[key] === String(value));
+}
+
 const isMenuActive = computed(() =>
-  visibleMenuItems.value.some((item) => {
-    const toPath = typeof item.to === 'string' ? item.to : item.to?.path ?? '';
-    return route.path === toPath || route.path.startsWith(`${toPath}/`);
-  }),
+  visibleMenuItems.value.some((item) => isSideRailMenuItemActive(item, route)),
 );
 
 const coursesPageLocation = computed(() => buildCoursesPageLocation(route));

@@ -33,7 +33,7 @@ export function userTypeLabel(userType) {
 }
 
 /**
- * 課程 user_type 圖示（Font Awesome class）；1 fa-code、2 fa-pen、3 fa-user
+ * 課程 user_type 圖示（Font Awesome class）；1 fa-code、2 fa-book-open-reader、3 fa-graduation-cap
  * @param {number | string | null | undefined} userType
  * @returns {string | null}
  */
@@ -42,8 +42,8 @@ export function userTypeIconClass(userType) {
   const n = Number(userType);
   if (Number.isNaN(n)) return null;
   if (n === DEVELOPER_USER_TYPE) return 'fa-solid fa-code';
-  if (n === MANAGER_USER_TYPE) return 'fa-solid fa-pen';
-  if (n === RESTRICTED_USER_TYPE) return 'fa-solid fa-user';
+  if (n === MANAGER_USER_TYPE) return 'fa-solid fa-book-open-reader';
+  if (n === RESTRICTED_USER_TYPE) return 'fa-solid fa-graduation-cap';
   return null;
 }
 
